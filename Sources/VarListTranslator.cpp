@@ -1,9 +1,9 @@
 #include "VarListTranslator.h"
-#include <SPIRV/spirv.hpp>
-#include "../glslang/glslang/Public/ShaderLang.h"
+
 #include <fstream>
-#include <string.h>
 #include <iostream>
+
+#include <string.h>
 
 using namespace krafix;
 
@@ -11,7 +11,7 @@ namespace {
 	typedef unsigned id;
 
 	struct Name {
-		const char* name;
+		const char *name;
 	};
 
 	struct Type {
@@ -27,15 +27,13 @@ namespace {
 	struct Variable {
 		unsigned id;
 		unsigned type;
-		spv::StorageClass storage;
+		StorageClass storage;
 		bool builtin;
 
 		Variable() : builtin(false) {}
 	};
 
-	void namesAndTypes(Instruction& inst, std::map<unsigned, Name>& names, std::map<unsigned, Type>& types) {
-		using namespace spv;
-
+	void namesAndTypes(Instruction &inst, std::map<unsigned, Name> &names, std::map<unsigned, Type> &types) {
 		switch (inst.opcode) {
 		case OpTypePointer: {
 			Type t;
@@ -186,15 +184,14 @@ namespace {
 	}
 }
 
-void VarListTranslator::outputCode(const Target& target, const char* sourcefilename, const char* filename, char* output, std::map<std::string, int>& attributes) {
-	using namespace spv;
-
+void VarListTranslator::outputCode(const Target &target, const char *sourcefilename, const char *filename, char *output,
+                                   std::map<std::string, int> &attributes) {
 	std::map<unsigned, Name> names;
 	std::map<unsigned, Variable> variables;
 	std::map<unsigned, Type> types;
-	std::map<unsigned, std::vector<std::string>> memberNames;
+	std::map<unsigned, std::vector<std::string> > memberNames;
 
-	std::streambuf* buf;
+	std::streambuf *buf;
 	std::ofstream of;
 
 	if (strcmp(filename, "--") != 0) {
@@ -229,7 +226,7 @@ void VarListTranslator::outputCode(const Target& target, const char* sourcefilen
 	}
 
 	for (unsigned i = 0; i < instructions.size(); ++i) {
-		Instruction& inst = instructions[i];
+		Instruction &inst = instructions[i];
 		switch (inst.opcode) {
 		default:
 			namesAndTypes(inst, names, types);
@@ -242,7 +239,7 @@ void VarListTranslator::outputCode(const Target& target, const char* sourcefilen
 			types[id] = t;
 			out << "type " << n.name;
 			for (unsigned i = 1; i < inst.length; i++) {
-				Type& type = types[inst.operands[i]];
+				Type &type = types[inst.operands[i]];
 				out << " " << type.name << " " << memberNames[id][i - 1];
 			}
 			out << "\n";
@@ -252,7 +249,7 @@ void VarListTranslator::outputCode(const Target& target, const char* sourcefilen
 			unsigned id = inst.operands[0];
 			unsigned number = inst.operands[1];
 			char name[256];
-			strcpy(name, (char*)&inst.operands[2]);
+			strcpy(name, (char *)&inst.operands[2]);
 			while (memberNames[id].size() <= number) {
 				memberNames[id].push_back("");
 			}
@@ -263,7 +260,7 @@ void VarListTranslator::outputCode(const Target& target, const char* sourcefilen
 			Type resultType = types[inst.operands[0]];
 			id result = inst.operands[1];
 			types[result] = resultType;
-			Variable& v = variables[result];
+			Variable &v = variables[result];
 			v.id = result;
 			v.type = inst.operands[0];
 			v.storage = (StorageClass)inst.operands[2];
@@ -295,12 +292,10 @@ void VarListTranslator::outputCode(const Target& target, const char* sourcefilen
 }
 
 void VarListTranslator::print() {
-	using namespace spv;
-
 	std::map<unsigned, Name> names;
 	std::map<unsigned, Variable> variables;
 	std::map<unsigned, Type> types;
-	std::map<unsigned, std::vector<std::string>> memberNames;
+	std::map<unsigned, std::vector<std::string> > memberNames;
 
 	switch (stage) {
 	case StageVertex:
@@ -324,7 +319,7 @@ void VarListTranslator::print() {
 	}
 
 	for (unsigned i = 0; i < instructions.size(); ++i) {
-		Instruction& inst = instructions[i];
+		Instruction &inst = instructions[i];
 		switch (inst.opcode) {
 		default:
 			namesAndTypes(inst, names, types);
@@ -337,7 +332,7 @@ void VarListTranslator::print() {
 			types[id] = t;
 			std::cerr << "#type:" << n.name << ":{";
 			for (unsigned i = 1; i < inst.length; i++) {
-				Type& type = types[inst.operands[i]];
+				Type &type = types[inst.operands[i]];
 				std::cerr << memberNames[id][i - 1] << ":" << type.name;
 				if (i < inst.length - 1) std::cerr << ",";
 			}
@@ -348,7 +343,7 @@ void VarListTranslator::print() {
 			unsigned id = inst.operands[0];
 			unsigned number = inst.operands[1];
 			char name[256];
-			strcpy(name, (char*)&inst.operands[2]);
+			strcpy(name, (char *)&inst.operands[2]);
 			while (memberNames[id].size() <= number) {
 				memberNames[id].push_back("");
 			}
@@ -359,7 +354,7 @@ void VarListTranslator::print() {
 			Type resultType = types[inst.operands[0]];
 			id result = inst.operands[1];
 			types[result] = resultType;
-			Variable& v = variables[result];
+			Variable &v = variables[result];
 			v.id = result;
 			v.type = inst.operands[0];
 			v.storage = (StorageClass)inst.operands[2];

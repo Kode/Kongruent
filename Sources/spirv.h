@@ -22,7 +22,16 @@ enum Opcode {
 	OpReturn,
 	OpStore,
 	OpNop,
-	OpLine
+	OpLine,
+	OpTypePointer,
+	OpTypeFloat,
+	OpTypeInt,
+	OpTypeBool,
+	OpTypeStruct,
+	OpTypeSampler,
+	OpTypeSampledImage,
+	OpName,
+	OpMemberName
 };
 
 enum ExecutionModel {};
