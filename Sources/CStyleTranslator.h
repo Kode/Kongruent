@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Translator.h"
+
 #include <array>
 #include <fstream>
 #include <sstream>
@@ -18,8 +19,8 @@ namespace krafix {
 	struct Variable {
 		unsigned id;
 		unsigned type;
-		spv::BuiltIn builtinType;
-		spv::StorageClass storage;
+		BuiltIn builtinType;
+		StorageClass storage;
 		signed location;
 		unsigned descriptorSet;
 		unsigned binding;
@@ -39,7 +40,7 @@ namespace krafix {
 		unsigned length;
 		unsigned byteSize;
 		SampledImage sampledImage;
-		spv::Dim imageDim;
+		Dim imageDim;
 		bool isDepthImage;
 		bool isMultiSampledImage;
 		bool isarray;
@@ -47,7 +48,7 @@ namespace krafix {
 		std::map<unsigned, std::pair<std::string, Type> > members;
 
 		Type() {
-			opcode = spv::OpNop;
+			opcode = OpNop;
 			name = "unknown";
 			baseType = 0;
 			length = 1;
@@ -55,7 +56,7 @@ namespace krafix {
 			isarray = false;
 			ispointer = false;
 			sampledImage = kSampledImageUnknown;
-			imageDim = spv::Dim2D;
+			imageDim = Dim2D;
 			isDepthImage = false;
 			isMultiSampledImage = false;
 		}
@@ -64,7 +65,7 @@ namespace krafix {
 	struct Member {
 		unsigned type;
 		const char *name;
-		spv::BuiltIn builtinType;
+		BuiltIn builtinType;
 		bool builtin;
 		bool isColumnMajor;
 
@@ -89,16 +90,16 @@ namespace krafix {
 		bool loop;
 	};
 
-#define ExecutionModeDefault ((spv::ExecutionMode)-1)
+#define ExecutionModeDefault ((ExecutionMode)-1)
 
 	struct ExecutionModes {
 		unsigned invocationCount;
-		spv::ExecutionMode spacingType;
-		spv::ExecutionMode vertexOrder;
-		spv::ExecutionMode originOrientation;
-		spv::ExecutionMode depthModificationType;
-		spv::ExecutionMode primitiveType;
-		spv::ExecutionMode outputPrimitiveType;
+		ExecutionMode spacingType;
+		ExecutionMode vertexOrder;
+		ExecutionMode originOrientation;
+		ExecutionMode depthModificationType;
+		ExecutionMode primitiveType;
+		ExecutionMode outputPrimitiveType;
 		unsigned localSize[3];
 		unsigned localSizeHint[3];
 		unsigned maxVertexCount;

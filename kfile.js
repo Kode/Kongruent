@@ -16,6 +16,7 @@ project.addExclude('build/**');
 project.addFile('Sources/**');
 
 if (platform === Platform.Windows) {
+	project.addDefine('_CRT_SECURE_NO_WARNINGS');
 	project.addLib('d3dcompiler');
 }
 

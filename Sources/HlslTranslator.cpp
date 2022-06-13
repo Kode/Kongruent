@@ -1,8 +1,10 @@
 #include "HlslTranslator.h"
+
 #include <algorithm>
 #include <fstream>
 #include <map>
 #include <sstream>
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -12,7 +14,7 @@ typedef unsigned id;
 
 namespace {
 #ifndef _WIN32
-	void _itoa(int value, char* str, int base) {
+	void _itoa(int value, char *str, int base) {
 		sprintf(str, "%d", value);
 	}
 #endif
@@ -24,21 +26,21 @@ namespace {
 	unsigned localSizeY = 1;
 	unsigned localSizeZ = 1;
 
-	bool compareVariables(const Variable& v1, const Variable& v2) {
+	bool compareVariables(const Variable &v1, const Variable &v2) {
 		Name n1 = currentNames[v1.id];
 		Name n2 = currentNames[v2.id];
 		return strcmp(n1.name.c_str(), n2.name.c_str()) < 0;
 	}
 }
 
-void HlslTranslator::outputCode(const Target& target, const char* sourcefilename, const char* filename, std::map<std::string, int>& attributes) {
+void HlslTranslator::outputCode(const Target &target, const char *sourcefilename, const char *filename, std::map<std::string, int> &attributes) {
 	std::ofstream file;
 	file.open(filename, std::ios::binary | std::ios::out);
 	out = &file;
 
 	for (unsigned i = 0; i < instructions.size(); ++i) {
 		outputting = false;
-		Instruction& inst = instructions[i];
+		Instruction &inst = instructions[i];
 		outputInstruction(target, attributes, inst);
 		if (outputting) (*out) << "\n";
 	}
@@ -50,7 +52,7 @@ void HlslTranslator::outputCode(const Target& target, const char* sourcefilename
 	file.close();
 }
 
-void HlslTranslator::outputLibraryInstruction(const Target& target, std::map<std::string, int>& attributes, Instruction& inst, GLSLstd450 entrypoint) {
+void HlslTranslator::outputLibraryInstruction(const Target &target, std::map<std::string, int> &attributes, Instruction &inst, GLSLstd450 entrypoint) {
 	id result = inst.operands[1];
 	switch (entrypoint) {
 	case GLSLstd450InverseSqrt: {
@@ -90,9 +92,7 @@ void HlslTranslator::outputLibraryInstruction(const Target& target, std::map<std
 	}
 }
 
-void HlslTranslator::outputInstruction(const Target& target, std::map<std::string, int>& attributes, Instruction& inst) {
-	using namespace spv;
-
+void HlslTranslator::outputInstruction(const Target &target, std::map<std::string, int> &attributes, Instruction &inst) {
 	switch (inst.opcode) {
 	case OpLabel: {
 		if (firstLabel) {
@@ -111,7 +111,7 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 
 				std::vector<Variable> sortedVariables;
 				for (std::map<unsigned, Variable>::iterator v = variables.begin(); v != variables.end(); ++v) {
-					//if (strncmp(types[v->second.type].name, "gl_", 3) == 0) continue;
+					// if (strncmp(types[v->second.type].name, "gl_", 3) == 0) continue;
 					sortedVariables.push_back(v->second);
 				}
 				currentNames = names;
@@ -129,7 +129,7 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 				for (unsigned i = 0; i < sortedVariables.size(); ++i) {
 					Variable variable = sortedVariables[i];
 
-					Type& t = types[variable.type];
+					Type &t = types[variable.type];
 					Name n = names[variable.id];
 
 					if (t.members.size() > 0) continue;
@@ -173,7 +173,8 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 						}
 						else if (stage == StageGeometry) {
 							if (n.name == "gl_in") {
-								(*out) << "static float4 gl_Position" << "[" << t.length << "];\n";
+								(*out) << "static float4 gl_Position"
+								       << "[" << t.length << "];\n";
 							}
 							else if (t.isarray) {
 								(*out) << "static " << t.name << " g_" << n.name << "[" << t.length << "];\n";
@@ -218,7 +219,7 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 					(*out) << "struct InputVert {\n";
 				}
 				++indentation;
-				if ((stage == StageFragment || stage ==StageTessControl) && target.version > 9) {
+				if ((stage == StageFragment || stage == StageTessControl) && target.version > 9) {
 					indent(out);
 					(*out) << "float4 gl_Position : SV_POSITION;\n";
 				}
@@ -236,7 +237,7 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 				for (unsigned i = 0; i < sortedVariables.size(); ++i) {
 					Variable variable = sortedVariables[i];
 
-					Type& t = types[variable.type];
+					Type &t = types[variable.type];
 					Name n = names[variable.id];
 
 					if (variable.storage == StorageClassInput && strncmp(n.name.c_str(), "gl_", 3) != 0) {
@@ -333,21 +334,22 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 				for (unsigned i = 0; i < sortedVariables.size(); ++i) {
 					Variable variable = sortedVariables[i];
 
-					Type& t = types[variable.type];
+					Type &t = types[variable.type];
 					Name n = names[variable.id];
 
 					if (variable.storage == StorageClassOutput) {
 						/*if (variable.builtin && stage == StageVertex) {
-							positionName = n.name;
-							indent(out);
-							if (target.version == 9) {
-								(*out) << t.name << " " << n.name << " : POSITION;\n";
-							}
-							else {
-								(*out) << t.name << " " << n.name << " : SV_POSITION;\n";
-							}
+						    positionName = n.name;
+						    indent(out);
+						    if (target.version == 9) {
+						        (*out) << t.name << " " << n.name << " : POSITION;\n";
+						    }
+						    else {
+						        (*out) << t.name << " " << n.name << " : SV_POSITION;\n";
+						    }
 						}
-						else*/ if (stage == StageFragment) {
+						else*/
+						if (stage == StageFragment) {
 							indent(out);
 							(*out) << t.name << " " << n.name << " : COLOR;\n";
 						}
@@ -357,18 +359,15 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 				for (unsigned i = 0; i < sortedVariables.size(); ++i) {
 					Variable variable = sortedVariables[i];
 
-					Type& t = types[variable.type];
+					Type &t = types[variable.type];
 					Name n = names[variable.id];
 
 					if (variable.storage == StorageClassOutput) {
 						if (t.members.size() > 0) {
-
 						}
 						else if (variable.builtin && stage == StageVertex) {
-
 						}
 						else if (stage == StageFragment) {
-
 						}
 						else if (stage == StageTessControl) {
 							if (n.name.substr(0, 3) == "gl_") continue;
@@ -427,24 +426,34 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 						(*out) << "OutputFrag main(InputFrag input)\n";
 					}
 					else if (stage == StageTessControl) {
-						(*out) << "[domain(\"tri\")]\n"; indent(out);
-						(*out) << "[partitioning(\"integer\")]\n"; indent(out);
-						(*out) << "[outputtopology(\"triangle_cw\")]\n"; indent(out);
-						(*out) << "[outputcontrolpoints(3)]\n"; indent(out);
-						(*out) << "[patchconstantfunc(\"patch\")]\n"; indent(out);
+						(*out) << "[domain(\"tri\")]\n";
+						indent(out);
+						(*out) << "[partitioning(\"integer\")]\n";
+						indent(out);
+						(*out) << "[outputtopology(\"triangle_cw\")]\n";
+						indent(out);
+						(*out) << "[outputcontrolpoints(3)]\n";
+						indent(out);
+						(*out) << "[patchconstantfunc(\"patch\")]\n";
+						indent(out);
 						(*out) << "OutputTessC main(InputPatch<InputTessC, 3> input, uint pointId : SV_OutputControlPointID, uint patchId : SV_PrimitiveID)\n";
 					}
 					else if (stage == StageTessEvaluation) {
-						(*out) << "[domain(\"tri\")]\n"; indent(out);
-						(*out) << "OutputTessE main(float inside : SV_InsideTessFactor, float edges[3] : SV_TessFactor, float3 gl_TessCoord : SV_DomainLocation, const OutputPatch<InputTessE, 3> input)\n";
+						(*out) << "[domain(\"tri\")]\n";
+						indent(out);
+						(*out) << "OutputTessE main(float inside : SV_InsideTessFactor, float edges[3] : SV_TessFactor, float3 gl_TessCoord : "
+						          "SV_DomainLocation, const OutputPatch<InputTessE, 3> input)\n";
 					}
 					else if (stage == StageGeometry) {
-						(*out) << "[maxvertexcount(3)]\n"; indent(out);
+						(*out) << "[maxvertexcount(3)]\n";
+						indent(out);
 						(*out) << "void main(triangle InputGeom input[3], inout TriangleStream<OutputGeom> _output_stream)\n";
 					}
 					else if (stage == StageCompute) {
-						(*out) << "[numthreads(" << localSizeX << ", " << localSizeY << ", " << localSizeZ <<")]\n"; indent(out);
-						(*out) << "void main(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)\n";
+						(*out) << "[numthreads(" << localSizeX << ", " << localSizeY << ", " << localSizeZ << ")]\n";
+						indent(out);
+						(*out)
+						    << "void main(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)\n";
 					}
 					else {
 						(*out) << "OutputVert main(InputVert input)\n";
@@ -456,21 +465,26 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 				++indentation;
 
 				if (stage == StageTessEvaluation) {
-					indent(out); (*out) << "te_gl_TessCoord = gl_TessCoord;\n";
+					indent(out);
+					(*out) << "te_gl_TessCoord = gl_TessCoord;\n";
 				}
 				else if (stage == StageTessControl) {
-					indent(out); (*out) << "tc_gl_InvocationID = 0;\n";
+					indent(out);
+					(*out) << "tc_gl_InvocationID = 0;\n";
 				}
 				else if (stage == StageCompute) {
-					indent(out); (*out) << "c_gl_WorkGroupID = groupID;\n";
-					indent(out); (*out) << "c_gl_LocalInvocationID = groupThreadID;\n";
-					indent(out); (*out) << "c_gl_GlobalInvocationID = dispatchThreadID;\n";
+					indent(out);
+					(*out) << "c_gl_WorkGroupID = groupID;\n";
+					indent(out);
+					(*out) << "c_gl_LocalInvocationID = groupThreadID;\n";
+					indent(out);
+					(*out) << "c_gl_GlobalInvocationID = dispatchThreadID;\n";
 				}
 
 				for (unsigned i = 0; i < sortedVariables.size(); ++i) {
 					Variable variable = sortedVariables[i];
 
-					Type& t = types[variable.type];
+					Type &t = types[variable.type];
 					Name n = names[variable.id];
 
 					if (t.members.size() > 0) continue;
@@ -480,9 +494,12 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 						indent(out);
 						if (stage == StageVertex) {
 							if (t.name == "float4x4") {
-								(*out) << "v_" << n.name << "[0] = input." << n.name << "_0;\n"; indent(out);
-								(*out) << "v_" << n.name << "[1] = input." << n.name << "_1;\n"; indent(out);
-								(*out) << "v_" << n.name << "[2] = input." << n.name << "_2;\n"; indent(out);
+								(*out) << "v_" << n.name << "[0] = input." << n.name << "_0;\n";
+								indent(out);
+								(*out) << "v_" << n.name << "[1] = input." << n.name << "_1;\n";
+								indent(out);
+								(*out) << "v_" << n.name << "[2] = input." << n.name << "_2;\n";
+								indent(out);
 								(*out) << "v_" << n.name << "[3] = input." << n.name << "_3;\n";
 							}
 							else {
@@ -493,13 +510,17 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 							(*out) << "tc_" << n.name << "[tc_gl_InvocationID] = input[patchId]." << n.name << ";\n";
 						}
 						else if (stage == StageTessEvaluation) {
-							(*out) << "te_" << n.name << "[0] = input[0]." << n.name << ";\n"; indent(out);
-							(*out) << "te_" << n.name << "[1] = input[1]." << n.name << ";\n"; indent(out);
+							(*out) << "te_" << n.name << "[0] = input[0]." << n.name << ";\n";
+							indent(out);
+							(*out) << "te_" << n.name << "[1] = input[1]." << n.name << ";\n";
+							indent(out);
 							(*out) << "te_" << n.name << "[2] = input[2]." << n.name << ";\n";
 						}
 						else if (stage == StageGeometry) {
-							(*out) << "g_" << n.name << "[0] = input[0]." << n.name << ";\n"; indent(out);
-							(*out) << "g_" << n.name << "[1] = input[1]." << n.name << ";\n"; indent(out);
+							(*out) << "g_" << n.name << "[0] = input[0]." << n.name << ";\n";
+							indent(out);
+							(*out) << "g_" << n.name << "[1] = input[1]." << n.name << ";\n";
+							indent(out);
 							(*out) << "g_" << n.name << "[2] = input[2]." << n.name << ";\n";
 						}
 						else {
@@ -558,7 +579,7 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 				for (unsigned i = 0; i < sortedVariables.size(); ++i) {
 					Variable variable = sortedVariables[i];
 
-					Type& t = types[variable.type];
+					Type &t = types[variable.type];
 					Name n = names[variable.id];
 
 					if (t.members.size() > 0) continue;
@@ -598,7 +619,7 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 					(*out) << "output." << positionName << ".z = (output." << positionName << ".z + output." << positionName << ".w) * 0.5;\n";
 					indent(out);
 				}
-				
+
 				if (stage == StageGeometry || stage == StageCompute) {
 					(*out) << "\n";
 				}
@@ -634,20 +655,37 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 					(*out) << "void tese_main()\n";
 				}
 				else if (stage == StageTessControl) {
-					(*out) << "struct PatchOutputTessC {\n"; ++indentation; indent(out);
-					(*out) << "float gl_TessLevelInner : SV_InsideTessFactor;\n"; indent(out);
-					(*out) << "float gl_TessLevelOuter[3] : SV_TessFactor;\n"; --indentation; indent(out);
-					(*out) << "};\n\n"; indent(out);
+					(*out) << "struct PatchOutputTessC {\n";
+					++indentation;
+					indent(out);
+					(*out) << "float gl_TessLevelInner : SV_InsideTessFactor;\n";
+					indent(out);
+					(*out) << "float gl_TessLevelOuter[3] : SV_TessFactor;\n";
+					--indentation;
+					indent(out);
+					(*out) << "};\n\n";
+					indent(out);
 
-					(*out) << "PatchOutputTessC patch() {\n"; ++indentation; indent(out);
-					(*out) << "PatchOutputTessC output;\n"; indent(out);
-					(*out) << "patch_main();\n"; indent(out);
-					(*out) << "output.gl_TessLevelInner = tc_gl_TessLevelInner[0];\n"; indent(out);
-					(*out) << "output.gl_TessLevelOuter[0] = tc_gl_TessLevelOuter[0];\n"; indent(out);
-					(*out) << "output.gl_TessLevelOuter[1] = tc_gl_TessLevelOuter[1];\n"; indent(out);
-					(*out) << "output.gl_TessLevelOuter[2] = tc_gl_TessLevelOuter[2];\n"; indent(out);
-					(*out) << "return output;\n"; --indentation; indent(out);
-					(*out) << "}\n\n"; indent(out);
+					(*out) << "PatchOutputTessC patch() {\n";
+					++indentation;
+					indent(out);
+					(*out) << "PatchOutputTessC output;\n";
+					indent(out);
+					(*out) << "patch_main();\n";
+					indent(out);
+					(*out) << "output.gl_TessLevelInner = tc_gl_TessLevelInner[0];\n";
+					indent(out);
+					(*out) << "output.gl_TessLevelOuter[0] = tc_gl_TessLevelOuter[0];\n";
+					indent(out);
+					(*out) << "output.gl_TessLevelOuter[1] = tc_gl_TessLevelOuter[1];\n";
+					indent(out);
+					(*out) << "output.gl_TessLevelOuter[2] = tc_gl_TessLevelOuter[2];\n";
+					indent(out);
+					(*out) << "return output;\n";
+					--indentation;
+					indent(out);
+					(*out) << "}\n\n";
+					indent(out);
 
 					(*out) << "void tesc_main()\n";
 				}
@@ -690,10 +728,10 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 	}
 	case OpTypeArray: {
 		unsigned id = inst.operands[0];
-		Type& t = types[id];
+		Type &t = types[id];
 		t.isarray = true;
 		t.name = "unknownarray";
-		Type& subtype = types[inst.operands[1]];
+		Type &subtype = types[inst.operands[1]];
 		t.length = atoi(references[inst.operands[2]].c_str());
 		if (subtype.name == "float") {
 			t.name = "float";
@@ -711,9 +749,9 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 	}
 	case OpTypeVector: {
 		unsigned id = inst.operands[0];
-		Type& t = types[id];
+		Type &t = types[id];
 		t.name = "float?";
-		Type& subtype = types[inst.operands[1]];
+		Type &subtype = types[inst.operands[1]];
 		if (subtype.name == "int" && inst.operands[2] == 2) {
 			t.name = "int2";
 			t.length = 2;
@@ -742,9 +780,9 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 	}
 	case OpTypeMatrix: {
 		unsigned id = inst.operands[0];
-		Type& t = types[id];
+		Type &t = types[id];
 		t.name = "float4x?";
-		Type& subtype = types[inst.operands[1]];
+		Type &subtype = types[inst.operands[1]];
 		if (subtype.name == "float2" && inst.operands[2] == 3) {
 			t.name = "float2x2";
 			t.length = 4;
@@ -780,10 +818,10 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 		break;
 	}
 	case OpVariable: {
-		Type& resultType = types[inst.operands[0]];
+		Type &resultType = types[inst.operands[0]];
 		id result = inst.operands[1];
 		types[result] = resultType;
-		Variable& v = variables[result];
+		Variable &v = variables[result];
 		v.id = result;
 		v.type = inst.operands[0];
 		v.storage = (StorageClass)inst.operands[2];
@@ -815,7 +853,7 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 		}
 		if (v.storage == StorageClassFunction && getReference(result) != "param") {
 			output(out);
-			Type& t = types[v.type];
+			Type &t = types[v.type];
 			if (t.isarray) {
 				(*out) << t.name << " " << getReference(result) << "[" << t.length << "];\n";
 			}
@@ -826,7 +864,7 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 		break;
 	}
 	case OpCompositeConstruct: {
-		Type& resultType = types[inst.operands[0]];
+		Type &resultType = types[inst.operands[0]];
 		id result = inst.operands[1];
 		types[result] = resultType;
 		std::stringstream str;
@@ -840,7 +878,7 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 		break;
 	}
 	case OpMatrixTimesVector: {
-		Type& resultType = types[inst.operands[0]];
+		Type &resultType = types[inst.operands[0]];
 		id result = inst.operands[1];
 		types[result] = resultType;
 		id matrix = inst.operands[2];
@@ -851,7 +889,7 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 		break;
 	}
 	case OpVectorTimesMatrix: {
-		Type& resultType = types[inst.operands[0]];
+		Type &resultType = types[inst.operands[0]];
 		id result = inst.operands[1];
 		types[result] = resultType;
 		id vector = inst.operands[2];
@@ -862,7 +900,7 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 		break;
 	}
 	case OpMatrixTimesMatrix: {
-		Type& resultType = types[inst.operands[0]];
+		Type &resultType = types[inst.operands[0]];
 		id result = inst.operands[1];
 		types[result] = resultType;
 		id operand1 = inst.operands[2];
@@ -873,7 +911,7 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 		break;
 	}
 	case OpImageSampleImplicitLod: {
-		Type& resultType = types[inst.operands[0]];
+		Type &resultType = types[inst.operands[0]];
 		id result = inst.operands[1];
 		types[result] = resultType;
 		id sampler = inst.operands[2];
@@ -889,7 +927,7 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 		break;
 	}
 	case OpConvertSToF: {
-		Type& resultType = types[inst.operands[0]];
+		Type &resultType = types[inst.operands[0]];
 		id result = inst.operands[1];
 		id value = inst.operands[2];
 		std::stringstream str;
@@ -915,17 +953,18 @@ void HlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 		(*out) << "return;";
 		break;
 	case OpStore: {
-		Variable& v = variables[inst.operands[0]];
+		Variable &v = variables[inst.operands[0]];
 		if (getReference(inst.operands[0]) == "param") {
 			references[inst.operands[0]] = getReference(inst.operands[1]);
 		}
 		else {
 			output(out);
 			if (compositeInserts.find(inst.operands[1]) != compositeInserts.end()) {
-				(*out) << getReference(inst.operands[0]) << indexName(types[inst.operands[0]], compositeInserts[inst.operands[1]]) << " = " << getReference(inst.operands[1]) << ";";
+				(*out) << getReference(inst.operands[0]) << indexName(types[inst.operands[0]], compositeInserts[inst.operands[1]]) << " = "
+				       << getReference(inst.operands[1]) << ";";
 			}
 			else if (stage == StageGeometry) {
-				Variable& v = variables[inst.operands[0]];
+				Variable &v = variables[inst.operands[0]];
 				if (v.storage == StorageClassOutput || getReference(inst.operands[0]) == "gl_Position") {
 					(*out) << "_output." << getReference(inst.operands[0]) << " = " << getReference(inst.operands[1]) << ";";
 				}

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "spirv.h"
+
 #include <map>
 #include <sstream>
 #include <string>
@@ -54,7 +56,7 @@ namespace krafix {
 		Instruction(std::vector<unsigned> &spirv, unsigned &index);
 		Instruction(int opcode, unsigned *operands, unsigned length);
 
-		int opcode;
+		Opcode opcode;
 		unsigned *operands;
 		unsigned length;
 		const char *string;
@@ -71,7 +73,7 @@ namespace krafix {
 		std::vector<unsigned> &spirv;
 		std::vector<Instruction> instructions;
 		ShaderStage stage;
-		spv::ExecutionModel executionModel();
+		ExecutionModel executionModel();
 
 		unsigned magicNumber;
 		unsigned version;
