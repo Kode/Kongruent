@@ -1,44 +1,16 @@
 #pragma once
 
 #include <map>
-#include <string>
 #include <sstream>
+#include <string>
 #include <vector>
 
-#include <SPIRV/spirv.hpp>
-
 namespace krafix {
-	enum TargetLanguage {
-		SpirV,
-		GLSL,
-		HLSL,
-		Metal,
-		AGAL,
-		VarList,
-		JavaScript
-	};
+	enum TargetLanguage { SpirV, GLSL, HLSL, Metal, AGAL, VarList, JavaScript };
 
-	enum ShaderStage {
-		StageVertex,
-		StageTessControl,
-		StageTessEvaluation,
-		StageGeometry,
-		StageFragment,
-		StageCompute
-	};
+	enum ShaderStage { StageVertex, StageTessControl, StageTessEvaluation, StageGeometry, StageFragment, StageCompute };
 
-	enum TargetSystem {
-		Windows,
-		WindowsApp,
-		OSX,
-		Linux,
-		iOS,
-		Android,
-		HTML5,
-		Flash,
-		Unity,
-		Unknown
-	};
+	enum TargetSystem { Windows, WindowsApp, OSX, Linux, iOS, Android, HTML5, Flash, Unity, Unknown };
 
 	struct Target {
 		TargetLanguage lang;
@@ -79,23 +51,24 @@ namespace krafix {
 
 	class Instruction {
 	public:
-		Instruction(std::vector<unsigned>& spirv, unsigned& index);
-		Instruction(int opcode, unsigned* operands, unsigned length);
+		Instruction(std::vector<unsigned> &spirv, unsigned &index);
+		Instruction(int opcode, unsigned *operands, unsigned length);
 
 		int opcode;
-		unsigned* operands;
+		unsigned *operands;
 		unsigned length;
-		const char* string;
+		const char *string;
 	};
 
 	class Translator {
 	public:
-		Translator(std::vector<unsigned>& spirv, ShaderStage stage);
+		Translator(std::vector<unsigned> &spirv, ShaderStage stage);
 		virtual ~Translator() {}
-		virtual void outputCode(const Target& target, const char* sourcefilename, const char* filename, char* output, std::map<std::string, int>& attributes) = 0;
+		virtual void outputCode(const Target &target, const char *sourcefilename, const char *filename, char *output,
+		                        std::map<std::string, int> &attributes) = 0;
 
 	protected:
-		std::vector<unsigned>& spirv;
+		std::vector<unsigned> &spirv;
 		std::vector<Instruction> instructions;
 		ShaderStage stage;
 		spv::ExecutionModel executionModel();

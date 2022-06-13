@@ -1,12 +1,9 @@
 #pragma once
 
 #include "Translator.h"
-#include <SPIRV/spirv.hpp>
-#include "../glslang/glslang/Public/ShaderLang.h"
-#include <SPIRV/GLSL.std.450.h>
+#include <array>
 #include <fstream>
 #include <sstream>
-#include <array>
 
 namespace krafix {
 
@@ -32,8 +29,7 @@ namespace krafix {
 		bool builtin;
 		bool declared;
 
-		Variable() : id(0), type(0), builtin(false), location(-1), descriptorSet(0),
-						binding(0), offset(0), stride(0), isPerInstance(false) {}
+		Variable() : id(0), type(0), builtin(false), location(-1), descriptorSet(0), binding(0), offset(0), stride(0), isPerInstance(false) {}
 	};
 
 	struct Type {
@@ -48,7 +44,7 @@ namespace krafix {
 		bool isMultiSampledImage;
 		bool isarray;
 		bool ispointer;
-		std::map<unsigned, std::pair<std::string, Type>> members;
+		std::map<unsigned, std::pair<std::string, Type> > members;
 
 		Type() {
 			opcode = spv::OpNop;
@@ -67,7 +63,7 @@ namespace krafix {
 
 	struct Member {
 		unsigned type;
-		const char* name;
+		const char *name;
 		spv::BuiltIn builtinType;
 		bool builtin;
 		bool isColumnMajor;
@@ -93,7 +89,7 @@ namespace krafix {
 		bool loop;
 	};
 
-#define ExecutionModeDefault  ( (spv::ExecutionMode) -1 )
+#define ExecutionModeDefault ((spv::ExecutionMode)-1)
 
 	struct ExecutionModes {
 		unsigned invocationCount;
@@ -135,14 +131,15 @@ namespace krafix {
 
 	class CStyleTranslator : public Translator {
 	public:
-		CStyleTranslator(std::vector<unsigned>& spirv, ShaderStage stage);
+		CStyleTranslator(std::vector<unsigned> &spirv, ShaderStage stage);
 		virtual ~CStyleTranslator();
-		virtual void outputInstruction(const Target& target, std::map<std::string, int>& attributes, Instruction& inst);
-		virtual void outputLibraryInstruction(const Target& target, std::map<std::string, int>& attributes, Instruction& inst, GLSLstd450 entrypoint);
+		virtual void outputInstruction(const Target &target, std::map<std::string, int> &attributes, Instruction &inst);
+		virtual void outputLibraryInstruction(const Target &target, std::map<std::string, int> &attributes, Instruction &inst, GLSLstd450 entrypoint);
 		void startFunction(std::string name);
 		void endFunction();
+
 	protected:
-		std::ostream* out;
+		std::ostream *out;
 		std::map<unsigned, Name> names;
 		std::map<unsigned, std::string> uniqueNames;
 		std::map<unsigned, Type> types;
@@ -151,7 +148,7 @@ namespace krafix {
 		std::map<unsigned, std::string> labelStarts;
 		std::map<unsigned, Merge> merges;
 		std::map<unsigned, std::string> references;
-		std::map<unsigned, std::vector<unsigned>> compositeInserts;
+		std::map<unsigned, std::vector<unsigned> > compositeInserts;
 		std::vector<Parameter> parameters;
 		std::vector<unsigned> callParameters;
 		std::string tempNamePrefix = "kfxT";
@@ -166,26 +163,28 @@ namespace krafix {
 		unsigned vtxIdVarId = -1;
 		unsigned instIdVarId = -1;
 		unsigned tempNameIndex;
-		std::vector<Function*> functions;
-		std::ostream* tempout = NULL;
-		
-		void preprocessInstruction(ShaderStage stage, Instruction& inst);
-		virtual std::string indexName(Type& type, const std::vector<std::string>& indices);
-		std::string indexName(Type& type, const std::vector<unsigned>& indices);
-		void indent(std::ostream* out);
-		void output(std::ostream* out);
+		std::vector<Function *> functions;
+		std::ostream *tempout = NULL;
+
+		void preprocessInstruction(ShaderStage stage, Instruction &inst);
+		virtual std::string indexName(Type &type, const std::vector<std::string> &indices);
+		std::string indexName(Type &type, const std::vector<unsigned> &indices);
+		void indent(std::ostream *out);
+		void output(std::ostream *out);
 		virtual std::string getReference(unsigned _id);
-		inline unsigned getMemberId(unsigned typeId, unsigned member) { return (typeId << 16) + member; }
-		void addUniqueName(unsigned id, const char* name);
-		virtual void extractImageOperands(ImageOperandsArray& imageOperands, Instruction& inst, unsigned opIdxStart);
-		std::string& getUniqueName(unsigned id, const char* prefix);
-		std::string& getVariableName(unsigned id);
-		std::string& getFunctionName(unsigned id);
+		inline unsigned getMemberId(unsigned typeId, unsigned member) {
+			return (typeId << 16) + member;
+		}
+		void addUniqueName(unsigned id, const char *name);
+		virtual void extractImageOperands(ImageOperandsArray &imageOperands, Instruction &inst, unsigned opIdxStart);
+		std::string &getUniqueName(unsigned id, const char *prefix);
+		std::string &getVariableName(unsigned id);
+		std::string &getFunctionName(unsigned id);
 		std::string makeTempName(unsigned id);
 		std::string getNextTempName();
 		unsigned getBaseTypeID(unsigned typeID);
-		Type& getBaseType(unsigned typeID);
-		std::string outputTempVar(std::ostream* out, std::string& tmpTypeName, const std::string& rhs);
+		Type &getBaseType(unsigned typeID);
+		std::string outputTempVar(std::ostream *out, std::string &tmpTypeName, const std::string &rhs);
 
 		// Preprocessed
 		bool isFragDepthUsed = false;
