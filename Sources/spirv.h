@@ -21,7 +21,8 @@ enum Opcode {
 	OpEndPrimitive,
 	OpReturn,
 	OpStore,
-	OpNop
+	OpNop,
+	OpLine
 };
 
 enum ExecutionModel {};
