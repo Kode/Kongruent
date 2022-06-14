@@ -3,12 +3,11 @@
 
 #include "MetalTranslator.h"
 
-#include <vector>
 #include <map>
-#include <unordered_map>
-#include <string>
 #include <sstream>
-
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace krafix {
 
@@ -20,7 +19,7 @@ namespace krafix {
 		bool isPerInstance;
 		bool isUsedByShader;
 
-		MetalVertexAttribute() : binding(0), offset(0), stride(0), isPerInstance(false) , isUsedByShader(false){}
+		MetalVertexAttribute() : binding(0), offset(0), stride(0), isPerInstance(false), isUsedByShader(false) {}
 	};
 
 	struct MetalVertexInStruct {
@@ -42,8 +41,8 @@ namespace krafix {
 		bool shouldFlipFragmentY;
 		bool isRenderingPoints;
 
-		MetalStageInTranslatorRenderContext() : vertexAttributeStageInBinding(-1), shouldFlipVertexY(true),
-												shouldFlipFragmentY(true), isRenderingPoints(false) {}
+		MetalStageInTranslatorRenderContext()
+		    : vertexAttributeStageInBinding(-1), shouldFlipVertexY(true), shouldFlipFragmentY(true), isRenderingPoints(false) {}
 	};
 
 	/** Converts SPIR-V code to Metal Shading Language Code that uses Stage-In attributes. */
@@ -53,18 +52,14 @@ namespace krafix {
 		using MetalTranslator::outputCode;
 
 		/** Outputs code to the specified stream. */
-		virtual void outputCode(const Target& target,
-								const MetalStageInTranslatorRenderContext& renderContext,
-								std::ostream& output,
-								std::map<std::string, int>& attributes);
+		virtual void outputCode(const Target &target, const MetalStageInTranslatorRenderContext &renderContext, std::ostream &output,
+		                        std::map<std::string, int> &attributes);
 
 		/** Output the specified instruction.  */
-		virtual void outputInstruction(const Target& target,
-									   std::map<std::string, int>& attributes,
-									   Instruction& inst);
+		virtual void outputInstruction(const Target &target, std::map<std::string, int> &attributes, Instruction &inst);
 
 		/** Constructs an instance. Stage is taken from the SPIR-V itself. */
-		MetalStageInTranslator(std::vector<uint32_t>& spirv) : MetalTranslator(spirv, StageCompute) {}
+		MetalStageInTranslator(std::vector<uint32_t> &spirv) : MetalTranslator(spirv, StageCompute) {}
 
 	protected:
 		virtual void outputHeader();
@@ -78,13 +73,13 @@ namespace krafix {
 		virtual void outputVertexInStructs();
 		virtual bool outputStageInStruct();
 		virtual bool outputStageOutStruct();
-		virtual void addSamplerReference(Instruction& inst);
-		virtual signed getMetalResourceIndex(Variable& variable, spv::Op rezType);
-		ShaderStage stageFromSPIRVExecutionModel(spv::ExecutionModel execModel);
-		bool isUniformBufferMember(Variable& var, Type& type);
-		bool paramComma(std::ostream* out, bool needsComma);
+		virtual void addSamplerReference(Instruction &inst);
+		virtual signed getMetalResourceIndex(Variable &variable, Opcode rezType);
+		ShaderStage stageFromSPIRVExecutionModel(ExecutionModel execModel);
+		bool isUniformBufferMember(Variable &var, Type &type);
+		bool paramComma(std::ostream *out, bool needsComma);
 
-		MetalStageInTranslatorRenderContext* _pRenderContext;
+		MetalStageInTranslatorRenderContext *_pRenderContext;
 		std::unordered_map<unsigned, MetalVertexInStruct> _vertexInStructs;
 		unsigned _nextMTLBufferIndex;
 		unsigned _nextMTLTextureIndex;
@@ -99,7 +94,7 @@ namespace krafix {
 	 * Cleans the specified shader function name so it can be used as as an MSL function name.
 	 * The cleansed name is returned. The original name is left unmodified.
 	 */
-	std::string& cleanMSLFuncName(std::string& funcName);
+	std::string &cleanMSLFuncName(std::string &funcName);
 
 	typedef std::pair<const unsigned, Variable> KrafixVarPair;
 
@@ -108,6 +103,6 @@ namespace krafix {
 	 * has a lower location than the second. Built-in variables have no location and will
 	 * appear at the end of the list.
 	 */
-	bool compareByLocation(KrafixVarPair* vp1, KrafixVarPair* vp2);
+	bool compareByLocation(KrafixVarPair *vp1, KrafixVarPair *vp2);
 
 }

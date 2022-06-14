@@ -138,9 +138,17 @@ enum Opcode {
 
 enum Decoration { DecorationBuiltIn, DecorationColMajor, DecorationRowMajor, DecorationLocation, DecorationDescriptorSet, DecorationBinding };
 
-enum ExecutionModel {};
+enum ExecutionModel {
+	ExecutionModelVertex,
+	ExecutionModelTessellationControl,
+	ExecutionModelTessellationEvaluation,
+	ExecutionModelGeometry,
+	ExecutionModelFragment,
+	ExecutionModelGLCompute,
+	ExecutionModelKernel
+};
 
-enum StorageClass { StorageClassInput, StorageClassOutput, StorageClassFunction, StorageClassUniformConstant };
+enum StorageClass { StorageClassInput, StorageClassOutput, StorageClassFunction, StorageClassUniformConstant, StorageClassUniform, StorageClassPushConstant };
 
 enum ExecutionMode {
 	ExecutionModeLocalSize,
@@ -149,13 +157,53 @@ enum ExecutionMode {
 	ExecutionModeOutputTriangleStrip,
 	ExecutionModeSpacingEqual,
 	ExecutionModeVertexOrderCw,
-	ExecutionModeOutputVertices
+	ExecutionModeOutputVertices,
+	ExecutionModeSpacingFractionalEven,
+	ExecutionModeSpacingFractionalOdd,
+	ExecutionModeVertexOrderCcw,
+	ExecutionModePixelCenterInteger,
+	ExecutionModeOriginUpperLeft,
+	ExecutionModeOriginLowerLeft,
+	ExecutionModeEarlyFragmentTests,
+	ExecutionModePointMode,
+	ExecutionModeXfb,
+	ExecutionModeDepthReplacing,
+	ExecutionModeDepthGreater,
+	ExecutionModeDepthLess,
+	ExecutionModeDepthUnchanged,
+	ExecutionModeLocalSizeHint,
+	ExecutionModeInputPoints,
+	ExecutionModeInputLines,
+	ExecutionModeInputLinesAdjacency,
+	ExecutionModeInputTrianglesAdjacency,
+	ExecutionModeQuads,
+	ExecutionModeIsolines,
+	ExecutionModeOutputPoints,
+	ExecutionModeOutputLineStrip,
+	ExecutionModeVecTypeHint,
+	ExecutionModeContractionOff
 };
 
-enum BuiltIn { BuiltInFragDepth, BuiltInVertexId, BuiltInInstanceId };
+enum BuiltIn {
+	BuiltInFragDepth,
+	BuiltInVertexId,
+	BuiltInInstanceId,
+	BuiltInVertexIndex,
+	BuiltInInstanceIndex,
+	BuiltInClipDistance,
+	BuiltInPointSize,
+	BuiltInPosition,
+	BuiltInFrontFacing,
+	BuiltInPointCoord,
+	BuiltInSamplePosition,
+	BuiltInSampleId,
+	BuiltInSampleMask
+};
 
-enum Dim { Dim2D };
+enum Dim { Dim1D, Dim2D, Dim3D, DimCube };
 
 enum ImageOperandsShift { ImageOperandsGradShift };
 
 enum EShLanguage { EShLangVertex, EShLangFragment, EShLangGeometry, EShLangTessControl, EShLangTessEvaluation, EShLangCompute };
+
+enum ImageOperands { ImageOperandsBiasShift, ImageOperandsLodShift, ImageOperandsOffsetShift, ImageOperandsConstOffsetsShift };
