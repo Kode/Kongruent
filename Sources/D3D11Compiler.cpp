@@ -1,11 +1,15 @@
 #include <map>
 #include <string>
 
+#include "spirv.h"
+
 #ifdef _WIN32
 #define INITGUID
-#include <D3Dcompiler.h>
 #include <Windows.h>
 #include <d3d11.h>
+
+#include <D3Dcompiler.h>
+
 #include <fstream>
 #include <iostream>
 #include <strstream>

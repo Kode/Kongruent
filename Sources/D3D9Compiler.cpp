@@ -1,11 +1,14 @@
 #include <map>
 #include <string>
 
+#include "spirv.h"
+
 #ifdef _WIN32
 
-#include "d3dx9_mini.h"
 #include <Windows.h>
 #include <d3d9.h>
+
+#include "d3dx9_mini.h"
 
 #include <fstream>
 #include <iostream>

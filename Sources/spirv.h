@@ -157,3 +157,5 @@ enum BuiltIn { BuiltInFragDepth, BuiltInVertexId, BuiltInInstanceId };
 enum Dim { Dim2D };
 
 enum ImageOperandsShift { ImageOperandsGradShift };
+
+enum EShLanguage { EShLangVertex, EShLangFragment, EShLangGeometry, EShLangTessControl, EShLangTessEvaluation, EShLangCompute };
