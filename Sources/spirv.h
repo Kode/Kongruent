@@ -1,6 +1,39 @@
 #pragma once
 
-enum GLSLstd450 { GLSLstd450InverseSqrt, GLSLstd450Fract, GLSLstd450FMix, GLSLstd450Atan2 };
+enum GLSLstd450 {
+	GLSLstd450InverseSqrt,
+	GLSLstd450Fract,
+	GLSLstd450FMix,
+	GLSLstd450Atan2,
+	GLSLstd450MatrixInverse,
+	GLSLstd450FAbs,
+	GLSLstd450Normalize,
+	GLSLstd450FClamp,
+	GLSLstd450Pow,
+	GLSLstd450FMin,
+	GLSLstd450Cross,
+	GLSLstd450Sin,
+	GLSLstd450Cos,
+	GLSLstd450Tan,
+	GLSLstd450Asin,
+	GLSLstd450Sqrt,
+	GLSLstd450Length,
+	GLSLstd450Exp2,
+	GLSLstd450Distance,
+	GLSLstd450Floor,
+	GLSLstd450Exp,
+	GLSLstd450Log2,
+	GLSLstd450FSign,
+	GLSLstd450Ceil,
+	GLSLstd450FMax,
+	GLSLstd450Step,
+	GLSLstd450SmoothStep,
+	GLSLstd450Reflect,
+	GLSLstd450Refract,
+	GLSLstd450Acos,
+	GLSLstd450Atan,
+	GLSLstd450Determinant
+};
 
 enum Opcode {
 	OpLabel,
@@ -31,15 +64,96 @@ enum Opcode {
 	OpTypeSampler,
 	OpTypeSampledImage,
 	OpName,
-	OpMemberName
+	OpMemberName,
+	OpDecorate,
+	OpAccessChain,
+	OpImageSampleExplicitLod,
+	OpDPdx,
+	OpDPdy,
+	OpFwidth,
+	OpTranspose,
+	OpExtInst,
+	OpTypeVoid,
+	OpMemberDecorate,
+	OpConstant,
+	OpConstantTrue,
+	OpConstantFalse,
+	OpConstantComposite,
+	OpFunctionEnd,
+	OpPhi,
+	OpCompositeExtract,
+	OpVectorShuffle,
+	OpFMul,
+	OpIMul,
+	OpFAdd,
+	OpMatrixTimesScalar,
+	OpVectorTimesScalar,
+	OpFOrdGreaterThan,
+	OpFOrdLessThanEqual,
+	OpFOrdNotEqual,
+	OpSGreaterThan,
+	OpSGreaterThanEqual,
+	OpLogicalAnd,
+	OpFSub,
+	OpDot,
+	OpFDiv,
+	OpSelect,
+	OpCompositeInsert,
+	OpFunctionCall,
+	OpFunctionParameter,
+	OpBranch,
+	OpSelectionMerge,
+	OpLoopMerge,
+	OpBranchConditional,
+	OpReturnValue,
+	OpTypeFunction,
+	OpIEqual,
+	OpIAdd,
+	OpFOrdLessThan,
+	OpSLessThan,
+	OpSLessThanEqual,
+	OpFNegate,
+	OpBitcast,
+	OpConvertUToF,
+	OpLoad,
+	OpFOrdEqual,
+	OpFOrdGreaterThanEqual,
+	OpFMod,
+	OpISub,
+	OpLogicalOr,
+	OpConvertFToS,
+	OpLogicalNot,
+	OpFunction,
+	OpImageSampleDrefImplicitLod,
+	OpUndef,
+	OpKill,
+	OpEntryPoint,
+	OpMemoryModel,
+	OpExtInstImport,
+	OpSource,
+	OpCapability,
+	OpString,
+	OpSourceExtension
 };
+
+enum Decoration { DecorationBuiltIn, DecorationColMajor, DecorationRowMajor, DecorationLocation, DecorationDescriptorSet, DecorationBinding };
 
 enum ExecutionModel {};
 
 enum StorageClass { StorageClassInput, StorageClassOutput, StorageClassFunction, StorageClassUniformConstant };
 
-enum ExecutionMode { ExecutionModeLocalSize };
+enum ExecutionMode {
+	ExecutionModeLocalSize,
+	ExecutionModeInvocations,
+	ExecutionModeTriangles,
+	ExecutionModeOutputTriangleStrip,
+	ExecutionModeSpacingEqual,
+	ExecutionModeVertexOrderCw,
+	ExecutionModeOutputVertices
+};
 
-enum BuiltIn {};
+enum BuiltIn { BuiltInFragDepth, BuiltInVertexId, BuiltInInstanceId };
 
 enum Dim { Dim2D };
+
+enum ImageOperandsShift { ImageOperandsGradShift };
