@@ -1,8 +1,11 @@
 #include "GlslTranslator.h"
+
 #include <fstream>
 #include <map>
 #include <sstream>
+
 #include <string.h>
+
 #include "GlslFunctionStrings.h"
 
 using namespace krafix;
@@ -24,11 +27,11 @@ namespace {
 	}
 }
 
-void GlslTranslator::outputCode(const Target& target, const char* sourcefilename, const char* filename, std::map<std::string, int>& attributes) {
+void GlslTranslator::outputCode(const Target &target, const char *sourcefilename, const char *filename, std::map<std::string, int> &attributes) {
 	std::ofstream file;
 	file.open(filename, std::ios::binary | std::ios::out);
 	out = &file;
-	
+
 	if (stage == StageCompute) {
 		(*out) << "#version 430\n";
 	}
@@ -42,13 +45,12 @@ void GlslTranslator::outputCode(const Target& target, const char* sourcefilename
 
 	for (unsigned i = 0; i < instructions.size(); ++i) {
 		outputting = false;
-		Instruction& inst = instructions[i];
+		Instruction &inst = instructions[i];
 		outputInstruction(target, attributes, inst);
 		if (outputting) (*out) << "\n";
 	}
 	for (unsigned i = 0; i < functions.size(); ++i) {
 		if (functions[i]->name == "patch_main") {
-
 		}
 		else if (functions[i]->name == "main") {
 			std::string patch;
@@ -65,7 +67,8 @@ void GlslTranslator::outputCode(const Target& target, const char* sourcefilename
 					(*out) << mainlines[line] << '\n';
 				}
 				for (unsigned line = 0; line < patchlines.size(); ++line) {
-					if (patchlines[line].size() < 7 || patchlines[line].substr(patchlines[line].size() - 7) != "return;") (*out) << '\t' << patchlines[line] << '\n';
+					if (patchlines[line].size() < 7 || patchlines[line].substr(patchlines[line].size() - 7) != "return;")
+						(*out) << '\t' << patchlines[line] << '\n';
 				}
 				for (unsigned line = 2; line < mainlines.size(); ++line) {
 					(*out) << mainlines[line] << '\n';
@@ -85,9 +88,7 @@ void GlslTranslator::outputCode(const Target& target, const char* sourcefilename
 	file.close();
 }
 
-void GlslTranslator::outputInstruction(const Target& target, std::map<std::string, int>& attributes, Instruction& inst) {
-	using namespace spv;
-
+void GlslTranslator::outputInstruction(const Target &target, std::map<std::string, int> &attributes, Instruction &inst) {
 	switch (inst.opcode) {
 	case OpLabel: {
 		if (firstLabel) {
@@ -105,13 +106,13 @@ void GlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 				}
 
 				for (std::map<unsigned, Type>::iterator it = types.begin(); it != types.end(); ++it) {
-					Type& type = it->second;
+					Type &type = it->second;
 					if (type.ispointer) continue;
 					if (type.members.size() == 0) continue;
 					if (strncmp(type.name.c_str(), "gl_", 3) == 0) continue;
 					(*out) << "struct " << type.name << " {\n";
-					for (std::map<unsigned, std::pair<std::string, Type>>::iterator it2 = type.members.begin(); it2 != type.members.end(); ++it2) {
-						std::string& name = std::get<0>(it2->second);
+					for (std::map<unsigned, std::pair<std::string, Type> >::iterator it2 = type.members.begin(); it2 != type.members.end(); ++it2) {
+						std::string &name = std::get<0>(it2->second);
 						std::string type_name = std::get<1>(it2->second).name;
 						(*out) << "\t" << type_name << " " << name << ";\n";
 					}
@@ -119,21 +120,26 @@ void GlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 				}
 
 				if (target.es) {
-					if (target.version >= 300) (*out) << "precision highp float;\n";
-					else (*out) << "precision mediump float;\n";
+					if (target.version >= 300)
+						(*out) << "precision highp float;\n";
+					else
+						(*out) << "precision mediump float;\n";
 				}
 
 				if (target.version >= 300 && stage == StageFragment) {
-					if (isFragDepthUsed) (*out) << "out float krafix_FragDepth;\n";
-					else if (isFragDataUsed) (*out) << "out vec4 krafix_FragData[" << fragDataIndexIds.size() << "];\n";
-					else (*out) << "out vec4 krafix_FragColor;\n";
+					if (isFragDepthUsed)
+						(*out) << "out float krafix_FragDepth;\n";
+					else if (isFragDataUsed)
+						(*out) << "out vec4 krafix_FragData[" << fragDataIndexIds.size() << "];\n";
+					else
+						(*out) << "out vec4 krafix_FragColor;\n";
 				}
 
 				for (std::map<unsigned, Variable>::iterator v = variables.begin(); v != variables.end(); ++v) {
 					unsigned id = v->first;
-					Variable& variable = v->second;
+					Variable &variable = v->second;
 
-					Type& t = types[variable.type];
+					Type &t = types[variable.type];
 					std::string name = getReference(id);
 
 					if (variable.builtin) {
@@ -190,7 +196,6 @@ void GlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 							}
 						}
 						else if (variable.storage == StorageClassOutput) {
-
 						}
 						else if (variable.storage == StorageClassUniformConstant) {
 							if (strncmp(t.name.c_str(), "gl_", 3) != 0) {
@@ -251,7 +256,7 @@ void GlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 					}
 				}
 				(*out) << "\n";
-				
+
 				if (target.system == HTML5) {
 					if (isTransposeUsed) (*out) << transposeFunctionString;
 					if (isMatrixInverseUsed) (*out) << matrixInverseFunctionString;
@@ -283,7 +288,7 @@ void GlslTranslator::outputInstruction(const Target& target, std::map<std::strin
 				}
 				(*out) << ")\n";
 			}
-		
+
 			indent(out);
 			(*out) << "{";
 			++indentation;
