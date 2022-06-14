@@ -2,6 +2,7 @@
 
 #include "Translator.h"
 
+#if 0
 namespace krafix {
 	class SpirVTranslator : public Translator {
 	public:
@@ -12,3 +13,4 @@ namespace krafix {
 		int writeInstructions(const char* filename, char* output, std::vector<Instruction>& instructions);
 	};
 }
+#endif
