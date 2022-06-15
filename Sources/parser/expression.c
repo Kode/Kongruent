@@ -8,27 +8,27 @@ struct MemberExpression {
 	const char *value2;
 };
 
-struct ExprBinary {
+typedef struct ExprBinary {
 	expression_t *left;
 	Operator op;
 	expression_t *right;
-};
+} ExprBinary_t;
 
-struct ExprUnary {
+typedef struct ExprUnary {
 	Operator op;
 	expression_t *right;
-};
+} ExprUnary_t;
 
 struct ConstructorExpression {
-	Vec<Expression> parameters;
+	expression_t *parameters;
 };
 
 struct expression_t {
 	enum { Binary, Unary, Boolean, Number, String, Variable, Grouping, Call, Member, Constructor } type;
 
 	union {
-		ExprBinary binary;
-		ExprUnary unary;
+		ExprBinary_t binary;
+		ExprUnary_t unary;
 		bool boolean;
 		float number;
 		const char *string;

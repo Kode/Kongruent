@@ -1,41 +1,61 @@
-pub enum Statement {
-	Expression(Expression),
-	If(IfStatement),
-	Block(BlockStatement),
-	Declaration(DeclarationStatement),
-	PreprocessorDirective(PreprocessorStatement),
-	Function(FunctionStatement),
-	Struct(StructStatement),
-}
+struct Statement {
+	enum {
+		Expression,
+		If,
+		Block,
+		Declaration,
+		PreprocessorDirective,
+		Function,
+		Struct,
+	} type;
 
-pub struct DeclarationStatement {
-	pub name : String, pub init : Option<Expression>,
-}
+	union {
+		Expression expression;
+		IfStatement iffy;
+		BlockStatement block;
+		DeclarationStatement declaration;
+		PreprocessorStatement preprocessorDirective;
+		FunctionStatement function;
+		StructStatement structy;
+	} data;
+};
 
-pub struct BlockStatement {
-	pub statements : Vec<Statement>,
-}
+struct DeclarationStatement {
+	const char *name;
+	expression_t *init;
+};
 
-pub struct FunctionStatement {
-	pub parameters : Vec<String>, pub block : BlockStatement,
-}
+struct BlockStatement {
+	Statement *statements;
+};
 
-pub struct IfStatement {
-	pub test : Expression, pub block : Box<Statement>,
-}
+struct FunctionStatement {
+	const char **parameters;
+	BlockStatement block;
+};
 
-pub struct CallStatement {
-	pub func : Box<Expression>, pub parameters : Vec<Expression>,
-}
+struct IfStatement {
+	expression_t test;
+	Statement block;
+};
 
-pub struct PreprocessorStatement {
-	pub name : String, pub parameters : Vec<Expression>,
-}
+struct CallStatement {
+	Expression func;
+	Expression *parameters;
+};
 
-pub struct Member {
-	pub name : String, pub member_type : String,
-}
+struct PreprocessorStatement {
+	const char *name;
+	Expression *parameters;
+};
 
-pub struct StructStatement {
-	pub attribute : String, pub name : String, pub members : Vec<Member>,
-}
+struct Member {
+	const char *name;
+	const char *member_type;
+};
+
+struct StructStatement {
+	const char *attribute;
+	const char *name;
+	Member *members;
+};
