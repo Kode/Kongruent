@@ -7,7 +7,7 @@ if (library) {
 }
 else {
 	project.setCmd();
-	//project.setDebugDir('tests');
+	project.setDebugDir('tests');
 }
 
 project.addExclude('.git/**');

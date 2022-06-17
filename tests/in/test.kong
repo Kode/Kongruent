@@ -1,0 +1,22 @@
+struct VertexIn {
+    position: vec3;
+}
+
+struct FragmentIn {
+    position: vec4;
+}
+
+#[vertex]
+fn pos(input: VertexIn) -> FragmentIn {
+    let mut output: FragmentIn;
+    output.position.xyz = input.position.xyz;
+    output.position.z = 1.0;
+    output
+}
+
+#[fragment]
+fn pixel(input: FragmentIn) -> Color {
+    let mut color: Color;
+    color.r = 1.0;
+    color
+}
