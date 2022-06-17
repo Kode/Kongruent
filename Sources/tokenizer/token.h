@@ -2,7 +2,7 @@
 
 #include <stdbool.h>
 
-typedef enum Operator {
+typedef enum operatorr {
 	Equals,
 	NotEquals,
 	Greater,
@@ -18,9 +18,9 @@ typedef enum Operator {
 	And,
 	Mod,
 	Assign,
-} Operator_t;
+} operator_t;
 
-struct Token {
+typedef struct token {
 	enum {
 		Eof,
 		Boolean,
@@ -50,12 +50,18 @@ struct Token {
 		FuncRet
 	} type;
 
-	union data {
+	union {
 		bool boolean;
 		double number;
 		const char *string;
 		const char *identifier;
 		const char *attribute;
-		Operator_t operator;
-	};
-};
+		operator_t op;
+	} data;
+} token_t;
+
+typedef struct token_array {
+	int a;
+} token_array_t;
+
+void add_token(token_array_t *arr, token_t token) {}

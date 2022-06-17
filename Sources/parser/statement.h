@@ -1,3 +1,5 @@
+#pragma once
+
 struct Statement {
 	enum {
 		Expression,
