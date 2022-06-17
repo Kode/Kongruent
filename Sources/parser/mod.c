@@ -1,48 +1,77 @@
-Statement *parse(Token *tokens) {
-	State state = State{tokens, index : 0};
-	Statement *statements;
+#include "../tokenizer/token.h"
+#include "expression.h"
+#include "statement.h"
+
+#include <string.h>
+
+void add_statement(statement_t *statements, void *statement) {}
+
+typedef struct state {
+	token_array_t *tokens;
+	unsigned index;
+} state_t;
+
+token_t current(state_t *self) {
+	token_t token = get_token(self, self->index);
+	return token;
+}
+
+void advance_state(state_t *state) {
+	state->index += 1;
+}
+
+void *parse_statement(state_t *state);
+void *parse_expression(state_t *state);
+
+statement_t *parse(token_array_t *tokens) {
+	state_t state;
+	state.tokens = tokens;
+	state.index = 0;
+
+	statement_t *statements = NULL;
 	for (;;) {
-		match state.current() {
-			Token::Eof = > break, _ = > statements.push(statement(&mut state)),
+		token_t token = current(&state);
+		switch (token.type) {
+		case TOKEN_EOF:
+			return statements;
+		default: {
+			add_statement(statements, parse_statement(&state));
+		}
 		}
 	}
 	return statements;
 }
 
-struct State {
-	Token *tokens;
-	unsigned index;
-}
-
-Token current(State*self) {
-	Token token = self.tokens.get(self.index);
-	match token {
-		Some(value) = > value.clone(), None = > Token::Eof.clone(),
+void *parse_block(state_t *state) {
+	if (current(state).type == LeftCurly) {
+		advance_state(state);
 	}
-}
+	else {
+		exit(1); // Expected an opening curly bracket
+	}
 
-fn advance(&mut self) {
-	self.index += 1;
-}
-
-BlockStatement block(State state) {
-	match state.current(){Token::LeftCurly = > state.advance(), _ = > panic !("Expected an opening curly bracket.")} let mut statements = Vec::new ();
+	statement_t *statements = NULL;
 	for (;;) {
-		match state.current() {
-			Token::RightCurly = > {
-				state.advance();
-				break
-			}
-			_ = > {
-				statements.push(statement(state));
-			}
+		switch (current(state).type) {
+		case RightCurly: {
+			advance_state(&state);
+			BlockStatement_t statement;
+			statement.statements = statements;
+			return &statement;
+		}
+		default:
+			add_statement(statements, parse_statement(state));
+			break;
 		}
 	}
-	return BlockStatement{statements};
+
+	BlockStatement_t statement;
+	statement.statements = statements;
+	return &statement;
 }
 
-PreprocessorStatement preprocessor(const char *name, State _state) {
-	Expression *expressions;
+void *parse_preprocessor(const char *name, state_t *_state) {
+	expression_t *expressions = NULL;
 	/*loop {
 	    match state.current() {
 	        Token::NewLine => {
@@ -55,401 +84,651 @@ PreprocessorStatement preprocessor(const char *name, State _state) {
 	    }
 	}*/
 
-	return PreprocessorStatement {
-		name, parameters : expressions
-	}
+	PreprocessorStatement_t statement;
+	statement.name = name;
+	statement.parameters = expressions;
+	return (void *)&statement;
 }
 
-enum Modifier {
-	In,
+typedef enum Modifier {
+	MODIFIER_IN,
 	// Out,
-};
+} Modifier_t;
 
-Statement *declaration(State state, Modifier *modifiers) {
-	match state.current() {
-		Token::In = > {
-			state.advance();
-			modifiers.push(Modifier::In);
-			return declaration(state, modifiers);
-		}
-		Token::Vec3 = > {
-			state.advance();
-		}
-		Token::Vec4 = > {
-			state.advance();
-		}
-		Token::Float = > {
-			state.advance();
-		}
-		Token::Void = > {
-			state.advance();
-		}
-		_ = > panic !("Expected a variable declaration.")
+void *parse_declaration(state_t *state, Modifier_t *modifiers) {
+	switch (current(state).type) {
+	case In: {
+		advance_state(&state);
+		*modifiers = MODIFIER_IN;
+		++modifiers;
+		return parse_declaration(state, modifiers);
+	}
+	case Vec3: {
+		advance_state(&state);
+		break;
+	}
+	case Vec4: {
+		advance_state(&state);
+		break;
+	}
+	case Float: {
+		advance_state(&state);
+		break;
+	}
+	case Void: {
+		advance_state(&state);
+		break;
+	}
+	default:
+		exit(1); // Expected a variable declaration
 	}
 
 	const char *name;
-	match state.current(){Token::Identifier(value) = > {state.advance();
-	name = value;
-}
-_ = > panic !("Expected an identifier.")
+	if (current(state).type == Identifier) {
+		name = current(state).data.identifier;
+		advance_state(&state);
+	}
+	else {
+		exit(1); // Expected an identifier
+	}
+
+	switch (current(state).type) {
+	case Operator: {
+		operator_t op = current(state).data.op;
+		switch (op) {
+		case Assign: {
+			advance_state(&state);
+			void *expr = parse_expression(state);
+			switch (current(state).type) {
+			case Semicolon: {
+				advance_state(&state);
+				DeclarationStatement_t statement;
+				statement.name = name;
+				statement.init = expr;
+				return (void *)&statement;
+			}
+			default:
+				exit(1); // Expected a semicolon
+			}
+			break;
+		}
+		default:
+			exit(1); // Expected an assignment operator
+		}
+		break;
+	}
+	case Semicolon: {
+		advance_state(&state);
+		DeclarationStatement_t statement;
+		statement.name = name;
+		statement.init = NULL;
+		return (void *)&statement;
+	}
+	case LeftParen: {
+		advance_state(&state);
+		switch (current(state).type) {
+		case RightParen: {
+			advance_state(&state);
+			FunctionStatement_t statement;
+			const char **parameters = {""};
+			statement.parameters = parameters;
+			statement.block = parse_block(state);
+			return (void *)&statement;
+		}
+		default:
+			exit(1); // Expected right paren
+		}
+	}
+	default:
+		exit(1); // Expected an assign or a semicolon
+	}
 }
 
-match state.current() {
-	Token::Operator(op) = > {
-		match op {
-			Operator::Assign = > {
-				state.advance();
-				let expr = expression(state);
-				match state.current() {
-					Token::Semicolon = > {
-						state.advance();
-						return Statement::Declaration(DeclarationStatement{name, init : Some(expr)});
-					}
-					_ = > panic !("Expected a semicolon.")
+void *parse_struct(state_t *state);
+
+void *parse_statement(state_t *state) {
+	switch (current(state).type) {
+	case Attribute: {
+		const char *value = current(state).data.attribute;
+		advance_state(&state);
+		return parse_preprocessor(value, state);
+	}
+	case If: {
+		advance_state(&state);
+		switch (current(state).type) {
+		case LeftParen:
+			advance_state(&state);
+			break;
+		default:
+			exit(1); // Expected an opening bracket
+		}
+		void *test = parse_expression(state);
+		switch (current(state).type) {
+		case RightParen:
+			advance_state(&state);
+			break;
+		default:
+			exit(1); // Expected a closing bracket
+		}
+		void *block = parse_statement(state);
+		IfStatement_t statement;
+		statement.test = test;
+		statement.block = block;
+		return (void *)&statement;
+	}
+	case LeftCurly: {
+		BlockStatement_t statement;
+		statement.statements = parse_block(state);
+		return (void *)&statement;
+	}
+	case In: {
+		return parse_declaration(state, NULL);
+	}
+	case Float: {
+		return parse_declaration(state, NULL);
+	}
+	case Vec3: {
+		return parse_declaration(state, NULL);
+	}
+	case Vec4: {
+		return parse_declaration(state, NULL);
+	}
+	case Void: {
+		return parse_declaration(state, NULL);
+	}
+	case Struct: {
+		return parse_struct(state);
+	}
+	default: {
+		void *expr = parse_expression(state);
+		switch (current(state).type) {
+		case Semicolon: {
+			advance_state(&state);
+			return expr;
+		}
+		default:
+			exit(1); // Expected a semicolon
+		}
+	}
+	}
+}
+
+void *parse_assign(state_t *state);
+
+void *parse_expression(state_t *state) {
+	return parse_assign(state);
+}
+
+void *parse_logical(state_t *state);
+
+void *parse_assign(state_t *state) {
+	void *expr = parse_logical(state);
+	bool done = false;
+	while (!done) {
+		switch (current(state).type) {
+		case Operator: {
+			operator_t op = current(state).data.op;
+			switch (op) {
+			case Assign: {
+				advance_state(&state);
+				void *right = parse_logical(state);
+				ExprBinary_t expression;
+				expression.left = expr;
+				expression.op = op;
+				expression.right = right;
+				expr = &expression;
+				break;
+			}
+			default:
+				done = true;
+				break;
+			}
+		}
+		default:
+			done = true;
+			break;
+		}
+	}
+	return expr;
+}
+
+void *parse_equality(state_t *state);
+
+void *parse_logical(state_t *state) {
+	void *expr = parse_equality(state);
+	bool done = false;
+	while (!done) {
+		switch (current(state).type) {
+		case Operator: {
+			operator_t op = current(state).data.op;
+			switch (op) {
+			case Or:
+			case And: {
+				advance_state(&state);
+				void *right = parse_equality(state);
+				ExprBinary_t expression;
+				expression.left = expr;
+				expression.op = op;
+				expression.right = right;
+				expr = &expression;
+			}
+			default:
+				done = true;
+				break;
+			}
+		}
+		default:
+			done = true;
+			break;
+		}
+	}
+	return expr;
+}
+
+void *parse_comparison(state_t *state);
+
+void *parse_equality(state_t *state) {
+	void *expr = parse_comparison(state);
+	bool done = false;
+	while (!done) {
+		switch (current(state).type) {
+		case Operator: {
+			operator_t op = current(state).data.op;
+			switch (op) {
+			case Equals:
+			case NotEquals: {
+				advance_state(&state);
+				void *right = parse_comparison(state);
+				ExprBinary_t expression;
+				expression.left = expr;
+				expression.op = op;
+				expression.right = right;
+				expr = &expression;
+			}
+			default:
+				done = true;
+				break;
+			}
+		}
+		default:
+			done = true;
+			break;
+		}
+	}
+	return expr;
+}
+
+void *parse_addition(state_t *state);
+
+void *parse_comparison(state_t *state) {
+	void *expr = parse_addition(state);
+	bool done = false;
+	while (!done) {
+		switch (current(state).type) {
+		case Operator: {
+			operator_t op = current(state).data.op;
+			switch (op) {
+			case Greater:
+			case GreaterEqual:
+			case Less:
+			case LessEqual: {
+				advance_state(&state);
+				void *right = parse_addition(state);
+				ExprBinary_t expression;
+				expression.left = expr;
+				expression.op = op;
+				expression.right = right;
+				expr = &expression;
+			}
+				done = true;
+				break;
+			}
+		}
+			done = true;
+			break;
+		}
+	}
+	return expr;
+}
+
+void *parse_multiplication(state_t *state);
+
+void *parse_addition(state_t *state) {
+	void *expr = parse_multiplication(state);
+	bool done = false;
+	while (!done) {
+		switch (current(state).type) {
+		case Operator: {
+			operator_t op = current(state).data.op;
+			switch (op) {
+			case Minus:
+			case Plus: {
+				advance_state(&state);
+				void *right = parse_multiplication(state);
+				ExprBinary_t expression;
+				expression.left = expr;
+				expression.op = op;
+				expression.right = right;
+				expr = &expression;
+			}
+			default:
+				done = true;
+				break;
+			}
+		}
+		default:
+			done = true;
+			break;
+		}
+	}
+	return expr;
+}
+
+void *parse_unary(state_t *state);
+
+void *parse_multiplication(state_t *state) {
+	void *expr = parse_unary(state);
+	bool done = false;
+	while (!done) {
+		switch (current(state).type) {
+		case Operator: {
+			operator_t op = current(state).data.op;
+			switch (op) {
+			case Div:
+			case Multiply:
+			case Mod: {
+				advance_state(&state);
+				void *right = parse_unary(state);
+				ExprBinary_t expression;
+				expression.left = expr;
+				expression.op = op;
+				expression.right = right;
+				expr = &expression;
+			}
+			default:
+				done = true;
+				break;
+			}
+		}
+		default:
+			done = true;
+			break;
+		}
+	}
+	return expr;
+}
+
+void *parse_primary(state_t *state);
+
+void *parse_unary(state_t *state) {
+	bool done = false;
+	while (!done) {
+		switch (current(state).type) {
+		case Operator: {
+			operator_t op = current(state).data.op;
+			switch (op) {
+			case Not:
+			case Minus: {
+				advance_state(&state);
+				void *right = parse_unary(state);
+				ExprUnary_t expression;
+				expression.op = op;
+				expression.right = right;
+				return &expression;
+			}
+			default:
+				done = true;
+				break;
+			}
+		}
+		default:
+			done = true;
+			break;
+		}
+	}
+	return parse_primary(state);
+}
+
+void *parse_call(state_t *state, expression_t func);
+
+void *parse_primary(state_t *state) {
+	switch (current(state).type) {
+	case Boolean: {
+		bool value = current(state).data.boolean;
+		advance_state(&state);
+		expression_t expression;
+		expression.type = Boolean;
+		expression.data.boolean = value;
+		return &expression;
+	}
+	case Number: {
+		double value = current(state).data.number;
+		advance_state(&state);
+		expression_t expression;
+		expression.type = Number;
+		expression.data.number = value;
+		return &expression;
+	}
+	case String: {
+		const char *value = current(state).data.string;
+		advance_state(&state);
+		expression_t expression;
+		expression.type = String;
+		expression.data.string = value;
+		return &expression;
+	}
+	case Identifier: {
+		const char *value = current(state).data.identifier;
+		advance_state(&state);
+		switch (current(state).type) {
+		case LeftParen: {
+			expression_t var;
+			var.type = Variable;
+			var.data.variable = value;
+			return parse_call(state, var);
+		}
+		case Colon: {
+			advance_state(&state);
+			switch (current(state).type) {
+			case Identifier: {
+				const char *value2 = current(state).data.identifier;
+				advance_state(&state);
+
+				expression_t member;
+				member.type = Member;
+				member.data.member.value1 = value;
+				member.data.member.value2 = value2;
+
+				switch (current(state).type) {
+				case LeftParen:
+					return parse_call(state, member);
+				default:
+					member;
 				}
 			}
-			_ = > panic !("Expected an assignment operator.")
-		}
-	}
-	Token::Semicolon = > {
-		state.advance();
-		return Statement::Declaration(DeclarationStatement{name, init : None});
-	}
-	Token::LeftParen = > {
-		state.advance();
-		match state.current() {
-			Token::RightParen = > {
-				state.advance();
-				return Statement::Function(FunctionStatement{parameters : Vec::new (), block : block(state)});
-			}
-			_ = > panic !("Expected right paren.")
-		}
-	}
-	_ = > panic !("Expected an assign or a semicolon.")
-}
-}
-
-Statement *statement(State *state) {
-	match state.current() {
-		Token::Attribute(value) = > {
-			state.advance();
-			Statement::PreprocessorDirective(preprocessor(value, state))
-		}
-		Token::If = > {
-			state.advance();
-			match state.current(){
-			    Token::LeftParen = > state.advance(),
-			    _ = > panic !("Expected an opening bracket."),
-			} let test = expression(state);
-			match state.current(){
-			    Token::RightParen = > state.advance(),
-			    _ = > panic !("Expected a closing bracket."),
-			} let block = statement(state);
-			Statement::If(IfStatement{test, block : Box::new (block)})
-		}
-		Token::LeftCurly = > {Statement::Block(block(state))} Token::In = > {declaration(state, &mut Vec::new ())} Token::Float =
-		                                                                      > {declaration(state, &mut Vec::new ())} Token::Vec3 =
-		                                                                          > {declaration(state, &mut Vec::new ())} Token::Vec4 =
-		                                                                              > {declaration(state, &mut Vec::new ())} Token::Void =
-		                                                                                  > {declaration(state, &mut Vec::new ())} Token::Struct =
-		                                                                                      > {parse_struct(state)} _ = > {
-			let expr = expression(state);
-			match state.current() {
-				Token::Semicolon = > {
-					state.advance();
-					Statement::Expression(expr)
-				}
-				_ = > panic !("Expected a semicolon."),
+			default:
+				exit(1); // Expected an identifier
 			}
 		}
+		default: {
+			expression_t var;
+			var.type = Variable;
+			var.data.variable = value;
+			return &var;
+		}
+		}
 	}
-}
+	case LeftParen: {
+		advance_state(&state);
+		void *expr = parse_expression(state);
+		switch (current(state).type) {
+		case RightParen:
+			break;
+		default:
+			exit(1); // Expected a closing bracket
+		}
+		expression_t grouping;
+		grouping.type = Grouping;
+		grouping.data.grouping = expr;
+		return &grouping;
+	}
+	case Vec4: {
+		advance_state(&state);
+		switch (current(state).type) {
+		LeftParen:
+			break;
+		default:
+			exit(1); // Expected an opening bracket
+		}
+		advance_state(&state);
 
-fn expression(state
-              : &mut State)
-    ->Expression{assign(state)}
-
-fn assign(state
-          : &mut State)
-    ->Expression {
-	let mut expr = logical(state);
-	loop {
-		match state.current() {
-			Token::Operator(op) = > {
-				match op {
-					Operator::Assign = > {
-						state.advance();
-						let right = logical(state);
-						expr = Expression::Binary(ExprBinary{left : Box::new (expr), op : op, right : Box::new (right)});
-					}
-					_ = > break
-				}
+		expression_t *expressions = NULL;
+		bool done = false;
+		while (!done) {
+			switch (current(state).type) {
+			case RightParen:
+				done = true;
+				break;
+			default:
+				expressions = parse_expression(state);
+				++expressions;
+				break;
 			}
-			_ = > break
-		}
-	}
-	expr
-}
-
-fn logical(state : &mut State)->Expression {
-	let mut expr = equality(state);
-	loop {
-		match state.current() {
-			Token::Operator(op) = > {
-				match op {
-					Operator::Or | Operator::And = > {
-						state.advance();
-						let right = equality(state);
-						expr = Expression::Binary(ExprBinary{left : Box::new (expr), op : op, right : Box::new (right)});
-					}
-					_ = > break
-				}
+			advance_state(&state);
+			switch (current(state).type) {
+			case Comma:
+				break;
+			case RightParen:
+				done = true;
+				break;
+			default:
+				expressions = parse_expression(state);
+				++expressions;
+				break;
 			}
-			_ = > break
+			advance_state(&state);
 		}
+		advance_state(&state);
+
+		expression_t constructor;
+		constructor.type = Constructor;
+		ConstructorExpression_t expr;
+		expr.parameters = expressions;
+		constructor.data.constructor = expr;
+		return &constructor;
 	}
-	expr
+	default:
+		exit(1); // Unexpected token: {:?}, state.current()
+	}
 }
 
-fn equality(state : &mut State)->Expression {
-	let mut expr = comparison(state);
-	loop {
-		match state.current() {
-			Token::Operator(op) = > {
-				match op {
-					Operator::Equals | Operator::NotEquals = > {
-						state.advance();
-						let right = comparison(state);
-						expr = Expression::Binary(ExprBinary{left : Box::new (expr), op : op, right : Box::new (right)});
-					}
-					_ = > break
-				}
+void *parse_call(state_t *state, expression_t func) {
+	switch (current(state).type) {
+	case LeftParen: {
+		advance_state(&state);
+		switch (current(state).type) {
+		case RightParen: {
+			advance_state(&state);
+
+			CallStatement_t call;
+			call.func = func;
+			call.parameters = NULL;
+			return &call;
+		}
+		default: {
+			void *expr = parse_expression(state);
+			switch (current(state).type) {
+			case RightParen: {
+				advance_state(&state);
+
+				CallStatement_t call;
+				call.func = func;
+				call.parameters = expr;
+				return &call;
 			}
-			_ = > break
-		}
-	}
-	expr
-}
-
-fn comparison(state : &mut State)->Expression {
-	let mut expr = addition(state);
-	loop {
-		match state.current() {
-			Token::Operator(op) = > {
-				match op {
-					Operator::Greater | Operator::GreaterEqual | Operator::Less | Operator::LessEqual = > {
-						state.advance();
-						let right = addition(state);
-						expr = Expression::Binary(ExprBinary{left : Box::new (expr), op : op, right : Box::new (right)});
-					}
-					_ = > break
-				}
+			default:
+				exit(1); // Expected a closing bracket
 			}
-			_ = > break
+		}
 		}
 	}
-	expr
-}
-
-fn addition(state : &mut State)->Expression {
-	let mut expr = multiplication(state);
-	loop {
-		match state.current() {
-			Token::Operator(op) = > {
-				match op {
-					Operator::Minus | Operator::Plus = > {
-						state.advance();
-						let right = multiplication(state);
-						expr = Expression::Binary(ExprBinary{left : Box::new (expr), op : op, right : Box::new (right)});
-					}
-					_ = > break
-				}
-			}
-			_ = > break
-		}
+	default:
+		exit(1); // Fascinating
 	}
-	expr
 }
 
-fn multiplication(state : &mut State)->Expression {
-	let mut expr = unary(state);
-	loop {
-		match state.current() {
-			Token::Operator(op) = > {
-				match op {
-					Operator::Div | Operator::Multiply | Operator::Mod = > {
-						state.advance();
-						let right = unary(state);
-						expr = Expression::Binary(ExprBinary{left : Box::new (expr), op : op, right : Box::new (right)});
-					}
-					_ = > break
-				}
-			}
-			_ = > break
-		}
-	}
-	expr
-}
+void *parse_struct(state_t *state) {
+	const char *name;
+	const char *member_name;
+	const char *type_name;
 
-fn unary(state : &mut State)->Expression{loop{match state.current(){Token::Operator(op) = > {match op{Operator::Not | Operator::Minus = > {state.advance();
-let right = unary(state);
-return Expression::Unary(ExprUnary{op : op, right : Box::new (right)});
-}
-_ = > break
-}
-}
-_ = > break
-}
-}
-primary(state)
-}
-
-fn primary(state : &mut State)->Expression {
-	match state.current() {
-		Token::Boolean(value) = > {
-			state.advance();
-			Expression::Boolean(value)
-		}
-		Token::Number(value) = > {
-			state.advance();
-			Expression::Number(value)
-		}
-		Token::Stringy(value) = > {
-			state.advance();
-			Expression::Stringy(value)
-		}
-		Token::Identifier(value) = > {
-			state.advance();
-			match state.current() {
-				Token::LeftParen = > Expression::Call(parse_call(state, Expression::Variable(value))), Token::Colon = > {
-					state.advance();
-					match state.current() {
-						Token::Identifier(value2) = > {
-							state.advance();
-							let member = Expression::Member(MemberExpression{value1 : value, value2 : value2});
-							match state.current() {
-								Token::LeftParen = > Expression::Call(parse_call(state, member)), _ = > member,
+	advance_state(&state);
+	switch (current(state).type) {
+	case Identifier:
+		name = current(state).data.identifier;
+		advance_state(&state);
+		switch (current(state).type) {
+		case LeftCurly: {
+			advance_state(&state);
+			switch (current(state).type) {
+			case Identifier:
+				member_name = current(state).data.identifier;
+				advance_state(&state);
+				switch (current(state).type) {
+				case Colon: {
+					advance_state(&state);
+					switch (current(state).type) {
+					case Identifier: {
+						type_name = current(state).data.identifier;
+						advance_state(&state);
+						switch (current(state).type) {
+						case Semicolon: {
+							advance_state(&state);
+							switch (current(state).type) {
+							case RightCurly: {
+								advance_state(&state);
 							}
-						}
-						_ = > panic !("Expected an identifier.")
-					}
-				}
-				_ = > Expression::Variable(value)
-			}
-		}
-		Token::LeftParen = > {
-			state.advance();
-			let expr = expression(state);
-			match state.current(){Token::RightParen = > (), _ = > panic !("Expected a closing bracket.")} Expression::Grouping(Box::new (expr))
-		}
-		Token::Vec4 = > {
-			state.advance();
-			match state.current(){Token::LeftParen = > (), _ = > panic !("Expected an opening bracket.")} state.advance();
-
-			let mut expressions = Vec::new ();
-			loop {
-				match state.current() {
-					Token::RightParen = > break, _ = > {
-						expressions.push(expression(state));
-					}
-				}
-				state.advance();
-				match state.current() {
-					Token::Comma = > (), Token::RightParen = > break, _ = > {
-						expressions.push(expression(state));
-					}
-				}
-				state.advance();
-			}
-			state.advance();
-			Expression::Constructor(ConstructorExpression{parameters : expressions})
-		}
-		_ = > {
-			panic !("Unexpected token: {:?}", state.current())
-		}
-	}
-}
-
-fn parse_call(state : &mut State, func : Expression)->CallStatement {
-	match state.current() {
-		Token::LeftParen = > {
-			state.advance();
-			match state.current() {
-				Token::RightParen = > {
-					state.advance();
-					CallStatement {
-					func:
-						Box::new (func), parameters : vec ![]
-					}
-				}
-				_ = > {
-					let expr = expression(state);
-					match state.current() {
-						Token::RightParen = > {
-							state.advance();
-							CallStatement {
-							func:
-								Box::new (func), parameters : vec ![expr]
+							default:
+								exit(1); // Expected a closing curly bracket
 							}
+							break;
 						}
-						_ = > panic !("Expected a closing bracket.")
-					}
-				}
-			}
-		}
-		_ = > panic !("Fascinating")
-	}
-}
-
-fn parse_struct(state : &mut State)->Statement {
-	let name : String;
-	let member_name : String;
-	let type_name : String;
-
-	state.advance();
-	match state.current(){Token::Identifier(value) = > {name = value;
-	state.advance();
-	match state.current() {
-		Token::LeftCurly = > {
-			state.advance();
-			match state.current() {
-				Token::Identifier(value) = > {
-					member_name = value;
-					state.advance();
-					match state.current() {
-						Token::Colon = > {
-							state.advance();
-							match state.current() {
-								Token::Identifier(value) = > {
-									type_name = value;
-									state.advance();
-									match state.current() {
-										Token::Semicolon = > {
-											state.advance();
-											match state.current() {
-												Token::RightCurly = > {
-													state.advance();
-												}
-												_ = > panic !("Expected a closing curly bracket.")
-											}
-										}
-										_ = > panic !("Expected a semicolon.")
-									}
-								}
-								_ = > panic !("Expected an identifier.")
-							}
+						default:
+							exit(1); // Expected a semicolon
 						}
-						_ = > panic !("Expected a colon.")
+						break;
 					}
+					default:
+						exit(1); // Expected an identifier
+					}
+					break;
 				}
-				_ = > panic !("Expected an identifier.")
+				default:
+					exit(1); // Expected a colon
+				}
+				break;
+			default:
+				exit(1); // Expected an identifier
 			}
+			break;
 		}
-		_ = > panic !("Expected an opening curly bracket.")
+		default:
+			exit(1); // Expected an opening curly bracket
+		}
+	default:
+		exit(1); // Expected an identifier
 	}
-}
-_ = > panic !("Expected an identifier.")
-}
-let member = Member{name : member_name, member_type : type_name};
-Statement::Struct(StructStatement{attribute : String::new (), name, members : vec ![member]})
+
+	Member_t member;
+	member.name = member_name;
+	member.member_type = type_name;
+
+	statement_t statement;
+	statement.type = Struct;
+	StructStatement_t structy;
+	structy.attribute = NULL;
+	structy.name = name;
+	structy.members = &member;
+	statement.data.structy = structy;
+	return &statement;
 }

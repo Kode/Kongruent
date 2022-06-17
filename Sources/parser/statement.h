@@ -1,63 +1,67 @@
 #pragma once
 
-struct Statement {
+#include "expression.h"
+
+typedef struct DeclarationStatement {
+	const char *name;
+	expression_t *init;
+} DeclarationStatement_t;
+
+typedef struct BlockStatement {
+	void *statements;
+} BlockStatement_t;
+
+typedef struct FunctionStatement {
+	const char **parameters;
+	void *block;
+} FunctionStatement_t;
+
+typedef struct IfStatement {
+	void *test;
+	void *block;
+} IfStatement_t;
+
+typedef struct CallStatement {
+	expression_t func;
+	expression_t *parameters;
+} CallStatement_t;
+
+typedef struct PreprocessorStatement {
+	const char *name;
+	expression_t *parameters;
+} PreprocessorStatement_t;
+
+typedef struct Member {
+	const char *name;
+	const char *member_type;
+} Member_t;
+
+typedef struct StructStatement {
+	const char *attribute;
+	const char *name;
+	struct Member *members;
+} StructStatement_t;
+
+typedef struct statement {
 	enum {
 		Expression,
-		If,
+		STATEMENT_IF,
 		Block,
 		Declaration,
 		PreprocessorDirective,
-		Function,
-		Struct,
+		STATEMENT_FUNCTION,
+		STATEMENT_STRUCT,
 	} type;
 
 	union {
-		Expression expression;
-		IfStatement iffy;
-		BlockStatement block;
-		DeclarationStatement declaration;
-		PreprocessorStatement preprocessorDirective;
-		FunctionStatement function;
-		StructStatement structy;
+		expression_t expression;
+		IfStatement_t iffy;
+		BlockStatement_t block;
+		DeclarationStatement_t declaration;
+		PreprocessorStatement_t preprocessorDirective;
+		FunctionStatement_t function;
+		StructStatement_t structy;
 	} data;
-};
+} statement_t;
 
-struct DeclarationStatement {
-	const char *name;
-	expression_t *init;
-};
-
-struct BlockStatement {
-	Statement *statements;
-};
-
-struct FunctionStatement {
-	const char **parameters;
-	BlockStatement block;
-};
-
-struct IfStatement {
-	expression_t test;
-	Statement block;
-};
-
-struct CallStatement {
-	Expression func;
-	Expression *parameters;
-};
-
-struct PreprocessorStatement {
-	const char *name;
-	Expression *parameters;
-};
-
-struct Member {
-	const char *name;
-	const char *member_type;
-};
-
-struct StructStatement {
-	const char *attribute;
-	const char *name;
-	Member *members;
-};
+void add_statement(statement_t *statements, void *statement);

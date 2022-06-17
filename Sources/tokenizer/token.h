@@ -20,35 +20,37 @@ typedef enum operatorr {
 	Assign,
 } operator_t;
 
+typedef enum token_type {
+	TOKEN_EOF,
+	Boolean,
+	Number,
+	String,
+	Identifier,
+	Attribute,
+	LeftParen,
+	RightParen,
+	LeftCurly,
+	RightCurly,
+	If,
+	Semicolon,
+	Colon,
+	Dot,
+	Comma,
+	Operator,
+	Float,
+	Vec3,
+	Vec4,
+	In,
+	Void,
+	Struct,
+	Function,
+	Let,
+	Mut,
+	FuncRet
+} token_type_t;
+
 typedef struct token {
-	enum {
-		Eof,
-		Boolean,
-		Number,
-		String,
-		Identifier,
-		Attribute,
-		LeftParen,
-		RightParen,
-		LeftCurly,
-		RightCurly,
-		If,
-		Semicolon,
-		Colon,
-		Dot,
-		Comma,
-		Operator,
-		Float,
-		Vec3,
-		Vec4,
-		In,
-		Void,
-		Struct,
-		Function,
-		Let,
-		Mut,
-		FuncRet
-	} type;
+	token_type_t type;
 
 	union {
 		bool boolean;
@@ -64,4 +66,6 @@ typedef struct token_array {
 	int a;
 } token_array_t;
 
-void add_token(token_array_t *arr, token_t token) {}
+void add_token(token_array_t *arr, token_t token);
+
+token_t get_token(token_array_t *arr, unsigned index);

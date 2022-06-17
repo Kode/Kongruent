@@ -4,6 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+void add_token(token_array_t *arr, token_t token) {}
+
+token_t get_token(token_array_t *arr, unsigned index) {
+	token_t token;
+	token.type = TOKEN_EOF;
+	return token;
+}
+
 bool is_num(char ch) {
 	return ch == '0' || ch == '1' || ch == '2' || ch == '3' || ch == '4' || ch == '5' || ch == '6' || ch == '7' || ch == '8' || ch == '9';
 }
