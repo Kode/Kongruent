@@ -1,69 +1,25 @@
 #include "tokenizer.h"
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
-void add_token(token_array_t *arr, token_t token) {}
-
-token_t get_token(token_array_t *arr, unsigned index) {
-	token_t token;
-	token.type = TOKEN_EOF;
-	return token;
+token_t tokens_get(tokens_t *tokens, size_t index) {
+	assert(tokens->current_size > index);
+	return tokens->t[index];
 }
 
-bool is_num(char ch) {
+static bool is_num(char ch) {
 	return ch == '0' || ch == '1' || ch == '2' || ch == '3' || ch == '4' || ch == '5' || ch == '6' || ch == '7' || ch == '8' || ch == '9';
 }
 
-bool is_op(char ch) {
+static bool is_op(char ch) {
 	return ch == '&' || ch == '|' || ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '=' || ch == '!' || ch == '<' || ch == '>' || ch == '%';
 }
 
-bool is_whitespace(char ch) {
+static bool is_whitespace(char ch) {
 	return ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t';
-}
-
-void push_identifier(token_array_t *tokens, const char *buffer) {
-	if (strcmp(buffer, "true") == 0) {
-	}
-	else if (strcmp(buffer, "false") == 0) {
-	}
-	else if (strcmp(buffer, "if") == 0) {
-	}
-	else if (strcmp(buffer, "float") == 0) {
-	}
-	else if (strcmp(buffer, "in") == 0) {
-	}
-	else if (strcmp(buffer, "vec3") == 0) {
-	}
-	else if (strcmp(buffer, "vec4") == 0) {
-	}
-	else if (strcmp(buffer, "void") == 0) {
-	}
-	else if (strcmp(buffer, "struct") == 0) {
-	}
-	else if (strcmp(buffer, "fn") == 0) {
-	}
-	else if (strcmp(buffer, "let") == 0) {
-	}
-	else if (strcmp(buffer, "mut") == 0) {
-	}
-	else {
-	}
-	/*match buffer {
-	    "true" = > tokens.push(Token::Boolean(true)), "false" = > tokens.push(Token::Boolean(false)), "if" = > tokens.push(Token::If),
-	    "float" = > tokens.push(Token::Float), "in" = > tokens.push(Token::In), "vec3" = > tokens.push(Token::Vec3), "vec4" = > tokens.push(Token::Vec4),
-	    "void" = > tokens.push(Token::Void), "struct" = > tokens.push(Token::Struct), "fn" = > tokens.push(Token::Function), "let" = > tokens.push(Token::Let),
-	    "mut" = > tokens.push(Token::Mut), _ = > tokens.push(Token::Identifier(buffer.to_string())),
-	}*/
-}
-
-void push_attribute(token_array_t *tokens, const char *buffer) {
-	token_t token;
-	token.type = Attribute;
-	token.data.attribute = buffer;
-	add_token(tokens, token);
 }
 
 typedef enum mode {
@@ -77,55 +33,159 @@ typedef enum mode {
 	MODE_ATTRIBUTE,
 } mode_t;
 
-typedef struct State {
+typedef struct tokenizer_state {
 	const char *iterator;
-	int next;
-	int next_next;
-} State_t;
+	char next;
+	char next_next;
+} tokenizer_state_t;
 
-State_t state_create(const char *it) {
-	int next = *(++it);
-	int next_next = *(++it);
-	State_t state;
-	state.iterator = it;
-	state.next = next;
-	state.next_next = next_next;
-	return state;
+static void tokenizer_state_init(tokenizer_state_t *state, const char *source) {
+	state->iterator = source;
+	state->next = *state->iterator;
+	if (*state->iterator != 0) {
+		state->iterator += 1;
+	}
+	state->next_next = *state->iterator;
 }
 
-void state_advance(State_t *self) {
-	self->next = self->next_next;
-	self->next_next = *(++self->iterator);
+static void tokenizer_state_advance(tokenizer_state_t *state) {
+	state->next = state->next_next;
+	if (*state->iterator != 0) {
+		state->iterator += 1;
+	}
+	state->next_next = *state->iterator;
 }
 
-double parse_number(const char *buffer) {
-	return atoi(buffer);
+typedef struct tokenizer_buffer {
+	char *buf;
+	size_t current_size;
+	size_t max_size;
+} tokenizer_buffer_t;
+
+static void tokenizer_buffer_init(tokenizer_buffer_t *buffer) {
+	buffer->max_size = 1024 * 1024;
+	buffer->buf = (char *)malloc(buffer->max_size);
+	buffer->current_size = 0;
 }
 
-void add_to_buffer(const char *buffer, char ch) {}
+static void tokenizer_buffer_reset(tokenizer_buffer_t *buffer) {
+	buffer->current_size = 0;
+}
 
-token_array_t tokenize(const char *source) {
-	token_array_t tokens;
+static void tokenizer_buffer_add(tokenizer_buffer_t *buffer, char ch) {
+	buffer->buf[buffer->current_size] = ch;
+	buffer->current_size += 1;
+	assert(buffer->current_size <= buffer->max_size);
+}
+
+static bool tokenizer_buffer_equals(tokenizer_buffer_t *buffer, const char *str) {
+	buffer->buf[buffer->current_size] = 0;
+	return strcmp(buffer->buf, str) == 0;
+}
+
+static void tokenizer_buffer_copy_to_string(tokenizer_buffer_t *buffer, char *string) {
+	assert(buffer->current_size <= MAX_IDENTIFIER_SIZE);
+	buffer->buf[buffer->current_size] = 0;
+	strcpy(string, buffer->buf);
+}
+
+static double tokenizer_buffer_parse_number(tokenizer_buffer_t *buffer) {
+	char *end = &buffer->buf[buffer->current_size];
+	return strtod(buffer->buf, &end);
+}
+
+static void tokens_init(tokens_t *tokens) {
+	tokens->max_size = 1024 * 1024;
+	tokens->t = malloc(tokens->max_size * sizeof(token_t));
+	tokens->current_size = 0;
+}
+
+static void tokens_add(tokens_t *tokens, token_t token) {
+	tokens->t[tokens->current_size] = token;
+	tokens->current_size += 1;
+	assert(tokens->current_size <= tokens->max_size);
+}
+
+static void tokens_add_identifier(tokens_t *tokens, tokenizer_buffer_t *buffer) {
+	token_t token;
+	if (tokenizer_buffer_equals(buffer, "true")) {
+		token.type = TOKEN_BOOLEAN;
+		token.data.boolean = true;
+	}
+	else if (tokenizer_buffer_equals(buffer, "false")) {
+		token.type = TOKEN_BOOLEAN;
+		token.data.boolean = false;
+	}
+	else if (tokenizer_buffer_equals(buffer, "if")) {
+		token.type = TOKEN_IF;
+	}
+	else if (tokenizer_buffer_equals(buffer, "float")) {
+		token.type = TOKEN_FLOAT;
+	}
+	else if (tokenizer_buffer_equals(buffer, "in")) {
+		token.type = TOKEN_IN;
+	}
+	else if (tokenizer_buffer_equals(buffer, "vec3")) {
+		token.type = TOKEN_VEC3;
+	}
+	else if (tokenizer_buffer_equals(buffer, "vec4")) {
+		token.type = TOKEN_VEC4;
+	}
+	else if (tokenizer_buffer_equals(buffer, "void")) {
+		token.type = TOKEN_VOID;
+	}
+	else if (tokenizer_buffer_equals(buffer, "struct")) {
+		token.type = TOKEN_STRUCT;
+	}
+	else if (tokenizer_buffer_equals(buffer, "fn")) {
+		token.type = TOKEN_FUNCTION;
+	}
+	else if (tokenizer_buffer_equals(buffer, "let")) {
+		token.type = TOKEN_LET;
+	}
+	else if (tokenizer_buffer_equals(buffer, "mut")) {
+		token.type = TOKEN_MUT;
+	}
+	else {
+		token.type = TOKEN_IDENTIFIER;
+		tokenizer_buffer_copy_to_string(buffer, token.data.identifier);
+	}
+	tokens_add(tokens, token);
+}
+
+static void tokens_add_attribute(tokens_t *tokens, tokenizer_buffer_t *buffer) {
+	token_t token;
+	token.type = TOKEN_ATTRIBUTE;
+	tokenizer_buffer_copy_to_string(buffer, token.data.attribute);
+	tokens_add(tokens, token);
+}
+
+tokens_t tokenize(const char *source) {
 	mode_t mode = MODE_SELECT;
-	const char *buffer;
 
-	const char *it = source;
-	State_t state = state_create(it);
+	tokens_t tokens;
+	tokens_init(&tokens);
+
+	tokenizer_state_t state;
+	tokenizer_state_init(&state, source);
+
+	tokenizer_buffer_t buffer;
+	tokenizer_buffer_init(&buffer);
 
 	for (;;) {
-		if (state.next < 0) {
+		if (state.next == 0) {
 			switch (mode) {
 			case MODE_IDENTIFIER:
-				push_identifier(&tokens, buffer);
+				tokens_add_identifier(&tokens, &buffer);
 				break;
 			case MODE_ATTRIBUTE:
-				push_attribute(&tokens, buffer);
+				tokens_add_attribute(&tokens, &buffer);
 				break;
 			case MODE_NUMBER: {
 				token_t token;
-				token.type = Number;
-				token.data.number = parse_number(buffer);
-				add_token(&tokens, token);
+				token.type = TOKEN_NUMBER;
+				token.data.number = tokenizer_buffer_parse_number(&buffer);
+				tokens_add(&tokens, token);
 				break;
 			}
 			case MODE_SELECT:
@@ -138,6 +198,10 @@ token_array_t tokenize(const char *source) {
 			case MODE_COMMENT:
 				exit(1); // Unclosed comment
 			}
+
+			token_t token;
+			token.type = TOKEN_EOF;
+			tokens_add(&tokens, token);
 			return tokens;
 		}
 		else {
@@ -146,7 +210,7 @@ token_array_t tokenize(const char *source) {
 			case MODE_SELECT: {
 				if (ch == '/') {
 					if (state.next_next >= 0) {
-						char chch = (char)state.next_next;
+						char chch = state.next_next;
 						switch (chch) {
 						case '/':
 							mode = MODE_LINE_COMMENT;
@@ -155,15 +219,16 @@ token_array_t tokenize(const char *source) {
 							mode = MODE_COMMENT;
 							break;
 						default:
-							buffer = ch;
+							tokenizer_buffer_reset(&buffer);
+							tokenizer_buffer_add(&buffer, ch);
 							mode = MODE_OPERATOR;
 						}
 					}
 				}
 				else if (ch == '#') {
-					state_advance(&state);
+					tokenizer_state_advance(&state);
 					if (state.next >= 0) {
-						char ch = (char)state.next;
+						char ch = state.next;
 						if (ch != '[') {
 							exit(1); // Expected [
 						}
@@ -173,74 +238,77 @@ token_array_t tokenize(const char *source) {
 					}
 
 					mode = MODE_ATTRIBUTE;
-					buffer = "";
+					tokenizer_buffer_reset(&buffer);
 				}
 				else if (is_num(ch)) {
 					mode = MODE_NUMBER;
-					buffer = ch;
+					tokenizer_buffer_reset(&buffer);
+					tokenizer_buffer_add(&buffer, ch);
 				}
 				else if (is_op(ch)) {
 					mode = MODE_OPERATOR;
-					buffer = ch;
+					tokenizer_buffer_reset(&buffer);
+					tokenizer_buffer_add(&buffer, ch);
 				}
 				else if (is_whitespace(ch)) {
 				}
 				else if (ch == '(') {
 					token_t token;
-					token.type = LeftParen;
-					add_token(&tokens, token);
+					token.type = TOKEN_LEFT_PAREN;
+					tokens_add(&tokens, token);
 				}
 				else if (ch == ')') {
 					token_t token;
-					token.type = RightParen;
-					add_token(&tokens, token);
+					token.type = TOKEN_RIGHT_PAREN;
+					tokens_add(&tokens, token);
 				}
 				else if (ch == '{') {
 					token_t token;
-					token.type = LeftCurly;
-					add_token(&tokens, token);
+					token.type = TOKEN_LEFT_CURLY;
+					tokens_add(&tokens, token);
 				}
 				else if (ch == '}') {
 					token_t token;
-					token.type = RightCurly;
-					add_token(&tokens, token);
+					token.type = TOKEN_RIGHT_CURLY;
+					tokens_add(&tokens, token);
 				}
 				else if (ch == ';') {
 					token_t token;
-					token.type = Semicolon;
-					add_token(&tokens, token);
+					token.type = TOKEN_SEMICOLON;
+					tokens_add(&tokens, token);
 				}
 				else if (ch == '.') {
 					token_t token;
-					token.type = Dot;
-					add_token(&tokens, token);
+					token.type = TOKEN_DOT;
+					tokens_add(&tokens, token);
 				}
 				else if (ch == ':') {
 					token_t token;
-					token.type = Colon;
-					add_token(&tokens, token);
+					token.type = TOKEN_COLON;
+					tokens_add(&tokens, token);
 				}
 				else if (ch == ',') {
 					token_t token;
-					token.type = Comma;
-					add_token(&tokens, token);
+					token.type = TOKEN_COMMA;
+					tokens_add(&tokens, token);
 				}
 				else if (ch == '"' || ch == '\'') {
 					mode = MODE_STRING;
-					buffer = "";
+					tokenizer_buffer_reset(&buffer);
 				}
 				else {
 					mode = MODE_IDENTIFIER;
-					buffer = ch;
+					tokenizer_buffer_reset(&buffer);
+					tokenizer_buffer_add(&buffer, ch);
 				}
-				state_advance(&state);
+				tokenizer_state_advance(&state);
 				break;
 			}
 			case MODE_LINE_COMMENT: {
 				if (ch == '\n') {
 					mode = MODE_SELECT;
 				}
-				state_advance(&state);
+				tokenizer_state_advance(&state);
 				break;
 			}
 			case MODE_COMMENT: {
@@ -249,130 +317,137 @@ token_array_t tokenize(const char *source) {
 						char chch = (char)state.next_next;
 						if (chch == '/') {
 							mode = MODE_SELECT;
-							state_advance(&state);
+							tokenizer_state_advance(&state);
 						}
 					}
 				}
-				state_advance(&state);
+				tokenizer_state_advance(&state);
 				break;
 			}
 			case MODE_NUMBER: {
 				if (is_num(ch) || ch == '.') {
-					add_to_buffer(buffer, ch);
-					state_advance(&state);
+					tokenizer_buffer_add(&buffer, ch);
+					tokenizer_state_advance(&state);
 				}
 				else {
 					token_t token;
-					token.type = Number;
-					token.data.number = parse_number(buffer);
-					add_token(&tokens, token);
+					token.type = TOKEN_NUMBER;
+					token.data.number = tokenizer_buffer_parse_number(&buffer);
+					tokens_add(&tokens, token);
 					mode = MODE_SELECT;
 				}
 				break;
 			}
 			case MODE_OPERATOR: {
-				const char *long_op = buffer;
-				add_to_buffer(long_op, ch);
-				if (long_op == "==" || long_op == "!=" || long_op == "<=" || long_op == ">=" || long_op == "||" || long_op == "&&" || long_op == "->") {
-					add_to_buffer(buffer, ch);
-					state_advance(&state);
+				char long_op[3];
+				long_op[0] = 0;
+				if (buffer.current_size == 1) {
+					long_op[0] = buffer.buf[0];
+					long_op[1] = ch;
+					long_op[2] = 0;
+				}
+
+				if (strcmp(long_op, "==") == 0 || strcmp(long_op, "!=") == 0 || strcmp(long_op, "<=") == 0 || strcmp(long_op, ">=") == 0 ||
+				    strcmp(long_op, "||") == 0 || strcmp(long_op, "&&") == 0 || strcmp(long_op, "->") == 0) {
+					tokenizer_buffer_add(&buffer, ch);
+					tokenizer_state_advance(&state);
 				}
 				else {
-					if (strcmp(buffer, "==") == 0) {
+					if (tokenizer_buffer_equals(&buffer, "==")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = Equals;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_EQUALS;
+						tokens_add(&tokens, token);
 					}
-					else if (strcmp(buffer, "!=")) {
+					else if (tokenizer_buffer_equals(&buffer, "!=")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = NotEquals;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_NOT_EQUALS;
+						tokens_add(&tokens, token);
 					}
-					else if (strcmp(buffer, ">")) {
+					else if (tokenizer_buffer_equals(&buffer, ">")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = Greater;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_GREATER;
+						tokens_add(&tokens, token);
 					}
-					else if (strcmp(buffer, ">=")) {
+					else if (tokenizer_buffer_equals(&buffer, ">=")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = GreaterEqual;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_GREATER_EQUAL;
+						tokens_add(&tokens, token);
 					}
-					else if (strcmp(buffer, "<")) {
+					else if (tokenizer_buffer_equals(&buffer, "<")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = Less;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_LESS;
+						tokens_add(&tokens, token);
 					}
-					else if (strcmp(buffer, "<=")) {
+					else if (tokenizer_buffer_equals(&buffer, "<=")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = LessEqual;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_LESS_EQUAL;
+						tokens_add(&tokens, token);
 					}
-					else if (strcmp(buffer, "-")) {
+					else if (tokenizer_buffer_equals(&buffer, "-")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = Minus;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_MINUS;
+						tokens_add(&tokens, token);
 					}
-					else if (strcmp(buffer, "+")) {
+					else if (tokenizer_buffer_equals(&buffer, "+")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = Plus;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_PLUS;
+						tokens_add(&tokens, token);
 					}
-					else if (strcmp(buffer, "/")) {
+					else if (tokenizer_buffer_equals(&buffer, "/")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = Div;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_DIVIDE;
+						tokens_add(&tokens, token);
 					}
-					else if (strcmp(buffer, "*")) {
+					else if (tokenizer_buffer_equals(&buffer, "*")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = Multiply;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_MULTIPLY;
+						tokens_add(&tokens, token);
 					}
-					else if (strcmp(buffer, "!")) {
+					else if (tokenizer_buffer_equals(&buffer, "!")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = Not;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_NOT;
+						tokens_add(&tokens, token);
 					}
-					else if (strcmp(buffer, "||")) {
+					else if (tokenizer_buffer_equals(&buffer, "||")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = Or;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_OR;
+						tokens_add(&tokens, token);
 					}
-					else if (strcmp(buffer, "&&")) {
+					else if (tokenizer_buffer_equals(&buffer, "&&")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = And;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_AND;
+						tokens_add(&tokens, token);
 					}
-					else if (strcmp(buffer, "%")) {
+					else if (tokenizer_buffer_equals(&buffer, "%")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = Mod;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_MOD;
+						tokens_add(&tokens, token);
 					}
-					else if (strcmp(buffer, "=")) {
+					else if (tokenizer_buffer_equals(&buffer, "=")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = Assign;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_ASSIGN;
+						tokens_add(&tokens, token);
 					}
-					else if (strcmp(buffer, "->")) {
+					else if (tokenizer_buffer_equals(&buffer, "->")) {
 						token_t token;
-						token.type = Operator;
-						token.data.op = Equals;
-						add_token(&tokens, token);
+						token.type = TOKEN_OPERATOR;
+						token.data.op = OPERATOR_EQUALS;
+						tokens_add(&tokens, token);
 					}
 					else {
 						exit(1); // Weird operator
@@ -384,40 +459,40 @@ token_array_t tokenize(const char *source) {
 			case MODE_STRING: {
 				if (ch == '"' || ch == '\'') {
 					token_t token;
-					token.type = String;
-					token.data.string = buffer;
-					add_token(&tokens, token);
+					token.type = TOKEN_STRING;
+					tokenizer_buffer_copy_to_string(&buffer, token.data.string);
+					tokens_add(&tokens, token);
 
-					state_advance(&state);
+					tokenizer_state_advance(&state);
 					mode = MODE_SELECT;
 				}
 				else {
-					add_to_buffer(buffer, ch);
-					state_advance(&state);
+					tokenizer_buffer_add(&buffer, ch);
+					tokenizer_state_advance(&state);
 				}
 				break;
 			}
 			case MODE_IDENTIFIER: {
-				if (is_op(ch) || ch == ' ' || ch == '(' || ch == ')' || ch == '{' || ch == '}' || ch == '"' || ch == '\'' || ch == ';' || ch == '.' ||
-				    ch == ',' || ch == ':' || ch == '\n' || ch == '\r') {
-					push_identifier(&tokens, buffer);
+				if (is_whitespace(ch) || is_op(ch) || ch == '(' || ch == ')' || ch == '{' || ch == '}' || ch == '"' || ch == '\'' || ch == ';' || ch == '.' ||
+				    ch == ',' || ch == ':') {
+					tokens_add_identifier(&tokens, &buffer);
 					mode = MODE_SELECT;
 				}
 				else {
-					add_to_buffer(buffer, ch);
-					state_advance(&state);
+					tokenizer_buffer_add(&buffer, ch);
+					tokenizer_state_advance(&state);
 				}
 				break;
 			}
 			case MODE_ATTRIBUTE: {
 				if (ch == ']') {
-					push_attribute(&tokens, buffer);
-					state_advance(&state);
+					tokens_add_attribute(&tokens, &buffer);
+					tokenizer_state_advance(&state);
 					mode = MODE_SELECT;
 				}
 				else {
-					add_to_buffer(buffer, ch);
-					state_advance(&state);
+					tokenizer_buffer_add(&buffer, ch);
+					tokenizer_state_advance(&state);
 				}
 				break;
 			}

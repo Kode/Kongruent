@@ -3,71 +3,70 @@
 #include <stdbool.h>
 
 typedef enum operatorr {
-	Equals,
-	NotEquals,
-	Greater,
-	GreaterEqual,
-	Less,
-	LessEqual,
-	Minus,
-	Plus,
-	Div,
-	Multiply,
-	Not,
-	Or,
-	And,
-	Mod,
-	Assign,
+	OPERATOR_EQUALS,
+	OPERATOR_NOT_EQUALS,
+	OPERATOR_GREATER,
+	OPERATOR_GREATER_EQUAL,
+	OPERATOR_LESS,
+	OPERATOR_LESS_EQUAL,
+	OPERATOR_MINUS,
+	OPERATOR_PLUS,
+	OPERATOR_DIVIDE,
+	OPERATOR_MULTIPLY,
+	OPERATOR_NOT,
+	OPERATOR_OR,
+	OPERATOR_AND,
+	OPERATOR_MOD,
+	OPERATOR_ASSIGN,
 } operator_t;
 
-typedef enum token_type {
-	TOKEN_EOF,
-	Boolean,
-	Number,
-	String,
-	Identifier,
-	Attribute,
-	LeftParen,
-	RightParen,
-	LeftCurly,
-	RightCurly,
-	If,
-	Semicolon,
-	Colon,
-	Dot,
-	Comma,
-	Operator,
-	Float,
-	Vec3,
-	Vec4,
-	In,
-	Void,
-	Struct,
-	Function,
-	Let,
-	Mut,
-	FuncRet
-} token_type_t;
+#define MAX_IDENTIFIER_SIZE 1024
 
 typedef struct token {
-	token_type_t type;
+	enum {
+		TOKEN_EOF,
+		TOKEN_BOOLEAN,
+		TOKEN_NUMBER,
+		TOKEN_STRING,
+		TOKEN_IDENTIFIER,
+		TOKEN_ATTRIBUTE,
+		TOKEN_LEFT_PAREN,
+		TOKEN_RIGHT_PAREN,
+		TOKEN_LEFT_CURLY,
+		TOKEN_RIGHT_CURLY,
+		TOKEN_IF,
+		TOKEN_SEMICOLON,
+		TOKEN_COLON,
+		TOKEN_DOT,
+		TOKEN_COMMA,
+		TOKEN_OPERATOR,
+		TOKEN_FLOAT,
+		TOKEN_VEC3,
+		TOKEN_VEC4,
+		TOKEN_IN,
+		TOKEN_VOID,
+		TOKEN_STRUCT,
+		TOKEN_FUNCTION,
+		TOKEN_LET,
+		TOKEN_MUT
+	} type;
 
 	union {
 		bool boolean;
 		double number;
-		const char *string;
-		const char *identifier;
-		const char *attribute;
+		char string[MAX_IDENTIFIER_SIZE];
+		char identifier[MAX_IDENTIFIER_SIZE];
+		char attribute[MAX_IDENTIFIER_SIZE];
 		operator_t op;
 	} data;
 } token_t;
 
-typedef struct token_array {
-	int a;
-} token_array_t;
+typedef struct tokens {
+	token_t *t;
+	size_t current_size;
+	size_t max_size;
+} tokens_t;
 
-void add_token(token_array_t *arr, token_t token);
+token_t tokens_get(tokens_t *arr, size_t index);
 
-token_t get_token(token_array_t *arr, unsigned index);
-
-token_array_t tokenize(const char *source);
+tokens_t tokenize(const char *source);

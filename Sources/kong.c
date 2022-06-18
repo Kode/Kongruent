@@ -7,7 +7,7 @@
 const char *filename = "in/test.kong";
 
 int main(int argc, char **argv) {
-	FILE *file = fopen(filename, "r");
+	FILE *file = fopen(filename, "rb");
 
 	fseek(file, 0, SEEK_END);
 	long size = ftell(file);
@@ -19,7 +19,9 @@ int main(int argc, char **argv) {
 	fclose(file);
 	data[size] = 0;
 
-	tokenize(data);
+	tokens_t tokens = tokenize(data);
+
+	free(data);
 
 	// tree_t _parse_tree = parser_parse(tokens);
 
