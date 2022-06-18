@@ -1,6 +1,6 @@
-#include "../tokenizer/token.h"
 #include "expression.h"
 #include "statement.h"
+#include "tokenizer.h"
 
 #include <string.h>
 

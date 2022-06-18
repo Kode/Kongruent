@@ -69,3 +69,5 @@ typedef struct token_array {
 void add_token(token_array_t *arr, token_t token);
 
 token_t get_token(token_array_t *arr, unsigned index);
+
+token_array_t tokenize(const char *source);
