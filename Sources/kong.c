@@ -1,3 +1,4 @@
+#include "parser.h"
 #include "tokenizer.h"
 
 #include <assert.h>
