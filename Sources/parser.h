@@ -6,105 +6,92 @@
 
 struct expression;
 
-typedef struct MemberExpression {
-	const char *value1;
-	const char *value2;
-} MemberExpression_t;
-
-typedef struct ExprBinary {
-	struct expression *left;
-	operator_t op;
-	struct expression *right;
-} ExprBinary_t;
-
-typedef struct ExprUnary {
-	operator_t op;
-	struct expression *right;
-} ExprUnary_t;
-
-typedef struct ConstructorExpression {
-	struct expression *parameters;
-} ConstructorExpression_t;
-
-struct CallStatement;
-
 typedef struct expression {
-	enum { Binary, Unary, EXPRESSION_BOOLEAN, EXPRESSION_NUMBER, EXPRESSION_STRING, Variable, Grouping, Call, Member, Constructor } type;
+	enum {
+		EXPRESSION_BINARY,
+		EXPRESSION_UNARY,
+		EXPRESSION_BOOLEAN,
+		EXPRESSION_NUMBER,
+		EXPRESSION_STRING,
+		EXPRESSION_VARIABLE,
+		EXPRESSION_GROUPING,
+		EXPRESSION_CALL,
+		EXPRESSION_MEMBER,
+		EXPRESSION_CONSTRUCTOR
+	} type;
 
 	union {
-		ExprBinary_t binary;
-		ExprUnary_t unary;
+		struct {
+			struct expression *left;
+			operator_t op;
+			struct expression *right;
+		} binary;
+		struct {
+			operator_t op;
+			struct expression *right;
+		} unary;
 		bool boolean;
 		float number;
 		const char *string;
 		const char *variable;
 		struct expression *grouping;
-		struct CallStatement *call;
-		MemberExpression_t member;
-		ConstructorExpression_t constructor;
-	} data;
+		struct {
+			struct expression *func;
+			struct expression *parameters;
+		} call;
+		struct {
+			const char *value1;
+			const char *value2;
+		} member;
+		struct {
+			struct expression *parameters;
+		} constructor;
+	};
 } expression_t;
-
-typedef struct DeclarationStatement {
-	const char *name;
-	expression_t *init;
-} DeclarationStatement_t;
-
-typedef struct BlockStatement {
-	void *statements;
-} BlockStatement_t;
-
-typedef struct FunctionStatement {
-	const char **parameters;
-	void *block;
-} FunctionStatement_t;
-
-typedef struct IfStatement {
-	void *test;
-	void *block;
-} IfStatement_t;
-
-typedef struct CallStatement {
-	expression_t func;
-	expression_t *parameters;
-} CallStatement_t;
-
-typedef struct PreprocessorStatement {
-	const char *name;
-	expression_t *parameters;
-} PreprocessorStatement_t;
 
 typedef struct Member {
 	const char *name;
 	const char *member_type;
 } Member_t;
 
-typedef struct StructStatement {
-	const char *attribute;
-	const char *name;
-	struct Member *members;
-} StructStatement_t;
-
 typedef struct statement {
 	enum {
-		Expression,
+		STATEMENT_EXPRESSION,
 		STATEMENT_IF,
-		Block,
-		Declaration,
-		PreprocessorDirective,
+		STATEMENT_BLOCK,
+		STATEMENT_DECLARATION,
+		STATEMENT_PREPROCESSOR_DIRECTIVE,
 		STATEMENT_FUNCTION,
-		STATEMENT_STRUCT,
+		STATEMENT_STRUCT
 	} type;
 
 	union {
 		expression_t expression;
-		IfStatement_t iffy;
-		BlockStatement_t block;
-		DeclarationStatement_t declaration;
-		PreprocessorStatement_t preprocessorDirective;
-		FunctionStatement_t function;
-		StructStatement_t structy;
-	} data;
+		struct {
+			void *test;
+			void *block;
+		} iffy;
+		struct {
+			void *statements;
+		} block;
+		struct {
+			const char *name;
+			expression_t *init;
+		} declaration;
+		struct {
+			const char *name;
+			expression_t *parameters;
+		} preprocessorDirective;
+		struct {
+			const char **parameters;
+			void *block;
+		} function;
+		struct {
+			const char *attribute;
+			const char *name;
+			struct Member *members;
+		} structy;
+	};
 } statement_t;
 
 void add_statement(statement_t *statements, void *statement);

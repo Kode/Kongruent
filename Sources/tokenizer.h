@@ -58,7 +58,7 @@ typedef struct token {
 		char identifier[MAX_IDENTIFIER_SIZE];
 		char attribute[MAX_IDENTIFIER_SIZE];
 		operator_t op;
-	} data;
+	};
 } token_t;
 
 typedef struct tokens {

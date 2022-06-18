@@ -54,8 +54,9 @@ void *parse_block(state_t *state) {
 		switch (current(state).type) {
 		case TOKEN_RIGHT_CURLY: {
 			advance_state(&state);
-			BlockStatement_t statement;
-			statement.statements = statements;
+			statement_t statement;
+			statement.type = STATEMENT_BLOCK;
+			statement.block.statements = statements;
 			return &statement;
 		}
 		default:
@@ -64,8 +65,9 @@ void *parse_block(state_t *state) {
 		}
 	}
 
-	BlockStatement_t statement;
-	statement.statements = statements;
+	statement_t statement;
+	statement.type = STATEMENT_BLOCK;
+	statement.block.statements = statements;
 	return &statement;
 }
 
@@ -83,9 +85,10 @@ void *parse_preprocessor(const char *name, state_t *_state) {
 	    }
 	}*/
 
-	PreprocessorStatement_t statement;
-	statement.name = name;
-	statement.parameters = expressions;
+	statement_t statement;
+	statement.type = STATEMENT_PREPROCESSOR_DIRECTIVE;
+	statement.preprocessorDirective.name = name;
+	statement.preprocessorDirective.parameters = expressions;
 	return (void *)&statement;
 }
 
@@ -124,7 +127,7 @@ void *parse_declaration(state_t *state, Modifier_t *modifiers) {
 
 	const char *name;
 	if (current(state).type == TOKEN_IDENTIFIER) {
-		name = current(state).data.identifier;
+		name = current(state).identifier;
 		advance_state(&state);
 	}
 	else {
@@ -133,7 +136,7 @@ void *parse_declaration(state_t *state, Modifier_t *modifiers) {
 
 	switch (current(state).type) {
 	case TOKEN_OPERATOR: {
-		operator_t op = current(state).data.op;
+		operator_t op = current(state).op;
 		switch (op) {
 		case OPERATOR_ASSIGN: {
 			advance_state(&state);
@@ -141,9 +144,10 @@ void *parse_declaration(state_t *state, Modifier_t *modifiers) {
 			switch (current(state).type) {
 			case TOKEN_SEMICOLON: {
 				advance_state(&state);
-				DeclarationStatement_t statement;
-				statement.name = name;
-				statement.init = expr;
+				statement_t statement;
+				statement.type = STATEMENT_DECLARATION;
+				statement.declaration.name = name;
+				statement.declaration.init = expr;
 				return (void *)&statement;
 			}
 			default:
@@ -158,9 +162,10 @@ void *parse_declaration(state_t *state, Modifier_t *modifiers) {
 	}
 	case TOKEN_SEMICOLON: {
 		advance_state(&state);
-		DeclarationStatement_t statement;
-		statement.name = name;
-		statement.init = NULL;
+		statement_t statement;
+		statement.type = STATEMENT_DECLARATION;
+		statement.declaration.name = name;
+		statement.declaration.init = NULL;
 		return (void *)&statement;
 	}
 	case TOKEN_LEFT_PAREN: {
@@ -168,10 +173,11 @@ void *parse_declaration(state_t *state, Modifier_t *modifiers) {
 		switch (current(state).type) {
 		case TOKEN_RIGHT_PAREN: {
 			advance_state(&state);
-			FunctionStatement_t statement;
+			statement_t statement;
+			statement.type = STATEMENT_FUNCTION;
 			const char **parameters = {""};
-			statement.parameters = parameters;
-			statement.block = parse_block(state);
+			statement.function.parameters = parameters;
+			statement.function.block = parse_block(state);
 			return (void *)&statement;
 		}
 		default:
@@ -188,7 +194,7 @@ void *parse_struct(state_t *state);
 void *parse_statement(state_t *state) {
 	switch (current(state).type) {
 	case TOKEN_ATTRIBUTE: {
-		const char *value = current(state).data.attribute;
+		const char *value = current(state).attribute;
 		advance_state(&state);
 		return parse_preprocessor(value, state);
 	}
@@ -210,14 +216,16 @@ void *parse_statement(state_t *state) {
 			exit(1); // Expected a closing bracket
 		}
 		void *block = parse_statement(state);
-		IfStatement_t statement;
-		statement.test = test;
-		statement.block = block;
+		statement_t statement;
+		statement.type = STATEMENT_IF;
+		statement.iffy.test = test;
+		statement.iffy.block = block;
 		return (void *)&statement;
 	}
 	case TOKEN_LEFT_CURLY: {
-		BlockStatement_t statement;
-		statement.statements = parse_block(state);
+		statement_t statement;
+		statement.type = STATEMENT_BLOCK;
+		statement.block.statements = parse_block(state);
 		return (void *)&statement;
 	}
 	case TOKEN_IN: {
@@ -266,15 +274,16 @@ void *parse_assign(state_t *state) {
 	while (!done) {
 		switch (current(state).type) {
 		case TOKEN_OPERATOR: {
-			operator_t op = current(state).data.op;
+			operator_t op = current(state).op;
 			switch (op) {
 			case OPERATOR_ASSIGN: {
 				advance_state(&state);
 				void *right = parse_logical(state);
-				ExprBinary_t expression;
-				expression.left = expr;
-				expression.op = op;
-				expression.right = right;
+				expression_t expression;
+				expression.type = EXPRESSION_BINARY;
+				expression.binary.left = expr;
+				expression.binary.op = op;
+				expression.binary.right = right;
 				expr = &expression;
 				break;
 			}
@@ -299,16 +308,17 @@ void *parse_logical(state_t *state) {
 	while (!done) {
 		switch (current(state).type) {
 		case TOKEN_OPERATOR: {
-			operator_t op = current(state).data.op;
+			operator_t op = current(state).op;
 			switch (op) {
 			case OPERATOR_OR:
 			case OPERATOR_AND: {
 				advance_state(&state);
 				void *right = parse_equality(state);
-				ExprBinary_t expression;
-				expression.left = expr;
-				expression.op = op;
-				expression.right = right;
+				expression_t expression;
+				expression.type = EXPRESSION_BINARY;
+				expression.binary.left = expr;
+				expression.binary.op = op;
+				expression.binary.right = right;
 				expr = &expression;
 			}
 			default:
@@ -332,16 +342,17 @@ void *parse_equality(state_t *state) {
 	while (!done) {
 		switch (current(state).type) {
 		case TOKEN_OPERATOR: {
-			operator_t op = current(state).data.op;
+			operator_t op = current(state).op;
 			switch (op) {
 			case OPERATOR_EQUALS:
 			case OPERATOR_NOT_EQUALS: {
 				advance_state(&state);
 				void *right = parse_comparison(state);
-				ExprBinary_t expression;
-				expression.left = expr;
-				expression.op = op;
-				expression.right = right;
+				expression_t expression;
+				expression.type = EXPRESSION_BINARY;
+				expression.binary.left = expr;
+				expression.binary.op = op;
+				expression.binary.right = right;
 				expr = &expression;
 			}
 			default:
@@ -365,7 +376,7 @@ void *parse_comparison(state_t *state) {
 	while (!done) {
 		switch (current(state).type) {
 		case TOKEN_OPERATOR: {
-			operator_t op = current(state).data.op;
+			operator_t op = current(state).op;
 			switch (op) {
 			case OPERATOR_GREATER:
 			case OPERATOR_GREATER_EQUAL:
@@ -373,10 +384,11 @@ void *parse_comparison(state_t *state) {
 			case OPERATOR_LESS_EQUAL: {
 				advance_state(&state);
 				void *right = parse_addition(state);
-				ExprBinary_t expression;
-				expression.left = expr;
-				expression.op = op;
-				expression.right = right;
+				expression_t expression;
+				expression.type = EXPRESSION_BINARY;
+				expression.binary.left = expr;
+				expression.binary.op = op;
+				expression.binary.right = right;
 				expr = &expression;
 			}
 				done = true;
@@ -398,16 +410,17 @@ void *parse_addition(state_t *state) {
 	while (!done) {
 		switch (current(state).type) {
 		case TOKEN_OPERATOR: {
-			operator_t op = current(state).data.op;
+			operator_t op = current(state).op;
 			switch (op) {
 			case OPERATOR_MINUS:
 			case OPERATOR_PLUS: {
 				advance_state(&state);
 				void *right = parse_multiplication(state);
-				ExprBinary_t expression;
-				expression.left = expr;
-				expression.op = op;
-				expression.right = right;
+				expression_t expression;
+				expression.type = EXPRESSION_BINARY;
+				expression.binary.left = expr;
+				expression.binary.op = op;
+				expression.binary.right = right;
 				expr = &expression;
 			}
 			default:
@@ -431,17 +444,18 @@ void *parse_multiplication(state_t *state) {
 	while (!done) {
 		switch (current(state).type) {
 		case TOKEN_OPERATOR: {
-			operator_t op = current(state).data.op;
+			operator_t op = current(state).op;
 			switch (op) {
 			case OPERATOR_DIVIDE:
 			case OPERATOR_MULTIPLY:
 			case OPERATOR_MOD: {
 				advance_state(&state);
 				void *right = parse_unary(state);
-				ExprBinary_t expression;
-				expression.left = expr;
-				expression.op = op;
-				expression.right = right;
+				expression_t expression;
+				expression.type = EXPRESSION_BINARY;
+				expression.binary.left = expr;
+				expression.binary.op = op;
+				expression.binary.right = right;
 				expr = &expression;
 			}
 			default:
@@ -464,15 +478,16 @@ void *parse_unary(state_t *state) {
 	while (!done) {
 		switch (current(state).type) {
 		case TOKEN_OPERATOR: {
-			operator_t op = current(state).data.op;
+			operator_t op = current(state).op;
 			switch (op) {
 			case OPERATOR_NOT:
 			case OPERATOR_MINUS: {
 				advance_state(&state);
 				void *right = parse_unary(state);
-				ExprUnary_t expression;
-				expression.op = op;
-				expression.right = right;
+				expression_t expression;
+				expression.type = EXPRESSION_UNARY;
+				expression.unary.op = op;
+				expression.unary.right = right;
 				return &expression;
 			}
 			default:
@@ -493,50 +508,50 @@ void *parse_call(state_t *state, expression_t func);
 void *parse_primary(state_t *state) {
 	switch (current(state).type) {
 	case TOKEN_BOOLEAN: {
-		bool value = current(state).data.boolean;
+		bool value = current(state).boolean;
 		advance_state(&state);
 		expression_t expression;
 		expression.type = EXPRESSION_BOOLEAN;
-		expression.data.boolean = value;
+		expression.boolean = value;
 		return &expression;
 	}
 	case TOKEN_NUMBER: {
-		double value = current(state).data.number;
+		double value = current(state).number;
 		advance_state(&state);
 		expression_t expression;
 		expression.type = EXPRESSION_NUMBER;
-		expression.data.number = value;
+		expression.number = value;
 		return &expression;
 	}
 	case TOKEN_STRING: {
-		const char *value = current(state).data.string;
+		const char *value = current(state).string;
 		advance_state(&state);
 		expression_t expression;
 		expression.type = EXPRESSION_STRING;
-		expression.data.string = value;
+		expression.string = value;
 		return &expression;
 	}
 	case TOKEN_IDENTIFIER: {
-		const char *value = current(state).data.identifier;
+		const char *value = current(state).identifier;
 		advance_state(&state);
 		switch (current(state).type) {
 		case TOKEN_LEFT_PAREN: {
 			expression_t var;
-			var.type = Variable;
-			var.data.variable = value;
+			var.type = EXPRESSION_VARIABLE;
+			var.variable = value;
 			return parse_call(state, var);
 		}
 		case TOKEN_COLON: {
 			advance_state(&state);
 			switch (current(state).type) {
 			case TOKEN_IDENTIFIER: {
-				const char *value2 = current(state).data.identifier;
+				const char *value2 = current(state).identifier;
 				advance_state(&state);
 
 				expression_t member;
-				member.type = Member;
-				member.data.member.value1 = value;
-				member.data.member.value2 = value2;
+				member.type = EXPRESSION_MEMBER;
+				member.member.value1 = value;
+				member.member.value2 = value2;
 
 				switch (current(state).type) {
 				case TOKEN_LEFT_PAREN:
@@ -551,8 +566,8 @@ void *parse_primary(state_t *state) {
 		}
 		default: {
 			expression_t var;
-			var.type = Variable;
-			var.data.variable = value;
+			var.type = EXPRESSION_VARIABLE;
+			var.variable = value;
 			return &var;
 		}
 		}
@@ -567,8 +582,8 @@ void *parse_primary(state_t *state) {
 			exit(1); // Expected a closing bracket
 		}
 		expression_t grouping;
-		grouping.type = Grouping;
-		grouping.data.grouping = expr;
+		grouping.type = EXPRESSION_GROUPING;
+		grouping.grouping = expr;
 		return &grouping;
 	}
 	case TOKEN_VEC4: {
@@ -610,10 +625,8 @@ void *parse_primary(state_t *state) {
 		advance_state(&state);
 
 		expression_t constructor;
-		constructor.type = Constructor;
-		ConstructorExpression_t expr;
-		expr.parameters = expressions;
-		constructor.data.constructor = expr;
+		constructor.type = EXPRESSION_CONSTRUCTOR;
+		constructor.constructor.parameters = expressions;
 		return &constructor;
 	}
 	default:
@@ -629,9 +642,10 @@ void *parse_call(state_t *state, expression_t func) {
 		case TOKEN_RIGHT_PAREN: {
 			advance_state(&state);
 
-			CallStatement_t call;
-			call.func = func;
-			call.parameters = NULL;
+			expression_t call;
+			call.type = EXPRESSION_CALL;
+			call.call.func = &func;
+			call.call.parameters = NULL;
 			return &call;
 		}
 		default: {
@@ -640,9 +654,10 @@ void *parse_call(state_t *state, expression_t func) {
 			case TOKEN_RIGHT_PAREN: {
 				advance_state(&state);
 
-				CallStatement_t call;
-				call.func = func;
-				call.parameters = expr;
+				expression_t call;
+				call.type = EXPRESSION_CALL;
+				call.call.func = &func;
+				call.call.parameters = expr;
 				return &call;
 			}
 			default:
@@ -664,21 +679,21 @@ void *parse_struct(state_t *state) {
 	advance_state(&state);
 	switch (current(state).type) {
 	case TOKEN_IDENTIFIER:
-		name = current(state).data.identifier;
+		name = current(state).identifier;
 		advance_state(&state);
 		switch (current(state).type) {
 		case TOKEN_LEFT_CURLY: {
 			advance_state(&state);
 			switch (current(state).type) {
 			case TOKEN_IDENTIFIER:
-				member_name = current(state).data.identifier;
+				member_name = current(state).identifier;
 				advance_state(&state);
 				switch (current(state).type) {
 				case TOKEN_COLON: {
 					advance_state(&state);
 					switch (current(state).type) {
 					case TOKEN_IDENTIFIER: {
-						type_name = current(state).data.identifier;
+						type_name = current(state).identifier;
 						advance_state(&state);
 						switch (current(state).type) {
 						case TOKEN_SEMICOLON: {
@@ -723,11 +738,9 @@ void *parse_struct(state_t *state) {
 	member.member_type = type_name;
 
 	statement_t statement;
-	statement.type = TOKEN_STRUCT;
-	StructStatement_t structy;
-	structy.attribute = NULL;
-	structy.name = name;
-	structy.members = &member;
-	statement.data.structy = structy;
+	statement.type = STATEMENT_STRUCT;
+	statement.structy.attribute = NULL;
+	statement.structy.name = name;
+	statement.structy.members = &member;
 	return &statement;
 }
