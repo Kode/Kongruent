@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 
 	free(data);
 
-	// tree_t _parse_tree = parser_parse(tokens);
+	statements_t statements = parse(&tokens);
 
 	return 0;
 }
