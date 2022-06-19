@@ -6,6 +6,11 @@
 
 struct expression;
 
+typedef struct expressions {
+	struct expression *e[256];
+	size_t size;
+} expressions_t;
+
 typedef struct expression {
 	enum {
 		EXPRESSION_BINARY,
@@ -31,28 +36,40 @@ typedef struct expression {
 			struct expression *right;
 		} unary;
 		bool boolean;
-		float number;
-		const char *string;
-		const char *variable;
+		double number;
+		char string[MAX_IDENTIFIER_SIZE];
+		char variable[MAX_IDENTIFIER_SIZE];
 		struct expression *grouping;
 		struct {
 			struct expression *func;
 			struct expression *parameters;
 		} call;
 		struct {
-			const char *value1;
-			const char *value2;
+			char value1[MAX_IDENTIFIER_SIZE];
+			char value2[MAX_IDENTIFIER_SIZE];
 		} member;
 		struct {
-			struct expression *parameters;
+			expressions_t parameters;
 		} constructor;
 	};
 } expression_t;
 
-typedef struct Member {
-	const char *name;
-	const char *member_type;
-} Member_t;
+typedef struct member {
+	char name[MAX_IDENTIFIER_SIZE];
+	char member_type[MAX_IDENTIFIER_SIZE];
+} member_t;
+
+typedef struct members {
+	member_t m[16];
+	size_t size;
+} members_t;
+
+struct statement;
+
+typedef struct statements {
+	struct statement *s[256];
+	size_t size;
+} statements_t;
 
 typedef struct statement {
 	enum {
@@ -66,32 +83,32 @@ typedef struct statement {
 	} type;
 
 	union {
-		expression_t expression;
+		expression_t *expression;
 		struct {
-			void *test;
-			void *block;
+			expression_t *test;
+			struct statement *block;
 		} iffy;
 		struct {
-			void *statements;
+			statements_t statements;
 		} block;
 		struct {
-			const char *name;
+			char name[MAX_IDENTIFIER_SIZE];
 			expression_t *init;
 		} declaration;
 		struct {
-			const char *name;
+			char name[MAX_IDENTIFIER_SIZE];
 			expression_t *parameters;
 		} preprocessorDirective;
 		struct {
-			const char **parameters;
-			void *block;
+			expressions_t parameters;
+			struct statement *block;
 		} function;
 		struct {
-			const char *attribute;
-			const char *name;
-			struct Member *members;
+			char attribute[MAX_IDENTIFIER_SIZE];
+			char name[MAX_IDENTIFIER_SIZE];
+			members_t members;
 		} structy;
 	};
 } statement_t;
 
-void add_statement(statement_t *statements, void *statement);
+statements_t parse(tokens_t *tokens);
