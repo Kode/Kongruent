@@ -156,15 +156,8 @@ static statement_t *parse_declaration(state_t *state, modifiers_t modifiers) {
 		modifiers_add(&modifiers, MODIFIER_IN);
 		return parse_declaration(state, modifiers);
 	}
-	case TOKEN_VEC3: {
-		advance_state(state);
-		break;
-	}
-	case TOKEN_VEC4: {
-		advance_state(state);
-		break;
-	}
-	case TOKEN_FLOAT: {
+	case TOKEN_IDENTIFIER: {
+		// type name
 		advance_state(state);
 		break;
 	}
@@ -276,21 +269,6 @@ static statement_t *parse_statement(state_t *state) {
 		return parse_block(state);
 	}
 	case TOKEN_IN: {
-		modifiers_t modifiers;
-		modifiers_init(&modifiers);
-		return parse_declaration(state, modifiers);
-	}
-	case TOKEN_FLOAT: {
-		modifiers_t modifiers;
-		modifiers_init(&modifiers);
-		return parse_declaration(state, modifiers);
-	}
-	case TOKEN_VEC3: {
-		modifiers_t modifiers;
-		modifiers_init(&modifiers);
-		return parse_declaration(state, modifiers);
-	}
-	case TOKEN_VEC4: {
 		modifiers_t modifiers;
 		modifiers_init(&modifiers);
 		return parse_declaration(state, modifiers);
@@ -646,49 +624,6 @@ static expression_t *parse_primary(state_t *state) {
 		grouping->type = EXPRESSION_GROUPING;
 		grouping->grouping = expr;
 		return grouping;
-	}
-	case TOKEN_VEC4: {
-		advance_state(state);
-		switch (current(state).type) {
-		case TOKEN_LEFT_PAREN:
-			break;
-		default:
-			exit(1); // Expected an opening bracket
-		}
-		advance_state(state);
-
-		expressions_t expressions;
-		expressions_init(&expressions);
-
-		bool done = false;
-		while (!done) {
-			switch (current(state).type) {
-			case TOKEN_RIGHT_PAREN:
-				done = true;
-				break;
-			default:
-				expressions_add(&expressions, parse_expression(state));
-				break;
-			}
-			advance_state(state);
-			switch (current(state).type) {
-			case TOKEN_COMMA:
-				break;
-			case TOKEN_RIGHT_PAREN:
-				done = true;
-				break;
-			default:
-				expressions_add(&expressions, parse_expression(state));
-				break;
-			}
-			advance_state(state);
-		}
-		advance_state(state);
-
-		expression_t *constructor = expression_allocate();
-		constructor->type = EXPRESSION_CONSTRUCTOR;
-		constructor->constructor.parameters = expressions;
-		return constructor;
 	}
 	default:
 		exit(1); // Unexpected token: {:?}, state.current()

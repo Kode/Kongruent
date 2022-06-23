@@ -119,17 +119,8 @@ static void tokens_add_identifier(tokens_t *tokens, tokenizer_buffer_t *buffer) 
 	else if (tokenizer_buffer_equals(buffer, "if")) {
 		token.type = TOKEN_IF;
 	}
-	else if (tokenizer_buffer_equals(buffer, "float")) {
-		token.type = TOKEN_FLOAT;
-	}
 	else if (tokenizer_buffer_equals(buffer, "in")) {
 		token.type = TOKEN_IN;
-	}
-	else if (tokenizer_buffer_equals(buffer, "vec3")) {
-		token.type = TOKEN_VEC3;
-	}
-	else if (tokenizer_buffer_equals(buffer, "vec4")) {
-		token.type = TOKEN_VEC4;
 	}
 	else if (tokenizer_buffer_equals(buffer, "void")) {
 		token.type = TOKEN_VOID;
