@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "errors.h"
 #include "tokenizer.h"
 
 #include <stdlib.h>
@@ -82,7 +83,7 @@ static statement_t *parse_block(state_t *state) {
 		advance_state(state);
 	}
 	else {
-		exit(1); // Expected an opening curly bracket
+		error("Expected an opening curly bracket");
 	}
 
 	statements_t statements;
@@ -166,7 +167,7 @@ static statement_t *parse_declaration(state_t *state, modifiers_t modifiers) {
 		break;
 	}
 	default:
-		exit(1); // Expected a variable declaration
+		error("Expected a variable declaration");
 	}
 
 	token_t identifier;
@@ -175,7 +176,7 @@ static statement_t *parse_declaration(state_t *state, modifiers_t modifiers) {
 		advance_state(state);
 	}
 	else {
-		exit(1); // Expected an identifier
+		error("Expected an identifier");
 	}
 
 	switch (current(state).type) {
@@ -195,14 +196,14 @@ static statement_t *parse_declaration(state_t *state, modifiers_t modifiers) {
 				return statement;
 			}
 			default:
-				exit(1); // Expected a semicolon
+				error("Expected a semicolon");
+				return NULL;
 			}
-			break;
 		}
 		default:
-			exit(1); // Expected an assignment operator
-		}
-		break;
+			error("Expected an assignment operator");
+			return NULL;
+		};
 	}
 	case TOKEN_SEMICOLON: {
 		advance_state(state);
@@ -224,11 +225,13 @@ static statement_t *parse_declaration(state_t *state, modifiers_t modifiers) {
 			return statement;
 		}
 		default:
-			exit(1); // Expected right paren
+			error("Expected right paren");
+			return NULL;
 		}
 	}
 	default:
-		exit(1); // Expected an assign or a semicolon
+		error("Expected an assign or a semicolon");
+		return NULL;
 	}
 }
 
@@ -248,7 +251,7 @@ static statement_t *parse_statement(state_t *state) {
 			advance_state(state);
 			break;
 		default:
-			exit(1); // Expected an opening bracket
+			error("Expected an opening bracket");
 		}
 		expression_t *test = parse_expression(state);
 		switch (current(state).type) {
@@ -256,7 +259,7 @@ static statement_t *parse_statement(state_t *state) {
 			advance_state(state);
 			break;
 		default:
-			exit(1); // Expected a closing bracket
+			error("Expected a closing bracket");
 		}
 		statement_t *block = parse_statement(state);
 		statement_t *statement = statement_allocate();
@@ -293,7 +296,8 @@ static statement_t *parse_statement(state_t *state) {
 			return statement;
 		}
 		default:
-			exit(1); // Expected a semicolon
+			error("Expected a semicolon");
+			return NULL;
 		}
 	}
 	}
@@ -600,7 +604,7 @@ static expression_t *parse_primary(state_t *state) {
 				}
 			}
 			default:
-				exit(1); // Expected an identifier
+				error("Expected an identifier");
 			}
 		}
 		default: {
@@ -618,7 +622,7 @@ static expression_t *parse_primary(state_t *state) {
 		case TOKEN_RIGHT_PAREN:
 			break;
 		default:
-			exit(1); // Expected a closing bracket
+			error("Expected a closing bracket");
 		}
 		expression_t *grouping = expression_allocate();
 		grouping->type = EXPRESSION_GROUPING;
@@ -626,7 +630,8 @@ static expression_t *parse_primary(state_t *state) {
 		return grouping;
 	}
 	default:
-		exit(1); // Unexpected token: {:?}, state.current()
+		error("Unexpected token: {:?}, state.current()");
+		return NULL;
 	}
 }
 
@@ -657,13 +662,15 @@ static expression_t *parse_call(state_t *state, expression_t *func) {
 				return call;
 			}
 			default:
-				exit(1); // Expected a closing bracket
+				error("Expected a closing bracket");
+				return NULL;
 			}
 		}
 		}
 	}
 	default:
-		exit(1); // Fascinating
+		error("Fascinating");
+		return NULL;
 	}
 }
 
@@ -697,34 +704,34 @@ static statement_t *parse_struct(state_t *state) {
 								advance_state(state);
 							}
 							default:
-								exit(1); // Expected a closing curly bracket
+								error("Expected a closing curly bracket");
 							}
 							break;
 						}
 						default:
-							exit(1); // Expected a semicolon
+							error("Expected a semicolon");
 						}
 						break;
 					}
 					default:
-						exit(1); // Expected an identifier
+						error("Expected an identifier");
 					}
 					break;
 				}
 				default:
-					exit(1); // Expected a colon
+					error("Expected a colon");
 				}
 				break;
 			default:
-				exit(1); // Expected an identifier
+				error("Expected an identifier");
 			}
 			break;
 		}
 		default:
-			exit(1); // Expected an opening curly bracket
+			error("Expected an opening curly bracket");
 		}
 	default:
-		exit(1); // Expected an identifier
+		error("Expected an identifier");
 	}
 
 	member_t member;

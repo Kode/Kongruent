@@ -1,4 +1,5 @@
 #include "tokenizer.h"
+#include "errors.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -183,11 +184,11 @@ tokens_t tokenize(const char *source) {
 			case MODE_LINE_COMMENT:
 				break;
 			case MODE_STRING:
-				exit(1); // Unclosed string
+				error("Unclosed string");
 			case MODE_OPERATOR:
-				exit(1); // File ends with an operator
+				error("File ends with an operator");
 			case MODE_COMMENT:
-				exit(1); // Unclosed comment
+				error("Unclosed comment");
 			}
 
 			token_t token;
@@ -221,11 +222,11 @@ tokens_t tokenize(const char *source) {
 					if (state.next >= 0) {
 						char ch = state.next;
 						if (ch != '[') {
-							exit(1); // Expected [
+							error("Expected [");
 						}
 					}
 					else {
-						exit(1); // Expected [
+						error("Expected [");
 					}
 
 					mode = MODE_ATTRIBUTE;
@@ -441,7 +442,7 @@ tokens_t tokenize(const char *source) {
 						tokens_add(&tokens, token);
 					}
 					else {
-						exit(1); // Weird operator
+						error("Weird operator");
 					}
 				}
 				mode = MODE_SELECT;
