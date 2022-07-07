@@ -236,6 +236,7 @@ static statement_t *parse_declaration(state_t *state, modifiers_t modifiers) {
 }
 
 static statement_t *parse_struct(state_t *state);
+static statement_t *parse_function(state_t *state);
 
 static statement_t *parse_statement(state_t *state) {
 	switch (current(state).type) {
@@ -283,6 +284,9 @@ static statement_t *parse_statement(state_t *state) {
 	}
 	case TOKEN_STRUCT: {
 		return parse_struct(state);
+	}
+	case TOKEN_FUNCTION: {
+		return parse_function(state);
 	}
 	default: {
 		expression_t *expr = parse_expression(state);
@@ -702,6 +706,7 @@ static statement_t *parse_struct(state_t *state) {
 							switch (current(state).type) {
 							case TOKEN_RIGHT_CURLY: {
 								advance_state(state);
+								break;
 							}
 							default:
 								error("Expected a closing curly bracket");
@@ -730,6 +735,7 @@ static statement_t *parse_struct(state_t *state) {
 		default:
 			error("Expected an opening curly bracket");
 		}
+		break;
 	default:
 		error("Expected an identifier");
 	}
@@ -748,4 +754,8 @@ static statement_t *parse_struct(state_t *state) {
 	strcpy(statement->structy.name, name.identifier);
 	statement->structy.members = members;
 	return statement;
+}
+
+static statement_t *parse_function(state_t *state) {
+	return NULL;
 }
