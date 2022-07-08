@@ -344,107 +344,107 @@ tokens_t tokenize(const char *source) {
 					tokenizer_buffer_add(&buffer, ch);
 					tokenizer_state_advance(&state);
 				}
-				else {
-					if (tokenizer_buffer_equals(&buffer, "==")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_EQUALS;
-						tokens_add(&tokens, token);
-					}
-					else if (tokenizer_buffer_equals(&buffer, "!=")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_NOT_EQUALS;
-						tokens_add(&tokens, token);
-					}
-					else if (tokenizer_buffer_equals(&buffer, ">")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_GREATER;
-						tokens_add(&tokens, token);
-					}
-					else if (tokenizer_buffer_equals(&buffer, ">=")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_GREATER_EQUAL;
-						tokens_add(&tokens, token);
-					}
-					else if (tokenizer_buffer_equals(&buffer, "<")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_LESS;
-						tokens_add(&tokens, token);
-					}
-					else if (tokenizer_buffer_equals(&buffer, "<=")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_LESS_EQUAL;
-						tokens_add(&tokens, token);
-					}
-					else if (tokenizer_buffer_equals(&buffer, "-")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_MINUS;
-						tokens_add(&tokens, token);
-					}
-					else if (tokenizer_buffer_equals(&buffer, "+")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_PLUS;
-						tokens_add(&tokens, token);
-					}
-					else if (tokenizer_buffer_equals(&buffer, "/")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_DIVIDE;
-						tokens_add(&tokens, token);
-					}
-					else if (tokenizer_buffer_equals(&buffer, "*")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_MULTIPLY;
-						tokens_add(&tokens, token);
-					}
-					else if (tokenizer_buffer_equals(&buffer, "!")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_NOT;
-						tokens_add(&tokens, token);
-					}
-					else if (tokenizer_buffer_equals(&buffer, "||")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_OR;
-						tokens_add(&tokens, token);
-					}
-					else if (tokenizer_buffer_equals(&buffer, "&&")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_AND;
-						tokens_add(&tokens, token);
-					}
-					else if (tokenizer_buffer_equals(&buffer, "%")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_MOD;
-						tokens_add(&tokens, token);
-					}
-					else if (tokenizer_buffer_equals(&buffer, "=")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_ASSIGN;
-						tokens_add(&tokens, token);
-					}
-					else if (tokenizer_buffer_equals(&buffer, "->")) {
-						token_t token;
-						token.type = TOKEN_OPERATOR;
-						token.op = OPERATOR_EQUALS;
-						tokens_add(&tokens, token);
-					}
-					else {
-						error("Weird operator");
-					}
+
+				if (tokenizer_buffer_equals(&buffer, "==")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_EQUALS;
+					tokens_add(&tokens, token);
 				}
+				else if (tokenizer_buffer_equals(&buffer, "!=")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_NOT_EQUALS;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, ">")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_GREATER;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, ">=")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_GREATER_EQUAL;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "<")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_LESS;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "<=")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_LESS_EQUAL;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "-")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_MINUS;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "+")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_PLUS;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "/")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_DIVIDE;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "*")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_MULTIPLY;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "!")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_NOT;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "||")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_OR;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "&&")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_AND;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "%")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_MOD;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "=")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_ASSIGN;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "->")) {
+					token_t token;
+					token.type = TOKEN_OPERATOR;
+					token.op = OPERATOR_POINTER;
+					tokens_add(&tokens, token);
+				}
+				else {
+					error("Weird operator");
+				}
+
 				mode = MODE_SELECT;
 				break;
 			}

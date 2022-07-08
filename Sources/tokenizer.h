@@ -18,6 +18,7 @@ typedef enum operatorr {
 	OPERATOR_AND,
 	OPERATOR_MOD,
 	OPERATOR_ASSIGN,
+	OPERATOR_POINTER // the function thing
 } operator_t;
 
 #define MAX_IDENTIFIER_SIZE 1024

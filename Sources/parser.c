@@ -757,5 +757,53 @@ static statement_t *parse_struct(state_t *state) {
 }
 
 static statement_t *parse_function(state_t *state) {
+	token_t name, param_name, param_type_name, return_type_name;
+
+	advance_state(state);
+	switch (current(state).type) {
+	case TOKEN_IDENTIFIER:
+		name = current(state);
+		advance_state(state);
+		if (current(state).type != TOKEN_LEFT_PAREN) {
+			error("Expected an opening bracket");
+		}
+		advance_state(state);
+		switch (current(state).type) {
+		case TOKEN_IDENTIFIER:
+			param_name = current(state);
+			advance_state(state);
+			if (current(state).type != TOKEN_COLON) {
+				error("Expected a colon");
+			}
+			advance_state(state);
+			param_type_name = current(state);
+			advance_state(state);
+			if (current(state).type != TOKEN_RIGHT_PAREN) {
+				error("Expected a closing bracket");
+			}
+			advance_state(state);
+			if (current(state).type != TOKEN_OPERATOR && current(state).op != OPERATOR_POINTER) {
+				error("Expected the function-thing");
+			}
+			advance_state(state);
+			switch (current(state).type) {
+			case TOKEN_IDENTIFIER:
+				return_type_name = current(state);
+				advance_state(state);
+				if (current(state).type != TOKEN_LEFT_CURLY) {
+					error("Expected opening curly-bracket");
+				}
+				break;
+			default:
+				error("Expected an identifier");
+			}
+			break;
+		default:
+			error("Expected an identifier");
+		}
+		break;
+	default:
+		error("Expected an identifier");
+	}
 	return NULL;
 }
