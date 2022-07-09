@@ -23,6 +23,8 @@ typedef enum operatorr {
 #define MAX_IDENTIFIER_SIZE 1024
 
 typedef struct token {
+	int line, column;
+
 	enum {
 		TOKEN_EOF,
 		TOKEN_BOOLEAN,

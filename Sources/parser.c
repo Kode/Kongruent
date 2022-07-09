@@ -72,7 +72,7 @@ static void advance_state(state_t *state) {
 
 static void match_token(state_t *state, int token, const char *error_message) {
 	if (current(state).type != token) {
-		error(error_message);
+		error(error_message, current(state).column, current(state).line);
 	}
 }
 
@@ -101,12 +101,8 @@ definitions_t parse(tokens_t *tokens) {
 }
 
 static statement_t *parse_block(state_t *state) {
-	if (current(state).type == TOKEN_LEFT_CURLY) {
-		advance_state(state);
-	}
-	else {
-		error("Expected an opening curly bracket");
-	}
+	match_token(state, TOKEN_LEFT_CURLY, "Expected an opening curly bracket");
+	advance_state(state);
 
 	statements_t statements;
 	statements_init(&statements);
@@ -261,7 +257,7 @@ static definition_t *parse_definition(state_t *state) {
 		return function;
 	}
 	default: {
-		error("Expected a struct or function");
+		error("Expected a struct or function", current(state).column, current(state).line);
 		return NULL;
 	}
 	}
@@ -271,21 +267,13 @@ static statement_t *parse_statement(state_t *state) {
 	switch (current(state).type) {
 	case TOKEN_IF: {
 		advance_state(state);
-		switch (current(state).type) {
-		case TOKEN_LEFT_PAREN:
-			advance_state(state);
-			break;
-		default:
-			error("Expected an opening bracket");
-		}
+		match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
+		advance_state(state);
+
 		expression_t *test = parse_expression(state);
-		switch (current(state).type) {
-		case TOKEN_RIGHT_PAREN:
-			advance_state(state);
-			break;
-		default:
-			error("Expected a closing bracket");
-		}
+		match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
+		advance_state(state);
+
 		statement_t *block = parse_statement(state);
 		statement_t *statement = statement_allocate();
 		statement->type = STATEMENT_IF;
@@ -318,7 +306,7 @@ static statement_t *parse_statement(state_t *state) {
 			return statement;
 		}
 		default:
-			error("Expected a semicolon");
+			error("Expected a semicolon", current(state).column, current(state).line);
 			return NULL;
 		}
 	}
@@ -608,25 +596,20 @@ static expression_t *parse_primary(state_t *state) {
 		}
 		case TOKEN_COLON: {
 			advance_state(state);
-			switch (current(state).type) {
-			case TOKEN_IDENTIFIER: {
-				token_t token2 = current(state);
-				advance_state(state);
+			match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+			token_t token2 = current(state);
+			advance_state(state);
 
-				expression_t *member = expression_allocate();
-				member->type = EXPRESSION_MEMBER;
-				strcpy(member->member.value1, token.identifier);
-				strcpy(member->member.value2, token2.identifier);
+			expression_t *member = expression_allocate();
+			member->type = EXPRESSION_MEMBER;
+			strcpy(member->member.value1, token.identifier);
+			strcpy(member->member.value2, token2.identifier);
 
-				switch (current(state).type) {
-				case TOKEN_LEFT_PAREN:
-					return parse_call(state, member);
-				default:
-					return member;
-				}
+			if (current(state).type == TOKEN_LEFT_PAREN) {
+				return parse_call(state, member);
 			}
-			default:
-				error("Expected an identifier");
+			else {
+				return member;
 			}
 		}
 		default: {
@@ -640,59 +623,42 @@ static expression_t *parse_primary(state_t *state) {
 	case TOKEN_LEFT_PAREN: {
 		advance_state(state);
 		expression_t *expr = parse_expression(state);
-		switch (current(state).type) {
-		case TOKEN_RIGHT_PAREN:
-			break;
-		default:
-			error("Expected a closing bracket");
-		}
+		match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
 		expression_t *grouping = expression_allocate();
 		grouping->type = EXPRESSION_GROUPING;
 		grouping->grouping = expr;
 		return grouping;
 	}
 	default:
-		error("Unexpected token: {:?}, state.current()");
+		error("Unexpected token", current(state).column, current(state).line);
 		return NULL;
 	}
 }
 
 static expression_t *parse_call(state_t *state, expression_t *func) {
+	match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
+	advance_state(state);
 	switch (current(state).type) {
-	case TOKEN_LEFT_PAREN: {
+	case TOKEN_RIGHT_PAREN: {
 		advance_state(state);
-		switch (current(state).type) {
-		case TOKEN_RIGHT_PAREN: {
-			advance_state(state);
 
-			expression_t *call = expression_allocate();
-			call->type = EXPRESSION_CALL;
-			call->call.func = func;
-			call->call.parameters = NULL;
-			return call;
-		}
-		default: {
-			expression_t *expr = parse_expression(state);
-			switch (current(state).type) {
-			case TOKEN_RIGHT_PAREN: {
-				advance_state(state);
-
-				expression_t *call = expression_allocate();
-				call->type = EXPRESSION_CALL;
-				call->call.func = func;
-				call->call.parameters = expr;
-				return call;
-			}
-			default:
-				error("Expected a closing bracket");
-				return NULL;
-			}
-		}
-		}
+		expression_t *call = expression_allocate();
+		call->type = EXPRESSION_CALL;
+		call->call.func = func;
+		call->call.parameters = NULL;
+		return call;
 	}
-	default:
-		error("Fascinating");
-		return NULL;
+	default: {
+		expression_t *expr = parse_expression(state);
+		match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
+		advance_state(state);
+
+		expression_t *call = expression_allocate();
+		call->type = EXPRESSION_CALL;
+		call->call.func = func;
+		call->call.parameters = expr;
+		return call;
+	}
 	}
 }
 
