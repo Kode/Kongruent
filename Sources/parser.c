@@ -61,13 +61,19 @@ typedef struct state {
 	size_t index;
 } state_t;
 
-static token_t current(state_t *self) {
-	token_t token = tokens_get(self->tokens, self->index);
+static token_t current(state_t *state) {
+	token_t token = tokens_get(state->tokens, state->index);
 	return token;
 }
 
 static void advance_state(state_t *state) {
 	state->index += 1;
+}
+
+static void match_token(state_t *state, int token, const char *error_message) {
+	if (current(state).type != token) {
+		error(error_message);
+	}
 }
 
 static definition_t *parse_definition(state_t *state);
@@ -691,66 +697,31 @@ static expression_t *parse_call(state_t *state, expression_t *func) {
 }
 
 static definition_t *parse_struct(state_t *state) {
-	token_t name, member_name, type_name;
+	advance_state(state);
+	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+	token_t name = current(state);
 
 	advance_state(state);
-	switch (current(state).type) {
-	case TOKEN_IDENTIFIER:
-		name = current(state);
-		advance_state(state);
-		switch (current(state).type) {
-		case TOKEN_LEFT_CURLY: {
-			advance_state(state);
-			switch (current(state).type) {
-			case TOKEN_IDENTIFIER:
-				member_name = current(state);
-				advance_state(state);
-				switch (current(state).type) {
-				case TOKEN_COLON: {
-					advance_state(state);
-					switch (current(state).type) {
-					case TOKEN_IDENTIFIER: {
-						type_name = current(state);
-						advance_state(state);
-						switch (current(state).type) {
-						case TOKEN_SEMICOLON: {
-							advance_state(state);
-							switch (current(state).type) {
-							case TOKEN_RIGHT_CURLY: {
-								advance_state(state);
-								break;
-							}
-							default:
-								error("Expected a closing curly bracket");
-							}
-							break;
-						}
-						default:
-							error("Expected a semicolon");
-						}
-						break;
-					}
-					default:
-						error("Expected an identifier");
-					}
-					break;
-				}
-				default:
-					error("Expected a colon");
-				}
-				break;
-			default:
-				error("Expected an identifier");
-			}
-			break;
-		}
-		default:
-			error("Expected an opening curly bracket");
-		}
-		break;
-	default:
-		error("Expected an identifier");
-	}
+	match_token(state, TOKEN_LEFT_CURLY, "Expected an opening curly bracket");
+
+	advance_state(state);
+	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+	token_t member_name = current(state);
+
+	advance_state(state);
+	match_token(state, TOKEN_COLON, "Expected a colon");
+
+	advance_state(state);
+	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+	token_t type_name = current(state);
+
+	advance_state(state);
+	match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
+
+	advance_state(state);
+	match_token(state, TOKEN_RIGHT_CURLY, "Expected a closing curly bracket");
+
+	advance_state(state);
 
 	member_t member;
 	strcpy(member.name, member_name.identifier);
@@ -769,60 +740,36 @@ static definition_t *parse_struct(state_t *state) {
 }
 
 static definition_t *parse_function(state_t *state) {
-	token_t name, param_name, param_type_name, return_type_name;
-
 	advance_state(state);
-	switch (current(state).type) {
-	case TOKEN_IDENTIFIER:
-		name = current(state);
-		advance_state(state);
-		if (current(state).type != TOKEN_LEFT_PAREN) {
-			error("Expected an opening bracket");
-		}
-		advance_state(state);
-		switch (current(state).type) {
-		case TOKEN_IDENTIFIER:
-			param_name = current(state);
-			advance_state(state);
-			if (current(state).type != TOKEN_COLON) {
-				error("Expected a colon");
-			}
-			advance_state(state);
-			param_type_name = current(state);
-			advance_state(state);
-			if (current(state).type != TOKEN_RIGHT_PAREN) {
-				error("Expected a closing bracket");
-			}
-			advance_state(state);
-			if (current(state).type != TOKEN_FUNCTION_THINGY) {
-				error("Expected a function-thingy");
-			}
-			advance_state(state);
-			switch (current(state).type) {
-			case TOKEN_IDENTIFIER:
-				return_type_name = current(state);
-				advance_state(state);
-				statement_t *block = parse_block(state);
-				definition_t *function = definition_allocate();
-				function->type = DEFINITION_FUNCTION;
-				strcpy(function->function.name, name.identifier);
-				strcpy(function->function.return_type_name, return_type_name.identifier);
-				strcpy(function->function.parameter_name, param_name.identifier);
-				strcpy(function->function.parameter_type_name, param_type_name.identifier);
-				function->function.block = block;
-				return function;
-			default:
-				error("Expected an identifier");
-				return NULL;
-			}
-			break;
-		default:
-			error("Expected an identifier");
-			return NULL;
-		}
-		break;
-	default:
-		error("Expected an identifier");
-		return NULL;
-	}
+	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+
+	token_t name = current(state);
+	advance_state(state);
+	match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
+	advance_state(state);
+	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+
+	token_t param_name = current(state);
+	advance_state(state);
+	match_token(state, TOKEN_COLON, "Expected a colon");
+	advance_state(state);
+	token_t param_type_name = current(state);
+	advance_state(state);
+	match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
+	advance_state(state);
+	match_token(state, TOKEN_FUNCTION_THINGY, "Expected a function-thingy");
+	advance_state(state);
+	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+
+	token_t return_type_name = current(state);
+	advance_state(state);
+	statement_t *block = parse_block(state);
+	definition_t *function = definition_allocate();
+	function->type = DEFINITION_FUNCTION;
+	strcpy(function->function.name, name.identifier);
+	strcpy(function->function.return_type_name, return_type_name.identifier);
+	strcpy(function->function.parameter_name, param_name.identifier);
+	strcpy(function->function.parameter_type_name, param_type_name.identifier);
+	function->function.block = block;
+	return function;
 }
