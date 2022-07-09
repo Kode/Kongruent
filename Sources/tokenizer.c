@@ -39,6 +39,7 @@ typedef struct tokenizer_state {
 	char next;
 	char next_next;
 	int line, column;
+	bool line_end;
 } tokenizer_state_t;
 
 static void tokenizer_state_init(tokenizer_state_t *state, const char *source) {
@@ -49,37 +50,48 @@ static void tokenizer_state_init(tokenizer_state_t *state, const char *source) {
 		state->iterator += 1;
 	}
 	state->next_next = *state->iterator;
+	state->line_end = false;
 }
 
 static void tokenizer_state_advance(tokenizer_state_t *state) {
 	state->next = state->next_next;
 	if (*state->iterator != 0) {
 		state->iterator += 1;
-		if (*state->iterator == '\n') {
-			state->line += 1;
-			state->column = 0;
-		}
-		else {
-			state->column += 1;
-		}
 	}
 	state->next_next = *state->iterator;
+
+	if (state->line_end) {
+		state->line_end = false;
+		state->line += 1;
+		state->column = 0;
+	}
+	else {
+		state->column += 1;
+	}
+
+	if (state->next == '\n') {
+		state->line_end = true;
+	}
 }
 
 typedef struct tokenizer_buffer {
 	char *buf;
 	size_t current_size;
 	size_t max_size;
+	int column, line;
 } tokenizer_buffer_t;
 
 static void tokenizer_buffer_init(tokenizer_buffer_t *buffer) {
 	buffer->max_size = 1024 * 1024;
 	buffer->buf = (char *)malloc(buffer->max_size);
 	buffer->current_size = 0;
+	buffer->column = buffer->line = 0;
 }
 
-static void tokenizer_buffer_reset(tokenizer_buffer_t *buffer) {
+static void tokenizer_buffer_reset(tokenizer_buffer_t *buffer, tokenizer_state_t *state) {
 	buffer->current_size = 0;
+	buffer->column = state->column;
+	buffer->line = state->line;
 }
 
 static void tokenizer_buffer_add(tokenizer_buffer_t *buffer, char ch) {
@@ -126,6 +138,7 @@ static void tokens_add(tokens_t *tokens, token_t token) {
 
 static void tokens_add_identifier(tokenizer_state_t *state, tokens_t *tokens, tokenizer_buffer_t *buffer) {
 	token_t token;
+
 	if (tokenizer_buffer_equals(buffer, "true")) {
 		token = token_create(TOKEN_BOOLEAN, state);
 		token.boolean = true;
@@ -159,12 +172,17 @@ static void tokens_add_identifier(tokenizer_state_t *state, tokens_t *tokens, to
 		token = token_create(TOKEN_IDENTIFIER, state);
 		tokenizer_buffer_copy_to_string(buffer, token.identifier);
 	}
+
+	token.column = buffer->column;
+	token.line = buffer->line;
 	tokens_add(tokens, token);
 }
 
 static void tokens_add_attribute(tokenizer_state_t *state, tokens_t *tokens, tokenizer_buffer_t *buffer) {
 	token_t token = token_create(TOKEN_ATTRIBUTE, state);
 	tokenizer_buffer_copy_to_string(buffer, token.attribute);
+	token.column = buffer->column;
+	token.line = buffer->line;
 	tokens_add(tokens, token);
 }
 
@@ -224,7 +242,7 @@ tokens_t tokenize(const char *source) {
 							mode = MODE_COMMENT;
 							break;
 						default:
-							tokenizer_buffer_reset(&buffer);
+							tokenizer_buffer_reset(&buffer, &state);
 							tokenizer_buffer_add(&buffer, ch);
 							mode = MODE_OPERATOR;
 						}
@@ -243,16 +261,16 @@ tokens_t tokenize(const char *source) {
 					}
 
 					mode = MODE_ATTRIBUTE;
-					tokenizer_buffer_reset(&buffer);
+					tokenizer_buffer_reset(&buffer, &state);
 				}
 				else if (is_num(ch)) {
 					mode = MODE_NUMBER;
-					tokenizer_buffer_reset(&buffer);
+					tokenizer_buffer_reset(&buffer, &state);
 					tokenizer_buffer_add(&buffer, ch);
 				}
 				else if (is_op(ch)) {
 					mode = MODE_OPERATOR;
-					tokenizer_buffer_reset(&buffer);
+					tokenizer_buffer_reset(&buffer, &state);
 					tokenizer_buffer_add(&buffer, ch);
 				}
 				else if (is_whitespace(ch)) {
@@ -283,11 +301,11 @@ tokens_t tokenize(const char *source) {
 				}
 				else if (ch == '"' || ch == '\'') {
 					mode = MODE_STRING;
-					tokenizer_buffer_reset(&buffer);
+					tokenizer_buffer_reset(&buffer, &state);
 				}
 				else {
 					mode = MODE_IDENTIFIER;
-					tokenizer_buffer_reset(&buffer);
+					tokenizer_buffer_reset(&buffer, &state);
 					tokenizer_buffer_add(&buffer, ch);
 				}
 				tokenizer_state_advance(&state);
@@ -430,6 +448,8 @@ tokens_t tokenize(const char *source) {
 				if (ch == '"' || ch == '\'') {
 					token_t token = token_create(TOKEN_STRING, &state);
 					tokenizer_buffer_copy_to_string(&buffer, token.string);
+					token.column = buffer.column;
+					token.line = buffer.line;
 					tokens_add(&tokens, token);
 
 					tokenizer_state_advance(&state);
