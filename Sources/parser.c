@@ -126,27 +126,6 @@ static statement_t *parse_block(state_t *state) {
 	return statement;
 }
 
-static definition_t *parse_preprocessor(token_t token, state_t *_state) {
-	expression_t *expressions = NULL;
-	/*loop {
-	    match state.current() {
-	        Token::NewLine => {
-	            state.advance();
-	            break
-	        }
-	        _ => {
-	            expressions.push(expression(state));
-	        }
-	    }
-	}*/
-
-	definition_t *definition = definition_allocate();
-	definition->type = DEFINITION_PREPROCESSOR_DIRECTIVE;
-	strcpy(definition->preprocessorDirective.name, token.attribute);
-	definition->preprocessorDirective.parameters = expressions;
-	return definition;
-}
-
 typedef enum modifier {
 	MODIFIER_IN,
 	// Out,
@@ -255,20 +234,28 @@ static definition_t *parse_struct(state_t *state);
 static definition_t *parse_function(state_t *state);
 
 static definition_t *parse_definition(state_t *state) {
-	switch (current(state).type) {
-	case TOKEN_ATTRIBUTE: {
+	char attribute[MAX_IDENTIFIER_SIZE];
+	attribute[0] = 0;
+
+	if (current(state).type == TOKEN_ATTRIBUTE) {
 		token_t token = current(state);
+		strcpy(attribute, token.attribute);
 		advance_state(state);
-		return parse_preprocessor(token, state);
 	}
+
+	switch (current(state).type) {
 	case TOKEN_STRUCT: {
-		return parse_struct(state);
+		definition_t *structy = parse_struct(state);
+		strcpy(structy->structy.attribute, attribute);
+		return structy;
 	}
 	case TOKEN_FUNCTION: {
-		return parse_function(state);
+		definition_t *function = parse_function(state);
+		strcpy(function->function.attribute, attribute);
+		return function;
 	}
 	default: {
-		error("Expected a struct, function or attribute");
+		error("Expected a struct or function");
 		return NULL;
 	}
 	}
@@ -818,6 +805,7 @@ static definition_t *parse_function(state_t *state) {
 				if (current(state).type != TOKEN_LEFT_CURLY) {
 					error("Expected opening curly-bracket");
 				}
+				// statements
 				break;
 			default:
 				error("Expected an identifier");

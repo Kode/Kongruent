@@ -98,14 +98,11 @@ typedef struct definitions {
 } definitions_t;
 
 typedef struct definition {
-	enum { DEFINITION_PREPROCESSOR_DIRECTIVE, DEFINITION_FUNCTION, DEFINITION_STRUCT } type;
+	enum { DEFINITION_FUNCTION, DEFINITION_STRUCT } type;
 
 	union {
 		struct {
-			char name[MAX_IDENTIFIER_SIZE];
-			expression_t *parameters;
-		} preprocessorDirective;
-		struct {
+			char attribute[MAX_IDENTIFIER_SIZE];
 			expressions_t parameters;
 			struct statement *block;
 		} function;
