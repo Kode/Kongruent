@@ -17,8 +17,7 @@ typedef enum operatorr {
 	OPERATOR_OR,
 	OPERATOR_AND,
 	OPERATOR_MOD,
-	OPERATOR_ASSIGN,
-	OPERATOR_POINTER // the function thing
+	OPERATOR_ASSIGN
 } operator_t;
 
 #define MAX_IDENTIFIER_SIZE 1024
@@ -46,7 +45,8 @@ typedef struct token {
 		TOKEN_STRUCT,
 		TOKEN_FUNCTION,
 		TOKEN_LET,
-		TOKEN_MUT
+		TOKEN_MUT,
+		TOKEN_FUNCTION_THINGY
 	} type;
 
 	union {

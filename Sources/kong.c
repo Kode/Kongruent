@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 
 	free(data);
 
-	statements_t statements = parse(&tokens);
+	definitions_t definitions = parse(&tokens);
 
 	return 0;
 }

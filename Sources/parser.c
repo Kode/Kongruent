@@ -5,12 +5,21 @@
 #include <stdlib.h>
 #include <string.h>
 
-static expression_t *expression_allocate(void) {
-	return (expression_t *)malloc(sizeof(expression_t));
+static definition_t *definition_allocate(void) {
+	return (definition_t *)malloc(sizeof(definition_t));
 }
 
-static void expression_free(expression_t *expression) {
-	free(expression);
+static void definition_free(definition_t *definition) {
+	free(definition);
+}
+
+static void definitions_init(definitions_t *definitions) {
+	definitions->size = 0;
+}
+
+static void definitions_add(definitions_t *definitions, definition_t *definition) {
+	definitions->d[definitions->size] = definition;
+	definitions->size += 1;
 }
 
 static statement_t *statement_allocate(void) {
@@ -25,13 +34,21 @@ static void statements_init(statements_t *statements) {
 	statements->size = 0;
 }
 
-static void add_statement(statements_t *statements, statement_t *statement) {
+static void statements_add(statements_t *statements, statement_t *statement) {
 	statements->s[statements->size] = statement;
 	statements->size += 1;
 }
 
 void expressions_init(expressions_t *expressions) {
 	expressions->size = 0;
+}
+
+static expression_t *expression_allocate(void) {
+	return (expression_t *)malloc(sizeof(expression_t));
+}
+
+static void expression_free(expression_t *expression) {
+	free(expression);
 }
 
 static void expressions_add(expressions_t *expressions, expression_t *expression) {
@@ -53,29 +70,28 @@ static void advance_state(state_t *state) {
 	state->index += 1;
 }
 
+static definition_t *parse_definition(state_t *state);
 static statement_t *parse_statement(state_t *state);
 static expression_t *parse_expression(state_t *state);
 
-statements_t parse(tokens_t *tokens) {
+definitions_t parse(tokens_t *tokens) {
 	state_t state;
 	state.tokens = tokens;
 	state.index = 0;
 
-	statements_t statements;
-	statements_init(&statements);
+	definitions_t definitions;
+	definitions_init(&definitions);
 
 	for (;;) {
 		token_t token = current(&state);
 		switch (token.type) {
 		case TOKEN_EOF:
-			return statements;
+			return definitions;
 		default: {
-			add_statement(&statements, parse_statement(&state));
+			definitions_add(&definitions, parse_definition(&state));
 		}
 		}
 	}
-
-	return statements;
 }
 
 static statement_t *parse_block(state_t *state) {
@@ -99,7 +115,7 @@ static statement_t *parse_block(state_t *state) {
 			return statement;
 		}
 		default:
-			add_statement(&statements, parse_statement(state));
+			statements_add(&statements, parse_statement(state));
 			break;
 		}
 	}
@@ -110,7 +126,7 @@ static statement_t *parse_block(state_t *state) {
 	return statement;
 }
 
-static statement_t *parse_preprocessor(token_t token, state_t *_state) {
+static definition_t *parse_preprocessor(token_t token, state_t *_state) {
 	expression_t *expressions = NULL;
 	/*loop {
 	    match state.current() {
@@ -124,11 +140,11 @@ static statement_t *parse_preprocessor(token_t token, state_t *_state) {
 	    }
 	}*/
 
-	statement_t *statement = statement_allocate();
-	statement->type = STATEMENT_PREPROCESSOR_DIRECTIVE;
-	strcpy(statement->preprocessorDirective.name, token.attribute);
-	statement->preprocessorDirective.parameters = expressions;
-	return statement;
+	definition_t *definition = definition_allocate();
+	definition->type = DEFINITION_PREPROCESSOR_DIRECTIVE;
+	strcpy(definition->preprocessorDirective.name, token.attribute);
+	definition->preprocessorDirective.parameters = expressions;
+	return definition;
 }
 
 typedef enum modifier {
@@ -150,101 +166,116 @@ static void modifiers_add(modifiers_t *modifiers, modifier_t modifier) {
 	modifiers->size += 1;
 }
 
-static statement_t *parse_declaration(state_t *state, modifiers_t modifiers) {
-	switch (current(state).type) {
-	case TOKEN_IN: {
-		advance_state(state);
-		modifiers_add(&modifiers, MODIFIER_IN);
-		return parse_declaration(state, modifiers);
-	}
-	case TOKEN_IDENTIFIER: {
-		// type name
-		advance_state(state);
-		break;
-	}
-	case TOKEN_VOID: {
-		advance_state(state);
-		break;
-	}
-	default:
-		error("Expected a variable declaration");
-	}
+/*static statement_t *parse_declaration(state_t *state, modifiers_t modifiers) {
+    switch (current(state).type) {
+    case TOKEN_IN: {
+        advance_state(state);
+        modifiers_add(&modifiers, MODIFIER_IN);
+        return parse_declaration(state, modifiers);
+    }
+    case TOKEN_IDENTIFIER: {
+        // type name
+        advance_state(state);
+        break;
+    }
+    case TOKEN_VOID: {
+        advance_state(state);
+        break;
+    }
+    default:
+        error("Expected a variable declaration");
+    }
 
-	token_t identifier;
-	if (current(state).type == TOKEN_IDENTIFIER) {
-		identifier = current(state);
-		advance_state(state);
-	}
-	else {
-		error("Expected an identifier");
-	}
+    token_t identifier;
+    if (current(state).type == TOKEN_IDENTIFIER) {
+        identifier = current(state);
+        advance_state(state);
+    }
+    else {
+        error("Expected an identifier");
+    }
 
-	switch (current(state).type) {
-	case TOKEN_OPERATOR: {
-		operator_t op = current(state).op;
-		switch (op) {
-		case OPERATOR_ASSIGN: {
-			advance_state(state);
-			expression_t *expr = parse_expression(state);
-			switch (current(state).type) {
-			case TOKEN_SEMICOLON: {
-				advance_state(state);
-				statement_t *statement = statement_allocate();
-				statement->type = STATEMENT_DECLARATION;
-				strcpy(statement->declaration.name, identifier.identifier);
-				statement->declaration.init = expr;
-				return statement;
-			}
-			default:
-				error("Expected a semicolon");
-				return NULL;
-			}
-		}
-		default:
-			error("Expected an assignment operator");
-			return NULL;
-		};
-	}
-	case TOKEN_SEMICOLON: {
-		advance_state(state);
-		statement_t *statement = statement_allocate();
-		statement->type = STATEMENT_DECLARATION;
-		strcpy(statement->declaration.name, identifier.identifier);
-		statement->declaration.init = NULL;
-		return statement;
-	}
-	case TOKEN_LEFT_PAREN: {
-		advance_state(state);
-		switch (current(state).type) {
-		case TOKEN_RIGHT_PAREN: {
-			advance_state(state);
-			statement_t *statement = statement_allocate();
-			statement->type = STATEMENT_FUNCTION;
-			statement->function.parameters.size = 0;
-			statement->function.block = parse_block(state);
-			return statement;
-		}
-		default:
-			error("Expected right paren");
-			return NULL;
-		}
-	}
-	default:
-		error("Expected an assign or a semicolon");
-		return NULL;
-	}
-}
+    switch (current(state).type) {
+    case TOKEN_OPERATOR: {
+        operator_t op = current(state).op;
+        switch (op) {
+        case OPERATOR_ASSIGN: {
+            advance_state(state);
+            expression_t *expr = parse_expression(state);
+            switch (current(state).type) {
+            case TOKEN_SEMICOLON: {
+                advance_state(state);
+                statement_t *statement = statement_allocate();
+                statement->type = STATEMENT_DECLARATION;
+                strcpy(statement->declaration.name, identifier.identifier);
+                statement->declaration.init = expr;
+                return statement;
+            }
+            default:
+                error("Expected a semicolon");
+                return NULL;
+            }
+        }
+        default:
+            error("Expected an assignment operator");
+            return NULL;
+        };
+    }
+    case TOKEN_SEMICOLON: {
+        advance_state(state);
+        statement_t *statement = statement_allocate();
+        statement->type = STATEMENT_DECLARATION;
+        strcpy(statement->declaration.name, identifier.identifier);
+        statement->declaration.init = NULL;
+        return statement;
+    }
+    case TOKEN_LEFT_PAREN: {
+        advance_state(state);
+        switch (current(state).type) {
+        case TOKEN_RIGHT_PAREN: {
+            advance_state(state);
+            statement_t *statement = statement_allocate();
+            statement->type = STATEMENT_FUNCTION;
+            statement->function.parameters.size = 0;
+            statement->function.block = parse_block(state);
+            return statement;
+        }
+        default:
+            error("Expected right paren");
+            return NULL;
+        }
+    }
+    default:
+        error("Expected an assign or a semicolon");
+        return NULL;
+    }
+}*/
 
-static statement_t *parse_struct(state_t *state);
-static statement_t *parse_function(state_t *state);
+static definition_t *parse_struct(state_t *state);
+static definition_t *parse_function(state_t *state);
 
-static statement_t *parse_statement(state_t *state) {
+static definition_t *parse_definition(state_t *state) {
 	switch (current(state).type) {
 	case TOKEN_ATTRIBUTE: {
 		token_t token = current(state);
 		advance_state(state);
 		return parse_preprocessor(token, state);
 	}
+	case TOKEN_STRUCT: {
+		return parse_struct(state);
+	}
+	case TOKEN_FUNCTION: {
+		return parse_function(state);
+	}
+	default: {
+		error("Expected a struct, function or attribute");
+		return NULL;
+	}
+	}
+}
+
+static statement_t *parse_statement(state_t *state) {
+	switch (current(state).type) {
 	case TOKEN_IF: {
 		advance_state(state);
 		switch (current(state).type) {
@@ -272,7 +303,7 @@ static statement_t *parse_statement(state_t *state) {
 	case TOKEN_LEFT_CURLY: {
 		return parse_block(state);
 	}
-	case TOKEN_IN: {
+	/*case TOKEN_IN : {
 		modifiers_t modifiers;
 		modifiers_init(&modifiers);
 		return parse_declaration(state, modifiers);
@@ -281,13 +312,7 @@ static statement_t *parse_statement(state_t *state) {
 		modifiers_t modifiers;
 		modifiers_init(&modifiers);
 		return parse_declaration(state, modifiers);
-	}
-	case TOKEN_STRUCT: {
-		return parse_struct(state);
-	}
-	case TOKEN_FUNCTION: {
-		return parse_function(state);
-	}
+	}*/
 	default: {
 		expression_t *expr = parse_expression(state);
 		switch (current(state).type) {
@@ -678,7 +703,7 @@ static expression_t *parse_call(state_t *state, expression_t *func) {
 	}
 }
 
-static statement_t *parse_struct(state_t *state) {
+static definition_t *parse_struct(state_t *state) {
 	token_t name, member_name, type_name;
 
 	advance_state(state);
@@ -748,15 +773,15 @@ static statement_t *parse_struct(state_t *state) {
 	members.m[0] = member;
 	members.size = 1;
 
-	statement_t *statement = statement_allocate();
-	statement->type = STATEMENT_STRUCT;
-	statement->structy.attribute[0] = 0;
-	strcpy(statement->structy.name, name.identifier);
-	statement->structy.members = members;
-	return statement;
+	definition_t *definition = definition_allocate();
+	definition->type = DEFINITION_STRUCT;
+	definition->structy.attribute[0] = 0;
+	strcpy(definition->structy.name, name.identifier);
+	definition->structy.members = members;
+	return definition;
 }
 
-static statement_t *parse_function(state_t *state) {
+static definition_t *parse_function(state_t *state) {
 	token_t name, param_name, param_type_name, return_type_name;
 
 	advance_state(state);
@@ -782,8 +807,8 @@ static statement_t *parse_function(state_t *state) {
 				error("Expected a closing bracket");
 			}
 			advance_state(state);
-			if (current(state).type != TOKEN_OPERATOR && current(state).op != OPERATOR_POINTER) {
-				error("Expected the function-thing");
+			if (current(state).type != TOKEN_FUNCTION_THINGY) {
+				error("Expected a function-thingy");
 			}
 			advance_state(state);
 			switch (current(state).type) {

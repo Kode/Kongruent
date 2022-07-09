@@ -437,8 +437,7 @@ tokens_t tokenize(const char *source) {
 				}
 				else if (tokenizer_buffer_equals(&buffer, "->")) {
 					token_t token;
-					token.type = TOKEN_OPERATOR;
-					token.op = OPERATOR_POINTER;
+					token.type = TOKEN_FUNCTION_THINGY;
 					tokens_add(&tokens, token);
 				}
 				else {

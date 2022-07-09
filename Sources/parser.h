@@ -72,15 +72,7 @@ typedef struct statements {
 } statements_t;
 
 typedef struct statement {
-	enum {
-		STATEMENT_EXPRESSION,
-		STATEMENT_IF,
-		STATEMENT_BLOCK,
-		STATEMENT_DECLARATION,
-		STATEMENT_PREPROCESSOR_DIRECTIVE,
-		STATEMENT_FUNCTION,
-		STATEMENT_STRUCT
-	} type;
+	enum { STATEMENT_EXPRESSION, STATEMENT_IF, STATEMENT_BLOCK, STATEMENT_LOCAL_VARIABLE } type;
 
 	union {
 		expression_t *expression;
@@ -94,7 +86,21 @@ typedef struct statement {
 		struct {
 			char name[MAX_IDENTIFIER_SIZE];
 			expression_t *init;
-		} declaration;
+		} local_variable;
+	};
+} statement_t;
+
+struct definition;
+
+typedef struct definitions {
+	struct definition *d[256];
+	size_t size;
+} definitions_t;
+
+typedef struct definition {
+	enum { DEFINITION_PREPROCESSOR_DIRECTIVE, DEFINITION_FUNCTION, DEFINITION_STRUCT } type;
+
+	union {
 		struct {
 			char name[MAX_IDENTIFIER_SIZE];
 			expression_t *parameters;
@@ -109,6 +115,6 @@ typedef struct statement {
 			members_t members;
 		} structy;
 	};
-} statement_t;
+} definition_t;
 
-statements_t parse(tokens_t *tokens);
+definitions_t parse(tokens_t *tokens);
