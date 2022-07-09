@@ -103,7 +103,10 @@ typedef struct definition {
 	union {
 		struct {
 			char attribute[MAX_IDENTIFIER_SIZE];
-			expressions_t parameters;
+			char name[MAX_IDENTIFIER_SIZE];
+			char return_type_name[MAX_IDENTIFIER_SIZE];
+			char parameter_name[MAX_IDENTIFIER_SIZE];
+			char parameter_type_name[MAX_IDENTIFIER_SIZE];
 			struct statement *block;
 		} function;
 		struct {

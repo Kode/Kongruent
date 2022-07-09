@@ -802,21 +802,27 @@ static definition_t *parse_function(state_t *state) {
 			case TOKEN_IDENTIFIER:
 				return_type_name = current(state);
 				advance_state(state);
-				if (current(state).type != TOKEN_LEFT_CURLY) {
-					error("Expected opening curly-bracket");
-				}
-				// statements
-				break;
+				statement_t *block = parse_block(state);
+				definition_t *function = definition_allocate();
+				function->type = DEFINITION_FUNCTION;
+				strcpy(function->function.name, name.identifier);
+				strcpy(function->function.return_type_name, return_type_name.identifier);
+				strcpy(function->function.parameter_name, param_name.identifier);
+				strcpy(function->function.parameter_type_name, param_type_name.identifier);
+				function->function.block = block;
+				return function;
 			default:
 				error("Expected an identifier");
+				return NULL;
 			}
 			break;
 		default:
 			error("Expected an identifier");
+			return NULL;
 		}
 		break;
 	default:
 		error("Expected an identifier");
+		return NULL;
 	}
-	return NULL;
 }
