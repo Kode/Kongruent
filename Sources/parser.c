@@ -358,7 +358,7 @@ static expression_t *parse_assign(state_t *state) {
 			switch (op) {
 			case OPERATOR_ASSIGN: {
 				advance_state(state);
-				void *right = parse_logical(state);
+				expression_t *right = parse_logical(state);
 				expression_t *expression = expression_allocate();
 				expression->type = EXPRESSION_BINARY;
 				expression->binary.left = expr;
@@ -400,6 +400,7 @@ static expression_t *parse_logical(state_t *state) {
 				expression->binary.op = op;
 				expression->binary.right = right;
 				expr = expression;
+				break;
 			}
 			default:
 				done = true;
@@ -434,6 +435,7 @@ static expression_t *parse_equality(state_t *state) {
 				expression->binary.op = op;
 				expression->binary.right = right;
 				expr = expression;
+				break;
 			}
 			default:
 				done = true;
@@ -470,11 +472,14 @@ static expression_t *parse_comparison(state_t *state) {
 				expression->binary.op = op;
 				expression->binary.right = right;
 				expr = expression;
+				break;
 			}
+			default:
 				done = true;
 				break;
 			}
 		}
+		default:
 			done = true;
 			break;
 		}
@@ -502,6 +507,7 @@ static expression_t *parse_addition(state_t *state) {
 				expression->binary.op = op;
 				expression->binary.right = right;
 				expr = expression;
+				break;
 			}
 			default:
 				done = true;
@@ -537,6 +543,7 @@ static expression_t *parse_multiplication(state_t *state) {
 				expression->binary.op = op;
 				expression->binary.right = right;
 				expr = expression;
+				break;
 			}
 			default:
 				done = true;
