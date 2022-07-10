@@ -590,113 +590,128 @@ static expression_t *parse_unary(state_t *state) {
 static expression_t *parse_call(state_t *state, expression_t *func);
 
 static expression_t *parse_primary(state_t *state) {
+	expression_t *left = NULL;
+
 	switch (current(state).type) {
 	case TOKEN_BOOLEAN: {
 		bool value = current(state).boolean;
 		advance_state(state);
-		expression_t *expression = expression_allocate();
-		expression->type = EXPRESSION_BOOLEAN;
-		expression->boolean = value;
-		return expression;
+		left = expression_allocate();
+		left->type = EXPRESSION_BOOLEAN;
+		left->boolean = value;
+		break;
 	}
 	case TOKEN_NUMBER: {
 		double value = current(state).number;
 		advance_state(state);
-		expression_t *expression = expression_allocate();
-		expression->type = EXPRESSION_NUMBER;
-		expression->number = value;
-		return expression;
+		left = expression_allocate();
+		left->type = EXPRESSION_NUMBER;
+		left->number = value;
+		break;
 	}
 	case TOKEN_STRING: {
 		token_t token = current(state);
 		advance_state(state);
-		expression_t *expression = expression_allocate();
-		expression->type = EXPRESSION_STRING;
-		strcpy(expression->string, token.string);
-		return expression;
+		left = expression_allocate();
+		left->type = EXPRESSION_STRING;
+		strcpy(left->string, token.string);
+		break;
 	}
 	case TOKEN_IDENTIFIER: {
 		token_t token = current(state);
 		advance_state(state);
-		switch (current(state).type) {
-		case TOKEN_LEFT_PAREN: {
+		if (current(state).type == TOKEN_LEFT_PAREN) {
 			expression_t *var = expression_allocate();
 			var->type = EXPRESSION_VARIABLE;
 			strcpy(var->variable, token.identifier);
-			return parse_call(state, var);
+			left = parse_call(state, var);
 		}
-		case TOKEN_DOT: {
-			advance_state(state);
-			match_token_identifier(state);
-			token_t token2 = current(state);
-			advance_state(state);
-
-			while (current(state).type == TOKEN_DOT) {
-				advance_state(state);
-				match_token_identifier(state);
-				advance_state(state);
-			}
-
-			expression_t *member = expression_allocate();
-			member->type = EXPRESSION_MEMBER;
-			strcpy(member->member.value1, token.identifier);
-			strcpy(member->member.value2, token2.identifier);
-
-			if (current(state).type == TOKEN_LEFT_PAREN) {
-				return parse_call(state, member);
-			}
-			else {
-				return member;
-			}
-		}
-		default: {
+		else {
 			expression_t *var = expression_allocate();
 			var->type = EXPRESSION_VARIABLE;
 			strcpy(var->variable, token.identifier);
-			return var;
+			left = var;
 		}
-		}
+		break;
 	}
 	case TOKEN_LEFT_PAREN: {
 		advance_state(state);
 		expression_t *expr = parse_expression(state);
 		match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
-		expression_t *grouping = expression_allocate();
-		grouping->type = EXPRESSION_GROUPING;
-		grouping->grouping = expr;
-		return grouping;
+		advance_state(state);
+		left = expression_allocate();
+		left->type = EXPRESSION_GROUPING;
+		left->grouping = expr;
+		break;
 	}
 	default:
 		error("Unexpected token", current(state).column, current(state).line);
 		return NULL;
 	}
+
+	if (current(state).type == TOKEN_DOT) {
+		advance_state(state);
+		expression_t *right = parse_expression(state);
+
+		expression_t *member = expression_allocate();
+		member->type = EXPRESSION_MEMBER;
+		member->member.left = left;
+		member->member.right = right;
+
+		if (current(state).type == TOKEN_LEFT_PAREN) {
+			return parse_call(state, member);
+		}
+		else {
+			return member;
+		}
+	}
+
+	return left;
 }
 
 static expression_t *parse_call(state_t *state, expression_t *func) {
 	match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
 	advance_state(state);
-	switch (current(state).type) {
-	case TOKEN_RIGHT_PAREN: {
+
+	expression_t *call = NULL;
+
+	if (current(state).type == TOKEN_RIGHT_PAREN) {
 		advance_state(state);
 
-		expression_t *call = expression_allocate();
+		call = expression_allocate();
 		call->type = EXPRESSION_CALL;
 		call->call.func = func;
 		call->call.parameters = NULL;
-		return call;
 	}
-	default: {
+	else {
 		expression_t *expr = parse_expression(state);
 		match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
 		advance_state(state);
 
-		expression_t *call = expression_allocate();
+		call = expression_allocate();
 		call->type = EXPRESSION_CALL;
 		call->call.func = func;
 		call->call.parameters = expr;
-		return call;
 	}
+
+	if (current(state).type == TOKEN_DOT) {
+		advance_state(state);
+		expression_t *right = parse_expression(state);
+
+		expression_t *member = expression_allocate();
+		member->type = EXPRESSION_MEMBER;
+		member->member.left = call;
+		member->member.right = right;
+
+		if (current(state).type == TOKEN_LEFT_PAREN) {
+			return parse_call(state, member);
+		}
+		else {
+			return member;
+		}
 	}
+
+	return call;
 }
 
 static definition_t *parse_struct(state_t *state) {

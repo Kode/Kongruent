@@ -45,8 +45,8 @@ typedef struct expression {
 			struct expression *parameters;
 		} call;
 		struct {
-			char value1[MAX_IDENTIFIER_SIZE];
-			char value2[MAX_IDENTIFIER_SIZE];
+			struct expression *left;
+			struct expression *right;
 		} member;
 		struct {
 			expressions_t parameters;
