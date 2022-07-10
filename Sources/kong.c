@@ -1,3 +1,4 @@
+#include "log.h"
 #include "parser.h"
 #include "tokenizer.h"
 
@@ -25,6 +26,17 @@ int main(int argc, char **argv) {
 	free(data);
 
 	parse(&tokens);
+
+	log(LOG_LEVEL_INFO, "Functions:");
+	for (size_t i = 0; i < functions.size; ++i) {
+		log(LOG_LEVEL_INFO, "%s", functions.f[i]->function.name);
+	}
+	log(LOG_LEVEL_INFO, "");
+
+	log(LOG_LEVEL_INFO, "Structs:");
+	for (size_t i = 0; i < structs.size; ++i) {
+		log(LOG_LEVEL_INFO, "%s", structs.s[i]->structy.name);
+	}
 
 	return 0;
 }
