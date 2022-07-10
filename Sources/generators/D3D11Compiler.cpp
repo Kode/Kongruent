@@ -53,11 +53,11 @@ namespace {
 	}
 }
 
-int compileHLSLToD3D11(const char *fromRelative, const char *to, const char *source, char *output, int *outputlength,
+int compileHLSLToD3D11(const char *fromRelative, const char *to, const char *source, char *output, size_t *outputlength,
                        const std::map<std::string, int> &attributes, EShLanguage stage, bool debug) {
 #ifdef _WIN32
 	char from[256];
-	int length;
+	size_t length;
 	char *data;
 	if (source) {
 		strcpy(from, fromRelative);
