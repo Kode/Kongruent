@@ -118,4 +118,17 @@ typedef struct definition {
 	};
 } definition_t;
 
-definitions_t parse(tokens_t *tokens);
+void parse(tokens_t *tokens);
+
+typedef struct functions {
+	definition_t *f[256];
+	size_t size;
+} functions_t;
+
+typedef struct structs {
+	definition_t *s[256];
+	size_t size;
+} structs_t;
+
+extern functions_t functions;
+extern structs_t structs;

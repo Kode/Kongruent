@@ -86,22 +86,34 @@ static definition_t *parse_definition(state_t *state);
 static statement_t *parse_statement(state_t *state);
 static expression_t *parse_expression(state_t *state);
 
-definitions_t parse(tokens_t *tokens) {
+functions_t functions;
+structs_t structs;
+
+static void functions_add(definition_t *function) {
+	functions.f[functions.size] = function;
+	functions.size += 1;
+}
+
+static void structs_add(definition_t *structy) {
+	structs.s[structs.size] = structy;
+	structs.size += 1;
+}
+
+void parse(tokens_t *tokens) {
 	state_t state;
 	state.tokens = tokens;
 	state.index = 0;
 
-	definitions_t definitions;
-	definitions_init(&definitions);
+	functions.size = 0;
+	structs.size = 0;
 
 	for (;;) {
 		token_t token = current(&state);
-		switch (token.type) {
-		case TOKEN_EOF:
-			return definitions;
-		default: {
-			definitions_add(&definitions, parse_definition(&state));
+		if (token.type == TOKEN_EOF) {
+			return;
 		}
+		else {
+			parse_definition(&state);
 		}
 	}
 }
@@ -754,6 +766,9 @@ static definition_t *parse_struct(state_t *state) {
 	definition->structy.attribute[0] = 0;
 	strcpy(definition->structy.name, name.identifier);
 	definition->structy.members = members;
+
+	structs_add(definition);
+
 	return definition;
 }
 
@@ -789,5 +804,8 @@ static definition_t *parse_function(state_t *state) {
 	strcpy(function->function.parameter_name, param_name.identifier);
 	strcpy(function->function.parameter_type_name, param_type_name.identifier);
 	function->function.block = block;
+
+	functions_add(function);
+
 	return function;
 }
