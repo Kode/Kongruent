@@ -361,11 +361,9 @@ static expression_t *parse_assign(state_t *state) {
 	expression_t *expr = parse_logical(state);
 	bool done = false;
 	while (!done) {
-		switch (current(state).type) {
-		case TOKEN_OPERATOR: {
+		if (current(state).type == TOKEN_OPERATOR) {
 			operator_t op = current(state).op;
-			switch (op) {
-			case OPERATOR_ASSIGN: {
+			if (op == OPERATOR_ASSIGN) {
 				advance_state(state);
 				expression_t *right = parse_logical(state);
 				expression_t *expression = expression_allocate();
@@ -374,16 +372,13 @@ static expression_t *parse_assign(state_t *state) {
 				expression->binary.op = op;
 				expression->binary.right = right;
 				expr = expression;
-				break;
 			}
-			default:
+			else {
 				done = true;
-				break;
 			}
 		}
-		default:
+		else {
 			done = true;
-			break;
 		}
 	}
 	return expr;
@@ -395,12 +390,9 @@ static expression_t *parse_logical(state_t *state) {
 	expression_t *expr = parse_equality(state);
 	bool done = false;
 	while (!done) {
-		switch (current(state).type) {
-		case TOKEN_OPERATOR: {
+		if (current(state).type == TOKEN_OPERATOR) {
 			operator_t op = current(state).op;
-			switch (op) {
-			case OPERATOR_OR:
-			case OPERATOR_AND: {
+			if (op == OPERATOR_OR || op == OPERATOR_AND) {
 				advance_state(state);
 				expression_t *right = parse_equality(state);
 				expression_t *expression = expression_allocate();
@@ -409,16 +401,13 @@ static expression_t *parse_logical(state_t *state) {
 				expression->binary.op = op;
 				expression->binary.right = right;
 				expr = expression;
-				break;
 			}
-			default:
+			else {
 				done = true;
-				break;
 			}
 		}
-		default:
+		else {
 			done = true;
-			break;
 		}
 	}
 	return expr;
@@ -430,12 +419,9 @@ static expression_t *parse_equality(state_t *state) {
 	expression_t *expr = parse_comparison(state);
 	bool done = false;
 	while (!done) {
-		switch (current(state).type) {
-		case TOKEN_OPERATOR: {
+		if (current(state).type == TOKEN_OPERATOR) {
 			operator_t op = current(state).op;
-			switch (op) {
-			case OPERATOR_EQUALS:
-			case OPERATOR_NOT_EQUALS: {
+			if (op == OPERATOR_EQUALS || op == OPERATOR_NOT_EQUALS) {
 				advance_state(state);
 				expression_t *right = parse_comparison(state);
 				expression_t *expression = expression_allocate();
@@ -444,16 +430,13 @@ static expression_t *parse_equality(state_t *state) {
 				expression->binary.op = op;
 				expression->binary.right = right;
 				expr = expression;
-				break;
 			}
-			default:
+			else {
 				done = true;
-				break;
 			}
 		}
-		default:
+		else {
 			done = true;
-			break;
 		}
 	}
 	return expr;
@@ -465,14 +448,9 @@ static expression_t *parse_comparison(state_t *state) {
 	expression_t *expr = parse_addition(state);
 	bool done = false;
 	while (!done) {
-		switch (current(state).type) {
-		case TOKEN_OPERATOR: {
+		if (current(state).type == TOKEN_OPERATOR) {
 			operator_t op = current(state).op;
-			switch (op) {
-			case OPERATOR_GREATER:
-			case OPERATOR_GREATER_EQUAL:
-			case OPERATOR_LESS:
-			case OPERATOR_LESS_EQUAL: {
+			if (op == OPERATOR_GREATER || op == OPERATOR_GREATER_EQUAL || op == OPERATOR_LESS || op == OPERATOR_LESS_EQUAL) {
 				advance_state(state);
 				expression_t *right = parse_addition(state);
 				expression_t *expression = expression_allocate();
@@ -481,16 +459,13 @@ static expression_t *parse_comparison(state_t *state) {
 				expression->binary.op = op;
 				expression->binary.right = right;
 				expr = expression;
-				break;
 			}
-			default:
+			else {
 				done = true;
-				break;
 			}
 		}
-		default:
+		else {
 			done = true;
-			break;
 		}
 	}
 	return expr;
@@ -502,12 +477,9 @@ static expression_t *parse_addition(state_t *state) {
 	expression_t *expr = parse_multiplication(state);
 	bool done = false;
 	while (!done) {
-		switch (current(state).type) {
-		case TOKEN_OPERATOR: {
+		if (current(state).type == TOKEN_OPERATOR) {
 			operator_t op = current(state).op;
-			switch (op) {
-			case OPERATOR_MINUS:
-			case OPERATOR_PLUS: {
+			if (op == OPERATOR_MINUS || op == OPERATOR_PLUS) {
 				advance_state(state);
 				expression_t *right = parse_multiplication(state);
 				expression_t *expression = expression_allocate();
@@ -516,16 +488,13 @@ static expression_t *parse_addition(state_t *state) {
 				expression->binary.op = op;
 				expression->binary.right = right;
 				expr = expression;
-				break;
 			}
-			default:
+			else {
 				done = true;
-				break;
 			}
 		}
-		default:
+		else {
 			done = true;
-			break;
 		}
 	}
 	return expr;
@@ -537,13 +506,9 @@ static expression_t *parse_multiplication(state_t *state) {
 	expression_t *expr = parse_unary(state);
 	bool done = false;
 	while (!done) {
-		switch (current(state).type) {
-		case TOKEN_OPERATOR: {
+		if (current(state).type == TOKEN_OPERATOR) {
 			operator_t op = current(state).op;
-			switch (op) {
-			case OPERATOR_DIVIDE:
-			case OPERATOR_MULTIPLY:
-			case OPERATOR_MOD: {
+			if (op == OPERATOR_DIVIDE || op == OPERATOR_MULTIPLY || op == OPERATOR_MOD) {
 				advance_state(state);
 				expression_t *right = parse_unary(state);
 				expression_t *expression = expression_allocate();
@@ -552,16 +517,13 @@ static expression_t *parse_multiplication(state_t *state) {
 				expression->binary.op = op;
 				expression->binary.right = right;
 				expr = expression;
-				break;
 			}
-			default:
+			else {
 				done = true;
-				break;
 			}
 		}
-		default:
+		else {
 			done = true;
-			break;
 		}
 	}
 	return expr;
@@ -572,12 +534,9 @@ static expression_t *parse_primary(state_t *state);
 static expression_t *parse_unary(state_t *state) {
 	bool done = false;
 	while (!done) {
-		switch (current(state).type) {
-		case TOKEN_OPERATOR: {
+		if (current(state).type == TOKEN_OPERATOR) {
 			operator_t op = current(state).op;
-			switch (op) {
-			case OPERATOR_NOT:
-			case OPERATOR_MINUS: {
+			if (op == OPERATOR_NOT || op == OPERATOR_MINUS) {
 				advance_state(state);
 				expression_t *right = parse_unary(state);
 				expression_t *expression = expression_allocate();
@@ -586,14 +545,12 @@ static expression_t *parse_unary(state_t *state) {
 				expression->unary.right = right;
 				return expression;
 			}
-			default:
+			else {
 				done = true;
-				break;
 			}
 		}
-		default:
+		else {
 			done = true;
-			break;
 		}
 	}
 	return parse_primary(state);
