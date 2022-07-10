@@ -317,25 +317,22 @@ static statement_t *parse_statement(state_t *state) {
 		statement->local_variable.init = NULL;
 		return statement;
 	}
-	/*case TOKEN_IN : {
-		modifiers_t modifiers;
-		modifiers_init(&modifiers);
-		return parse_declaration(state, modifiers);
-	}
-	case TOKEN_VOID: {
-		modifiers_t modifiers;
-		modifiers_init(&modifiers);
-		return parse_declaration(state, modifiers);
-	}*/
 	default: {
 		expression_t *expr = parse_expression(state);
-		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
-		advance_state(state);
+		if (current(state).type == TOKEN_SEMICOLON) {
+			advance_state(state);
 
-		statement_t *statement = statement_allocate();
-		statement->type = STATEMENT_EXPRESSION;
-		statement->expression = expr;
-		return statement;
+			statement_t *statement = statement_allocate();
+			statement->type = STATEMENT_EXPRESSION;
+			statement->expression = expr;
+			return statement;
+		}
+		else {
+			statement_t *statement = statement_allocate();
+			statement->type = STATEMENT_RETURN_EXPRESSION;
+			statement->expression = expr;
+			return statement;
+		}
 	}
 	}
 }
@@ -628,11 +625,17 @@ static expression_t *parse_primary(state_t *state) {
 			strcpy(var->variable, token.identifier);
 			return parse_call(state, var);
 		}
-		case TOKEN_COLON: {
+		case TOKEN_DOT: {
 			advance_state(state);
-			match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+			match_token_identifier(state);
 			token_t token2 = current(state);
 			advance_state(state);
+
+			while (current(state).type == TOKEN_DOT) {
+				advance_state(state);
+				match_token_identifier(state);
+				advance_state(state);
+			}
 
 			expression_t *member = expression_allocate();
 			member->type = EXPRESSION_MEMBER;

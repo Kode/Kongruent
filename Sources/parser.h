@@ -72,7 +72,7 @@ typedef struct statements {
 } statements_t;
 
 typedef struct statement {
-	enum { STATEMENT_EXPRESSION, STATEMENT_IF, STATEMENT_BLOCK, STATEMENT_LOCAL_VARIABLE } type;
+	enum { STATEMENT_EXPRESSION, STATEMENT_RETURN_EXPRESSION, STATEMENT_IF, STATEMENT_BLOCK, STATEMENT_LOCAL_VARIABLE } type;
 
 	union {
 		expression_t *expression;
