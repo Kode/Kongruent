@@ -76,6 +76,12 @@ static void match_token(state_t *state, int token, const char *error_message) {
 	}
 }
 
+static void match_token_identifier(state_t *state) {
+	if (current(state).type != TOKEN_IDENTIFIER) {
+		error("Expected an identifier", current(state).column, current(state).line);
+	}
+}
+
 static definition_t *parse_definition(state_t *state);
 static statement_t *parse_statement(state_t *state);
 static expression_t *parse_expression(state_t *state);
@@ -116,16 +122,14 @@ static statement_t *parse_block(state_t *state) {
 			statement->block.statements = statements;
 			return statement;
 		}
+		case TOKEN_EOF:
+			error("File ended before a block ended", current(state).column, current(state).line);
+			return NULL;
 		default:
 			statements_add(&statements, parse_statement(state));
 			break;
 		}
 	}
-
-	statement_t *statement = statement_allocate();
-	statement->type = STATEMENT_BLOCK;
-	statement->block.statements = statements;
-	return statement;
 }
 
 typedef enum modifier {
@@ -284,6 +288,35 @@ static statement_t *parse_statement(state_t *state) {
 	case TOKEN_LEFT_CURLY: {
 		return parse_block(state);
 	}
+	case TOKEN_LET: {
+		advance_state(state);
+		bool mutable = false;
+		if (current(state).type == TOKEN_MUT) {
+			mutable = true;
+			advance_state(state);
+		}
+
+		match_token_identifier(state);
+		token_t name = current(state);
+		advance_state(state);
+
+		match_token(state, TOKEN_COLON, "Expected a colon");
+		advance_state(state);
+
+		match_token_identifier(state);
+		token_t type_name = current(state);
+		advance_state(state);
+
+		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
+		advance_state(state);
+
+		statement_t *statement = statement_allocate();
+		statement->type = STATEMENT_LOCAL_VARIABLE;
+		strcpy(statement->local_variable.name, name.identifier);
+		strcpy(statement->local_variable.type_name, type_name.identifier);
+		statement->local_variable.init = NULL;
+		return statement;
+	}
 	/*case TOKEN_IN : {
 		modifiers_t modifiers;
 		modifiers_init(&modifiers);
@@ -296,19 +329,13 @@ static statement_t *parse_statement(state_t *state) {
 	}*/
 	default: {
 		expression_t *expr = parse_expression(state);
-		switch (current(state).type) {
-		case TOKEN_SEMICOLON: {
-			advance_state(state);
+		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
+		advance_state(state);
 
-			statement_t *statement = statement_allocate();
-			statement->type = STATEMENT_EXPRESSION;
-			statement->expression = expr;
-			return statement;
-		}
-		default:
-			error("Expected a semicolon", current(state).column, current(state).line);
-			return NULL;
-		}
+		statement_t *statement = statement_allocate();
+		statement->type = STATEMENT_EXPRESSION;
+		statement->expression = expr;
+		return statement;
 	}
 	}
 }

@@ -85,6 +85,7 @@ typedef struct statement {
 		} block;
 		struct {
 			char name[MAX_IDENTIFIER_SIZE];
+			char type_name[MAX_IDENTIFIER_SIZE];
 			expression_t *init;
 		} local_variable;
 	};
