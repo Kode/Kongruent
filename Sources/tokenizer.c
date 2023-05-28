@@ -20,7 +20,7 @@ static bool is_op(char ch) {
 }
 
 static bool is_whitespace(char ch) {
-	return ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t';
+	return ch == ' ' || (ch >= 9 && ch <= 13);
 }
 
 typedef enum mode {
