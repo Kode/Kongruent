@@ -1,3 +1,4 @@
+#include "errors.h"
 #include "log.h"
 #include "parser.h"
 #include "tokenizer.h"
@@ -7,6 +8,27 @@
 #include <stdlib.h>
 
 const char *filename = "in/test.kong";
+
+void convert_function_block(struct statement *block) {
+	if (block->type != STATEMENT_BLOCK) {
+		error("Expected a block", 0, 0);
+	}
+	for (size_t i = 0; i < block->block.statements.size; ++i) {
+		statement_t *s = block->block.statements.s[i];
+		switch (s->type) {
+		case STATEMENT_EXPRESSION:
+			break;
+		case STATEMENT_RETURN_EXPRESSION:
+			break;
+		case STATEMENT_IF:
+			break;
+		case STATEMENT_BLOCK:
+			break;
+		case STATEMENT_LOCAL_VARIABLE:
+			break;
+		}
+	}
+}
 
 int main(int argc, char **argv) {
 	FILE *file = fopen(filename, "rb");
@@ -36,6 +58,10 @@ int main(int argc, char **argv) {
 	log(LOG_LEVEL_INFO, "Structs:");
 	for (size_t i = 0; i < structs.size; ++i) {
 		log(LOG_LEVEL_INFO, "%s", structs.s[i]->structy.name);
+	}
+
+	for (size_t i = 0; i < functions.size; ++i) {
+		convert_function_block(functions.f[i]->function.block);
 	}
 
 	return 0;
