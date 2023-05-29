@@ -18,7 +18,7 @@ typedef enum operatorr {
 	OPERATOR_AND,
 	OPERATOR_MOD,
 	OPERATOR_ASSIGN
-} operator_t;
+} operatorr;
 
 #define MAX_IDENTIFIER_SIZE 1024
 
@@ -57,16 +57,16 @@ typedef struct token {
 		char string[MAX_IDENTIFIER_SIZE];
 		char identifier[MAX_IDENTIFIER_SIZE];
 		char attribute[MAX_IDENTIFIER_SIZE];
-		operator_t op;
+		operatorr op;
 	};
-} token_t;
+} token;
 
 typedef struct tokens {
-	token_t *t;
+	token *t;
 	size_t current_size;
 	size_t max_size;
-} tokens_t;
+} tokens;
 
-token_t tokens_get(tokens_t *arr, size_t index);
+token tokens_get(tokens *arr, size_t index);
 
-tokens_t tokenize(const char *source);
+tokens tokenize(const char *source);

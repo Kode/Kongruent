@@ -5,64 +5,64 @@
 #include <stdlib.h>
 #include <string.h>
 
-static definition_t *definition_allocate(void) {
-	return (definition_t *)malloc(sizeof(definition_t));
+static definition *definition_allocate(void) {
+	return (definition *)malloc(sizeof(definition));
 }
 
-static void definition_free(definition_t *definition) {
+static void definition_free(definition *definition) {
 	free(definition);
 }
 
-static void definitions_init(definitions_t *definitions) {
+static void definitions_init(definitions *definitions) {
 	definitions->size = 0;
 }
 
-static void definitions_add(definitions_t *definitions, definition_t *definition) {
+static void definitions_add(definitions *definitions, definition *definition) {
 	definitions->d[definitions->size] = definition;
 	definitions->size += 1;
 }
 
-static statement_t *statement_allocate(void) {
-	return (statement_t *)malloc(sizeof(statement_t));
+static statement *statement_allocate(void) {
+	return (statement *)malloc(sizeof(statement));
 }
 
-static void statement_free(statement_t *statement) {
+static void statement_free(statement *statement) {
 	free(statement);
 }
 
-static void statements_init(statements_t *statements) {
+static void statements_init(statements *statements) {
 	statements->size = 0;
 }
 
-static void statements_add(statements_t *statements, statement_t *statement) {
+static void statements_add(statements *statements, statement *statement) {
 	statements->s[statements->size] = statement;
 	statements->size += 1;
 }
 
-void expressions_init(expressions_t *expressions) {
+void expressions_init(expressions *expressions) {
 	expressions->size = 0;
 }
 
-static expression_t *expression_allocate(void) {
-	return (expression_t *)malloc(sizeof(expression_t));
+static expression *expression_allocate(void) {
+	return (expression *)malloc(sizeof(expression));
 }
 
-static void expression_free(expression_t *expression) {
+static void expression_free(expression *expression) {
 	free(expression);
 }
 
-static void expressions_add(expressions_t *expressions, expression_t *expression) {
+static void expressions_add(expressions *expressions, expression *expression) {
 	expressions->e[expressions->size] = expression;
 	expressions->size += 1;
 }
 
 typedef struct state {
-	tokens_t *tokens;
+	tokens *tokens;
 	size_t index;
 } state_t;
 
-static token_t current(state_t *state) {
-	token_t token = tokens_get(state->tokens, state->index);
+static token current(state_t *state) {
+	token token = tokens_get(state->tokens, state->index);
 	return token;
 }
 
@@ -82,33 +82,33 @@ static void match_token_identifier(state_t *state) {
 	}
 }
 
-static definition_t *parse_definition(state_t *state);
-static statement_t *parse_statement(state_t *state);
-static expression_t *parse_expression(state_t *state);
+static definition *parse_definition(state_t *state);
+static statement *parse_statement(state_t *state);
+static expression *parse_expression(state_t *state);
 
-functions_t functions;
-structs_t structs;
+struct functions all_functions;
+struct structs all_structs;
 
-static void functions_add(definition_t *function) {
-	functions.f[functions.size] = function;
-	functions.size += 1;
+static void functions_add(definition *function) {
+	all_functions.f[all_functions.size] = function;
+	all_functions.size += 1;
 }
 
-static void structs_add(definition_t *structy) {
-	structs.s[structs.size] = structy;
-	structs.size += 1;
+static void structs_add(definition *structy) {
+	all_structs.s[all_structs.size] = structy;
+	all_structs.size += 1;
 }
 
-void parse(tokens_t *tokens) {
+void parse(tokens *tokens) {
 	state_t state;
 	state.tokens = tokens;
 	state.index = 0;
 
-	functions.size = 0;
-	structs.size = 0;
+	all_functions.size = 0;
+	all_structs.size = 0;
 
 	for (;;) {
-		token_t token = current(&state);
+		token token = current(&state);
 		if (token.type == TOKEN_EOF) {
 			return;
 		}
@@ -118,18 +118,18 @@ void parse(tokens_t *tokens) {
 	}
 }
 
-static statement_t *parse_block(state_t *state) {
+static statement *parse_block(state_t *state) {
 	match_token(state, TOKEN_LEFT_CURLY, "Expected an opening curly bracket");
 	advance_state(state);
 
-	statements_t statements;
+	statements statements;
 	statements_init(&statements);
 
 	for (;;) {
 		switch (current(state).type) {
 		case TOKEN_RIGHT_CURLY: {
 			advance_state(state);
-			statement_t *statement = statement_allocate();
+			statement *statement = statement_allocate();
 			statement->type = STATEMENT_BLOCK;
 			statement->block.statements = statements;
 			return statement;
@@ -248,27 +248,27 @@ static void modifiers_add(modifiers_t *modifiers, modifier_t modifier) {
     }
 }*/
 
-static definition_t *parse_struct(state_t *state);
-static definition_t *parse_function(state_t *state);
+static definition *parse_struct(state_t *state);
+static definition *parse_function(state_t *state);
 
-static definition_t *parse_definition(state_t *state) {
+static definition *parse_definition(state_t *state) {
 	char attribute[MAX_IDENTIFIER_SIZE];
 	attribute[0] = 0;
 
 	if (current(state).type == TOKEN_ATTRIBUTE) {
-		token_t token = current(state);
+		token token = current(state);
 		strcpy(attribute, token.attribute);
 		advance_state(state);
 	}
 
 	switch (current(state).type) {
 	case TOKEN_STRUCT: {
-		definition_t *structy = parse_struct(state);
+		definition *structy = parse_struct(state);
 		strcpy(structy->structy.attribute, attribute);
 		return structy;
 	}
 	case TOKEN_FUNCTION: {
-		definition_t *function = parse_function(state);
+		definition *function = parse_function(state);
 		strcpy(function->function.attribute, attribute);
 		return function;
 	}
@@ -279,19 +279,19 @@ static definition_t *parse_definition(state_t *state) {
 	}
 }
 
-static statement_t *parse_statement(state_t *state) {
+static statement *parse_statement(state_t *state) {
 	switch (current(state).type) {
 	case TOKEN_IF: {
 		advance_state(state);
 		match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
 		advance_state(state);
 
-		expression_t *test = parse_expression(state);
+		expression *test = parse_expression(state);
 		match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
 		advance_state(state);
 
-		statement_t *block = parse_statement(state);
-		statement_t *statement = statement_allocate();
+		statement *block = parse_statement(state);
+		statement *statement = statement_allocate();
 		statement->type = STATEMENT_IF;
 		statement->iffy.test = test;
 		statement->iffy.block = block;
@@ -309,20 +309,20 @@ static statement_t *parse_statement(state_t *state) {
 		}
 
 		match_token_identifier(state);
-		token_t name = current(state);
+		token name = current(state);
 		advance_state(state);
 
 		match_token(state, TOKEN_COLON, "Expected a colon");
 		advance_state(state);
 
 		match_token_identifier(state);
-		token_t type_name = current(state);
+		token type_name = current(state);
 		advance_state(state);
 
 		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
 		advance_state(state);
 
-		statement_t *statement = statement_allocate();
+		statement *statement = statement_allocate();
 		statement->type = STATEMENT_LOCAL_VARIABLE;
 		strcpy(statement->local_variable.name, name.identifier);
 		strcpy(statement->local_variable.type_name, type_name.identifier);
@@ -330,17 +330,17 @@ static statement_t *parse_statement(state_t *state) {
 		return statement;
 	}
 	default: {
-		expression_t *expr = parse_expression(state);
+		expression *expr = parse_expression(state);
 		if (current(state).type == TOKEN_SEMICOLON) {
 			advance_state(state);
 
-			statement_t *statement = statement_allocate();
+			statement *statement = statement_allocate();
 			statement->type = STATEMENT_EXPRESSION;
 			statement->expression = expr;
 			return statement;
 		}
 		else {
-			statement_t *statement = statement_allocate();
+			statement *statement = statement_allocate();
 			statement->type = STATEMENT_RETURN_EXPRESSION;
 			statement->expression = expr;
 			return statement;
@@ -349,24 +349,24 @@ static statement_t *parse_statement(state_t *state) {
 	}
 }
 
-static expression_t *parse_assign(state_t *state);
+static expression *parse_assign(state_t *state);
 
-static expression_t *parse_expression(state_t *state) {
+static expression *parse_expression(state_t *state) {
 	return parse_assign(state);
 }
 
-static expression_t *parse_logical(state_t *state);
+static expression *parse_logical(state_t *state);
 
-static expression_t *parse_assign(state_t *state) {
-	expression_t *expr = parse_logical(state);
+static expression *parse_assign(state_t *state) {
+	expression *expr = parse_logical(state);
 	bool done = false;
 	while (!done) {
 		if (current(state).type == TOKEN_OPERATOR) {
-			operator_t op = current(state).op;
+			operatorr op = current(state).op;
 			if (op == OPERATOR_ASSIGN) {
 				advance_state(state);
-				expression_t *right = parse_logical(state);
-				expression_t *expression = expression_allocate();
+				expression *right = parse_logical(state);
+				expression *expression = expression_allocate();
 				expression->type = EXPRESSION_BINARY;
 				expression->binary.left = expr;
 				expression->binary.op = op;
@@ -384,18 +384,18 @@ static expression_t *parse_assign(state_t *state) {
 	return expr;
 }
 
-static expression_t *parse_equality(state_t *state);
+static expression *parse_equality(state_t *state);
 
-static expression_t *parse_logical(state_t *state) {
-	expression_t *expr = parse_equality(state);
+static expression *parse_logical(state_t *state) {
+	expression *expr = parse_equality(state);
 	bool done = false;
 	while (!done) {
 		if (current(state).type == TOKEN_OPERATOR) {
-			operator_t op = current(state).op;
+			operatorr op = current(state).op;
 			if (op == OPERATOR_OR || op == OPERATOR_AND) {
 				advance_state(state);
-				expression_t *right = parse_equality(state);
-				expression_t *expression = expression_allocate();
+				expression *right = parse_equality(state);
+				expression *expression = expression_allocate();
 				expression->type = EXPRESSION_BINARY;
 				expression->binary.left = expr;
 				expression->binary.op = op;
@@ -413,18 +413,18 @@ static expression_t *parse_logical(state_t *state) {
 	return expr;
 }
 
-static expression_t *parse_comparison(state_t *state);
+static expression *parse_comparison(state_t *state);
 
-static expression_t *parse_equality(state_t *state) {
-	expression_t *expr = parse_comparison(state);
+static expression *parse_equality(state_t *state) {
+	expression *expr = parse_comparison(state);
 	bool done = false;
 	while (!done) {
 		if (current(state).type == TOKEN_OPERATOR) {
-			operator_t op = current(state).op;
+			operatorr op = current(state).op;
 			if (op == OPERATOR_EQUALS || op == OPERATOR_NOT_EQUALS) {
 				advance_state(state);
-				expression_t *right = parse_comparison(state);
-				expression_t *expression = expression_allocate();
+				expression *right = parse_comparison(state);
+				expression *expression = expression_allocate();
 				expression->type = EXPRESSION_BINARY;
 				expression->binary.left = expr;
 				expression->binary.op = op;
@@ -442,18 +442,18 @@ static expression_t *parse_equality(state_t *state) {
 	return expr;
 }
 
-static expression_t *parse_addition(state_t *state);
+static expression *parse_addition(state_t *state);
 
-static expression_t *parse_comparison(state_t *state) {
-	expression_t *expr = parse_addition(state);
+static expression *parse_comparison(state_t *state) {
+	expression *expr = parse_addition(state);
 	bool done = false;
 	while (!done) {
 		if (current(state).type == TOKEN_OPERATOR) {
-			operator_t op = current(state).op;
+			operatorr op = current(state).op;
 			if (op == OPERATOR_GREATER || op == OPERATOR_GREATER_EQUAL || op == OPERATOR_LESS || op == OPERATOR_LESS_EQUAL) {
 				advance_state(state);
-				expression_t *right = parse_addition(state);
-				expression_t *expression = expression_allocate();
+				expression *right = parse_addition(state);
+				expression *expression = expression_allocate();
 				expression->type = EXPRESSION_BINARY;
 				expression->binary.left = expr;
 				expression->binary.op = op;
@@ -471,18 +471,18 @@ static expression_t *parse_comparison(state_t *state) {
 	return expr;
 }
 
-static expression_t *parse_multiplication(state_t *state);
+static expression *parse_multiplication(state_t *state);
 
-static expression_t *parse_addition(state_t *state) {
-	expression_t *expr = parse_multiplication(state);
+static expression *parse_addition(state_t *state) {
+	expression *expr = parse_multiplication(state);
 	bool done = false;
 	while (!done) {
 		if (current(state).type == TOKEN_OPERATOR) {
-			operator_t op = current(state).op;
+			operatorr op = current(state).op;
 			if (op == OPERATOR_MINUS || op == OPERATOR_PLUS) {
 				advance_state(state);
-				expression_t *right = parse_multiplication(state);
-				expression_t *expression = expression_allocate();
+				expression *right = parse_multiplication(state);
+				expression *expression = expression_allocate();
 				expression->type = EXPRESSION_BINARY;
 				expression->binary.left = expr;
 				expression->binary.op = op;
@@ -500,18 +500,18 @@ static expression_t *parse_addition(state_t *state) {
 	return expr;
 }
 
-static expression_t *parse_unary(state_t *state);
+static expression *parse_unary(state_t *state);
 
-static expression_t *parse_multiplication(state_t *state) {
-	expression_t *expr = parse_unary(state);
+static expression *parse_multiplication(state_t *state) {
+	expression *expr = parse_unary(state);
 	bool done = false;
 	while (!done) {
 		if (current(state).type == TOKEN_OPERATOR) {
-			operator_t op = current(state).op;
+			operatorr op = current(state).op;
 			if (op == OPERATOR_DIVIDE || op == OPERATOR_MULTIPLY || op == OPERATOR_MOD) {
 				advance_state(state);
-				expression_t *right = parse_unary(state);
-				expression_t *expression = expression_allocate();
+				expression *right = parse_unary(state);
+				expression *expression = expression_allocate();
 				expression->type = EXPRESSION_BINARY;
 				expression->binary.left = expr;
 				expression->binary.op = op;
@@ -529,17 +529,17 @@ static expression_t *parse_multiplication(state_t *state) {
 	return expr;
 }
 
-static expression_t *parse_primary(state_t *state);
+static expression *parse_primary(state_t *state);
 
-static expression_t *parse_unary(state_t *state) {
+static expression *parse_unary(state_t *state) {
 	bool done = false;
 	while (!done) {
 		if (current(state).type == TOKEN_OPERATOR) {
-			operator_t op = current(state).op;
+			operatorr op = current(state).op;
 			if (op == OPERATOR_NOT || op == OPERATOR_MINUS) {
 				advance_state(state);
-				expression_t *right = parse_unary(state);
-				expression_t *expression = expression_allocate();
+				expression *right = parse_unary(state);
+				expression *expression = expression_allocate();
 				expression->type = EXPRESSION_UNARY;
 				expression->unary.op = op;
 				expression->unary.right = right;
@@ -556,10 +556,10 @@ static expression_t *parse_unary(state_t *state) {
 	return parse_primary(state);
 }
 
-static expression_t *parse_call(state_t *state, expression_t *func);
+static expression *parse_call(state_t *state, expression *func);
 
-static expression_t *parse_primary(state_t *state) {
-	expression_t *left = NULL;
+static expression *parse_primary(state_t *state) {
+	expression *left = NULL;
 
 	switch (current(state).type) {
 	case TOKEN_BOOLEAN: {
@@ -579,7 +579,7 @@ static expression_t *parse_primary(state_t *state) {
 		break;
 	}
 	case TOKEN_STRING: {
-		token_t token = current(state);
+		token token = current(state);
 		advance_state(state);
 		left = expression_allocate();
 		left->type = EXPRESSION_STRING;
@@ -587,16 +587,16 @@ static expression_t *parse_primary(state_t *state) {
 		break;
 	}
 	case TOKEN_IDENTIFIER: {
-		token_t token = current(state);
+		token token = current(state);
 		advance_state(state);
 		if (current(state).type == TOKEN_LEFT_PAREN) {
-			expression_t *var = expression_allocate();
+			expression *var = expression_allocate();
 			var->type = EXPRESSION_VARIABLE;
 			strcpy(var->variable, token.identifier);
 			left = parse_call(state, var);
 		}
 		else {
-			expression_t *var = expression_allocate();
+			expression *var = expression_allocate();
 			var->type = EXPRESSION_VARIABLE;
 			strcpy(var->variable, token.identifier);
 			left = var;
@@ -605,7 +605,7 @@ static expression_t *parse_primary(state_t *state) {
 	}
 	case TOKEN_LEFT_PAREN: {
 		advance_state(state);
-		expression_t *expr = parse_expression(state);
+		expression *expr = parse_expression(state);
 		match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
 		advance_state(state);
 		left = expression_allocate();
@@ -620,9 +620,9 @@ static expression_t *parse_primary(state_t *state) {
 
 	if (current(state).type == TOKEN_DOT) {
 		advance_state(state);
-		expression_t *right = parse_expression(state);
+		expression *right = parse_expression(state);
 
-		expression_t *member = expression_allocate();
+		expression *member = expression_allocate();
 		member->type = EXPRESSION_MEMBER;
 		member->member.left = left;
 		member->member.right = right;
@@ -638,11 +638,11 @@ static expression_t *parse_primary(state_t *state) {
 	return left;
 }
 
-static expression_t *parse_call(state_t *state, expression_t *func) {
+static expression *parse_call(state_t *state, expression *func) {
 	match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
 	advance_state(state);
 
-	expression_t *call = NULL;
+	expression *call = NULL;
 
 	if (current(state).type == TOKEN_RIGHT_PAREN) {
 		advance_state(state);
@@ -653,7 +653,7 @@ static expression_t *parse_call(state_t *state, expression_t *func) {
 		call->call.parameters = NULL;
 	}
 	else {
-		expression_t *expr = parse_expression(state);
+		expression *expr = parse_expression(state);
 		match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
 		advance_state(state);
 
@@ -665,9 +665,9 @@ static expression_t *parse_call(state_t *state, expression_t *func) {
 
 	if (current(state).type == TOKEN_DOT) {
 		advance_state(state);
-		expression_t *right = parse_expression(state);
+		expression *right = parse_expression(state);
 
-		expression_t *member = expression_allocate();
+		expression *member = expression_allocate();
 		member->type = EXPRESSION_MEMBER;
 		member->member.left = call;
 		member->member.right = right;
@@ -683,24 +683,24 @@ static expression_t *parse_call(state_t *state, expression_t *func) {
 	return call;
 }
 
-static definition_t *parse_struct(state_t *state) {
+static definition *parse_struct(state_t *state) {
 	advance_state(state);
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
-	token_t name = current(state);
+	token name = current(state);
 
 	advance_state(state);
 	match_token(state, TOKEN_LEFT_CURLY, "Expected an opening curly bracket");
 
 	advance_state(state);
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
-	token_t member_name = current(state);
+	token member_name = current(state);
 
 	advance_state(state);
 	match_token(state, TOKEN_COLON, "Expected a colon");
 
 	advance_state(state);
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
-	token_t type_name = current(state);
+	token type_name = current(state);
 
 	advance_state(state);
 	match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
@@ -710,15 +710,15 @@ static definition_t *parse_struct(state_t *state) {
 
 	advance_state(state);
 
-	member_t member;
+	member member;
 	strcpy(member.name, member_name.identifier);
 	strcpy(member.member_type, type_name.identifier);
 
-	members_t members;
+	members members;
 	members.m[0] = member;
 	members.size = 1;
 
-	definition_t *definition = definition_allocate();
+	definition *definition = definition_allocate();
 	definition->type = DEFINITION_STRUCT;
 	definition->structy.attribute[0] = 0;
 	strcpy(definition->structy.name, name.identifier);
@@ -729,21 +729,21 @@ static definition_t *parse_struct(state_t *state) {
 	return definition;
 }
 
-static definition_t *parse_function(state_t *state) {
+static definition *parse_function(state_t *state) {
 	advance_state(state);
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 
-	token_t name = current(state);
+	token name = current(state);
 	advance_state(state);
 	match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
 	advance_state(state);
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 
-	token_t param_name = current(state);
+	token param_name = current(state);
 	advance_state(state);
 	match_token(state, TOKEN_COLON, "Expected a colon");
 	advance_state(state);
-	token_t param_type_name = current(state);
+	token param_type_name = current(state);
 	advance_state(state);
 	match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
 	advance_state(state);
@@ -751,10 +751,10 @@ static definition_t *parse_function(state_t *state) {
 	advance_state(state);
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 
-	token_t return_type_name = current(state);
+	token return_type_name = current(state);
 	advance_state(state);
-	statement_t *block = parse_block(state);
-	definition_t *function = definition_allocate();
+	statement *block = parse_block(state);
+	definition *function = definition_allocate();
 	function->type = DEFINITION_FUNCTION;
 	strcpy(function->function.name, name.identifier);
 	strcpy(function->function.return_type_name, return_type_name.identifier);

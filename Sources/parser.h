@@ -9,7 +9,7 @@ struct expression;
 typedef struct expressions {
 	struct expression *e[256];
 	size_t size;
-} expressions_t;
+} expressions;
 
 typedef struct expression {
 	enum {
@@ -28,11 +28,11 @@ typedef struct expression {
 	union {
 		struct {
 			struct expression *left;
-			operator_t op;
+			operatorr op;
 			struct expression *right;
 		} binary;
 		struct {
-			operator_t op;
+			operatorr op;
 			struct expression *right;
 		} unary;
 		bool boolean;
@@ -49,54 +49,54 @@ typedef struct expression {
 			struct expression *right;
 		} member;
 		struct {
-			expressions_t parameters;
+			expressions parameters;
 		} constructor;
 	};
-} expression_t;
+} expression;
 
 typedef struct member {
 	char name[MAX_IDENTIFIER_SIZE];
 	char member_type[MAX_IDENTIFIER_SIZE];
-} member_t;
+} member;
 
 typedef struct members {
-	member_t m[16];
+	member m[16];
 	size_t size;
-} members_t;
+} members;
 
 struct statement;
 
 typedef struct statements {
 	struct statement *s[256];
 	size_t size;
-} statements_t;
+} statements;
 
 typedef struct statement {
 	enum { STATEMENT_EXPRESSION, STATEMENT_RETURN_EXPRESSION, STATEMENT_IF, STATEMENT_BLOCK, STATEMENT_LOCAL_VARIABLE } type;
 
 	union {
-		expression_t *expression;
+		expression *expression;
 		struct {
-			expression_t *test;
+			expression *test;
 			struct statement *block;
 		} iffy;
 		struct {
-			statements_t statements;
+			statements statements;
 		} block;
 		struct {
 			char name[MAX_IDENTIFIER_SIZE];
 			char type_name[MAX_IDENTIFIER_SIZE];
-			expression_t *init;
+			expression *init;
 		} local_variable;
 	};
-} statement_t;
+} statement;
 
 struct definition;
 
 typedef struct definitions {
 	struct definition *d[256];
 	size_t size;
-} definitions_t;
+} definitions;
 
 typedef struct definition {
 	enum { DEFINITION_FUNCTION, DEFINITION_STRUCT } type;
@@ -113,22 +113,22 @@ typedef struct definition {
 		struct {
 			char attribute[MAX_IDENTIFIER_SIZE];
 			char name[MAX_IDENTIFIER_SIZE];
-			members_t members;
+			members members;
 		} structy;
 	};
-} definition_t;
+} definition;
 
-void parse(tokens_t *tokens);
+void parse(tokens *tokens);
 
 typedef struct functions {
-	definition_t *f[256];
+	definition *f[256];
 	size_t size;
-} functions_t;
+} functions;
 
 typedef struct structs {
-	definition_t *s[256];
+	definition *s[256];
 	size_t size;
-} structs_t;
+} structs;
 
-extern functions_t functions;
-extern structs_t structs;
+extern struct functions all_functions;
+extern struct structs all_structs;

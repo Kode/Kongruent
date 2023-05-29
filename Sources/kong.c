@@ -14,7 +14,7 @@ void convert_function_block(struct statement *block) {
 		error("Expected a block", 0, 0);
 	}
 	for (size_t i = 0; i < block->block.statements.size; ++i) {
-		statement_t *s = block->block.statements.s[i];
+		statement *s = block->block.statements.s[i];
 		switch (s->type) {
 		case STATEMENT_EXPRESSION:
 			break;
@@ -43,25 +43,25 @@ int main(int argc, char **argv) {
 	fclose(file);
 	data[size] = 0;
 
-	tokens_t tokens = tokenize(data);
+	tokens tokens = tokenize(data);
 
 	free(data);
 
 	parse(&tokens);
 
 	log(LOG_LEVEL_INFO, "Functions:");
-	for (size_t i = 0; i < functions.size; ++i) {
-		log(LOG_LEVEL_INFO, "%s", functions.f[i]->function.name);
+	for (size_t i = 0; i < all_functions.size; ++i) {
+		log(LOG_LEVEL_INFO, "%s", all_functions.f[i]->function.name);
 	}
 	log(LOG_LEVEL_INFO, "");
 
 	log(LOG_LEVEL_INFO, "Structs:");
-	for (size_t i = 0; i < structs.size; ++i) {
-		log(LOG_LEVEL_INFO, "%s", structs.s[i]->structy.name);
+	for (size_t i = 0; i < all_structs.size; ++i) {
+		log(LOG_LEVEL_INFO, "%s", all_structs.s[i]->structy.name);
 	}
 
-	for (size_t i = 0; i < functions.size; ++i) {
-		convert_function_block(functions.f[i]->function.block);
+	for (size_t i = 0; i < all_functions.size; ++i) {
+		convert_function_block(all_functions.f[i]->function.block);
 	}
 
 	return 0;
