@@ -20,3 +20,5 @@ fn pixel(input: FragmentIn) -> Color {
     color.r = 1.0;
     color
 }
+
+// https://shader-playground.timjones.io/9daab221a76e1fe6fe3fbad510c436c1

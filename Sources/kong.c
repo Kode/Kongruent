@@ -27,12 +27,16 @@ typedef struct opcodes {
 
 opcodes all_opcodes;
 
+typedef struct variable {
+	uint64_t index;
+} variable;
+
 void emit_op(opcode opcode) {
 	all_opcodes.o[all_opcodes.size] = opcode;
 	all_opcodes.size += 1;
 }
 
-void emit_expression(expression *expression) {
+variable emit_expression(expression *expression) {
 	switch (expression->type) {
 	case EXPRESSION_BINARY: {
 		switch (expression->binary.op) {
@@ -68,11 +72,11 @@ void emit_expression(expression *expression) {
 		case OPERATOR_DIVIDE:
 		case OPERATOR_MULTIPLY:
 		case OPERATOR_NOT: {
-			emit_expression(expression->unary.right);
+			variable v = emit_expression(expression->unary.right);
 			opcode opcode;
 			opcode.type = OPCODE_NOT;
 			emit_op(opcode);
-			break;
+			return v;
 		}
 		case OPERATOR_OR:
 		case OPERATOR_AND:
@@ -90,6 +94,7 @@ void emit_expression(expression *expression) {
 	case EXPRESSION_CONSTRUCTOR:
 		break;
 	}
+	assert(false);
 }
 
 void emit_statement(statement *statement) {
