@@ -11,6 +11,14 @@
 
 const char *filename = "in/test.kong";
 
+const char all_names[1024 * 1024];
+
+typedef struct variable {
+	uint64_t index;
+} variable;
+
+static uint64_t next_variable_id = 0;
+
 typedef struct opcode {
 	enum { OPCODE_VAR, OPCODE_NOT, OPCODE_STORE_VARIABLE, OPCODE_STORE_MEMBER, OPCODE_LOAD_CONSTANT } type;
 	uint8_t size;
@@ -19,6 +27,22 @@ typedef struct opcode {
 		struct {
 			int a;
 		} var;
+		struct {
+			variable var;
+		} op_not;
+		struct {
+			variable from;
+			variable to;
+		} op_store_var;
+		struct {
+			variable from;
+			variable to;
+			size_t member;
+		} op_store_member;
+		struct {
+			float number;
+			variable to;
+		} op_load_constant;
 	};
 } opcode;
 
@@ -29,9 +53,12 @@ typedef struct opcodes {
 
 opcodes all_opcodes;
 
-typedef struct variable {
-	uint64_t index;
-} variable;
+variable allocate_variable() {
+	variable v;
+	v.index = next_variable_id;
+	++next_variable_id;
+	return v;
+}
 
 void emit_op(opcode *o) {
 	memcpy(&all_opcodes.o[all_opcodes.size], o, o->size);
@@ -66,12 +93,21 @@ variable emit_expression(expression *e) {
 			case EXPRESSION_VARIABLE: {
 				opcode o;
 				o.type = OPCODE_STORE_VARIABLE;
+				o.size = 2 + sizeof(o.op_store_var);
+				o.op_store_var.from = v;
+				// o.op_store_var.to = left->variable;
 				emit_op(&o);
 				break;
 			}
 			case EXPRESSION_MEMBER: {
+				variable member_var = emit_expression(left->member.left);
+
 				opcode o;
 				o.type = OPCODE_STORE_MEMBER;
+				o.size = 2 + sizeof(o.op_store_member);
+				o.op_store_member.from = v;
+				o.op_store_member.to = member_var;
+				// o.op_store_member.member = left->member.right;
 				emit_op(&o);
 				break;
 			}
@@ -99,6 +135,8 @@ variable emit_expression(expression *e) {
 			variable v = emit_expression(e->unary.right);
 			opcode o;
 			o.type = OPCODE_NOT;
+			o.size = 2 + sizeof(o.op_not);
+			o.op_not.var = v;
 			emit_op(&o);
 			return v;
 		}
@@ -110,9 +148,15 @@ variable emit_expression(expression *e) {
 		}
 	case EXPRESSION_BOOLEAN:
 	case EXPRESSION_NUMBER: {
+		variable v = allocate_variable();
+
 		opcode o;
 		o.type = OPCODE_LOAD_CONSTANT;
-		break;
+		o.size = 2 + sizeof(o.op_load_constant);
+		o.op_load_constant.number = 1.0f;
+		o.op_load_constant.to = v;
+
+		return v;
 	}
 	case EXPRESSION_STRING:
 	case EXPRESSION_VARIABLE:
