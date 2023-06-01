@@ -7,11 +7,13 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 const char *filename = "in/test.kong";
 
 typedef struct opcode {
-	enum { OPCODE_VAR, OPCODE_NOT } type;
+	enum { OPCODE_VAR, OPCODE_NOT, OPCODE_STORE_VARIABLE, OPCODE_STORE_MEMBER, OPCODE_LOAD_CONSTANT } type;
+	uint8_t size;
 
 	union {
 		struct {
@@ -21,7 +23,7 @@ typedef struct opcode {
 } opcode;
 
 typedef struct opcodes {
-	opcode o[256];
+	uint8_t o[4096];
 	size_t size;
 } opcodes;
 
@@ -31,15 +33,18 @@ typedef struct variable {
 	uint64_t index;
 } variable;
 
-void emit_op(opcode opcode) {
-	all_opcodes.o[all_opcodes.size] = opcode;
-	all_opcodes.size += 1;
+void emit_op(opcode *o) {
+	memcpy(&all_opcodes.o[all_opcodes.size], o, o->size);
+	all_opcodes.size += o->size;
 }
 
-variable emit_expression(expression *expression) {
-	switch (expression->type) {
+variable emit_expression(expression *e) {
+	switch (e->type) {
 	case EXPRESSION_BINARY: {
-		switch (expression->binary.op) {
+		expression *left = e->binary.left;
+		expression *right = e->binary.left;
+
+		switch (e->binary.op) {
 		case OPERATOR_EQUALS:
 		case OPERATOR_NOT_EQUALS:
 		case OPERATOR_GREATER:
@@ -54,13 +59,32 @@ variable emit_expression(expression *expression) {
 		case OPERATOR_OR:
 		case OPERATOR_AND:
 		case OPERATOR_MOD:
-		case OPERATOR_ASSIGN:
+		case OPERATOR_ASSIGN: {
+			variable v = emit_expression(right);
+
+			switch (left->type) {
+			case EXPRESSION_VARIABLE: {
+				opcode o;
+				o.type = OPCODE_STORE_VARIABLE;
+				emit_op(&o);
+				break;
+			}
+			case EXPRESSION_MEMBER: {
+				opcode o;
+				o.type = OPCODE_STORE_MEMBER;
+				emit_op(&o);
+				break;
+			}
+			default:
+				error("Expected a variable or a member", 0, 0);
+			}
 			break;
+		}
 		}
 		break;
 	}
 	case EXPRESSION_UNARY:
-		switch (expression->unary.op) {
+		switch (e->unary.op) {
 		case OPERATOR_EQUALS:
 		case OPERATOR_NOT_EQUALS:
 		case OPERATOR_GREATER:
@@ -72,10 +96,10 @@ variable emit_expression(expression *expression) {
 		case OPERATOR_DIVIDE:
 		case OPERATOR_MULTIPLY:
 		case OPERATOR_NOT: {
-			variable v = emit_expression(expression->unary.right);
-			opcode opcode;
-			opcode.type = OPCODE_NOT;
-			emit_op(opcode);
+			variable v = emit_expression(e->unary.right);
+			opcode o;
+			o.type = OPCODE_NOT;
+			emit_op(&o);
 			return v;
 		}
 		case OPERATOR_OR:
@@ -85,7 +109,11 @@ variable emit_expression(expression *expression) {
 			break;
 		}
 	case EXPRESSION_BOOLEAN:
-	case EXPRESSION_NUMBER:
+	case EXPRESSION_NUMBER: {
+		opcode o;
+		o.type = OPCODE_LOAD_CONSTANT;
+		break;
+	}
 	case EXPRESSION_STRING:
 	case EXPRESSION_VARIABLE:
 	case EXPRESSION_GROUPING:
