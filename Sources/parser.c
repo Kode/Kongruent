@@ -558,6 +558,44 @@ static expression *parse_unary(state_t *state) {
 
 static expression *parse_call(state_t *state, expression *func);
 
+static expression *parse_member(state_t *state) {
+	if (current(state).type == TOKEN_IDENTIFIER) {
+		token token = current(state);
+		advance_state(state);
+
+		if (current(state).type == TOKEN_LEFT_PAREN) {
+			expression *var = expression_allocate();
+			var->type = EXPRESSION_VARIABLE;
+			strcpy(var->variable, token.identifier);
+			return parse_call(state, var);
+		}
+		else if (current(state).type == TOKEN_DOT) {
+			advance_state(state);
+
+			expression *var = expression_allocate();
+			var->type = EXPRESSION_VARIABLE;
+			strcpy(var->variable, token.identifier);
+
+			expression *member = expression_allocate();
+			member->type = EXPRESSION_MEMBER;
+			member->member.left = var;
+			member->member.right = parse_member(state);
+
+			return member;
+		}
+		else {
+			expression *var = expression_allocate();
+			var->type = EXPRESSION_VARIABLE;
+			strcpy(var->variable, token.identifier);
+			return var;
+		}
+	}
+	else {
+		error("Unexpected token", current(state).column, current(state).line);
+		return NULL;
+	}
+}
+
 static expression *parse_primary(state_t *state) {
 	expression *left = NULL;
 
@@ -620,7 +658,7 @@ static expression *parse_primary(state_t *state) {
 
 	if (current(state).type == TOKEN_DOT) {
 		advance_state(state);
-		expression *right = parse_expression(state);
+		expression *right = parse_member(state);
 
 		expression *member = expression_allocate();
 		member->type = EXPRESSION_MEMBER;
