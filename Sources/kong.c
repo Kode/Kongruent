@@ -73,19 +73,33 @@ variable emit_expression(expression *e) {
 
 		switch (e->binary.op) {
 		case OPERATOR_EQUALS:
+			error("not implemented", 0, 0);
 		case OPERATOR_NOT_EQUALS:
+			error("not implemented", 0, 0);
 		case OPERATOR_GREATER:
+			error("not implemented", 0, 0);
 		case OPERATOR_GREATER_EQUAL:
+			error("not implemented", 0, 0);
 		case OPERATOR_LESS:
+			error("not implemented", 0, 0);
 		case OPERATOR_LESS_EQUAL:
+			error("not implemented", 0, 0);
 		case OPERATOR_MINUS:
+			error("not implemented", 0, 0);
 		case OPERATOR_PLUS:
+			error("not implemented", 0, 0);
 		case OPERATOR_DIVIDE:
+			error("not implemented", 0, 0);
 		case OPERATOR_MULTIPLY:
+			error("not implemented", 0, 0);
 		case OPERATOR_NOT:
+			error("not implemented", 0, 0);
 		case OPERATOR_OR:
+			error("not implemented", 0, 0);
 		case OPERATOR_AND:
+			error("not implemented", 0, 0);
 		case OPERATOR_MOD:
+			error("not implemented", 0, 0);
 		case OPERATOR_ASSIGN: {
 			variable v = emit_expression(right);
 
@@ -122,15 +136,25 @@ variable emit_expression(expression *e) {
 	case EXPRESSION_UNARY:
 		switch (e->unary.op) {
 		case OPERATOR_EQUALS:
+			error("not implemented", 0, 0);
 		case OPERATOR_NOT_EQUALS:
+			error("not implemented", 0, 0);
 		case OPERATOR_GREATER:
+			error("not implemented", 0, 0);
 		case OPERATOR_GREATER_EQUAL:
+			error("not implemented", 0, 0);
 		case OPERATOR_LESS:
+			error("not implemented", 0, 0);
 		case OPERATOR_LESS_EQUAL:
+			error("not implemented", 0, 0);
 		case OPERATOR_MINUS:
+			error("not implemented", 0, 0);
 		case OPERATOR_PLUS:
+			error("not implemented", 0, 0);
 		case OPERATOR_DIVIDE:
+			error("not implemented", 0, 0);
 		case OPERATOR_MULTIPLY:
+			error("not implemented", 0, 0);
 		case OPERATOR_NOT: {
 			variable v = emit_expression(e->unary.right);
 			opcode o;
@@ -141,12 +165,16 @@ variable emit_expression(expression *e) {
 			return v;
 		}
 		case OPERATOR_OR:
+			error("not implemented", 0, 0);
 		case OPERATOR_AND:
+			error("not implemented", 0, 0);
 		case OPERATOR_MOD:
+			error("not implemented", 0, 0);
 		case OPERATOR_ASSIGN:
-			break;
+			error("not implemented", 0, 0);
 		}
 	case EXPRESSION_BOOLEAN:
+		error("not implemented", 0, 0);
 	case EXPRESSION_NUMBER: {
 		variable v = allocate_variable();
 
@@ -159,12 +187,17 @@ variable emit_expression(expression *e) {
 		return v;
 	}
 	case EXPRESSION_STRING:
+		error("not implemented", 0, 0);
 	case EXPRESSION_VARIABLE:
+		error("not implemented", 0, 0);
 	case EXPRESSION_GROUPING:
+		error("not implemented", 0, 0);
 	case EXPRESSION_CALL:
+		error("not implemented", 0, 0);
 	case EXPRESSION_MEMBER:
+		error("not implemented", 0, 0);
 	case EXPRESSION_CONSTRUCTOR:
-		break;
+		error("not implemented", 0, 0);
 	}
 	assert(false);
 }
