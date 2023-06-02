@@ -17,16 +17,16 @@ typedef struct variable {
 	uint64_t index;
 } variable;
 
-static uint64_t next_variable_id = 0;
+static uint64_t next_variable_id = 1;
 
 typedef struct opcode {
-	enum { OPCODE_VAR, OPCODE_NOT, OPCODE_STORE_VARIABLE, OPCODE_STORE_MEMBER, OPCODE_LOAD_CONSTANT } type;
+	enum { OPCODE_VAR, OPCODE_NOT, OPCODE_STORE_VARIABLE, OPCODE_STORE_MEMBER, OPCODE_LOAD_CONSTANT, OPCODE_LOAD_MEMBER, OPCODE_RETURN } type;
 	uint8_t size;
 
 	union {
 		struct {
 			int a;
-		} var;
+		} op_var;
 		struct {
 			variable var;
 		} op_not;
@@ -43,6 +43,12 @@ typedef struct opcode {
 			float number;
 			variable to;
 		} op_load_constant;
+		struct {
+			variable to;
+		} op_load_member;
+		struct {
+			variable var;
+		} op_return;
 	};
 } opcode;
 
@@ -128,7 +134,8 @@ variable emit_expression(expression *e) {
 			default:
 				error("Expected a variable or a member", 0, 0);
 			}
-			break;
+
+			return v;
 		}
 		}
 		break;
@@ -188,14 +195,25 @@ variable emit_expression(expression *e) {
 	}
 	case EXPRESSION_STRING:
 		error("not implemented", 0, 0);
-	case EXPRESSION_VARIABLE:
-		error("not implemented", 0, 0);
+	case EXPRESSION_VARIABLE: {
+		variable v = allocate_variable();
+		return v;
+	}
 	case EXPRESSION_GROUPING:
 		error("not implemented", 0, 0);
 	case EXPRESSION_CALL:
 		error("not implemented", 0, 0);
-	case EXPRESSION_MEMBER:
-		error("not implemented", 0, 0);
+	case EXPRESSION_MEMBER: {
+		variable v = allocate_variable();
+
+		opcode o;
+		o.type = OPCODE_LOAD_MEMBER;
+		o.size = 2 + sizeof(o.op_load_member);
+		o.op_load_member.to = v;
+		emit_op(&o);
+
+		return v;
+	}
 	case EXPRESSION_CONSTRUCTOR:
 		error("not implemented", 0, 0);
 	}
@@ -207,14 +225,33 @@ void emit_statement(statement *statement) {
 	case STATEMENT_EXPRESSION:
 		emit_expression(statement->expression);
 		break;
-	case STATEMENT_RETURN_EXPRESSION:
+	case STATEMENT_RETURN_EXPRESSION: {
+		opcode o;
+		o.type = OPCODE_RETURN;
+		variable v = emit_expression(statement->expression);
+		if (v.index == 0) {
+			o.size = 2;
+		}
+		else {
+			o.size = 2 + sizeof(o.op_return);
+			o.op_return.var = v;
+		}
+		emit_op(&o);
 		break;
+	}
 	case STATEMENT_IF:
+		error("not implemented", 0, 0);
 		break;
 	case STATEMENT_BLOCK:
+		error("not implemented", 0, 0);
 		break;
-	case STATEMENT_LOCAL_VARIABLE:
+	case STATEMENT_LOCAL_VARIABLE: {
+		opcode o;
+		o.type = OPCODE_VAR;
+		o.size = 2 + sizeof(o.op_var);
+		emit_op(&o);
 		break;
+	}
 	}
 }
 
