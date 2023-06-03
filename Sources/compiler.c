@@ -4,48 +4,12 @@
 #include "parser.h"
 
 #include <assert.h>
+#include <stddef.h>
 #include <string.h>
 
 const char all_names[1024 * 1024];
 
-typedef struct variable {
-	uint64_t index;
-} variable;
-
 static uint64_t next_variable_id = 1;
-
-typedef struct opcode {
-	enum { OPCODE_VAR, OPCODE_NOT, OPCODE_STORE_VARIABLE, OPCODE_STORE_MEMBER, OPCODE_LOAD_CONSTANT, OPCODE_LOAD_MEMBER, OPCODE_RETURN } type;
-	uint8_t size;
-
-	union {
-		struct {
-			int a;
-		} op_var;
-		struct {
-			variable var;
-		} op_not;
-		struct {
-			variable from;
-			variable to;
-		} op_store_var;
-		struct {
-			variable from;
-			variable to;
-			size_t member;
-		} op_store_member;
-		struct {
-			float number;
-			variable to;
-		} op_load_constant;
-		struct {
-			variable to;
-		} op_load_member;
-		struct {
-			variable var;
-		} op_return;
-	};
-} opcode;
 
 opcodes all_opcodes;
 
@@ -61,11 +25,13 @@ void emit_op(opcode *o) {
 	all_opcodes.size += o->size;
 }
 
+#define OP_SIZE(op, opmember) offsetof(opcode, opmember) + sizeof(o.opmember)
+
 variable emit_expression(expression *e) {
 	switch (e->type) {
 	case EXPRESSION_BINARY: {
 		expression *left = e->binary.left;
-		expression *right = e->binary.left;
+		expression *right = e->binary.right;
 
 		switch (e->binary.op) {
 		case OPERATOR_EQUALS:
@@ -103,7 +69,7 @@ variable emit_expression(expression *e) {
 			case EXPRESSION_VARIABLE: {
 				opcode o;
 				o.type = OPCODE_STORE_VARIABLE;
-				o.size = 2 + sizeof(o.op_store_var);
+				o.size = OP_SIZE(o, op_store_var);
 				o.op_store_var.from = v;
 				// o.op_store_var.to = left->variable;
 				emit_op(&o);
@@ -114,7 +80,7 @@ variable emit_expression(expression *e) {
 
 				opcode o;
 				o.type = OPCODE_STORE_MEMBER;
-				o.size = 2 + sizeof(o.op_store_member);
+				o.size = OP_SIZE(o, op_store_member);
 				o.op_store_member.from = v;
 				o.op_store_member.to = member_var;
 				// o.op_store_member.member = left->member.right;
@@ -156,10 +122,11 @@ variable emit_expression(expression *e) {
 			variable v = emit_expression(e->unary.right);
 			opcode o;
 			o.type = OPCODE_NOT;
-			o.size = 2 + sizeof(o.op_not);
-			o.op_not.var = v;
+			o.size = OP_SIZE(o, op_not);
+			o.op_not.from = v;
+			o.op_not.to = allocate_variable();
 			emit_op(&o);
-			return v;
+			return o.op_not.to;
 		}
 		case OPERATOR_OR:
 			error("not implemented", 0, 0);
@@ -177,9 +144,10 @@ variable emit_expression(expression *e) {
 
 		opcode o;
 		o.type = OPCODE_LOAD_CONSTANT;
-		o.size = 2 + sizeof(o.op_load_constant);
+		o.size = OP_SIZE(o, op_load_constant);
 		o.op_load_constant.number = 1.0f;
 		o.op_load_constant.to = v;
+		emit_op(&o);
 
 		return v;
 	}
@@ -198,7 +166,7 @@ variable emit_expression(expression *e) {
 
 		opcode o;
 		o.type = OPCODE_LOAD_MEMBER;
-		o.size = 2 + sizeof(o.op_load_member);
+		o.size = OP_SIZE(o, op_load_member);
 		o.op_load_member.to = v;
 		emit_op(&o);
 
@@ -223,7 +191,7 @@ void emit_statement(statement *statement) {
 			o.size = 2;
 		}
 		else {
-			o.size = 2 + sizeof(o.op_return);
+			o.size = OP_SIZE(o, op_return);
 			o.op_return.var = v;
 		}
 		emit_op(&o);
@@ -238,7 +206,7 @@ void emit_statement(statement *statement) {
 	case STATEMENT_LOCAL_VARIABLE: {
 		opcode o;
 		o.type = OPCODE_VAR;
-		o.size = 2 + sizeof(o.op_var);
+		o.size = OP_SIZE(o, op_var);
 		emit_op(&o);
 		break;
 	}
