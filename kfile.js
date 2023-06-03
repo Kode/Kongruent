@@ -14,6 +14,7 @@ project.addExclude('.git/**');
 project.addExclude('build/**');
 
 project.addFile('Sources/**');
+project.addExclude('Sources/generators/**')
 
 if (platform === Platform.Windows) {
 	project.addDefine('_CRT_SECURE_NO_WARNINGS');

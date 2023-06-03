@@ -175,7 +175,11 @@ variable emit_expression(expression *e) {
 	case EXPRESSION_CONSTRUCTOR:
 		error("not implemented", 0, 0);
 	}
+
 	assert(false);
+	variable v;
+	v.index = 0;
+	return v;
 }
 
 void emit_statement(statement *statement) {
@@ -188,7 +192,7 @@ void emit_statement(statement *statement) {
 		o.type = OPCODE_RETURN;
 		variable v = emit_expression(statement->expression);
 		if (v.index == 0) {
-			o.size = 2;
+			o.size = offsetof(opcode, op_return);
 		}
 		else {
 			o.size = OP_SIZE(o, op_return);
