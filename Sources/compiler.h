@@ -8,11 +8,11 @@ typedef struct variable {
 
 typedef struct opcode {
 	enum { OPCODE_VAR, OPCODE_NOT, OPCODE_STORE_VARIABLE, OPCODE_STORE_MEMBER, OPCODE_LOAD_CONSTANT, OPCODE_LOAD_MEMBER, OPCODE_RETURN } type;
-	uint8_t size;
+	uint32_t size;
 
 	union {
 		struct {
-			int a;
+			char name[1024];
 		} op_var;
 		struct {
 			variable from;

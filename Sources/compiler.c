@@ -211,6 +211,10 @@ void emit_statement(statement *statement) {
 		opcode o;
 		o.type = OPCODE_VAR;
 		o.size = OP_SIZE(o, op_var);
+		if (statement->local_variable.init != NULL) {
+			emit_expression(statement->local_variable.init);
+		}
+		strcpy(o.op_var.name, statement->local_variable.name);
 		emit_op(&o);
 		break;
 	}
