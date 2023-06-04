@@ -11,14 +11,14 @@
 #include <android/log.h>
 #endif
 
-void log(log_level_t level, const char *format, ...) {
+void kong_log(log_level_t level, const char *format, ...) {
 	va_list args;
 	va_start(args, format);
-	log_args(level, format, args);
+	kong_log_args(level, format, args);
 	va_end(args);
 }
 
-void log_args(log_level_t level, const char *format, va_list args) {
+void kong_log_args(log_level_t level, const char *format, va_list args) {
 #ifdef WIN32
 	char buffer[4096];
 	vsnprintf(buffer, 4090, format, args);

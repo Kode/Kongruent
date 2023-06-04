@@ -33,15 +33,15 @@ int main(int argc, char **argv) {
 
 	parse(&tokens);
 
-	log(LOG_LEVEL_INFO, "Functions:");
+	kong_log(LOG_LEVEL_INFO, "Functions:");
 	for (size_t i = 0; i < all_functions.size; ++i) {
-		log(LOG_LEVEL_INFO, "%s", all_functions.f[i]->function.name);
+		kong_log(LOG_LEVEL_INFO, "%s", all_functions.f[i]->function.name);
 	}
-	log(LOG_LEVEL_INFO, "");
+	kong_log(LOG_LEVEL_INFO, "");
 
-	log(LOG_LEVEL_INFO, "Structs:");
+	kong_log(LOG_LEVEL_INFO, "Structs:");
 	for (size_t i = 0; i < all_structs.size; ++i) {
-		log(LOG_LEVEL_INFO, "%s", all_structs.s[i]->structy.name);
+		kong_log(LOG_LEVEL_INFO, "%s", all_structs.s[i]->structy.name);
 	}
 
 	for (size_t i = 0; i < all_functions.size; ++i) {
