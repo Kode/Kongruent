@@ -1,5 +1,6 @@
 #pragma once
 
+#include "names.h"
 #include "tokenizer.h"
 
 #include <stdbool.h>
@@ -17,7 +18,7 @@ typedef struct expression {
 		EXPRESSION_UNARY,
 		EXPRESSION_BOOLEAN,
 		EXPRESSION_NUMBER,
-		EXPRESSION_STRING,
+		// EXPRESSION_STRING,
 		EXPRESSION_VARIABLE,
 		EXPRESSION_GROUPING,
 		EXPRESSION_CALL,
@@ -37,8 +38,8 @@ typedef struct expression {
 		} unary;
 		bool boolean;
 		double number;
-		char string[MAX_IDENTIFIER_SIZE];
-		char variable[MAX_IDENTIFIER_SIZE];
+		// char string[MAX_IDENTIFIER_SIZE];
+		name_id variable;
 		struct expression *grouping;
 		struct {
 			struct expression *func;
@@ -55,8 +56,8 @@ typedef struct expression {
 } expression;
 
 typedef struct member {
-	char name[MAX_IDENTIFIER_SIZE];
-	char member_type[MAX_IDENTIFIER_SIZE];
+	name_id name;
+	name_id member_type;
 } member;
 
 typedef struct members {
@@ -84,8 +85,8 @@ typedef struct statement {
 			statements statements;
 		} block;
 		struct {
-			char name[MAX_IDENTIFIER_SIZE];
-			char type_name[MAX_IDENTIFIER_SIZE];
+			name_id name;
+			name_id type_name;
 			expression *init;
 		} local_variable;
 	};
@@ -103,16 +104,16 @@ typedef struct definition {
 
 	union {
 		struct {
-			char attribute[MAX_IDENTIFIER_SIZE];
-			char name[MAX_IDENTIFIER_SIZE];
-			char return_type_name[MAX_IDENTIFIER_SIZE];
-			char parameter_name[MAX_IDENTIFIER_SIZE];
-			char parameter_type_name[MAX_IDENTIFIER_SIZE];
+			name_id attribute;
+			name_id name;
+			name_id return_type_name;
+			name_id parameter_name;
+			name_id parameter_type_name;
 			struct statement *block;
 		} function;
 		struct {
-			char attribute[MAX_IDENTIFIER_SIZE];
-			char name[MAX_IDENTIFIER_SIZE];
+			name_id attribute;
+			name_id name;
 			members members;
 		} structy;
 	};

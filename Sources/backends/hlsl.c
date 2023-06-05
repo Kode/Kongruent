@@ -13,7 +13,7 @@ void hlsl_export(uint8_t *data, size_t size) {
 		opcode *o = (opcode *)&data[index];
 		switch (o->type) {
 		case OPCODE_VAR:
-			fprintf(output, "float %s;\n", o->op_var.name);
+			fprintf(output, "float %s;\n", get_name(o->op_var.name));
 			break;
 		case OPCODE_NOT:
 			fprintf(output, "_%" PRIu64 " = !_%" PRIu64 ";\n", o->op_not.to.index, o->op_not.from.index);

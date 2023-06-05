@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "names.h"
+
 typedef struct variable {
 	uint64_t index;
 } variable;
@@ -12,7 +14,7 @@ typedef struct opcode {
 
 	union {
 		struct {
-			char name[1024];
+			name_id name;
 		} op_var;
 		struct {
 			variable from;

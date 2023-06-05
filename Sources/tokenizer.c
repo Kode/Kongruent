@@ -26,7 +26,7 @@ static bool is_whitespace(char ch) {
 typedef enum mode {
 	MODE_SELECT,
 	MODE_NUMBER,
-	MODE_STRING,
+	// MODE_STRING,
 	MODE_OPERATOR,
 	MODE_IDENTIFIER,
 	MODE_LINE_COMMENT,
@@ -95,9 +95,9 @@ static void tokenizer_buffer_reset(tokenizer_buffer *buffer, tokenizer_state *st
 }
 
 static void tokenizer_buffer_add(tokenizer_buffer *buffer, char ch) {
+	assert(buffer->current_size < buffer->max_size);
 	buffer->buf[buffer->current_size] = ch;
 	buffer->current_size += 1;
-	assert(buffer->current_size <= buffer->max_size);
 }
 
 static bool tokenizer_buffer_equals(tokenizer_buffer *buffer, const char *str) {
@@ -105,10 +105,11 @@ static bool tokenizer_buffer_equals(tokenizer_buffer *buffer, const char *str) {
 	return strcmp(buffer->buf, str) == 0;
 }
 
-static void tokenizer_buffer_copy_to_string(tokenizer_buffer *buffer, char *string) {
-	assert(buffer->current_size <= MAX_IDENTIFIER_SIZE);
+static name_id tokenizer_buffer_to_name(tokenizer_buffer *buffer) {
+	assert(buffer->current_size < buffer->max_size);
 	buffer->buf[buffer->current_size] = 0;
-	strcpy(string, buffer->buf);
+	buffer->current_size += 1;
+	return add_name(buffer->buf);
 }
 
 static double tokenizer_buffer_parse_number(tokenizer_buffer *buffer) {
@@ -170,7 +171,7 @@ static void tokens_add_identifier(tokenizer_state *state, tokens *tokens, tokeni
 	}
 	else {
 		token = token_create(TOKEN_IDENTIFIER, state);
-		tokenizer_buffer_copy_to_string(buffer, token.identifier);
+		token.identifier = tokenizer_buffer_to_name(buffer);
 	}
 
 	token.column = buffer->column;
@@ -180,7 +181,7 @@ static void tokens_add_identifier(tokenizer_state *state, tokens *tokens, tokeni
 
 static void tokens_add_attribute(tokenizer_state *state, tokens *tokens, tokenizer_buffer *buffer) {
 	token token = token_create(TOKEN_ATTRIBUTE, state);
-	tokenizer_buffer_copy_to_string(buffer, token.attribute);
+	token.attribute = tokenizer_buffer_to_name(buffer);
 	token.column = buffer->column;
 	token.line = buffer->line;
 	tokens_add(tokens, token);
@@ -216,8 +217,8 @@ tokens tokenize(const char *source) {
 			case MODE_SELECT:
 			case MODE_LINE_COMMENT:
 				break;
-			case MODE_STRING:
-				error("Unclosed string", state.column, state.line);
+			// case MODE_STRING:
+			//	error("Unclosed string", state.column, state.line);
 			case MODE_OPERATOR:
 				error("File ends with an operator", state.column, state.line);
 			case MODE_COMMENT:
@@ -300,8 +301,9 @@ tokens tokenize(const char *source) {
 					tokens_add(&tokens, token_create(TOKEN_COMMA, &state));
 				}
 				else if (ch == '"' || ch == '\'') {
-					mode = MODE_STRING;
-					tokenizer_buffer_reset(&buffer, &state);
+					// mode = MODE_STRING;
+					// tokenizer_buffer_reset(&buffer, &state);
+					error("Strings are not supported", state.column, state.line);
 				}
 				else {
 					mode = MODE_IDENTIFIER;
@@ -444,23 +446,23 @@ tokens tokenize(const char *source) {
 				mode = MODE_SELECT;
 				break;
 			}
-			case MODE_STRING: {
+			/*case MODE_STRING: {
 				if (ch == '"' || ch == '\'') {
-					token token = token_create(TOKEN_STRING, &state);
-					tokenizer_buffer_copy_to_string(&buffer, token.string);
-					token.column = buffer.column;
-					token.line = buffer.line;
-					tokens_add(&tokens, token);
+				    token token = token_create(TOKEN_STRING, &state);
+				    tokenizer_buffer_copy_to_string(&buffer, token.string);
+				    token.column = buffer.column;
+				    token.line = buffer.line;
+				    tokens_add(&tokens, token);
 
-					tokenizer_state_advance(&state);
-					mode = MODE_SELECT;
+				    tokenizer_state_advance(&state);
+				    mode = MODE_SELECT;
 				}
 				else {
-					tokenizer_buffer_add(&buffer, ch);
-					tokenizer_state_advance(&state);
+				    tokenizer_buffer_add(&buffer, ch);
+				    tokenizer_state_advance(&state);
 				}
 				break;
-			}
+			}*/
 			case MODE_IDENTIFIER: {
 				if (is_whitespace(ch) || is_op(ch) || ch == '(' || ch == ')' || ch == '{' || ch == '}' || ch == '"' || ch == '\'' || ch == ';' || ch == '.' ||
 				    ch == ',' || ch == ':') {

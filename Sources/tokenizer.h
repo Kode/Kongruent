@@ -1,5 +1,7 @@
 #pragma once
 
+#include "names.h"
+
 #include <stdbool.h>
 
 typedef enum operatorr {
@@ -20,8 +22,6 @@ typedef enum operatorr {
 	OPERATOR_ASSIGN
 } operatorr;
 
-#define MAX_IDENTIFIER_SIZE 1024
-
 typedef struct token {
 	int line, column;
 
@@ -29,7 +29,7 @@ typedef struct token {
 		TOKEN_EOF,
 		TOKEN_BOOLEAN,
 		TOKEN_NUMBER,
-		TOKEN_STRING,
+		// TOKEN_STRING,
 		TOKEN_IDENTIFIER,
 		TOKEN_ATTRIBUTE,
 		TOKEN_LEFT_PAREN,
@@ -54,9 +54,9 @@ typedef struct token {
 	union {
 		bool boolean;
 		double number;
-		char string[MAX_IDENTIFIER_SIZE];
-		char identifier[MAX_IDENTIFIER_SIZE];
-		char attribute[MAX_IDENTIFIER_SIZE];
+		// char string[MAX_IDENTIFIER_SIZE];
+		name_id identifier;
+		name_id attribute;
 		operatorr op;
 	};
 } token;

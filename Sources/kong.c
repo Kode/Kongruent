@@ -1,6 +1,7 @@
 #include "compiler.h"
 #include "errors.h"
 #include "log.h"
+#include "names.h"
 #include "parser.h"
 #include "tokenizer.h"
 
@@ -18,14 +19,18 @@ int main(int argc, char **argv) {
 	FILE *file = fopen(filename, "rb");
 
 	fseek(file, 0, SEEK_END);
-	long size = ftell(file);
+	size_t size = ftell(file);
 	fseek(file, 0, SEEK_SET);
 
 	char *data = (char *)malloc(size + 1);
 	assert(data != NULL);
+
 	fread(data, 1, size, file);
-	fclose(file);
 	data[size] = 0;
+
+	fclose(file);
+
+	names_init();
 
 	tokens tokens = tokenize(data);
 
@@ -35,13 +40,13 @@ int main(int argc, char **argv) {
 
 	kong_log(LOG_LEVEL_INFO, "Functions:");
 	for (size_t i = 0; i < all_functions.size; ++i) {
-		kong_log(LOG_LEVEL_INFO, "%s", all_functions.f[i]->function.name);
+		kong_log(LOG_LEVEL_INFO, "%s", get_name(all_functions.f[i]->function.name));
 	}
 	kong_log(LOG_LEVEL_INFO, "");
 
 	kong_log(LOG_LEVEL_INFO, "Structs:");
 	for (size_t i = 0; i < all_structs.size; ++i) {
-		kong_log(LOG_LEVEL_INFO, "%s", all_structs.s[i]->structy.name);
+		kong_log(LOG_LEVEL_INFO, "%s", get_name(all_structs.s[i]->structy.name));
 	}
 
 	for (size_t i = 0; i < all_functions.size; ++i) {

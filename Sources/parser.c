@@ -252,24 +252,23 @@ static definition *parse_struct(state_t *state);
 static definition *parse_function(state_t *state);
 
 static definition *parse_definition(state_t *state) {
-	char attribute[MAX_IDENTIFIER_SIZE];
-	attribute[0] = 0;
+	name_id attribute = NO_NAME;
 
 	if (current(state).type == TOKEN_ATTRIBUTE) {
 		token token = current(state);
-		strcpy(attribute, token.attribute);
+		attribute = token.attribute;
 		advance_state(state);
 	}
 
 	switch (current(state).type) {
 	case TOKEN_STRUCT: {
 		definition *structy = parse_struct(state);
-		strcpy(structy->structy.attribute, attribute);
+		structy->structy.attribute = attribute;
 		return structy;
 	}
 	case TOKEN_FUNCTION: {
 		definition *function = parse_function(state);
-		strcpy(function->function.attribute, attribute);
+		function->function.attribute = attribute;
 		return function;
 	}
 	default: {
@@ -324,8 +323,8 @@ static statement *parse_statement(state_t *state) {
 
 		statement *statement = statement_allocate();
 		statement->type = STATEMENT_LOCAL_VARIABLE;
-		strcpy(statement->local_variable.name, name.identifier);
-		strcpy(statement->local_variable.type_name, type_name.identifier);
+		statement->local_variable.name = name.identifier;
+		statement->local_variable.type_name = type_name.identifier;
 		statement->local_variable.init = NULL;
 		return statement;
 	}
@@ -566,7 +565,7 @@ static expression *parse_member(state_t *state) {
 		if (current(state).type == TOKEN_LEFT_PAREN) {
 			expression *var = expression_allocate();
 			var->type = EXPRESSION_VARIABLE;
-			strcpy(var->variable, token.identifier);
+			var->variable = token.identifier;
 			return parse_call(state, var);
 		}
 		else if (current(state).type == TOKEN_DOT) {
@@ -574,7 +573,7 @@ static expression *parse_member(state_t *state) {
 
 			expression *var = expression_allocate();
 			var->type = EXPRESSION_VARIABLE;
-			strcpy(var->variable, token.identifier);
+			var->variable = token.identifier;
 
 			expression *member = expression_allocate();
 			member->type = EXPRESSION_MEMBER;
@@ -586,7 +585,7 @@ static expression *parse_member(state_t *state) {
 		else {
 			expression *var = expression_allocate();
 			var->type = EXPRESSION_VARIABLE;
-			strcpy(var->variable, token.identifier);
+			var->variable = token.identifier;
 			return var;
 		}
 	}
@@ -616,27 +615,27 @@ static expression *parse_primary(state_t *state) {
 		left->number = value;
 		break;
 	}
-	case TOKEN_STRING: {
+	/*case TOKEN_STRING: {
 		token token = current(state);
 		advance_state(state);
 		left = expression_allocate();
 		left->type = EXPRESSION_STRING;
-		strcpy(left->string, token.string);
+		left->string = add_name(token.string);
 		break;
-	}
+	}*/
 	case TOKEN_IDENTIFIER: {
 		token token = current(state);
 		advance_state(state);
 		if (current(state).type == TOKEN_LEFT_PAREN) {
 			expression *var = expression_allocate();
 			var->type = EXPRESSION_VARIABLE;
-			strcpy(var->variable, token.identifier);
+			var->variable = token.identifier;
 			left = parse_call(state, var);
 		}
 		else {
 			expression *var = expression_allocate();
 			var->type = EXPRESSION_VARIABLE;
-			strcpy(var->variable, token.identifier);
+			var->variable = token.identifier;
 			left = var;
 		}
 		break;
@@ -749,8 +748,8 @@ static definition *parse_struct(state_t *state) {
 	advance_state(state);
 
 	member member;
-	strcpy(member.name, member_name.identifier);
-	strcpy(member.member_type, type_name.identifier);
+	member.name = member_name.identifier;
+	member.member_type = type_name.identifier;
 
 	members members;
 	members.m[0] = member;
@@ -758,8 +757,8 @@ static definition *parse_struct(state_t *state) {
 
 	definition *definition = definition_allocate();
 	definition->type = DEFINITION_STRUCT;
-	definition->structy.attribute[0] = 0;
-	strcpy(definition->structy.name, name.identifier);
+	definition->structy.attribute = NO_NAME;
+	definition->structy.name = name.identifier;
 	definition->structy.members = members;
 
 	structs_add(definition);
@@ -794,10 +793,10 @@ static definition *parse_function(state_t *state) {
 	statement *block = parse_block(state);
 	definition *function = definition_allocate();
 	function->type = DEFINITION_FUNCTION;
-	strcpy(function->function.name, name.identifier);
-	strcpy(function->function.return_type_name, return_type_name.identifier);
-	strcpy(function->function.parameter_name, param_name.identifier);
-	strcpy(function->function.parameter_type_name, param_type_name.identifier);
+	function->function.name = name.identifier;
+	function->function.return_type_name = return_type_name.identifier;
+	function->function.parameter_name = param_name.identifier;
+	function->function.parameter_type_name = param_type_name.identifier;
 	function->function.block = block;
 
 	functions_add(function);
