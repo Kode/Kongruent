@@ -93,9 +93,4 @@ typedef struct definition {
 	};
 } definition;
 
-typedef struct definitions {
-	struct definition *d[256];
-	size_t size;
-} definitions;
-
 void parse(tokens *tokens);

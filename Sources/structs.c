@@ -4,7 +4,7 @@
 
 structs all_structs = {0};
 
-void init_structs(void) {
+void structs_init(void) {
 	size_t size = 1024;
 
 	free(all_structs.s);

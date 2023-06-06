@@ -8,23 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static definition *definition_allocate(void) {
-	return (definition *)malloc(sizeof(definition));
-}
-
-static void definition_free(definition *definition) {
-	free(definition);
-}
-
-static void definitions_init(definitions *definitions) {
-	definitions->size = 0;
-}
-
-static void definitions_add(definitions *definitions, definition *definition) {
-	definitions->d[definitions->size] = definition;
-	definitions->size += 1;
-}
-
 static statement *statement_allocate(void) {
 	return (statement *)malloc(sizeof(statement));
 }
@@ -85,7 +68,7 @@ static void match_token_identifier(state_t *state) {
 	}
 }
 
-static definition *parse_definition(state_t *state);
+static definition parse_definition(state_t *state);
 static statement *parse_statement(state_t *state);
 static expression *parse_expression(state_t *state);
 
@@ -238,10 +221,10 @@ static void modifiers_add(modifiers_t *modifiers, modifier_t modifier) {
     }
 }*/
 
-static definition *parse_struct(state_t *state);
-static definition *parse_function(state_t *state);
+static definition parse_struct(state_t *state);
+static definition parse_function(state_t *state);
 
-static definition *parse_definition(state_t *state) {
+static definition parse_definition(state_t *state) {
 	name_id attribute = NO_NAME;
 
 	if (current(state).type == TOKEN_ATTRIBUTE) {
@@ -252,18 +235,20 @@ static definition *parse_definition(state_t *state) {
 
 	switch (current(state).type) {
 	case TOKEN_STRUCT: {
-		definition *structy = parse_struct(state);
-		structy->structy->attribute = attribute;
+		definition structy = parse_struct(state);
+		structy.structy->attribute = attribute;
 		return structy;
 	}
 	case TOKEN_FUNCTION: {
-		definition *function = parse_function(state);
-		function->function->attribute = attribute;
+		definition function = parse_function(state);
+		function.function->attribute = attribute;
 		return function;
 	}
 	default: {
 		error("Expected a struct or function", current(state).column, current(state).line);
-		return NULL;
+
+		definition d = {0};
+		return d;
 	}
 	}
 }
@@ -710,7 +695,7 @@ static expression *parse_call(state_t *state, expression *func) {
 	return call;
 }
 
-static definition *parse_struct(state_t *state) {
+static definition parse_struct(state_t *state) {
 	advance_state(state);
 
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
@@ -747,27 +732,27 @@ static definition *parse_struct(state_t *state) {
 
 	advance_state(state);
 
-	definition *definition = definition_allocate();
-	definition->type = DEFINITION_STRUCT;
+	definition definition;
+	definition.type = DEFINITION_STRUCT;
 
-	definition->structy = add_struct();
+	definition.structy = add_struct();
 
-	definition->structy->attribute = NO_NAME;
-	definition->structy->name = name.identifier;
+	definition.structy->attribute = NO_NAME;
+	definition.structy->name = name.identifier;
 
 	for (size_t i = 0; i < count; ++i) {
 		member member;
 		member.name = member_names[i].identifier;
 		member.member_type = type_names[i].identifier;
 
-		definition->structy->members.m[i] = member;
+		definition.structy->members.m[i] = member;
 	}
-	definition->structy->members.size = count;
+	definition.structy->members.size = count;
 
 	return definition;
 }
 
-static definition *parse_function(state_t *state) {
+static definition parse_function(state_t *state) {
 	advance_state(state);
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 
@@ -792,15 +777,15 @@ static definition *parse_function(state_t *state) {
 	token return_type_name = current(state);
 	advance_state(state);
 	statement *block = parse_block(state);
-	definition *function = definition_allocate();
+	definition d;
 
-	function->type = DEFINITION_FUNCTION;
-	function->function = add_function();
-	function->function->name = name.identifier;
-	function->function->return_type_name = return_type_name.identifier;
-	function->function->parameter_name = param_name.identifier;
-	function->function->parameter_type_name = param_type_name.identifier;
-	function->function->block = block;
+	d.type = DEFINITION_FUNCTION;
+	d.function = add_function();
+	d.function->name = name.identifier;
+	d.function->return_type_name = return_type_name.identifier;
+	d.function->parameter_name = param_name.identifier;
+	d.function->parameter_type_name = param_type_name.identifier;
+	d.function->block = block;
 
-	return function;
+	return d;
 }

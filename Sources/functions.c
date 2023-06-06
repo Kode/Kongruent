@@ -4,7 +4,7 @@
 
 struct functions all_functions = {0};
 
-void init_functions(void) {
+void functions_init(void) {
 	size_t size = 1024;
 
 	free(all_functions.f);

@@ -27,6 +27,6 @@ typedef struct structs {
 
 extern struct structs all_structs;
 
-void init_structs(void);
+void structs_init(void);
 
 structy *add_struct(void);

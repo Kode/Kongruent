@@ -20,6 +20,6 @@ typedef struct functions {
 
 extern struct functions all_functions;
 
-void init_functions(void);
+void functions_init(void);
 
 function *add_function(void);

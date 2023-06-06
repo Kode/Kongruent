@@ -33,8 +33,8 @@ int main(int argc, char **argv) {
 	fclose(file);
 
 	names_init();
-	init_structs();
-	init_functions();
+	structs_init();
+	functions_init();
 
 	tokens tokens = tokenize(data);
 
