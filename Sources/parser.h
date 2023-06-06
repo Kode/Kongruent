@@ -88,7 +88,7 @@ typedef struct definition {
 	enum { DEFINITION_FUNCTION, DEFINITION_STRUCT } type;
 
 	union {
-		function function;
+		function *function;
 		structy *structy;
 	};
 } definition;

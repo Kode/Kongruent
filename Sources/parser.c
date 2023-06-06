@@ -1,5 +1,7 @@
 #include "parser.h"
 #include "errors.h"
+#include "functions.h"
+#include "structs.h"
 #include "tokenizer.h"
 
 #include <assert.h>
@@ -256,7 +258,7 @@ static definition *parse_definition(state_t *state) {
 	}
 	case TOKEN_FUNCTION: {
 		definition *function = parse_function(state);
-		function->function.attribute = attribute;
+		function->function->attribute = attribute;
 		return function;
 	}
 	default: {
@@ -791,14 +793,14 @@ static definition *parse_function(state_t *state) {
 	advance_state(state);
 	statement *block = parse_block(state);
 	definition *function = definition_allocate();
-	function->type = DEFINITION_FUNCTION;
-	function->function.name = name.identifier;
-	function->function.return_type_name = return_type_name.identifier;
-	function->function.parameter_name = param_name.identifier;
-	function->function.parameter_type_name = param_type_name.identifier;
-	function->function.block = block;
 
-	functions_add(&function->function);
+	function->type = DEFINITION_FUNCTION;
+	function->function = add_function();
+	function->function->name = name.identifier;
+	function->function->return_type_name = return_type_name.identifier;
+	function->function->parameter_name = param_name.identifier;
+	function->function->parameter_type_name = param_type_name.identifier;
+	function->function->block = block;
 
 	return function;
 }

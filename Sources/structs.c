@@ -9,7 +9,7 @@ void init_structs(void) {
 
 	free(all_structs.s);
 	all_structs.s = (structy *)malloc(size * sizeof(structy));
-	all_structs.size = size;
+	all_structs.size = 0;
 }
 
 structy *add_struct(void) {

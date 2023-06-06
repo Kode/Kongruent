@@ -14,10 +14,12 @@ typedef struct function {
 } function;
 
 typedef struct functions {
-	function *f[256];
+	function *f;
 	size_t size;
 } functions;
 
 extern struct functions all_functions;
 
-void functions_add(function *f);
+void init_functions(void);
+
+function *add_function(void);
