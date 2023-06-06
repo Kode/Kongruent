@@ -758,21 +758,19 @@ static definition *parse_struct(state_t *state) {
 
 	advance_state(state);
 
-	members members;
+	definition *definition = definition_allocate();
+	definition->type = DEFINITION_STRUCT;
+	definition->structy.attribute = NO_NAME;
+	definition->structy.name = name.identifier;
+
 	for (size_t i = 0; i < count; ++i) {
 		member member;
 		member.name = member_names[i].identifier;
 		member.member_type = type_names[i].identifier;
 
-		members.m[i] = member;
+		definition->structy.members.m[i] = member;
 	}
-	members.size = count;
-
-	definition *definition = definition_allocate();
-	definition->type = DEFINITION_STRUCT;
-	definition->structy.attribute = NO_NAME;
-	definition->structy.name = name.identifier;
-	definition->structy.members = members;
+	definition->structy.members.size = count;
 
 	structs_add(definition);
 
