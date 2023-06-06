@@ -20,22 +20,6 @@ typedef struct structy {
 	members members;
 } structy;
 
-typedef struct definition {
-	enum { DEFINITION_FUNCTION, DEFINITION_STRUCT } type;
-
-	union {
-		struct {
-			name_id attribute;
-			name_id name;
-			name_id return_type_name;
-			name_id parameter_name;
-			name_id parameter_type_name;
-			struct statement *block;
-		} function;
-		structy *structy;
-	};
-} definition;
-
 typedef struct structs {
 	structy *s;
 	size_t size;

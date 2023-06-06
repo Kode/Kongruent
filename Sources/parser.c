@@ -87,13 +87,6 @@ static definition *parse_definition(state_t *state);
 static statement *parse_statement(state_t *state);
 static expression *parse_expression(state_t *state);
 
-struct functions all_functions;
-
-static void functions_add(definition *function) {
-	all_functions.f[all_functions.size] = function;
-	all_functions.size += 1;
-}
-
 void parse(tokens *tokens) {
 	state_t state;
 	state.tokens = tokens;
@@ -805,7 +798,7 @@ static definition *parse_function(state_t *state) {
 	function->function.parameter_type_name = param_type_name.identifier;
 	function->function.block = block;
 
-	functions_add(function);
+	functions_add(&function->function);
 
 	return function;
 }

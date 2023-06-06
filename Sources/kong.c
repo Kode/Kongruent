@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
 
 	kong_log(LOG_LEVEL_INFO, "Functions:");
 	for (size_t i = 0; i < all_functions.size; ++i) {
-		kong_log(LOG_LEVEL_INFO, "%s", get_name(all_functions.f[i]->function.name));
+		kong_log(LOG_LEVEL_INFO, "%s", get_name(all_functions.f[i]->name));
 	}
 	kong_log(LOG_LEVEL_INFO, "");
 
@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 	}
 
 	for (size_t i = 0; i < all_functions.size; ++i) {
-		convert_function_block(all_functions.f[i]->function.block);
+		convert_function_block(all_functions.f[i]->block);
 	}
 
 	hlsl_export(&all_opcodes.o[0], all_opcodes.size);

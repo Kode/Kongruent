@@ -1,5 +1,6 @@
 #pragma once
 
+#include "functions.h"
 #include "names.h"
 #include "structs.h"
 #include "tokenizer.h"
@@ -83,7 +84,14 @@ typedef struct statement {
 	};
 } statement;
 
-struct definition;
+typedef struct definition {
+	enum { DEFINITION_FUNCTION, DEFINITION_STRUCT } type;
+
+	union {
+		function function;
+		structy *structy;
+	};
+} definition;
 
 typedef struct definitions {
 	struct definition *d[256];
@@ -91,10 +99,3 @@ typedef struct definitions {
 } definitions;
 
 void parse(tokens *tokens);
-
-typedef struct functions {
-	definition *f[256];
-	size_t size;
-} functions;
-
-extern struct functions all_functions;
