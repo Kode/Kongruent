@@ -14,6 +14,12 @@ typedef struct members {
 	size_t size;
 } members;
 
+typedef struct structy {
+	name_id attribute;
+	name_id name;
+	members members;
+} structy;
+
 typedef struct definition {
 	enum { DEFINITION_FUNCTION, DEFINITION_STRUCT } type;
 
@@ -26,17 +32,17 @@ typedef struct definition {
 			name_id parameter_type_name;
 			struct statement *block;
 		} function;
-		struct {
-			name_id attribute;
-			name_id name;
-			members members;
-		} structy;
+		structy *structy;
 	};
 } definition;
 
 typedef struct structs {
-	definition *s[256];
+	structy *s;
 	size_t size;
 } structs;
 
 extern struct structs all_structs;
+
+void init_structs(void);
+
+structy *add_struct(void);

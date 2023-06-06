@@ -94,11 +94,6 @@ static void functions_add(definition *function) {
 	all_functions.size += 1;
 }
 
-static void structs_add(definition *structy) {
-	all_structs.s[all_structs.size] = structy;
-	all_structs.size += 1;
-}
-
 void parse(tokens *tokens) {
 	state_t state;
 	state.tokens = tokens;
@@ -263,7 +258,7 @@ static definition *parse_definition(state_t *state) {
 	switch (current(state).type) {
 	case TOKEN_STRUCT: {
 		definition *structy = parse_struct(state);
-		structy->structy.attribute = attribute;
+		structy->structy->attribute = attribute;
 		return structy;
 	}
 	case TOKEN_FUNCTION: {
@@ -759,19 +754,20 @@ static definition *parse_struct(state_t *state) {
 
 	definition *definition = definition_allocate();
 	definition->type = DEFINITION_STRUCT;
-	definition->structy.attribute = NO_NAME;
-	definition->structy.name = name.identifier;
+
+	definition->structy = add_struct();
+
+	definition->structy->attribute = NO_NAME;
+	definition->structy->name = name.identifier;
 
 	for (size_t i = 0; i < count; ++i) {
 		member member;
 		member.name = member_names[i].identifier;
 		member.member_type = type_names[i].identifier;
 
-		definition->structy.members.m[i] = member;
+		definition->structy->members.m[i] = member;
 	}
-	definition->structy.members.size = count;
-
-	structs_add(definition);
+	definition->structy->members.size = count;
 
 	return definition;
 }

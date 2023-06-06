@@ -3,6 +3,7 @@
 #include "log.h"
 #include "names.h"
 #include "parser.h"
+#include "structs.h"
 #include "tokenizer.h"
 
 #include "backends/hlsl.h"
@@ -31,6 +32,7 @@ int main(int argc, char **argv) {
 	fclose(file);
 
 	names_init();
+	init_structs();
 
 	tokens tokens = tokenize(data);
 
@@ -46,7 +48,7 @@ int main(int argc, char **argv) {
 
 	kong_log(LOG_LEVEL_INFO, "Structs:");
 	for (size_t i = 0; i < all_structs.size; ++i) {
-		kong_log(LOG_LEVEL_INFO, "%s", get_name(all_structs.s[i]->structy.name));
+		kong_log(LOG_LEVEL_INFO, "%s", get_name(all_structs.s[i].name));
 	}
 
 	for (size_t i = 0; i < all_functions.size; ++i) {

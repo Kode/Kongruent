@@ -14,6 +14,8 @@ static struct {
 } *hash = NULL;
 
 void names_init(void) {
+	free(names);
+
 	names = (char *)malloc(names_size);
 	assert(names != NULL);
 	names[0] = 0; // make NO_NAME a proper string
