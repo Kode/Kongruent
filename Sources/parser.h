@@ -60,8 +60,10 @@ typedef struct member {
 	name_id member_type;
 } member;
 
+#define MAX_MEMBERS 256
+
 typedef struct members {
-	member m[16];
+	member m[MAX_MEMBERS];
 	size_t size;
 } members;
 

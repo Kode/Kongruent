@@ -2,6 +2,7 @@
 #include "errors.h"
 #include "tokenizer.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -722,38 +723,50 @@ static expression *parse_call(state_t *state, expression *func) {
 
 static definition *parse_struct(state_t *state) {
 	advance_state(state);
+
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 	token name = current(state);
-
 	advance_state(state);
+
 	match_token(state, TOKEN_LEFT_CURLY, "Expected an opening curly bracket");
-
-	advance_state(state);
-	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
-	token member_name = current(state);
-
-	advance_state(state);
-	match_token(state, TOKEN_COLON, "Expected a colon");
-
-	advance_state(state);
-	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
-	token type_name = current(state);
-
-	advance_state(state);
-	match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
-
-	advance_state(state);
-	match_token(state, TOKEN_RIGHT_CURLY, "Expected a closing curly bracket");
-
 	advance_state(state);
 
-	member member;
-	member.name = member_name.identifier;
-	member.member_type = type_name.identifier;
+	token member_names[MAX_MEMBERS];
+	token type_names[MAX_MEMBERS];
+	size_t count = 0;
+
+	while (current(state).type != TOKEN_RIGHT_CURLY) {
+		assert(count < MAX_MEMBERS);
+
+		match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+		member_names[count] = current(state);
+
+		advance_state(state);
+		match_token(state, TOKEN_COLON, "Expected a colon");
+
+		advance_state(state);
+		match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+		type_names[count] = current(state);
+
+		advance_state(state);
+		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
+
+		advance_state(state);
+
+		++count;
+	}
+
+	advance_state(state);
 
 	members members;
-	members.m[0] = member;
-	members.size = 1;
+	for (size_t i = 0; i < count; ++i) {
+		member member;
+		member.name = member_names[i].identifier;
+		member.member_type = type_names[i].identifier;
+
+		members.m[i] = member;
+	}
+	members.size = count;
 
 	definition *definition = definition_allocate();
 	definition->type = DEFINITION_STRUCT;
