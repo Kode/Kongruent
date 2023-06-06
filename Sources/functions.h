@@ -23,3 +23,5 @@ extern struct functions all_functions;
 void functions_init(void);
 
 function *add_function(void);
+
+function *get_function(name_id name);

@@ -30,3 +30,5 @@ extern struct structs all_structs;
 void structs_init(void);
 
 structy *add_struct(void);
+
+structy *get_struct(name_id name);
