@@ -1,6 +1,7 @@
 #pragma once
 
 #include "names.h"
+#include "structs.h"
 #include "tokenizer.h"
 
 #include <stdbool.h>
@@ -55,18 +56,6 @@ typedef struct expression {
 	};
 } expression;
 
-typedef struct member {
-	name_id name;
-	name_id member_type;
-} member;
-
-#define MAX_MEMBERS 256
-
-typedef struct members {
-	member m[MAX_MEMBERS];
-	size_t size;
-} members;
-
 struct statement;
 
 typedef struct statements {
@@ -101,26 +90,6 @@ typedef struct definitions {
 	size_t size;
 } definitions;
 
-typedef struct definition {
-	enum { DEFINITION_FUNCTION, DEFINITION_STRUCT } type;
-
-	union {
-		struct {
-			name_id attribute;
-			name_id name;
-			name_id return_type_name;
-			name_id parameter_name;
-			name_id parameter_type_name;
-			struct statement *block;
-		} function;
-		struct {
-			name_id attribute;
-			name_id name;
-			members members;
-		} structy;
-	};
-} definition;
-
 void parse(tokens *tokens);
 
 typedef struct functions {
@@ -128,10 +97,4 @@ typedef struct functions {
 	size_t size;
 } functions;
 
-typedef struct structs {
-	definition *s[256];
-	size_t size;
-} structs;
-
 extern struct functions all_functions;
-extern struct structs all_structs;

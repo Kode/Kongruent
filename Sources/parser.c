@@ -88,7 +88,6 @@ static statement *parse_statement(state_t *state);
 static expression *parse_expression(state_t *state);
 
 struct functions all_functions;
-struct structs all_structs;
 
 static void functions_add(definition *function) {
 	all_functions.f[all_functions.size] = function;
