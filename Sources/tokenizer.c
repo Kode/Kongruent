@@ -117,9 +117,9 @@ static double tokenizer_buffer_parse_number(tokenizer_buffer *buffer) {
 	return strtod(buffer->buf, &end);
 }
 
-token token_create(int type, tokenizer_state *state) {
+token token_create(int kind, tokenizer_state *state) {
 	token token;
-	token.type = type;
+	token.kind = kind;
 	token.column = state->column;
 	token.line = state->line;
 	return token;

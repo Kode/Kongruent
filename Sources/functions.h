@@ -1,6 +1,7 @@
 #pragma once
 
 #include "names.h"
+#include "structs.h"
 
 #define NO_FUNCTION 0xFFFFFFFF
 
@@ -11,9 +12,9 @@ struct statement;
 typedef struct function {
 	name_id attribute;
 	name_id name;
-	name_id return_type_name;
+	type_ref return_type;
 	name_id parameter_name;
-	name_id parameter_type_name;
+	type_ref parameter_type;
 	struct statement *block;
 } function;
 

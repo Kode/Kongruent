@@ -31,9 +31,11 @@ function_id add_function(name_id name) {
 
 	functions[f].name = name;
 	functions[f].attribute = NO_NAME;
-	functions[f].return_type_name = NO_NAME;
+	functions[f].return_type.resolved = false;
+	functions[f].return_type.name = NO_NAME;
 	functions[f].parameter_name = NO_NAME;
-	functions[f].parameter_type_name = NO_NAME;
+	functions[f].parameter_type.resolved = false;
+	functions[f].parameter_type.name = NO_NAME;
 	functions[f].block = NULL;
 
 	return f;

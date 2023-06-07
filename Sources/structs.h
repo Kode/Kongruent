@@ -2,9 +2,24 @@
 
 #include "names.h"
 
+#include <stdbool.h>
+
+#define NO_STRUCT 0xFFFFFFFF
+
+typedef uint32_t struct_id;
+
+typedef struct type_ref {
+	bool resolved;
+
+	union {
+		name_id name;
+		struct_id type;
+	};
+} type_ref;
+
 typedef struct member {
 	name_id name;
-	name_id member_type;
+	type_ref type;
 } member;
 
 #define MAX_MEMBERS 256
@@ -13,10 +28,6 @@ typedef struct members {
 	member m[MAX_MEMBERS];
 	size_t size;
 } members;
-
-#define NO_STRUCT 0xFFFFFFFF
-
-typedef uint32_t struct_id;
 
 typedef struct structy {
 	name_id attribute;

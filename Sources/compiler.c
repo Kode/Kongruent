@@ -28,7 +28,7 @@ void emit_op(opcode *o) {
 #define OP_SIZE(op, opmember) offsetof(opcode, opmember) + sizeof(o.opmember)
 
 variable emit_expression(expression *e) {
-	switch (e->type) {
+	switch (e->kind) {
 	case EXPRESSION_BINARY: {
 		expression *left = e->binary.left;
 		expression *right = e->binary.right;
@@ -65,7 +65,7 @@ variable emit_expression(expression *e) {
 		case OPERATOR_ASSIGN: {
 			variable v = emit_expression(right);
 
-			switch (left->type) {
+			switch (left->kind) {
 			case EXPRESSION_VARIABLE: {
 				opcode o;
 				o.type = OPCODE_STORE_VARIABLE;
@@ -183,7 +183,7 @@ variable emit_expression(expression *e) {
 }
 
 void emit_statement(statement *statement) {
-	switch (statement->type) {
+	switch (statement->kind) {
 	case STATEMENT_EXPRESSION:
 		emit_expression(statement->expression);
 		break;
@@ -222,7 +222,7 @@ void emit_statement(statement *statement) {
 }
 
 void convert_function_block(struct statement *block) {
-	if (block->type != STATEMENT_BLOCK) {
+	if (block->kind != STATEMENT_BLOCK) {
 		error("Expected a block", 0, 0);
 	}
 	for (size_t i = 0; i < block->block.statements.size; ++i) {

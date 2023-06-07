@@ -49,7 +49,7 @@ typedef struct token {
 		TOKEN_LET,
 		TOKEN_MUT,
 		TOKEN_FUNCTION_THINGY
-	} type;
+	} kind;
 
 	union {
 		bool boolean;

@@ -26,7 +26,9 @@ typedef struct expression {
 		EXPRESSION_CALL,
 		EXPRESSION_MEMBER,
 		EXPRESSION_CONSTRUCTOR
-	} type;
+	} kind;
+
+	type_ref type;
 
 	union {
 		struct {
@@ -65,7 +67,7 @@ typedef struct statements {
 } statements;
 
 typedef struct statement {
-	enum { STATEMENT_EXPRESSION, STATEMENT_RETURN_EXPRESSION, STATEMENT_IF, STATEMENT_BLOCK, STATEMENT_LOCAL_VARIABLE } type;
+	enum { STATEMENT_EXPRESSION, STATEMENT_RETURN_EXPRESSION, STATEMENT_IF, STATEMENT_BLOCK, STATEMENT_LOCAL_VARIABLE } kind;
 
 	union {
 		expression *expression;
@@ -78,14 +80,14 @@ typedef struct statement {
 		} block;
 		struct {
 			name_id name;
-			name_id type_name;
+			type_ref type;
 			expression *init;
 		} local_variable;
 	};
 } statement;
 
 typedef struct definition {
-	enum { DEFINITION_FUNCTION, DEFINITION_STRUCT } type;
+	enum { DEFINITION_FUNCTION, DEFINITION_STRUCT } kind;
 
 	union {
 		function_id function;
