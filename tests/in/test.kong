@@ -21,10 +21,10 @@ fn pixel(input: FragmentIn) -> vec4 {
     color
 }
 
-#[pipe]
+/*#[pipe]
 struct Pipe {
-    vertex: pos;
-    pixel: pixel;
-}
+    vertex = pos;
+    pixel = pixel;
+}*/
 
 // https://shader-playground.timjones.io/9daab221a76e1fe6fe3fbad510c436c1

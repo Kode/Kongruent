@@ -57,5 +57,6 @@ name_id add_name(char *name) {
 }
 
 char *get_name(name_id id) {
+	assert(id < names_index);
 	return &names[id];
 }
