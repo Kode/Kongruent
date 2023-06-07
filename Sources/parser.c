@@ -733,12 +733,9 @@ static definition parse_struct(state_t *state) {
 	definition definition;
 	definition.type = DEFINITION_STRUCT;
 
-	definition.structy = add_struct();
+	definition.structy = add_struct(name.identifier);
 
 	structy *s = get_struct(definition.structy);
-
-	s->attribute = NO_NAME;
-	s->name = name.identifier;
 
 	for (size_t i = 0; i < count; ++i) {
 		member member;
@@ -780,9 +777,8 @@ static definition parse_function(state_t *state) {
 	definition d;
 
 	d.type = DEFINITION_FUNCTION;
-	d.function = add_function();
+	d.function = add_function(name.identifier);
 	function *f = get_function(d.function);
-	f->name = name.identifier;
 	f->return_type_name = return_type_name.identifier;
 	f->parameter_name = param_name.identifier;
 	f->parameter_type_name = param_type_name.identifier;

@@ -26,7 +26,7 @@ typedef struct structy {
 
 void structs_init(void);
 
-struct_id add_struct(void);
+struct_id add_struct(name_id name);
 
 struct_id find_struct(name_id name);
 

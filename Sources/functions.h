@@ -19,7 +19,7 @@ typedef struct function {
 
 void functions_init(void);
 
-function_id add_function(void);
+function_id add_function(name_id name);
 
 function_id find_function(name_id name);
 

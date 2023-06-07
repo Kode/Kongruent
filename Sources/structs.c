@@ -12,6 +12,11 @@ void structs_init(void) {
 	assert(new_structs != NULL);
 	structs = new_structs;
 	next_struct_index = 0;
+
+	add_struct(add_name("f32"));
+	add_struct(add_name("vec2"));
+	add_struct(add_name("vec3"));
+	add_struct(add_name("vec4"));
 }
 
 static void grow_if_needed(uint64_t size) {
@@ -23,11 +28,16 @@ static void grow_if_needed(uint64_t size) {
 	}
 }
 
-struct_id add_struct(void) {
+struct_id add_struct(name_id name) {
 	grow_if_needed(next_struct_index + 1);
 
 	struct_id s = next_struct_index;
 	++next_struct_index;
+
+	structs[s].name = name;
+	structs[s].attribute = NO_NAME;
+	structs[s].members.size = 0;
+
 	return s;
 }
 

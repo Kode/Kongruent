@@ -23,11 +23,19 @@ static void grow_if_needed(uint64_t size) {
 	}
 }
 
-function_id add_function(void) {
+function_id add_function(name_id name) {
 	grow_if_needed(next_function_index + 1);
 
 	function_id f = next_function_index;
 	++next_function_index;
+
+	functions[f].name = name;
+	functions[f].attribute = NO_NAME;
+	functions[f].return_type_name = NO_NAME;
+	functions[f].parameter_name = NO_NAME;
+	functions[f].parameter_type_name = NO_NAME;
+	functions[f].block = NULL;
+
 	return f;
 }
 

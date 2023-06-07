@@ -15,8 +15,8 @@ fn pos(input: VertexIn) -> FragmentIn {
 }
 
 #[fragment]
-fn pixel(input: FragmentIn) -> Color {
-    let mut color: Color;
+fn pixel(input: FragmentIn) -> vec4 {
+    let mut color: vec4;
     color.r = 1.0;
     color
 }
