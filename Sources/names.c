@@ -16,8 +16,9 @@ static struct {
 void names_init(void) {
 	free(names);
 
-	names = (char *)malloc(names_size);
-	assert(names != NULL);
+	char *new_names = realloc(names, names_size);
+	assert(new_names != NULL);
+	names = new_names;
 	names[0] = 0; // make NO_NAME a proper string
 
 	sh_new_arena(hash); // TODO: Get rid of this by using indices internally in the hash-map so it can survive grow_if_needed

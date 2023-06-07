@@ -8,8 +8,9 @@ static function_id functions_size = 1024;
 static function_id next_function_index = 0;
 
 void functions_init(void) {
-	free(functions);
-	functions = (function *)malloc(functions_size * sizeof(function));
+	function *new_functions = realloc(functions, functions_size * sizeof(function));
+	assert(new_functions != NULL);
+	functions = new_functions;
 	next_function_index = 0;
 }
 

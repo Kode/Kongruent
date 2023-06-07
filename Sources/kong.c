@@ -49,8 +49,8 @@ int main(int argc, char **argv) {
 	kong_log(LOG_LEVEL_INFO, "");
 
 	kong_log(LOG_LEVEL_INFO, "Structs:");
-	for (size_t i = 0; i < all_structs.size; ++i) {
-		kong_log(LOG_LEVEL_INFO, "%s", get_name(all_structs.s[i].name));
+	for (struct_id i = 0; get_struct(i) != NULL; ++i) {
+		kong_log(LOG_LEVEL_INFO, "%s", get_name(get_struct(i)->name));
 	}
 
 	for (function_id i = 0; get_function(i) != NULL; ++i) {

@@ -14,21 +14,20 @@ typedef struct members {
 	size_t size;
 } members;
 
+#define NO_STRUCT 0xFFFFFFFF
+
+typedef uint32_t struct_id;
+
 typedef struct structy {
 	name_id attribute;
 	name_id name;
 	members members;
 } structy;
 
-typedef struct structs {
-	structy *s;
-	size_t size;
-} structs;
-
-extern struct structs all_structs;
-
 void structs_init(void);
 
-structy *add_struct(void);
+struct_id add_struct(void);
 
-structy *get_struct(name_id name);
+struct_id find_struct(name_id name);
+
+structy *get_struct(struct_id s);

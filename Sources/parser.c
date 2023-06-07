@@ -77,8 +77,6 @@ void parse(tokens *tokens) {
 	state.tokens = tokens;
 	state.index = 0;
 
-	all_structs.size = 0;
-
 	for (;;) {
 		token token = current(&state);
 		if (token.type == TOKEN_EOF) {
@@ -235,7 +233,7 @@ static definition parse_definition(state_t *state) {
 	switch (current(state).type) {
 	case TOKEN_STRUCT: {
 		definition structy = parse_struct(state);
-		structy.structy->attribute = attribute;
+		get_struct(structy.structy)->attribute = attribute;
 		return structy;
 	}
 	case TOKEN_FUNCTION: {
@@ -737,17 +735,19 @@ static definition parse_struct(state_t *state) {
 
 	definition.structy = add_struct();
 
-	definition.structy->attribute = NO_NAME;
-	definition.structy->name = name.identifier;
+	structy *s = get_struct(definition.structy);
+
+	s->attribute = NO_NAME;
+	s->name = name.identifier;
 
 	for (size_t i = 0; i < count; ++i) {
 		member member;
 		member.name = member_names[i].identifier;
 		member.member_type = type_names[i].identifier;
 
-		definition.structy->members.m[i] = member;
+		s->members.m[i] = member;
 	}
-	definition.structy->members.size = count;
+	s->members.size = count;
 
 	return definition;
 }

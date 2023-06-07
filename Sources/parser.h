@@ -89,7 +89,7 @@ typedef struct definition {
 
 	union {
 		function_id function;
-		structy *structy;
+		struct_id structy;
 	};
 } definition;
 
