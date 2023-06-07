@@ -3,30 +3,51 @@
 #include <assert.h>
 #include <stdlib.h>
 
-struct functions all_functions = {0};
+typedef struct functions {
+	function *f;
+	size_t size;
+} functions;
 
-#define MAX_FUNCTIONS 1024 * 64
+static function *all_functions = NULL;
+static function_id functions_size = 1024;
+static function_id next_function_index = 0;
 
 void functions_init(void) {
-	free(all_functions.f);
-	all_functions.f = (function *)malloc(MAX_FUNCTIONS * sizeof(function));
-	all_functions.size = 0;
+	free(all_functions);
+	all_functions = (function *)malloc(functions_size * sizeof(function));
+	next_function_index = 0;
 }
 
-function *add_function(void) {
-	assert(all_functions.size < MAX_FUNCTIONS);
+static void grow_if_needed(uint64_t size) {
+	while (size >= functions_size) {
+		functions_size *= 2;
+		function *new_functions = realloc(all_functions, functions_size * sizeof(function));
+		assert(new_functions != NULL);
+		all_functions = new_functions;
+	}
+}
 
-	function *f = &all_functions.f[all_functions.size];
-	all_functions.size += 1;
+function_id add_function(void) {
+	grow_if_needed(next_function_index + 1);
+
+	function_id f = next_function_index;
+	++next_function_index;
 	return f;
 }
 
-function *get_function(name_id name) {
-	for (size_t i = 0; i < all_functions.size; ++i) {
-		if (all_functions.f[i].name == name) {
-			return &all_functions.f[i];
+function_id find_function(name_id name) {
+	for (function_id i = 0; i < next_function_index; ++i) {
+		if (all_functions[i].name == name) {
+			return i;
 		}
 	}
 
-	return NULL;
+	return NO_FUNCTION;
+}
+
+function *get_function(function_id function) {
+	if (function >= next_function_index) {
+		return NULL;
+	}
+	return &all_functions[function];
 }

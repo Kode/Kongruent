@@ -77,7 +77,6 @@ void parse(tokens *tokens) {
 	state.tokens = tokens;
 	state.index = 0;
 
-	all_functions.size = 0;
 	all_structs.size = 0;
 
 	for (;;) {
@@ -240,9 +239,10 @@ static definition parse_definition(state_t *state) {
 		return structy;
 	}
 	case TOKEN_FUNCTION: {
-		definition function = parse_function(state);
-		function.function->attribute = attribute;
-		return function;
+		definition d = parse_function(state);
+		function *f = get_function(d.function);
+		f->attribute = attribute;
+		return d;
 	}
 	default: {
 		error("Expected a struct or function", current(state).column, current(state).line);
@@ -781,11 +781,12 @@ static definition parse_function(state_t *state) {
 
 	d.type = DEFINITION_FUNCTION;
 	d.function = add_function();
-	d.function->name = name.identifier;
-	d.function->return_type_name = return_type_name.identifier;
-	d.function->parameter_name = param_name.identifier;
-	d.function->parameter_type_name = param_type_name.identifier;
-	d.function->block = block;
+	function *f = get_function(d.function);
+	f->name = name.identifier;
+	f->return_type_name = return_type_name.identifier;
+	f->parameter_name = param_name.identifier;
+	f->parameter_type_name = param_type_name.identifier;
+	f->block = block;
 
 	return d;
 }

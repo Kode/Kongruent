@@ -2,6 +2,10 @@
 
 #include "names.h"
 
+#define NO_FUNCTION 0xFFFFFFFF
+
+typedef uint32_t function_id;
+
 struct statement;
 
 typedef struct function {
@@ -13,15 +17,10 @@ typedef struct function {
 	struct statement *block;
 } function;
 
-typedef struct functions {
-	function *f;
-	size_t size;
-} functions;
-
-extern struct functions all_functions;
-
 void functions_init(void);
 
-function *add_function(void);
+function_id add_function(void);
 
-function *get_function(name_id name);
+function_id find_function(name_id name);
+
+function *get_function(function_id function);

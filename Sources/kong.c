@@ -43,8 +43,8 @@ int main(int argc, char **argv) {
 	parse(&tokens);
 
 	kong_log(LOG_LEVEL_INFO, "Functions:");
-	for (size_t i = 0; i < all_functions.size; ++i) {
-		kong_log(LOG_LEVEL_INFO, "%s", get_name(all_functions.f[i].name));
+	for (function_id i = 0; get_function(i) != NULL; ++i) {
+		kong_log(LOG_LEVEL_INFO, "%s", get_name(get_function(i)->name));
 	}
 	kong_log(LOG_LEVEL_INFO, "");
 
@@ -53,8 +53,8 @@ int main(int argc, char **argv) {
 		kong_log(LOG_LEVEL_INFO, "%s", get_name(all_structs.s[i].name));
 	}
 
-	for (size_t i = 0; i < all_functions.size; ++i) {
-		convert_function_block(all_functions.f[i].block);
+	for (function_id i = 0; get_function(i) != NULL; ++i) {
+		convert_function_block(get_function(i)->block);
 	}
 
 	hlsl_export(&all_opcodes.o[0], all_opcodes.size);

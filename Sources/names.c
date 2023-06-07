@@ -6,7 +6,7 @@
 
 static char *names = NULL;
 static uint64_t names_size = 1024 * 1024;
-static uint64_t names_index = 1;
+static name_id names_index = 1;
 
 static struct {
 	char *key;
