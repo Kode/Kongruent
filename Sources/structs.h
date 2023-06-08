@@ -42,3 +42,9 @@ struct_id add_struct(name_id name);
 struct_id find_struct(name_id name);
 
 structy *get_struct(struct_id s);
+
+extern struct_id f32_id;
+extern struct_id vec2_id;
+extern struct_id vec3_id;
+extern struct_id vec4_id;
+extern struct_id bool_id;

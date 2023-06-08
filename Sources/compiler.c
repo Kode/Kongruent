@@ -214,7 +214,7 @@ void emit_statement(statement *statement) {
 		if (statement->local_variable.init != NULL) {
 			emit_expression(statement->local_variable.init);
 		}
-		o.op_var.name = statement->local_variable.name;
+		o.op_var.name = statement->local_variable.var.name;
 		emit_op(&o);
 		break;
 	}

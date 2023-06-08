@@ -95,6 +95,8 @@ static statement *parse_block(state_t *state) {
 			advance_state(state);
 			statement *statement = statement_allocate();
 			statement->kind = STATEMENT_BLOCK;
+			statement->block.parent = NULL;
+			statement->block.vars.size = 0;
 			statement->block.statements = statements;
 			return statement;
 		}
@@ -290,9 +292,9 @@ static statement *parse_statement(state_t *state) {
 
 		statement *statement = statement_allocate();
 		statement->kind = STATEMENT_LOCAL_VARIABLE;
-		statement->local_variable.name = name.identifier;
-		statement->local_variable.type.resolved = false;
-		statement->local_variable.type.name = type_name.identifier;
+		statement->local_variable.var.name = name.identifier;
+		statement->local_variable.var.type.resolved = false;
+		statement->local_variable.var.type.name = type_name.identifier;
 		statement->local_variable.init = NULL;
 		return statement;
 	}
@@ -523,7 +525,7 @@ static expression *parse_unary(state_t *state) {
 	return parse_primary(state);
 }
 
-static expression *parse_call(state_t *state, expression *func);
+static expression *parse_call(state_t *state, name_id func_name);
 
 static expression *parse_member(state_t *state) {
 	if (current(state).kind == TOKEN_IDENTIFIER) {
@@ -531,10 +533,7 @@ static expression *parse_member(state_t *state) {
 		advance_state(state);
 
 		if (current(state).kind == TOKEN_LEFT_PAREN) {
-			expression *var = expression_allocate();
-			var->kind = EXPRESSION_VARIABLE;
-			var->variable = token.identifier;
-			return parse_call(state, var);
+			return parse_call(state, token.identifier);
 		}
 		else if (current(state).kind == TOKEN_DOT) {
 			advance_state(state);
@@ -595,10 +594,7 @@ static expression *parse_primary(state_t *state) {
 		token token = current(state);
 		advance_state(state);
 		if (current(state).kind == TOKEN_LEFT_PAREN) {
-			expression *var = expression_allocate();
-			var->kind = EXPRESSION_VARIABLE;
-			var->variable = token.identifier;
-			left = parse_call(state, var);
+			left = parse_call(state, token.identifier);
 		}
 		else {
 			expression *var = expression_allocate();
@@ -633,7 +629,9 @@ static expression *parse_primary(state_t *state) {
 		member->member.right = right;
 
 		if (current(state).kind == TOKEN_LEFT_PAREN) {
-			return parse_call(state, member);
+			// return parse_call(state, member);
+			error("Function members not currently supported", current(state).column, current(state).line);
+			return NULL;
 		}
 		else {
 			return member;
@@ -643,7 +641,7 @@ static expression *parse_primary(state_t *state) {
 	return left;
 }
 
-static expression *parse_call(state_t *state, expression *func) {
+static expression *parse_call(state_t *state, name_id func_name) {
 	match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
 	advance_state(state);
 
@@ -654,7 +652,7 @@ static expression *parse_call(state_t *state, expression *func) {
 
 		call = expression_allocate();
 		call->kind = EXPRESSION_CALL;
-		call->call.func = func;
+		call->call.func_name = func_name;
 		call->call.parameters = NULL;
 	}
 	else {
@@ -664,7 +662,7 @@ static expression *parse_call(state_t *state, expression *func) {
 
 		call = expression_allocate();
 		call->kind = EXPRESSION_CALL;
-		call->call.func = func;
+		call->call.func_name = func_name;
 		call->call.parameters = expr;
 	}
 
@@ -678,7 +676,9 @@ static expression *parse_call(state_t *state, expression *func) {
 		member->member.right = right;
 
 		if (current(state).kind == TOKEN_LEFT_PAREN) {
-			return parse_call(state, member);
+			// return parse_call(state, member);
+			error("Function members not currently supported", current(state).column, current(state).line);
+			return NULL;
 		}
 		else {
 			return member;

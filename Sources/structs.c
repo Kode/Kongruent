@@ -3,9 +3,15 @@
 #include <assert.h>
 #include <stdlib.h>
 
-structy *structs = NULL;
+static structy *structs = NULL;
 static struct_id structs_size = 1024;
 static struct_id next_struct_index = 0;
+
+struct_id f32_id;
+struct_id vec2_id;
+struct_id vec3_id;
+struct_id vec4_id;
+struct_id bool_id;
 
 void structs_init(void) {
 	structy *new_structs = realloc(structs, structs_size * sizeof(structy));
@@ -13,10 +19,11 @@ void structs_init(void) {
 	structs = new_structs;
 	next_struct_index = 0;
 
-	add_struct(add_name("f32"));
-	add_struct(add_name("vec2"));
-	add_struct(add_name("vec3"));
-	add_struct(add_name("vec4"));
+	f32_id = add_struct(add_name("f32"));
+	vec2_id = add_struct(add_name("vec2"));
+	vec3_id = add_struct(add_name("vec3"));
+	vec4_id = add_struct(add_name("vec4"));
+	bool_id = add_struct(add_name("bool"));
 }
 
 static void grow_if_needed(uint64_t size) {

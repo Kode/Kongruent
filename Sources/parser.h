@@ -46,7 +46,7 @@ typedef struct expression {
 		name_id variable;
 		struct expression *grouping;
 		struct {
-			struct expression *func;
+			name_id func_name;
 			struct expression *parameters;
 		} call;
 		struct {
@@ -66,6 +66,22 @@ typedef struct statements {
 	size_t size;
 } statements;
 
+typedef struct local_variable {
+	name_id name;
+	type_ref type;
+} local_variable;
+
+typedef struct local_variables {
+	local_variable v[256];
+	size_t size;
+} local_variables;
+
+typedef struct block {
+	struct block *parent;
+	local_variables vars;
+	statements statements;
+} block;
+
 typedef struct statement {
 	enum { STATEMENT_EXPRESSION, STATEMENT_RETURN_EXPRESSION, STATEMENT_IF, STATEMENT_BLOCK, STATEMENT_LOCAL_VARIABLE } kind;
 
@@ -75,12 +91,9 @@ typedef struct statement {
 			expression *test;
 			struct statement *block;
 		} iffy;
+		block block;
 		struct {
-			statements statements;
-		} block;
-		struct {
-			name_id name;
-			type_ref type;
+			local_variable var;
 			expression *init;
 		} local_variable;
 	};
