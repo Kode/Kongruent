@@ -69,6 +69,7 @@ typedef struct statements {
 typedef struct local_variable {
 	name_id name;
 	type_ref type;
+	uint64_t variable_id;
 } local_variable;
 
 typedef struct local_variables {

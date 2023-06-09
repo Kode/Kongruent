@@ -3,9 +3,11 @@
 #include <stdint.h>
 
 #include "names.h"
+#include "structs.h"
 
 typedef struct variable {
 	uint64_t index;
+	struct_id type;
 } variable;
 
 typedef struct opcode {
@@ -15,6 +17,7 @@ typedef struct opcode {
 	union {
 		struct {
 			name_id name;
+			struct_id type;
 		} op_var;
 		struct {
 			variable from;
@@ -34,7 +37,9 @@ typedef struct opcode {
 			variable to;
 		} op_load_constant;
 		struct {
+			variable from;
 			variable to;
+			uint16_t member_indices[64];
 		} op_load_member;
 		struct {
 			variable var;

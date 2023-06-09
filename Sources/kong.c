@@ -351,6 +351,7 @@ void resolve_types(void) {
 
 		f->block->block.vars.v[f->block->block.vars.size].name = f->parameter_name;
 		f->block->block.vars.v[f->block->block.vars.size].type = f->parameter_type;
+		f->block->block.vars.v[f->block->block.vars.size].variable_id = 0;
 		++f->block->block.vars.size;
 
 		resolve_types_in_block(NULL, f->block);
