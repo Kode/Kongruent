@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #include "names.h"
-#include "structs.h"
+#include "types.h"
 
 typedef struct variable {
 	uint64_t index;

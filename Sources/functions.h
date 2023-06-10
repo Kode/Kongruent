@@ -1,7 +1,7 @@
 #pragma once
 
 #include "names.h"
-#include "structs.h"
+#include "types.h"
 
 #define NO_FUNCTION 0xFFFFFFFF
 

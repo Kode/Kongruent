@@ -4,8 +4,8 @@
 #include "log.h"
 #include "names.h"
 #include "parser.h"
-#include "structs.h"
 #include "tokenizer.h"
+#include "types.h"
 
 #include "backends/hlsl.h"
 

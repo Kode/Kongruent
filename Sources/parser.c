@@ -1,8 +1,8 @@
 #include "parser.h"
 #include "errors.h"
 #include "functions.h"
-#include "structs.h"
 #include "tokenizer.h"
+#include "types.h"
 
 #include <assert.h>
 #include <stdlib.h>

@@ -2,8 +2,8 @@
 
 #include "functions.h"
 #include "names.h"
-#include "structs.h"
 #include "tokenizer.h"
+#include "types.h"
 
 #include <stdbool.h>
 

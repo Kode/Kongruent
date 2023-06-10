@@ -1,7 +1,7 @@
 #include "hlsl.h"
 
 #include "../compiler.h"
-#include "../structs.h"
+#include "../types.h"
 
 #include <inttypes.h>
 #include <stdio.h>
