@@ -44,10 +44,15 @@ void hlsl_export(uint8_t *data, size_t size) {
 		case OPCODE_LOAD_CONSTANT:
 			fprintf(output, "float _%" PRIu64 " = %f;\n", o->op_load_constant.to.index, o->op_load_constant.number);
 			break;
-		case OPCODE_LOAD_MEMBER:
-			fprintf(output, "%s _%" PRIu64 " = _%" PRIu64 ".something;\n", type_string(o->op_load_member.to.type), o->op_load_member.to.index,
-			        o->op_load_member.from.index);
+		case OPCODE_LOAD_MEMBER: {
+			fprintf(output, "%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type), o->op_load_member.to.index, o->op_load_member.from.index);
+			for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
+				structy *s = get_struct(o->op_load_member.member_parent_types[i]);
+				fprintf(output, ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+			}
+			fprintf(output, ";\n");
 			break;
+		}
 		case OPCODE_RETURN:
 			fprintf(output, "return;\n");
 			break;
