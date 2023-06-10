@@ -229,7 +229,7 @@ static definition parse_definition(state_t *state) {
 	switch (current(state).kind) {
 	case TOKEN_STRUCT: {
 		definition structy = parse_struct(state);
-		get_struct(structy.structy)->attribute = attribute;
+		get_type(structy.type)->attribute = attribute;
 		return structy;
 	}
 	case TOKEN_FUNCTION: {
@@ -729,9 +729,9 @@ static definition parse_struct(state_t *state) {
 	definition definition;
 	definition.kind = DEFINITION_STRUCT;
 
-	definition.structy = add_struct(name.identifier);
+	definition.type = add_type(name.identifier);
 
-	structy *s = get_struct(definition.structy);
+	type *s = get_type(definition.type);
 
 	for (size_t i = 0; i < count; ++i) {
 		member member;

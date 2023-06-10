@@ -4,15 +4,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-static structy *structs = NULL;
-static struct_id structs_size = 1024;
-static struct_id next_struct_index = 0;
+static type *types = NULL;
+static type_id types_size = 1024;
+static type_id next_type_index = 0;
 
-struct_id f32_id;
-struct_id vec2_id;
-struct_id vec3_id;
-struct_id vec4_id;
-struct_id bool_id;
+type_id f32_id;
+type_id vec2_id;
+type_id vec3_id;
+type_id vec4_id;
+type_id bool_id;
 
 typedef struct prefix {
 	char str[5];
@@ -41,7 +41,7 @@ static void permute(const char *set, int n, int k, void (*found)(char *)) {
 }
 
 static void vec2_found_f32(char *permutation) {
-	structy *s = get_struct(vec2_id);
+	type *s = get_type(vec2_id);
 	s->members.m[s->members.size].name = add_name(permutation);
 	s->members.m[s->members.size].type.type = f32_id;
 	s->members.m[s->members.size].type.resolved = true;
@@ -49,7 +49,7 @@ static void vec2_found_f32(char *permutation) {
 }
 
 static void vec2_found_vec2(char *permutation) {
-	structy *s = get_struct(vec2_id);
+	type *s = get_type(vec2_id);
 	s->members.m[s->members.size].name = add_name(permutation);
 	s->members.m[s->members.size].type.type = vec2_id;
 	s->members.m[s->members.size].type.resolved = true;
@@ -57,7 +57,7 @@ static void vec2_found_vec2(char *permutation) {
 }
 
 static void vec3_found_f32(char *permutation) {
-	structy *s = get_struct(vec3_id);
+	type *s = get_type(vec3_id);
 	s->members.m[s->members.size].name = add_name(permutation);
 	s->members.m[s->members.size].type.type = f32_id;
 	s->members.m[s->members.size].type.resolved = true;
@@ -65,7 +65,7 @@ static void vec3_found_f32(char *permutation) {
 }
 
 static void vec3_found_vec2(char *permutation) {
-	structy *s = get_struct(vec3_id);
+	type *s = get_type(vec3_id);
 	s->members.m[s->members.size].name = add_name(permutation);
 	s->members.m[s->members.size].type.type = vec2_id;
 	s->members.m[s->members.size].type.resolved = true;
@@ -73,7 +73,7 @@ static void vec3_found_vec2(char *permutation) {
 }
 
 static void vec3_found_vec3(char *permutation) {
-	structy *s = get_struct(vec3_id);
+	type *s = get_type(vec3_id);
 	s->members.m[s->members.size].name = add_name(permutation);
 	s->members.m[s->members.size].type.type = vec3_id;
 	s->members.m[s->members.size].type.resolved = true;
@@ -81,7 +81,7 @@ static void vec3_found_vec3(char *permutation) {
 }
 
 static void vec4_found_f32(char *permutation) {
-	structy *s = get_struct(vec4_id);
+	type *s = get_type(vec4_id);
 	s->members.m[s->members.size].name = add_name(permutation);
 	s->members.m[s->members.size].type.type = f32_id;
 	s->members.m[s->members.size].type.resolved = true;
@@ -89,7 +89,7 @@ static void vec4_found_f32(char *permutation) {
 }
 
 static void vec4_found_vec2(char *permutation) {
-	structy *s = get_struct(vec4_id);
+	type *s = get_type(vec4_id);
 	s->members.m[s->members.size].name = add_name(permutation);
 	s->members.m[s->members.size].type.type = vec2_id;
 	s->members.m[s->members.size].type.resolved = true;
@@ -97,7 +97,7 @@ static void vec4_found_vec2(char *permutation) {
 }
 
 static void vec4_found_vec3(char *permutation) {
-	structy *s = get_struct(vec4_id);
+	type *s = get_type(vec4_id);
 	s->members.m[s->members.size].name = add_name(permutation);
 	s->members.m[s->members.size].type.type = vec3_id;
 	s->members.m[s->members.size].type.resolved = true;
@@ -105,31 +105,31 @@ static void vec4_found_vec3(char *permutation) {
 }
 
 static void vec4_found_vec4(char *permutation) {
-	structy *s = get_struct(vec4_id);
+	type *s = get_type(vec4_id);
 	s->members.m[s->members.size].name = add_name(permutation);
 	s->members.m[s->members.size].type.type = vec4_id;
 	s->members.m[s->members.size].type.resolved = true;
 	++s->members.size;
 }
 
-void structs_init(void) {
-	structy *new_structs = realloc(structs, structs_size * sizeof(structy));
-	assert(new_structs != NULL);
-	structs = new_structs;
-	next_struct_index = 0;
+void types_init(void) {
+	type *new_types = realloc(types, types_size * sizeof(type));
+	assert(new_types != NULL);
+	types = new_types;
+	next_type_index = 0;
 
-	bool_id = add_struct(add_name("bool"));
-	f32_id = add_struct(add_name("f32"));
+	bool_id = add_type(add_name("bool"));
+	f32_id = add_type(add_name("f32"));
 
 	{
-		vec2_id = add_struct(add_name("vec2"));
+		vec2_id = add_type(add_name("vec2"));
 		const char *letters = "xy";
 		permute(letters, (int)strlen(letters), 1, vec2_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec2_found_vec2);
 	}
 
 	{
-		vec3_id = add_struct(add_name("vec3"));
+		vec3_id = add_type(add_name("vec3"));
 		const char *letters = "xyz";
 		permute(letters, (int)strlen(letters), 1, vec3_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec3_found_vec2);
@@ -137,7 +137,7 @@ void structs_init(void) {
 	}
 
 	{
-		vec4_id = add_struct(add_name("vec4"));
+		vec4_id = add_type(add_name("vec4"));
 		const char *letters = "xyzw";
 		permute(letters, (int)strlen(letters), 1, vec4_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec4_found_vec2);
@@ -147,40 +147,40 @@ void structs_init(void) {
 }
 
 static void grow_if_needed(uint64_t size) {
-	while (size >= structs_size) {
-		structs_size *= 2;
-		structy *new_structs = realloc(structs, structs_size * sizeof(structy));
-		assert(new_structs != NULL);
-		structs = new_structs;
+	while (size >= types_size) {
+		types_size *= 2;
+		type *new_types = realloc(types, types_size * sizeof(type));
+		assert(new_types != NULL);
+		types = new_types;
 	}
 }
 
-struct_id add_struct(name_id name) {
-	grow_if_needed(next_struct_index + 1);
+type_id add_type(name_id name) {
+	grow_if_needed(next_type_index + 1);
 
-	struct_id s = next_struct_index;
-	++next_struct_index;
+	type_id s = next_type_index;
+	++next_type_index;
 
-	structs[s].name = name;
-	structs[s].attribute = NO_NAME;
-	structs[s].members.size = 0;
+	types[s].name = name;
+	types[s].attribute = NO_NAME;
+	types[s].members.size = 0;
 
 	return s;
 }
 
-struct_id find_struct(name_id name) {
-	for (struct_id i = 0; i < next_struct_index; ++i) {
-		if (structs[i].name == name) {
+type_id find_type(name_id name) {
+	for (type_id i = 0; i < next_type_index; ++i) {
+		if (types[i].name == name) {
 			return i;
 		}
 	}
 
-	return NO_STRUCT;
+	return NO_TYPE;
 }
 
-structy *get_struct(struct_id s) {
-	if (s >= next_struct_index) {
+type *get_type(type_id s) {
+	if (s >= next_type_index) {
 		return NULL;
 	}
-	return &structs[s];
+	return &types[s];
 }

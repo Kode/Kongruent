@@ -7,7 +7,7 @@
 
 typedef struct variable {
 	uint64_t index;
-	struct_id type;
+	type_id type;
 } variable;
 
 typedef struct opcode {
@@ -17,7 +17,7 @@ typedef struct opcode {
 	union {
 		struct {
 			name_id name;
-			struct_id type;
+			type_id type;
 		} op_var;
 		struct {
 			variable from;
@@ -40,7 +40,7 @@ typedef struct opcode {
 			variable from;
 			variable to;
 			uint16_t member_indices[64];
-			struct_id member_parent_type;
+			type_id member_parent_type;
 			uint8_t member_indices_size;
 		} op_load_member;
 		struct {

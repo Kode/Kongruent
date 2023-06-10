@@ -105,7 +105,7 @@ typedef struct definition {
 
 	union {
 		function_id function;
-		struct_id structy;
+		type_id type;
 	};
 } definition;
 

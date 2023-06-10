@@ -4,16 +4,16 @@
 
 #include <stdbool.h>
 
-#define NO_STRUCT 0xFFFFFFFF
+#define NO_TYPE 0xFFFFFFFF
 
-typedef uint32_t struct_id;
+typedef uint32_t type_id;
 
 typedef struct type_ref {
 	bool resolved;
 
 	union {
 		name_id name;
-		struct_id type;
+		type_id type;
 	};
 } type_ref;
 
@@ -29,22 +29,22 @@ typedef struct members {
 	size_t size;
 } members;
 
-typedef struct structy {
+typedef struct type {
 	name_id attribute;
 	name_id name;
 	members members;
-} structy;
+} type;
 
-void structs_init(void);
+void types_init(void);
 
-struct_id add_struct(name_id name);
+type_id add_type(name_id name);
 
-struct_id find_struct(name_id name);
+type_id find_type(name_id name);
 
-structy *get_struct(struct_id s);
+type *get_type(type_id t);
 
-extern struct_id f32_id;
-extern struct_id vec2_id;
-extern struct_id vec3_id;
-extern struct_id vec4_id;
-extern struct_id bool_id;
+extern type_id f32_id;
+extern type_id vec2_id;
+extern type_id vec3_id;
+extern type_id vec4_id;
+extern type_id bool_id;

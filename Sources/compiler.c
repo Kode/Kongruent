@@ -11,7 +11,7 @@ variable find_local_var(block *b, name_id name) {
 	if (b == NULL) {
 		variable var;
 		var.index = 0;
-		var.type = NO_STRUCT;
+		var.type = NO_TYPE;
 		return var;
 	}
 
@@ -36,7 +36,7 @@ opcodes all_opcodes;
 
 variable all_variables[1024 * 1024];
 
-variable allocate_variable(struct_id type) {
+variable allocate_variable(type_id type) {
 	variable v;
 	v.index = next_variable_id;
 	v.type = type;
@@ -200,12 +200,12 @@ variable emit_expression(block *parent, expression *e) {
 
 		o.op_load_member.member_indices_size = 0;
 		expression *right = e->member.right;
-		struct_id prev_struct = e->member.left->type.type;
-		structy *prev_s = get_struct(prev_struct);
+		type_id prev_struct = e->member.left->type.type;
+		type *prev_s = get_type(prev_struct);
 		o.op_load_member.member_parent_type = prev_struct;
 
 		while (right->kind == EXPRESSION_MEMBER) {
-			assert(right->type.resolved && right->type.type != NO_STRUCT);
+			assert(right->type.resolved && right->type.type != NO_TYPE);
 			assert(right->member.left->kind == EXPRESSION_VARIABLE);
 
 			char *name = get_name(prev_s->name);
@@ -221,12 +221,12 @@ variable emit_expression(block *parent, expression *e) {
 			assert(found);
 
 			prev_struct = right->member.left->type.type;
-			prev_s = get_struct(prev_struct);
+			prev_s = get_type(prev_struct);
 			right = right->member.right;
 		}
 
 		{
-			assert(right->type.resolved && right->type.type != NO_STRUCT);
+			assert(right->type.resolved && right->type.type != NO_TYPE);
 			assert(right->kind == EXPRESSION_VARIABLE);
 
 			char *name = get_name(prev_s->name);

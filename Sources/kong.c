@@ -17,9 +17,9 @@
 
 const char *filename = "in/test.kong";
 
-struct_id find_local_var_type(block *b, name_id name) {
+type_id find_local_var_type(block *b, name_id name) {
 	if (b == NULL) {
-		return NO_STRUCT;
+		return NO_TYPE;
 	}
 
 	for (size_t i = 0; i < b->vars.size; ++i) {
@@ -34,68 +34,68 @@ struct_id find_local_var_type(block *b, name_id name) {
 
 void resolve_types_in_expression(statement *parent, expression *e);
 
-structy *resolve_member_var_type(statement *parent_block, structy *parent_struct, expression *left) {
+type *resolve_member_var_type(statement *parent_block, type *parent_struct, expression *left) {
 	assert(left->kind == EXPRESSION_VARIABLE);
 
 	if (parent_struct != NULL) {
 		name_id name = left->variable;
 
-		if (parent_struct == get_struct(vec2_id)) {
+		if (parent_struct == get_type(vec2_id)) {
 			size_t length = strlen(get_name(name));
 			if (length == 1) {
 				left->type.type = f32_id;
 				left->type.resolved = true;
-				return get_struct(f32_id);
+				return get_type(f32_id);
 			}
 			else if (length == 2) {
 				left->type.type = vec2_id;
 				left->type.resolved = true;
-				return get_struct(vec2_id);
+				return get_type(vec2_id);
 			}
 			assert(false);
 			return NULL;
 		}
-		else if (parent_struct == get_struct(vec3_id)) {
+		else if (parent_struct == get_type(vec3_id)) {
 			size_t length = strlen(get_name(name));
 			if (length == 1) {
 				left->type.type = f32_id;
 				left->type.resolved = true;
-				return get_struct(f32_id);
+				return get_type(f32_id);
 			}
 			else if (length == 2) {
 				left->type.type = vec2_id;
 				left->type.resolved = true;
-				return get_struct(vec2_id);
+				return get_type(vec2_id);
 			}
 			else if (length == 3) {
 				left->type.type = vec3_id;
 				left->type.resolved = true;
-				return get_struct(vec3_id);
+				return get_type(vec3_id);
 			}
 			assert(false);
 			return NULL;
 		}
-		else if (parent_struct == get_struct(vec4_id)) {
+		else if (parent_struct == get_type(vec4_id)) {
 			size_t length = strlen(get_name(name));
 			if (length == 1) {
 				left->type.type = f32_id;
 				left->type.resolved = true;
-				return get_struct(f32_id);
+				return get_type(f32_id);
 			}
 			else if (length == 2) {
 				left->type.type = vec2_id;
 				left->type.resolved = true;
-				return get_struct(vec2_id);
+				return get_type(vec2_id);
 			}
 			else if (length == 3) {
 				left->type.type = vec3_id;
 				left->type.resolved = true;
-				return get_struct(vec3_id);
+				return get_type(vec3_id);
 			}
 			else if (length == 4) {
 				left->type.type = vec4_id;
 				left->type.resolved = true;
-				return get_struct(vec4_id);
+				return get_type(vec4_id);
 			}
 			assert(false);
 			return NULL;
@@ -104,7 +104,7 @@ structy *resolve_member_var_type(statement *parent_block, structy *parent_struct
 			for (size_t i = 0; i < parent_struct->members.size; ++i) {
 				if (parent_struct->members.m[i].name == name) {
 					left->type = parent_struct->members.m[i].type;
-					return get_struct(left->type.type);
+					return get_type(left->type.type);
 				}
 			}
 		}
@@ -114,14 +114,14 @@ structy *resolve_member_var_type(statement *parent_block, structy *parent_struct
 
 	if (parent_block != NULL) {
 		resolve_types_in_expression(parent_block, left);
-		return get_struct(left->type.type);
+		return get_type(left->type.type);
 	}
 
 	assert(false);
 	return NULL;
 }
 
-void resolve_member_type(statement *parent_block, structy *parent_struct, expression *e) {
+void resolve_member_type(statement *parent_block, type *parent_struct, expression *e) {
 	if (e->kind == EXPRESSION_VARIABLE) {
 		resolve_member_var_type(parent_block, parent_struct, e);
 		return;
@@ -129,7 +129,7 @@ void resolve_member_type(statement *parent_block, structy *parent_struct, expres
 
 	assert(e->kind == EXPRESSION_MEMBER);
 
-	structy *s = resolve_member_var_type(parent_block, parent_struct, e->member.left);
+	type *s = resolve_member_var_type(parent_block, parent_struct, e->member.left);
 
 	resolve_member_type(parent_block, s, e->member.right);
 
@@ -214,8 +214,8 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		break;
 	}
 	case EXPRESSION_VARIABLE: {
-		struct_id type = find_local_var_type(&parent->block, e->variable);
-		if (type == NO_STRUCT) {
+		type_id type = find_local_var_type(&parent->block, e->variable);
+		if (type == NO_TYPE) {
 			char output[256];
 			sprintf(output, "Variable %s not found", get_name(e->variable));
 			error(output, 0, 0);
@@ -280,8 +280,8 @@ void resolve_types_in_block(statement *parent, statement *block) {
 		case STATEMENT_LOCAL_VARIABLE: {
 			name_id var_name = s->local_variable.var.name;
 			name_id var_type_name = s->local_variable.var.type.name;
-			s->local_variable.var.type.type = find_struct(var_type_name);
-			if (s->local_variable.var.type.type == NO_STRUCT) {
+			s->local_variable.var.type.type = find_type(var_type_name);
+			if (s->local_variable.var.type.type == NO_TYPE) {
 				char output[256];
 				sprintf(output, "Could not find type %s for %s", get_name(var_type_name), get_name(var_name));
 				error(output, 0, 0);
@@ -302,13 +302,13 @@ void resolve_types_in_block(statement *parent, statement *block) {
 }
 
 void resolve_types(void) {
-	for (struct_id i = 0; get_struct(i) != NULL; ++i) {
-		structy *s = get_struct(i);
+	for (type_id i = 0; get_type(i) != NULL; ++i) {
+		type *s = get_type(i);
 		for (size_t j = 0; j < s->members.size; ++j) {
 			if (!s->members.m[j].type.resolved) {
 				name_id name = s->members.m[j].type.name;
-				s->members.m[j].type.type = find_struct(name);
-				if (s->members.m[j].type.type == NO_STRUCT) {
+				s->members.m[j].type.type = find_type(name);
+				if (s->members.m[j].type.type == NO_TYPE) {
 					char output[256];
 					char *struct_name = get_name(s->name);
 					char *member_type_name = get_name(name);
@@ -324,8 +324,8 @@ void resolve_types(void) {
 		function *f = get_function(i);
 
 		name_id parameter_type_name = f->parameter_type.name;
-		f->parameter_type.type = find_struct(parameter_type_name);
-		if (f->parameter_type.type == NO_STRUCT) {
+		f->parameter_type.type = find_type(parameter_type_name);
+		if (f->parameter_type.type == NO_TYPE) {
 			char output[256];
 			char *function_name = get_name(f->name);
 			char *parameter_type_name_name = get_name(parameter_type_name);
@@ -335,8 +335,8 @@ void resolve_types(void) {
 		f->parameter_type.resolved = true;
 
 		name_id return_type_name = f->return_type.name;
-		f->return_type.type = find_struct(return_type_name);
-		if (f->return_type.type == NO_STRUCT) {
+		f->return_type.type = find_type(return_type_name);
+		if (f->return_type.type == NO_TYPE) {
 			char output[256];
 			char *function_name = get_name(f->name);
 			char *return_type_name_name = get_name(return_type_name);
@@ -374,7 +374,7 @@ int main(int argc, char **argv) {
 	fclose(file);
 
 	names_init();
-	structs_init();
+	types_init();
 	functions_init();
 
 	tokens tokens = tokenize(data);
@@ -390,8 +390,8 @@ int main(int argc, char **argv) {
 	kong_log(LOG_LEVEL_INFO, "");
 
 	kong_log(LOG_LEVEL_INFO, "Structs:");
-	for (struct_id i = 0; get_struct(i) != NULL; ++i) {
-		kong_log(LOG_LEVEL_INFO, "%s", get_name(get_struct(i)->name));
+	for (type_id i = 0; get_type(i) != NULL; ++i) {
+		kong_log(LOG_LEVEL_INFO, "%s", get_name(get_type(i)->name));
 	}
 
 	resolve_types();
