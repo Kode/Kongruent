@@ -25,7 +25,7 @@ static void permute_for_real(const char *set, prefix p, int n, int k, void (*fou
 		return;
 	}
 
-	for (int i = 0; i < n; i++) {
+	for (int i = 0; i < n; ++i) {
 		prefix newPrefix = p;
 		newPrefix.str[newPrefix.size] = set[i];
 		++newPrefix.size;

@@ -109,6 +109,49 @@ variable emit_expression(block *parent, expression *e) {
 				o.op_store_member.from = v;
 				o.op_store_member.to = member_var;
 				// o.op_store_member.member = left->member.right;
+
+				o.op_store_member.member_indices_size = 0;
+				expression *right = left->member.right;
+				type_id prev_struct = left->member.left->type.type;
+				type *prev_s = get_type(prev_struct);
+				o.op_store_member.member_parent_type = prev_struct;
+
+				while (right->kind == EXPRESSION_MEMBER) {
+					assert(right->type.resolved && right->type.type != NO_TYPE);
+					assert(right->member.left->kind == EXPRESSION_VARIABLE);
+
+					bool found = false;
+					for (size_t i = 0; i < prev_s->members.size; ++i) {
+						if (prev_s->members.m[i].name == right->member.left->variable) {
+							o.op_store_member.member_indices[o.op_store_member.member_indices_size] = (uint16_t)i;
+							++o.op_store_member.member_indices_size;
+							found = true;
+							break;
+						}
+					}
+					assert(found);
+
+					prev_struct = right->member.left->type.type;
+					prev_s = get_type(prev_struct);
+					right = right->member.right;
+				}
+
+				{
+					assert(right->type.resolved && right->type.type != NO_TYPE);
+					assert(right->kind == EXPRESSION_VARIABLE);
+
+					bool found = false;
+					for (size_t i = 0; i < prev_s->members.size; ++i) {
+						if (prev_s->members.m[i].name == right->variable) {
+							o.op_store_member.member_indices[o.op_store_member.member_indices_size] = (uint16_t)i;
+							++o.op_store_member.member_indices_size;
+							found = true;
+							break;
+						}
+					}
+					assert(found);
+				}
+
 				emit_op(&o);
 				break;
 			}
@@ -208,7 +251,6 @@ variable emit_expression(block *parent, expression *e) {
 			assert(right->type.resolved && right->type.type != NO_TYPE);
 			assert(right->member.left->kind == EXPRESSION_VARIABLE);
 
-			char *name = get_name(prev_s->name);
 			bool found = false;
 			for (size_t i = 0; i < prev_s->members.size; ++i) {
 				if (prev_s->members.m[i].name == right->member.left->variable) {
@@ -229,7 +271,6 @@ variable emit_expression(block *parent, expression *e) {
 			assert(right->type.resolved && right->type.type != NO_TYPE);
 			assert(right->kind == EXPRESSION_VARIABLE);
 
-			char *name = get_name(prev_s->name);
 			bool found = false;
 			for (size_t i = 0; i < prev_s->members.size; ++i) {
 				if (prev_s->members.m[i].name == right->variable) {

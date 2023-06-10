@@ -30,7 +30,9 @@ typedef struct opcode {
 		struct {
 			variable from;
 			variable to;
-			size_t member;
+			uint16_t member_indices[64];
+			type_id member_parent_type;
+			uint8_t member_indices_size;
 		} op_store_member;
 		struct {
 			float number;
