@@ -202,6 +202,8 @@ variable emit_expression(block *parent, expression *e) {
 		expression *right = e->member.right;
 		struct_id prev_struct = e->member.left->type.type;
 		structy *prev_s = get_struct(prev_struct);
+		o.op_load_member.member_parent_type = prev_struct;
+
 		while (right->kind == EXPRESSION_MEMBER) {
 			assert(right->type.resolved && right->type.type != NO_STRUCT);
 			assert(right->member.left->kind == EXPRESSION_VARIABLE);
@@ -211,7 +213,6 @@ variable emit_expression(block *parent, expression *e) {
 			for (size_t i = 0; i < prev_s->members.size; ++i) {
 				if (prev_s->members.m[i].name == right->member.left->variable) {
 					o.op_load_member.member_indices[o.op_load_member.member_indices_size] = (uint16_t)i;
-					o.op_load_member.member_parent_types[o.op_load_member.member_indices_size] = prev_struct;
 					++o.op_load_member.member_indices_size;
 					found = true;
 					break;
@@ -233,7 +234,6 @@ variable emit_expression(block *parent, expression *e) {
 			for (size_t i = 0; i < prev_s->members.size; ++i) {
 				if (prev_s->members.m[i].name == right->variable) {
 					o.op_load_member.member_indices[o.op_load_member.member_indices_size] = (uint16_t)i;
-					o.op_load_member.member_parent_types[o.op_load_member.member_indices_size] = prev_struct;
 					++o.op_load_member.member_indices_size;
 					found = true;
 					break;

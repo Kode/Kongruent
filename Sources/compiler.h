@@ -40,7 +40,7 @@ typedef struct opcode {
 			variable from;
 			variable to;
 			uint16_t member_indices[64];
-			struct_id member_parent_types[64];
+			struct_id member_parent_type;
 			uint8_t member_indices_size;
 		} op_load_member;
 		struct {
