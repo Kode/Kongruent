@@ -22,7 +22,7 @@ typedef struct member {
 	type_ref type;
 } member;
 
-#define MAX_MEMBERS 256
+#define MAX_MEMBERS 1024
 
 typedef struct members {
 	member m[MAX_MEMBERS];

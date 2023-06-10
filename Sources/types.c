@@ -41,75 +41,84 @@ static void permute(const char *set, int n, int k, void (*found)(char *)) {
 }
 
 static void vec2_found_f32(char *permutation) {
-	type *s = get_type(vec2_id);
-	s->members.m[s->members.size].name = add_name(permutation);
-	s->members.m[s->members.size].type.type = f32_id;
-	s->members.m[s->members.size].type.resolved = true;
-	++s->members.size;
+	type *t = get_type(vec2_id);
+	assert(t->members.size < MAX_MEMBERS);
+	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].type.type = f32_id;
+	t->members.m[t->members.size].type.resolved = true;
+	++t->members.size;
 }
 
 static void vec2_found_vec2(char *permutation) {
-	type *s = get_type(vec2_id);
-	s->members.m[s->members.size].name = add_name(permutation);
-	s->members.m[s->members.size].type.type = vec2_id;
-	s->members.m[s->members.size].type.resolved = true;
-	++s->members.size;
+	type *t = get_type(vec2_id);
+	assert(t->members.size < MAX_MEMBERS);
+	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].type.type = vec2_id;
+	t->members.m[t->members.size].type.resolved = true;
+	++t->members.size;
 }
 
 static void vec3_found_f32(char *permutation) {
-	type *s = get_type(vec3_id);
-	s->members.m[s->members.size].name = add_name(permutation);
-	s->members.m[s->members.size].type.type = f32_id;
-	s->members.m[s->members.size].type.resolved = true;
-	++s->members.size;
+	type *t = get_type(vec3_id);
+	assert(t->members.size < MAX_MEMBERS);
+	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].type.type = f32_id;
+	t->members.m[t->members.size].type.resolved = true;
+	++t->members.size;
 }
 
 static void vec3_found_vec2(char *permutation) {
-	type *s = get_type(vec3_id);
-	s->members.m[s->members.size].name = add_name(permutation);
-	s->members.m[s->members.size].type.type = vec2_id;
-	s->members.m[s->members.size].type.resolved = true;
-	++s->members.size;
+	type *t = get_type(vec3_id);
+	assert(t->members.size < MAX_MEMBERS);
+	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].type.type = vec2_id;
+	t->members.m[t->members.size].type.resolved = true;
+	++t->members.size;
 }
 
 static void vec3_found_vec3(char *permutation) {
-	type *s = get_type(vec3_id);
-	s->members.m[s->members.size].name = add_name(permutation);
-	s->members.m[s->members.size].type.type = vec3_id;
-	s->members.m[s->members.size].type.resolved = true;
-	++s->members.size;
+	type *t = get_type(vec3_id);
+	assert(t->members.size < MAX_MEMBERS);
+	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].type.type = vec3_id;
+	t->members.m[t->members.size].type.resolved = true;
+	++t->members.size;
 }
 
 static void vec4_found_f32(char *permutation) {
-	type *s = get_type(vec4_id);
-	s->members.m[s->members.size].name = add_name(permutation);
-	s->members.m[s->members.size].type.type = f32_id;
-	s->members.m[s->members.size].type.resolved = true;
-	++s->members.size;
+	type *t = get_type(vec4_id);
+	assert(t->members.size < MAX_MEMBERS);
+	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].type.type = f32_id;
+	t->members.m[t->members.size].type.resolved = true;
+	++t->members.size;
 }
 
 static void vec4_found_vec2(char *permutation) {
-	type *s = get_type(vec4_id);
-	s->members.m[s->members.size].name = add_name(permutation);
-	s->members.m[s->members.size].type.type = vec2_id;
-	s->members.m[s->members.size].type.resolved = true;
-	++s->members.size;
+	type *t = get_type(vec4_id);
+	assert(t->members.size < MAX_MEMBERS);
+	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].type.type = vec2_id;
+	t->members.m[t->members.size].type.resolved = true;
+	++t->members.size;
 }
 
 static void vec4_found_vec3(char *permutation) {
-	type *s = get_type(vec4_id);
-	s->members.m[s->members.size].name = add_name(permutation);
-	s->members.m[s->members.size].type.type = vec3_id;
-	s->members.m[s->members.size].type.resolved = true;
-	++s->members.size;
+	type *t = get_type(vec4_id);
+	assert(t->members.size < MAX_MEMBERS);
+	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].type.type = vec3_id;
+	t->members.m[t->members.size].type.resolved = true;
+	++t->members.size;
 }
 
 static void vec4_found_vec4(char *permutation) {
-	type *s = get_type(vec4_id);
-	s->members.m[s->members.size].name = add_name(permutation);
-	s->members.m[s->members.size].type.type = vec4_id;
-	s->members.m[s->members.size].type.resolved = true;
-	++s->members.size;
+	type *t = get_type(vec4_id);
+	assert(t->members.size < MAX_MEMBERS);
+	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].type.type = vec4_id;
+	t->members.m[t->members.size].type.resolved = true;
+	++t->members.size;
 }
 
 void types_init(void) {
@@ -126,6 +135,9 @@ void types_init(void) {
 		const char *letters = "xy";
 		permute(letters, (int)strlen(letters), 1, vec2_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec2_found_vec2);
+		letters = "rg";
+		permute(letters, (int)strlen(letters), 1, vec2_found_f32);
+		permute(letters, (int)strlen(letters), 2, vec2_found_vec2);
 	}
 
 	{
@@ -134,11 +146,20 @@ void types_init(void) {
 		permute(letters, (int)strlen(letters), 1, vec3_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec3_found_vec2);
 		permute(letters, (int)strlen(letters), 3, vec3_found_vec3);
+		letters = "rgb";
+		permute(letters, (int)strlen(letters), 1, vec3_found_f32);
+		permute(letters, (int)strlen(letters), 2, vec3_found_vec2);
+		permute(letters, (int)strlen(letters), 3, vec3_found_vec3);
 	}
 
 	{
 		vec4_id = add_type(add_name("vec4"));
 		const char *letters = "xyzw";
+		permute(letters, (int)strlen(letters), 1, vec4_found_f32);
+		permute(letters, (int)strlen(letters), 2, vec4_found_vec2);
+		permute(letters, (int)strlen(letters), 3, vec4_found_vec3);
+		permute(letters, (int)strlen(letters), 3, vec4_found_vec4);
+		letters = "rgba";
 		permute(letters, (int)strlen(letters), 1, vec4_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec4_found_vec2);
 		permute(letters, (int)strlen(letters), 3, vec4_found_vec3);

@@ -9,7 +9,9 @@
 #include <string.h>
 
 static statement *statement_allocate(void) {
-	return (statement *)malloc(sizeof(statement));
+	statement *s = (statement *)malloc(sizeof(statement));
+	assert(s != NULL);
+	return s;
 }
 
 static void statement_free(statement *statement) {
@@ -27,6 +29,7 @@ static void statements_add(statements *statements, statement *statement) {
 
 static expression *expression_allocate(void) {
 	expression *e = (expression *)malloc(sizeof(expression));
+	assert(e != NULL);
 	e->type.resolved = false;
 	e->type.name = NO_NAME;
 	return e;

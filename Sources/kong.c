@@ -40,74 +40,13 @@ type *resolve_member_var_type(statement *parent_block, type *parent_struct, expr
 	if (parent_struct != NULL) {
 		name_id name = left->variable;
 
-		if (parent_struct == get_type(vec2_id)) {
-			size_t length = strlen(get_name(name));
-			if (length == 1) {
-				left->type.type = f32_id;
-				left->type.resolved = true;
-				return get_type(f32_id);
-			}
-			else if (length == 2) {
-				left->type.type = vec2_id;
-				left->type.resolved = true;
-				return get_type(vec2_id);
-			}
-			assert(false);
-			return NULL;
-		}
-		else if (parent_struct == get_type(vec3_id)) {
-			size_t length = strlen(get_name(name));
-			if (length == 1) {
-				left->type.type = f32_id;
-				left->type.resolved = true;
-				return get_type(f32_id);
-			}
-			else if (length == 2) {
-				left->type.type = vec2_id;
-				left->type.resolved = true;
-				return get_type(vec2_id);
-			}
-			else if (length == 3) {
-				left->type.type = vec3_id;
-				left->type.resolved = true;
-				return get_type(vec3_id);
-			}
-			assert(false);
-			return NULL;
-		}
-		else if (parent_struct == get_type(vec4_id)) {
-			size_t length = strlen(get_name(name));
-			if (length == 1) {
-				left->type.type = f32_id;
-				left->type.resolved = true;
-				return get_type(f32_id);
-			}
-			else if (length == 2) {
-				left->type.type = vec2_id;
-				left->type.resolved = true;
-				return get_type(vec2_id);
-			}
-			else if (length == 3) {
-				left->type.type = vec3_id;
-				left->type.resolved = true;
-				return get_type(vec3_id);
-			}
-			else if (length == 4) {
-				left->type.type = vec4_id;
-				left->type.resolved = true;
-				return get_type(vec4_id);
-			}
-			assert(false);
-			return NULL;
-		}
-		else {
-			for (size_t i = 0; i < parent_struct->members.size; ++i) {
-				if (parent_struct->members.m[i].name == name) {
-					left->type = parent_struct->members.m[i].type;
-					return get_type(left->type.type);
-				}
+		for (size_t i = 0; i < parent_struct->members.size; ++i) {
+			if (parent_struct->members.m[i].name == name) {
+				left->type = parent_struct->members.m[i].type;
+				return get_type(left->type.type);
 			}
 		}
+
 		assert(false);
 		return NULL;
 	}
