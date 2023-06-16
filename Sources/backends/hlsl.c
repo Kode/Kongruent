@@ -39,7 +39,7 @@ void hlsl_export(uint8_t *data, size_t size) {
 			fprintf(output, "_%" PRIu64 " = _%" PRIu64 ";\n", o->op_store_var.to.index, o->op_store_var.from.index);
 			break;
 		case OPCODE_STORE_MEMBER:
-			fprintf(output, "_%" PRIu64, o->op_store_member.from.index);
+			fprintf(output, "_%" PRIu64, o->op_store_member.to.index);
 			type *s = get_type(o->op_store_member.member_parent_type);
 			for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
 				fprintf(output, ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
