@@ -300,6 +300,11 @@ void resolve_types(void) {
 int main(int argc, char **argv) {
 	FILE *file = fopen(filename, "rb");
 
+	if (file == NULL) {
+		kong_log(LOG_LEVEL_ERROR, "File %s not found.", filename);
+		return 1;
+	}
+
 	fseek(file, 0, SEEK_END);
 	size_t size = ftell(file);
 	fseek(file, 0, SEEK_SET);
@@ -328,7 +333,7 @@ int main(int argc, char **argv) {
 	}
 	kong_log(LOG_LEVEL_INFO, "");
 
-	kong_log(LOG_LEVEL_INFO, "Structs:");
+	kong_log(LOG_LEVEL_INFO, "Types:");
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		kong_log(LOG_LEVEL_INFO, "%s", get_name(get_type(i)->name));
 	}
