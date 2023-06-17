@@ -341,10 +341,10 @@ int main(int argc, char **argv) {
 	resolve_types();
 
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
-		convert_function_block(get_function(i)->block);
+		convert_function_block(&get_function(i)->code, get_function(i)->block);
 	}
 
-	hlsl_export(&all_opcodes.o[0], all_opcodes.size);
+	hlsl_export();
 
 	return 0;
 }

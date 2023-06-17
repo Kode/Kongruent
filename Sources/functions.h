@@ -1,5 +1,6 @@
 #pragma once
 
+#include "compiler.h"
 #include "names.h"
 #include "types.h"
 
@@ -16,6 +17,8 @@ typedef struct function {
 	name_id parameter_name;
 	type_ref parameter_type;
 	struct statement *block;
+
+	opcodes code;
 } function;
 
 void functions_init(void);

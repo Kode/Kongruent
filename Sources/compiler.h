@@ -56,6 +56,4 @@ typedef struct opcodes {
 	size_t size;
 } opcodes;
 
-extern opcodes all_opcodes;
-
-void convert_function_block(struct statement *block);
+void convert_function_block(opcodes *code, struct statement *block);

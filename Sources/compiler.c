@@ -32,8 +32,6 @@ const char all_names[1024 * 1024];
 
 static uint64_t next_variable_id = 1;
 
-opcodes all_opcodes;
-
 variable all_variables[1024 * 1024];
 
 variable allocate_variable(type_id type) {
@@ -45,14 +43,14 @@ variable allocate_variable(type_id type) {
 	return v;
 }
 
-void emit_op(opcode *o) {
-	memcpy(&all_opcodes.o[all_opcodes.size], o, o->size);
-	all_opcodes.size += o->size;
+void emit_op(opcodes *code, opcode *o) {
+	memcpy(&code->o[code->size], o, o->size);
+	code->size += o->size;
 }
 
 #define OP_SIZE(op, opmember) offsetof(opcode, opmember) + sizeof(o.opmember)
 
-variable emit_expression(block *parent, expression *e) {
+variable emit_expression(opcodes *code, block *parent, expression *e) {
 	switch (e->kind) {
 	case EXPRESSION_BINARY: {
 		expression *left = e->binary.left;
@@ -88,7 +86,7 @@ variable emit_expression(block *parent, expression *e) {
 		case OPERATOR_MOD:
 			error("not implemented", 0, 0);
 		case OPERATOR_ASSIGN: {
-			variable v = emit_expression(parent, right);
+			variable v = emit_expression(code, parent, right);
 
 			switch (left->kind) {
 			case EXPRESSION_VARIABLE: {
@@ -97,11 +95,11 @@ variable emit_expression(block *parent, expression *e) {
 				o.size = OP_SIZE(o, op_store_var);
 				o.op_store_var.from = v;
 				// o.op_store_var.to = left->variable;
-				emit_op(&o);
+				emit_op(code, &o);
 				break;
 			}
 			case EXPRESSION_MEMBER: {
-				variable member_var = emit_expression(parent, left->member.left);
+				variable member_var = emit_expression(code, parent, left->member.left);
 
 				opcode o;
 				o.type = OPCODE_STORE_MEMBER;
@@ -152,7 +150,7 @@ variable emit_expression(block *parent, expression *e) {
 					assert(found);
 				}
 
-				emit_op(&o);
+				emit_op(code, &o);
 				break;
 			}
 			default:
@@ -187,13 +185,13 @@ variable emit_expression(block *parent, expression *e) {
 		case OPERATOR_MULTIPLY:
 			error("not implemented", 0, 0);
 		case OPERATOR_NOT: {
-			variable v = emit_expression(parent, e->unary.right);
+			variable v = emit_expression(code, parent, e->unary.right);
 			opcode o;
 			o.type = OPCODE_NOT;
 			o.size = OP_SIZE(o, op_not);
 			o.op_not.from = v;
 			o.op_not.to = allocate_variable(v.type);
-			emit_op(&o);
+			emit_op(code, &o);
 			return o.op_not.to;
 		}
 		case OPERATOR_OR:
@@ -215,7 +213,7 @@ variable emit_expression(block *parent, expression *e) {
 		o.size = OP_SIZE(o, op_load_constant);
 		o.op_load_constant.number = 1.0f;
 		o.op_load_constant.to = v;
-		emit_op(&o);
+		emit_op(code, &o);
 
 		return v;
 	}
@@ -283,7 +281,7 @@ variable emit_expression(block *parent, expression *e) {
 			assert(found);
 		}
 
-		emit_op(&o);
+		emit_op(code, &o);
 
 		return v;
 	}
@@ -297,15 +295,15 @@ variable emit_expression(block *parent, expression *e) {
 	return v;
 }
 
-void emit_statement(block *parent, statement *statement) {
+void emit_statement(opcodes *code, block *parent, statement *statement) {
 	switch (statement->kind) {
 	case STATEMENT_EXPRESSION:
-		emit_expression(parent, statement->expression);
+		emit_expression(code, parent, statement->expression);
 		break;
 	case STATEMENT_RETURN_EXPRESSION: {
 		opcode o;
 		o.type = OPCODE_RETURN;
-		variable v = emit_expression(parent, statement->expression);
+		variable v = emit_expression(code, parent, statement->expression);
 		if (v.index == 0) {
 			o.size = offsetof(opcode, op_return);
 		}
@@ -313,7 +311,7 @@ void emit_statement(block *parent, statement *statement) {
 			o.size = OP_SIZE(o, op_return);
 			o.op_return.var = v;
 		}
-		emit_op(&o);
+		emit_op(code, &o);
 		break;
 	}
 	case STATEMENT_IF:
@@ -327,17 +325,17 @@ void emit_statement(block *parent, statement *statement) {
 		o.type = OPCODE_VAR;
 		o.size = OP_SIZE(o, op_var);
 		if (statement->local_variable.init != NULL) {
-			emit_expression(parent, statement->local_variable.init);
+			emit_expression(code, parent, statement->local_variable.init);
 		}
 		o.op_var.name = statement->local_variable.var.name;
 		o.op_var.type = statement->local_variable.var.type.type;
-		emit_op(&o);
+		emit_op(code, &o);
 		break;
 	}
 	}
 }
 
-void convert_function_block(struct statement *block) {
+void convert_function_block(opcodes *code, struct statement *block) {
 	if (block->kind != STATEMENT_BLOCK) {
 		error("Expected a block", 0, 0);
 	}
@@ -346,6 +344,6 @@ void convert_function_block(struct statement *block) {
 		block->block.vars.v[i].variable_id = var.index;
 	}
 	for (size_t i = 0; i < block->block.statements.size; ++i) {
-		emit_statement(&block->block, block->block.statements.s[i]);
+		emit_statement(code, &block->block, block->block.statements.s[i]);
 	}
 }

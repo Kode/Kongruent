@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 static function *functions = NULL;
 static function_id functions_size = 1024;
@@ -37,6 +38,8 @@ function_id add_function(name_id name) {
 	functions[f].parameter_type.resolved = false;
 	functions[f].parameter_type.name = NO_NAME;
 	functions[f].block = NULL;
+	memset(functions[f].code.o, 0, sizeof(functions[f].code.o));
+	functions[f].code.size = 0;
 
 	return f;
 }
