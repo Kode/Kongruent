@@ -5,6 +5,7 @@
 #include "../types.h"
 
 #include <inttypes.h>
+#include <stddef.h>
 #include <stdio.h>
 
 static char *type_string(type_id type) {
@@ -68,9 +69,15 @@ void hlsl_export() {
 				fprintf(output, ";\n");
 				break;
 			}
-			case OPCODE_RETURN:
-				fprintf(output, "\treturn;\n");
+			case OPCODE_RETURN: {
+				if (o->size > offsetof(opcode, op_return)) {
+					fprintf(output, "\treturn _%" PRIu64 ";\n", o->op_return.var.index);
+				}
+				else {
+					fprintf(output, "\treturn;\n");
+				}
 				break;
+			}
 			}
 
 			index += o->size;
