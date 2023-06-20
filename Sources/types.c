@@ -128,10 +128,13 @@ void types_init(void) {
 	next_type_index = 0;
 
 	bool_id = add_type(add_name("bool"));
+	get_type(bool_id)->built_in = true;
 	f32_id = add_type(add_name("f32"));
+	get_type(f32_id)->built_in = true;
 
 	{
 		vec2_id = add_type(add_name("vec2"));
+		get_type(vec2_id)->built_in = true;
 		const char *letters = "xy";
 		permute(letters, (int)strlen(letters), 1, vec2_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec2_found_vec2);
@@ -142,6 +145,7 @@ void types_init(void) {
 
 	{
 		vec3_id = add_type(add_name("vec3"));
+		get_type(vec3_id)->built_in = true;
 		const char *letters = "xyz";
 		permute(letters, (int)strlen(letters), 1, vec3_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec3_found_vec2);
@@ -154,6 +158,7 @@ void types_init(void) {
 
 	{
 		vec4_id = add_type(add_name("vec4"));
+		get_type(vec4_id)->built_in = true;
 		const char *letters = "xyzw";
 		permute(letters, (int)strlen(letters), 1, vec4_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec4_found_vec2);
@@ -185,6 +190,7 @@ type_id add_type(name_id name) {
 	types[s].name = name;
 	types[s].attribute = NO_NAME;
 	types[s].members.size = 0;
+	types[s].built_in = false;
 
 	return s;
 }

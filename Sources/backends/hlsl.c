@@ -27,6 +27,17 @@ static char *type_string(type_id type) {
 void hlsl_export() {
 	FILE *output = fopen("test.hlsl", "wb");
 
+	for (type_id i = 0; get_type(i) != NULL; ++i) {
+		type *t = get_type(i);
+		if (!t->built_in) {
+			fprintf(output, "struct %s {\n", get_name(t->name));
+			for (size_t j = 0; j < t->members.size; ++j) {
+				fprintf(output, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+			}
+			fprintf(output, "}\n\n");
+		}
+	}
+
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		uint8_t *data = get_function(i)->code.o;
 		size_t size = get_function(i)->code.size;

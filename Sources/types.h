@@ -33,6 +33,7 @@ typedef struct type {
 	name_id attribute;
 	name_id name;
 	members members;
+	bool built_in;
 } type;
 
 void types_init(void);
