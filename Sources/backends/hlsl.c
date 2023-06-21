@@ -39,10 +39,12 @@ void hlsl_export() {
 	}
 
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
-		uint8_t *data = get_function(i)->code.o;
-		size_t size = get_function(i)->code.size;
+		function *f = get_function(i);
+		uint8_t *data = f->code.o;
+		size_t size = f->code.size;
 
-		fprintf(output, "void %s() {\n", get_name(get_function(i)->name));
+		fprintf(output, "%s %s(%s %s) {\n", type_string(f->return_type.type), get_name(f->name), type_string(f->parameter_type.type),
+		        get_name(f->parameter_name));
 
 		size_t index = 0;
 		while (index < size) {
