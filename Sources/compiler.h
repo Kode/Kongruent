@@ -16,8 +16,7 @@ typedef struct opcode {
 
 	union {
 		struct {
-			name_id name;
-			type_id type;
+			variable var;
 		} op_var;
 		struct {
 			variable from;

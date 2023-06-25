@@ -327,8 +327,11 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		if (statement->local_variable.init != NULL) {
 			emit_expression(code, parent, statement->local_variable.init);
 		}
-		o.op_var.name = statement->local_variable.var.name;
-		o.op_var.type = statement->local_variable.var.type.type;
+		variable local_var = find_local_var(parent, statement->local_variable.var.name);
+		statement->local_variable.var.variable_id = local_var.index;
+		o.op_var.var.index = statement->local_variable.var.variable_id;
+		assert(statement->local_variable.var.type.resolved);
+		o.op_var.var.type = statement->local_variable.var.type.type;
 		emit_op(code, &o);
 		break;
 	}
