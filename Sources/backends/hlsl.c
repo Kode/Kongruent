@@ -2,6 +2,7 @@
 
 #include "../compiler.h"
 #include "../functions.h"
+#include "../parser.h"
 #include "../types.h"
 
 #include <inttypes.h>
@@ -43,8 +44,15 @@ void hlsl_export() {
 		uint8_t *data = f->code.o;
 		size_t size = f->code.size;
 
-		fprintf(output, "%s %s(%s %s) {\n", type_string(f->return_type.type), get_name(f->name), type_string(f->parameter_type.type),
-		        get_name(f->parameter_name));
+		uint64_t parameter_id = 0;
+		for (size_t i = 0; i < f->block->block.vars.size; ++i) {
+			if (f->parameter_name == f->block->block.vars.v[i].name) {
+				parameter_id = f->block->block.vars.v[i].variable_id;
+				break;
+			}
+		}
+
+		fprintf(output, "%s %s(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), get_name(f->name), type_string(f->parameter_type.type), parameter_id);
 
 		size_t index = 0;
 		while (index < size) {
