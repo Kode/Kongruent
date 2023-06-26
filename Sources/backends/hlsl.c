@@ -5,6 +5,7 @@
 #include "../parser.h"
 #include "../types.h"
 
+#include <assert.h>
 #include <inttypes.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -52,6 +53,7 @@ void hlsl_export() {
 			}
 		}
 
+		assert(parameter_id != 0);
 		fprintf(output, "%s %s(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), get_name(f->name), type_string(f->parameter_type.type), parameter_id);
 
 		size_t index = 0;
