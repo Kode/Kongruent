@@ -12,16 +12,16 @@
 
 static char *type_string(type_id type) {
 	if (type == f32_id) {
-		return "f32";
+		return "float";
 	}
 	if (type == vec2_id) {
-		return "vec2";
+		return "float2";
 	}
 	if (type == vec3_id) {
-		return "vec3";
+		return "float3";
 	}
 	if (type == vec4_id) {
-		return "vec4";
+		return "float4";
 	}
 	return get_name(get_type(type)->name);
 }
@@ -79,7 +79,8 @@ void hlsl_export() {
 				fprintf(output, " = _%" PRIu64 ";\n", o->op_store_member.from.index);
 				break;
 			case OPCODE_LOAD_CONSTANT:
-				fprintf(output, "\tfloat _%" PRIu64 " = %f;\n", o->op_load_constant.to.index, o->op_load_constant.number);
+				fprintf(output, "\t%s _%" PRIu64 " = %f;\n", type_string(o->op_load_constant.to.type), o->op_load_constant.to.index,
+				        o->op_load_constant.number);
 				break;
 			case OPCODE_LOAD_MEMBER: {
 				fprintf(output, "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type), o->op_load_member.to.index,
