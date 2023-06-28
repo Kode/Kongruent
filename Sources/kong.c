@@ -246,15 +246,17 @@ void resolve_types(void) {
 		for (size_t j = 0; j < s->members.size; ++j) {
 			if (!s->members.m[j].type.resolved) {
 				name_id name = s->members.m[j].type.name;
-				s->members.m[j].type.type = find_type(name);
-				if (s->members.m[j].type.type == NO_TYPE) {
-					char output[256];
-					char *struct_name = get_name(s->name);
-					char *member_type_name = get_name(name);
-					sprintf(output, "Could not find type %s in %s", member_type_name, struct_name);
-					error(output, 0, 0);
+				if (name != NO_NAME) {
+					s->members.m[j].type.type = find_type(name);
+					if (s->members.m[j].type.type == NO_TYPE) {
+						char output[256];
+						char *struct_name = get_name(s->name);
+						char *member_type_name = get_name(name);
+						sprintf(output, "Could not find type %s in %s", member_type_name, struct_name);
+						error(output, 0, 0);
+					}
+					s->members.m[j].type.resolved = true;
 				}
-				s->members.m[j].type.resolved = true;
 			}
 		}
 	}

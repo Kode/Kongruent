@@ -713,13 +713,26 @@ static definition parse_struct(state_t *state) {
 		member_names[count] = current(state);
 
 		advance_state(state);
-		match_token(state, TOKEN_COLON, "Expected a colon");
 
-		advance_state(state);
-		match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
-		type_names[count] = current(state);
+		if (current(state).kind == TOKEN_COLON) {
+			advance_state(state);
+			match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+			type_names[count] = current(state);
+			advance_state(state);
+		}
+		else {
+			token t;
+			t.kind = TOKEN_IDENTIFIER;
+			t.identifier = NO_NAME;
+			type_names[count] = t;
+		}
 
-		advance_state(state);
+		if (current(state).kind == TOKEN_OPERATOR && current(state).op == OPERATOR_ASSIGN) {
+			advance_state(state);
+			match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+			advance_state(state);
+		}
+
 		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
 
 		advance_state(state);
