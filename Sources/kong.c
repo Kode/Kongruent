@@ -9,6 +9,8 @@
 
 #include "backends/hlsl.h"
 
+#include "integrations/c.h"
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -347,6 +349,8 @@ int main(int argc, char **argv) {
 	}
 
 	hlsl_export();
+
+	c_export();
 
 	return 0;
 }
