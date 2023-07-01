@@ -31,7 +31,7 @@ void c_export() {
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
-		if (!t->built_in) {
+		if (!t->built_in && t->attribute != add_name("pipe")) {
 			fprintf(output, "struct %s {\n", get_name(t->name));
 			for (size_t j = 0; j < t->members.size; ++j) {
 				fprintf(output, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
