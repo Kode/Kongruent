@@ -27,18 +27,35 @@ static char *type_string(type_id type) {
 }
 
 void c_export() {
-	FILE *output = fopen("test.h", "wb");
+	{
+		FILE *output = fopen("test.h", "wb");
 
-	for (type_id i = 0; get_type(i) != NULL; ++i) {
-		type *t = get_type(i);
-		if (!t->built_in && t->attribute != add_name("pipe")) {
-			fprintf(output, "struct %s {\n", get_name(t->name));
-			for (size_t j = 0; j < t->members.size; ++j) {
-				fprintf(output, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+		for (type_id i = 0; get_type(i) != NULL; ++i) {
+			type *t = get_type(i);
+			if (!t->built_in && t->attribute != add_name("pipe")) {
+				fprintf(output, "struct %s {\n", get_name(t->name));
+				for (size_t j = 0; j < t->members.size; ++j) {
+					fprintf(output, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+				}
+				fprintf(output, "};\n\n");
+
+				fprintf(output, "%s *kong_lock_();\n\n", get_name(t->name));
 			}
-			fprintf(output, "};\n\n");
 		}
+
+		fclose(output);
 	}
 
-	fclose(output);
+	{
+		FILE *output = fopen("test.c", "wb");
+
+		for (type_id i = 0; get_type(i) != NULL; ++i) {
+			type *t = get_type(i);
+			if (!t->built_in && t->attribute != add_name("pipe")) {
+				fprintf(output, "%s *kong_lock_() {\n\treturn NULL;\n}\n\n", get_name(t->name));
+			}
+		}
+
+		fclose(output);
+	}
 }
