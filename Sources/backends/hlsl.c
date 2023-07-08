@@ -26,7 +26,7 @@ static char *type_string(type_id type) {
 	return get_name(get_type(type)->name);
 }
 
-void hlsl_export() {
+void hlsl_export(void) {
 	FILE *output = fopen("test.hlsl", "wb");
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {

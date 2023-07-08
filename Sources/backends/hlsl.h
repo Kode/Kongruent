@@ -2,4 +2,4 @@
 
 #include <stdint.h>
 
-void hlsl_export();
+void hlsl_export(void);

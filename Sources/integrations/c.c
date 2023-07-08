@@ -26,7 +26,7 @@ static char *type_string(type_id type) {
 	return get_name(get_type(type)->name);
 }
 
-void c_export() {
+void c_export(void) {
 	{
 		FILE *output = fopen("test.h", "wb");
 
@@ -39,7 +39,7 @@ void c_export() {
 				}
 				fprintf(output, "};\n\n");
 
-				fprintf(output, "%s *kong_lock_();\n\n", get_name(t->name));
+				fprintf(output, "%s *kong_lock_(kinc_g4_vertex_buffer *buffer);\n\n", get_name(t->name));
 			}
 		}
 
@@ -52,7 +52,8 @@ void c_export() {
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && t->attribute != add_name("pipe")) {
-				fprintf(output, "%s *kong_lock_() {\n\treturn NULL;\n}\n\n", get_name(t->name));
+				fprintf(output, "%s *kong_lock_(kinc_g4_vertex_buffer *buffer) {\n\treturn (%s *)kinc_vertex_buffer_lock_all();\n}\n\n", get_name(t->name),
+				        get_name(t->name));
 			}
 		}
 
