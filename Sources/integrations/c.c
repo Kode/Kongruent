@@ -52,8 +52,8 @@ void c_export(void) {
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && t->attribute != add_name("pipe")) {
-				fprintf(output, "%s *kong_lock_(kinc_g4_vertex_buffer *buffer) {\n\treturn (%s *)kinc_vertex_buffer_lock_all();\n}\n\n", get_name(t->name),
-				        get_name(t->name));
+				fprintf(output, "%s *kong_lock_(kinc_g4_vertex_buffer *buffer) {\n\treturn (%s *)kinc_vertex_buffer_lock_all(buffer);\n}\n\n",
+				        get_name(t->name), get_name(t->name));
 			}
 		}
 
