@@ -64,6 +64,17 @@ void c_export(void) {
 			}
 		}
 
+		for (type_id i = 0; get_type(i) != NULL; ++i) {
+			type *t = get_type(i);
+			if (!t->built_in && t->attribute == add_name("pipe")) {
+				fprintf(output, "static kinc_g4_pipeline_t pipe_%s;\n\n", get_name(t->name));
+				fprintf(output, "kinc_g4_pipeline_t *kong_get_pipe_%s(void) {\n", get_name(t->name));
+				fprintf(output, "\tkinc_g4_pipeline_init(&pipe_%s);\n", get_name(t->name));
+				fprintf(output, "\treturn &pipe_%s;\n", get_name(t->name));
+				fprintf(output, "}\n\n");
+			}
+		}
+
 		fclose(output);
 	}
 }
