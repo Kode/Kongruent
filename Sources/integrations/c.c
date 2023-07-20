@@ -70,6 +70,9 @@ void c_export(void) {
 				fprintf(output, "static kinc_g4_pipeline_t pipe_%s;\n\n", get_name(t->name));
 				fprintf(output, "kinc_g4_pipeline_t *kong_get_pipe_%s(void) {\n", get_name(t->name));
 				fprintf(output, "\tkinc_g4_pipeline_init(&pipe_%s);\n", get_name(t->name));
+				for (size_t j = 0; j < t->members.size; ++j) {
+					fprintf(output, "\tpipe_%s->%s;\n", get_name(t->name), get_name(t->members.m[j].name));
+				}
 				fprintf(output, "\treturn &pipe_%s;\n", get_name(t->name));
 				fprintf(output, "}\n\n");
 			}
