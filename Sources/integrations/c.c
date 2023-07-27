@@ -56,6 +56,9 @@ void c_export(void) {
 	{
 		FILE *output = fopen("test.c", "wb");
 
+		fprintf(output, "void kong_init(void) {\n");
+		fprintf(output, "}\n\n");
+
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && t->attribute != add_name("pipe")) {
