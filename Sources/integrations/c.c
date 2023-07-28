@@ -56,7 +56,31 @@ void c_export(void) {
 	{
 		FILE *output = fopen("test.c", "wb");
 
+		for (type_id i = 0; get_type(i) != NULL; ++i) {
+			type *t = get_type(i);
+			if (!t->built_in && t->attribute == add_name("pipe")) {
+				fprintf(output, "static kinc_g4_pipeline_t pipe_%s;\n\n", get_name(t->name));
+				fprintf(output, "kinc_g4_pipeline_t *kong_get_pipe_%s(void) {\n", get_name(t->name));
+				fprintf(output, "\tkinc_g4_pipeline_init(&pipe_%s);\n", get_name(t->name));
+				for (size_t j = 0; j < t->members.size; ++j) {
+					fprintf(output, "\tpipe_%s->%s;\n", get_name(t->name), get_name(t->members.m[j].name));
+				}
+				fprintf(output, "\treturn &pipe_%s;\n", get_name(t->name));
+				fprintf(output, "}\n\n");
+			}
+		}
+
 		fprintf(output, "void kong_init(void) {\n");
+		for (type_id i = 0; get_type(i) != NULL; ++i) {
+			type *t = get_type(i);
+			if (!t->built_in && t->attribute == add_name("pipe")) {
+				fprintf(output, "\tkinc_g4_pipeline_init(&pipe_%s);\n", get_name(t->name));
+				for (size_t j = 0; j < t->members.size; ++j) {
+					fprintf(output, "\tpipe_%s->%s;\n", get_name(t->name), get_name(t->members.m[j].name));
+				}
+				fprintf(output, "\tkinc_g4_pipeline_compile(&pipe_%s);\n", get_name(t->name));
+			}
+		}
 		fprintf(output, "}\n\n");
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
@@ -70,12 +94,7 @@ void c_export(void) {
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && t->attribute == add_name("pipe")) {
-				fprintf(output, "static kinc_g4_pipeline_t pipe_%s;\n\n", get_name(t->name));
 				fprintf(output, "kinc_g4_pipeline_t *kong_get_pipe_%s(void) {\n", get_name(t->name));
-				fprintf(output, "\tkinc_g4_pipeline_init(&pipe_%s);\n", get_name(t->name));
-				for (size_t j = 0; j < t->members.size; ++j) {
-					fprintf(output, "\tpipe_%s->%s;\n", get_name(t->name), get_name(t->members.m[j].name));
-				}
 				fprintf(output, "\treturn &pipe_%s;\n", get_name(t->name));
 				fprintf(output, "}\n\n");
 			}
