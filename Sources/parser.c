@@ -704,6 +704,7 @@ static definition parse_struct(state_t *state) {
 
 	token member_names[MAX_MEMBERS];
 	token type_names[MAX_MEMBERS];
+	token member_values[MAX_MEMBERS];
 	size_t count = 0;
 
 	while (current(state).kind != TOKEN_RIGHT_CURLY) {
@@ -730,7 +731,12 @@ static definition parse_struct(state_t *state) {
 		if (current(state).kind == TOKEN_OPERATOR && current(state).op == OPERATOR_ASSIGN) {
 			advance_state(state);
 			match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+			member_values[count] = current(state);
 			advance_state(state);
+		}
+		else {
+			member_values[count].kind = TOKEN_IDENTIFIER;
+			member_values[count].identifier = NO_NAME;
 		}
 
 		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
@@ -754,6 +760,7 @@ static definition parse_struct(state_t *state) {
 		member.name = member_names[i].identifier;
 		member.type.resolved = false;
 		member.type.name = type_names[i].identifier;
+		member.value = member_values[i].identifier;
 
 		s->members.m[i] = member;
 	}

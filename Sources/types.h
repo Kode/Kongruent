@@ -20,6 +20,7 @@ typedef struct type_ref {
 typedef struct member {
 	name_id name;
 	type_ref type;
+	name_id value;
 } member;
 
 #define MAX_MEMBERS 1024

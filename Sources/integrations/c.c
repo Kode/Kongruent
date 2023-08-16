@@ -76,7 +76,7 @@ void c_export(void) {
 			if (!t->built_in && t->attribute == add_name("pipe")) {
 				fprintf(output, "\tkinc_g4_pipeline_init(&pipe_%s);\n", get_name(t->name));
 				for (size_t j = 0; j < t->members.size; ++j) {
-					fprintf(output, "\tpipe_%s->%s;\n", get_name(t->name), get_name(t->members.m[j].name));
+					fprintf(output, "\tpipe_%s->%s = %s;\n", get_name(t->name), get_name(t->members.m[j].name), get_name(t->members.m[j].value));
 				}
 				fprintf(output, "\tkinc_g4_pipeline_compile(&pipe_%s);\n", get_name(t->name));
 			}
