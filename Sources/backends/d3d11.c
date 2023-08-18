@@ -1,4 +1,9 @@
+#include "d3d11.h"
+
 #ifdef _WIN32
+
+#include "../log.h"
+
 #define INITGUID
 #include <Windows.h>
 #include <d3d11.h>
@@ -8,10 +13,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 #endif
-
-typedef enum EShLanguage { EShLangVertex, EShLangFragment, EShLangGeometry, EShLangTessControl, EShLangTessEvaluation, EShLangCompute } EShLanguage;
 
 static const char *shaderString(EShLanguage stage, int version) {
 	if (version == 4) {
@@ -53,43 +55,17 @@ struct map {
 	int nothing;
 };
 
-int compileHLSLToD3D11(const char *fromRelative, const char *to, const char *source, char **output, size_t *outputlength, struct map *attributes,
-                       EShLanguage stage, bool debug) {
+int compile_hlsl_to_d3d11(const char *source, char **output, size_t *outputlength, EShLanguage stage, bool debug) {
 #ifdef _WIN32
-	char from[256];
-	size_t length;
-	char *data;
-	if (source) {
-		strcpy(from, fromRelative);
-		data = (char *)source;
-		length = strlen(source);
-	}
-	else {
-		GetFullPathNameA(fromRelative, 255, from, NULL);
-
-		FILE *in = fopen(from, "rb");
-		if (!in) {
-			printf("Error: unable to open input file: %s\n", from);
-			return 1;
-		}
-
-		fseek(in, 0, SEEK_END);
-		length = ftell(in);
-		rewind(in);
-
-		data = (char *)malloc(length);
-		fread(data, 1, length, in);
-
-		fclose(in);
-	}
+	size_t length = strlen(source);
 
 	ID3DBlob *errorMessage = NULL;
 	ID3DBlob *shaderBuffer = NULL;
 	UINT flags = 0;
 	if (debug) flags |= D3DCOMPILE_DEBUG;
-	HRESULT hr = D3DCompile(data, length, from, NULL, NULL, "main", shaderString(stage, 4), flags, 0, &shaderBuffer, &errorMessage);
+	HRESULT hr = D3DCompile(source, length, "Unknown", NULL, NULL, "main", shaderString(stage, 4), flags, 0, &shaderBuffer, &errorMessage);
 	if (hr != S_OK) {
-		hr = D3DCompile(data, length, from, NULL, NULL, "main", shaderString(stage, 5), flags, 0, &shaderBuffer, &errorMessage);
+		hr = D3DCompile(source, length, "Unknown", NULL, NULL, "main", shaderString(stage, 5), flags, 0, &shaderBuffer, &errorMessage);
 	}
 
 	if (hr == S_OK) {
@@ -193,7 +169,7 @@ int compileHLSLToD3D11(const char *fromRelative, const char *to, const char *sou
 		assert(error != NULL);
 		memcpy(error, errorMessage->lpVtbl->GetBufferPointer(errorMessage), size);
 		error[size] = 0;
-		fprintf(stderr, error);
+		kong_log(LOG_LEVEL_ERROR, error);
 		return 1;
 	}
 #else

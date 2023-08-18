@@ -1,5 +1,6 @@
 #include "hlsl.h"
 
+#include "d3d11.h"
 #include "../compiler.h"
 #include "../functions.h"
 #include "../parser.h"
@@ -9,6 +10,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static char *type_string(type_id type) {
 	if (type == f32_id) {
@@ -27,16 +29,16 @@ static char *type_string(type_id type) {
 }
 
 void hlsl_export(void) {
-	FILE *output = fopen("test.hlsl", "wb");
+	char *hlsl = (char*)calloc(1024 * 1024, 1);
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 		if (!t->built_in && t->attribute != add_name("pipe")) {
-			fprintf(output, "struct %s {\n", get_name(t->name));
+			sprintf(hlsl, "struct %s {\n", get_name(t->name));
 			for (size_t j = 0; j < t->members.size; ++j) {
-				fprintf(output, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+				sprintf(hlsl, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 			}
-			fprintf(output, "}\n\n");
+			sprintf(hlsl, "}\n\n");
 		}
 	}
 
@@ -54,51 +56,51 @@ void hlsl_export(void) {
 		}
 
 		assert(parameter_id != 0);
-		fprintf(output, "%s %s(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), get_name(f->name), type_string(f->parameter_type.type), parameter_id);
+		sprintf(hlsl, "%s %s(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), get_name(f->name), type_string(f->parameter_type.type), parameter_id);
 
 		size_t index = 0;
 		while (index < size) {
 			opcode *o = (opcode *)&data[index];
 			switch (o->type) {
 			case OPCODE_VAR:
-				fprintf(output, "\t%s _%" PRIu64 ";\n", type_string(o->op_var.var.type), o->op_var.var.index);
+				sprintf(hlsl, "\t%s _%" PRIu64 ";\n", type_string(o->op_var.var.type), o->op_var.var.index);
 				break;
 			case OPCODE_NOT:
-				fprintf(output, "\t_%" PRIu64 " = !_%" PRIu64 ";\n", o->op_not.to.index, o->op_not.from.index);
+				sprintf(hlsl, "\t_%" PRIu64 " = !_%" PRIu64 ";\n", o->op_not.to.index, o->op_not.from.index);
 				break;
 			case OPCODE_STORE_VARIABLE:
-				fprintf(output, "\t_%" PRIu64 " = _%" PRIu64 ";\n", o->op_store_var.to.index, o->op_store_var.from.index);
+				sprintf(hlsl, "\t_%" PRIu64 " = _%" PRIu64 ";\n", o->op_store_var.to.index, o->op_store_var.from.index);
 				break;
 			case OPCODE_STORE_MEMBER:
-				fprintf(output, "\t_%" PRIu64, o->op_store_member.to.index);
+				sprintf(hlsl, "\t_%" PRIu64, o->op_store_member.to.index);
 				type *s = get_type(o->op_store_member.member_parent_type);
 				for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
-					fprintf(output, ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
+					sprintf(hlsl, ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
 					s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
 				}
-				fprintf(output, " = _%" PRIu64 ";\n", o->op_store_member.from.index);
+				sprintf(hlsl, " = _%" PRIu64 ";\n", o->op_store_member.from.index);
 				break;
 			case OPCODE_LOAD_CONSTANT:
-				fprintf(output, "\t%s _%" PRIu64 " = %f;\n", type_string(o->op_load_constant.to.type), o->op_load_constant.to.index,
+				sprintf(hlsl, "\t%s _%" PRIu64 " = %f;\n", type_string(o->op_load_constant.to.type), o->op_load_constant.to.index,
 				        o->op_load_constant.number);
 				break;
 			case OPCODE_LOAD_MEMBER: {
-				fprintf(output, "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type), o->op_load_member.to.index,
+				sprintf(hlsl, "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type), o->op_load_member.to.index,
 				        o->op_load_member.from.index);
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
-					fprintf(output, ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+					sprintf(hlsl, ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
 					s = get_type(s->members.m[o->op_load_member.member_indices[i]].type.type);
 				}
-				fprintf(output, ";\n");
+				sprintf(hlsl, ";\n");
 				break;
 			}
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
-					fprintf(output, "\treturn _%" PRIu64 ";\n", o->op_return.var.index);
+					sprintf(hlsl, "\treturn _%" PRIu64 ";\n", o->op_return.var.index);
 				}
 				else {
-					fprintf(output, "\treturn;\n");
+					sprintf(hlsl, "\treturn;\n");
 				}
 				break;
 			}
@@ -107,8 +109,10 @@ void hlsl_export(void) {
 			index += o->size;
 		}
 
-		fprintf(output, "}\n\n");
+		sprintf(hlsl, "}\n\n");
 	}
 
-	fclose(output);
+	char *output;
+	size_t output_size;
+	compile_hlsl_to_d3d11(hlsl, &output,&output_size, EShLangVertex, false);
 }
