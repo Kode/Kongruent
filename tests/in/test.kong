@@ -11,6 +11,7 @@ fn pos(input: VertexIn) -> FragmentIn {
     let mut output: FragmentIn;
     output.position.xyz = input.position.xyz;
     output.position.z = 1.0;
+    output.position.w = 1.0;
     output
 }
 

@@ -1,10 +1,10 @@
 #include "hlsl.h"
 
-#include "d3d11.h"
 #include "../compiler.h"
 #include "../functions.h"
 #include "../parser.h"
 #include "../types.h"
+#include "d3d11.h"
 
 #include <assert.h>
 #include <inttypes.h>
@@ -29,16 +29,47 @@ static char *type_string(type_id type) {
 }
 
 void hlsl_export(void) {
-	char *hlsl = (char*)calloc(1024 * 1024, 1);
+	char *hlsl = (char *)calloc(1024 * 1024, 1);
+	size_t offset = 0;
+
+	type_id vertex_input = NO_TYPE;
+	type_id vertex_output = NO_TYPE;
+
+	for (function_id i = 0; get_function(i) != NULL; ++i) {
+		function *f = get_function(i);
+		if (f->attribute == add_name("vertex")) {
+			vertex_output = f->return_type.type;
+			vertex_input = f->parameter_type.type;
+			break;
+		}
+	}
+
+	assert(vertex_input != NO_TYPE);
+	assert(vertex_output != NO_TYPE);
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
+
 		if (!t->built_in && t->attribute != add_name("pipe")) {
-			sprintf(hlsl, "struct %s {\n", get_name(t->name));
-			for (size_t j = 0; j < t->members.size; ++j) {
-				sprintf(hlsl, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+			offset += sprintf(&hlsl[offset], "struct %s {\n", get_name(t->name));
+
+			if (i == vertex_input) {
+				for (size_t j = 0; j < t->members.size; ++j) {
+					offset +=
+					    sprintf(&hlsl[offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name), j);
+				}
 			}
-			sprintf(hlsl, "}\n\n");
+			else if (i == vertex_output) {
+				for (size_t j = 0; j < t->members.size; ++j) {
+					offset += sprintf(&hlsl[offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+				}
+			}
+			else {
+				for (size_t j = 0; j < t->members.size; ++j) {
+					offset += sprintf(&hlsl[offset], "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+				}
+			}
+			offset += sprintf(&hlsl[offset], "};\n\n");
 		}
 	}
 
@@ -56,51 +87,58 @@ void hlsl_export(void) {
 		}
 
 		assert(parameter_id != 0);
-		sprintf(hlsl, "%s %s(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), get_name(f->name), type_string(f->parameter_type.type), parameter_id);
+		if (f->attribute == add_name("vertex")) {
+			offset +=
+			    sprintf(&hlsl[offset], "%s main(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), type_string(f->parameter_type.type), parameter_id);
+		}
+		else {
+			offset += sprintf(&hlsl[offset], "%s %s(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), get_name(f->name),
+			                  type_string(f->parameter_type.type), parameter_id);
+		}
 
 		size_t index = 0;
 		while (index < size) {
 			opcode *o = (opcode *)&data[index];
 			switch (o->type) {
 			case OPCODE_VAR:
-				sprintf(hlsl, "\t%s _%" PRIu64 ";\n", type_string(o->op_var.var.type), o->op_var.var.index);
+				offset += sprintf(&hlsl[offset], "\t%s _%" PRIu64 ";\n", type_string(o->op_var.var.type), o->op_var.var.index);
 				break;
 			case OPCODE_NOT:
-				sprintf(hlsl, "\t_%" PRIu64 " = !_%" PRIu64 ";\n", o->op_not.to.index, o->op_not.from.index);
+				offset += sprintf(&hlsl[offset], "\t_%" PRIu64 " = !_%" PRIu64 ";\n", o->op_not.to.index, o->op_not.from.index);
 				break;
 			case OPCODE_STORE_VARIABLE:
-				sprintf(hlsl, "\t_%" PRIu64 " = _%" PRIu64 ";\n", o->op_store_var.to.index, o->op_store_var.from.index);
+				offset += sprintf(&hlsl[offset], "\t_%" PRIu64 " = _%" PRIu64 ";\n", o->op_store_var.to.index, o->op_store_var.from.index);
 				break;
 			case OPCODE_STORE_MEMBER:
-				sprintf(hlsl, "\t_%" PRIu64, o->op_store_member.to.index);
+				offset += sprintf(&hlsl[offset], "\t_%" PRIu64, o->op_store_member.to.index);
 				type *s = get_type(o->op_store_member.member_parent_type);
 				for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
-					sprintf(hlsl, ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
+					offset += sprintf(&hlsl[offset], ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
 					s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
 				}
-				sprintf(hlsl, " = _%" PRIu64 ";\n", o->op_store_member.from.index);
+				offset += sprintf(&hlsl[offset], " = _%" PRIu64 ";\n", o->op_store_member.from.index);
 				break;
 			case OPCODE_LOAD_CONSTANT:
-				sprintf(hlsl, "\t%s _%" PRIu64 " = %f;\n", type_string(o->op_load_constant.to.type), o->op_load_constant.to.index,
-				        o->op_load_constant.number);
+				offset += sprintf(&hlsl[offset], "\t%s _%" PRIu64 " = %f;\n", type_string(o->op_load_constant.to.type), o->op_load_constant.to.index,
+				                  o->op_load_constant.number);
 				break;
 			case OPCODE_LOAD_MEMBER: {
-				sprintf(hlsl, "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type), o->op_load_member.to.index,
-				        o->op_load_member.from.index);
+				offset += sprintf(&hlsl[offset], "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type), o->op_load_member.to.index,
+				                  o->op_load_member.from.index);
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
-					sprintf(hlsl, ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+					offset += sprintf(&hlsl[offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
 					s = get_type(s->members.m[o->op_load_member.member_indices[i]].type.type);
 				}
-				sprintf(hlsl, ";\n");
+				offset += sprintf(&hlsl[offset], ";\n");
 				break;
 			}
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
-					sprintf(hlsl, "\treturn _%" PRIu64 ";\n", o->op_return.var.index);
+					offset += sprintf(&hlsl[offset], "\treturn _%" PRIu64 ";\n", o->op_return.var.index);
 				}
 				else {
-					sprintf(hlsl, "\treturn;\n");
+					offset += sprintf(&hlsl[offset], "\treturn;\n");
 				}
 				break;
 			}
@@ -109,10 +147,10 @@ void hlsl_export(void) {
 			index += o->size;
 		}
 
-		sprintf(hlsl, "}\n\n");
+		offset += sprintf(&hlsl[offset], "}\n\n");
 	}
 
 	char *output;
 	size_t output_size;
-	compile_hlsl_to_d3d11(hlsl, &output,&output_size, EShLangVertex, false);
+	compile_hlsl_to_d3d11(hlsl, &output, &output_size, EShLangVertex, false);
 }
