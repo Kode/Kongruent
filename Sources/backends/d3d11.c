@@ -55,7 +55,7 @@ struct map {
 	int nothing;
 };
 
-int compile_hlsl_to_d3d11(const char *source, char **output, size_t *outputlength, EShLanguage stage, bool debug) {
+int compile_hlsl_to_d3d11(const char *source, uint8_t **output, size_t *outputlength, EShLanguage stage, bool debug) {
 #ifdef _WIN32
 	size_t length = strlen(source);
 
@@ -157,7 +157,7 @@ int compile_hlsl_to_d3d11(const char *source, char **output, size_t *outputlengt
 
 		SIZE_T size = shaderBuffer->lpVtbl->GetBufferSize(shaderBuffer);
 		*outputlength = size;
-		*output = (char *)malloc(size);
+		*output = (uint8_t *)malloc(size);
 		memcpy(*output, shaderBuffer->lpVtbl->GetBufferPointer(shaderBuffer), size);
 
 		return 0;

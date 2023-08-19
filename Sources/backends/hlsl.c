@@ -28,6 +28,17 @@ static char *type_string(type_id type) {
 	return get_name(get_type(type)->name);
 }
 
+static void write_bytecode(const char *filename, const char *name, uint8_t *output, size_t output_size) {
+	FILE *file = fopen(filename, "wb");
+	fprintf(file, "#include <stdint.h>\n\nuint8_t %s[] = {\n", name);
+	fprintf(file, "\t0x%x", output[0]);
+	for (size_t i = 1; i < output_size; ++i) {
+		fprintf(file, ",0x%x", output[i]);
+	}
+	fprintf(file, "\n};\n");
+	fclose(file);
+}
+
 static hlsl_export_vertex(void) {
 	char *hlsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
@@ -153,6 +164,8 @@ static hlsl_export_vertex(void) {
 	char *output;
 	size_t output_size;
 	compile_hlsl_to_d3d11(hlsl, &output, &output_size, EShLangVertex, false);
+
+	write_bytecode("vert.c", "kong_vert", output, output_size);
 }
 
 static void hlsl_export_pixel(void) {
@@ -268,9 +281,11 @@ static void hlsl_export_pixel(void) {
 		offset += sprintf(&hlsl[offset], "}\n\n");
 	}
 
-	char *output;
+	uint8_t *output;
 	size_t output_size;
 	compile_hlsl_to_d3d11(hlsl, &output, &output_size, EShLangFragment, false);
+
+	write_bytecode("frag.c", "kong_frag", output, output_size);
 }
 
 void hlsl_export(void) {
