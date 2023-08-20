@@ -301,7 +301,87 @@ void resolve_types(void) {
 	}
 }
 
+typedef enum arg_mode { MODE_MODECHECK, MODE_INPUT, MODE_OUTPUT, MODE_PLATFORM } arg_mode;
+
+void help(void) {
+	printf("No help is coming.");
+}
+
 int main(int argc, char **argv) {
+	arg_mode mode = MODE_MODECHECK;
+
+	char *input[256] = {0};
+	size_t input_index = 0;
+	char *platform = NULL;
+	char *output = NULL;
+
+	for (int i = 1; i < argc; ++i) {
+		switch (mode) {
+		case MODE_MODECHECK: {
+			if (argv[i][0] == '-') {
+				if (argv[i][1] == '-') {
+					if (strcmp(&argv[i][2], "in")) {
+						mode = MODE_INPUT;
+					}
+					else if (strcmp(&argv[i][2], "out")) {
+						mode = MODE_OUTPUT;
+					}
+					else if (strcmp(&argv[i][2], "platform")) {
+						mode = MODE_PLATFORM;
+					}
+					else if (strcmp(&argv[i][2], "help")) {
+						help();
+						return 0;
+					}
+					else {
+						assert(false);
+					}
+				}
+				else {
+					assert(argv[i][1] != 0);
+					assert(argv[i][2] == 0);
+					switch (argv[i][1]) {
+					case 'i':
+						mode = MODE_INPUT;
+						break;
+					case 'o':
+						mode = MODE_OUTPUT;
+						break;
+					case 'p':
+						mode = MODE_PLATFORM;
+						break;
+					case 'h':
+						help();
+						return 0;
+					}
+				}
+			}
+			else {
+				assert(false);
+			}
+			break;
+		}
+		case MODE_INPUT: {
+			input[input_index] = argv[i];
+			input_index += 1;
+			mode = MODE_MODECHECK;
+			break;
+		}
+		case MODE_OUTPUT: {
+			output = argv[i];
+			mode = MODE_MODECHECK;
+			break;
+		}
+		case MODE_PLATFORM: {
+			platform = argv[i];
+			mode = MODE_MODECHECK;
+			break;
+		}
+		}
+	}
+
+	assert(mode == MODE_MODECHECK);
+
 	FILE *file = fopen(filename, "rb");
 
 	if (file == NULL) {
