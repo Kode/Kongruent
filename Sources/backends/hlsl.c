@@ -29,14 +29,27 @@ static char *type_string(type_id type) {
 }
 
 static void write_bytecode(const char *filename, const char *name, uint8_t *output, size_t output_size) {
-	FILE *file = fopen(filename, "wb");
-	fprintf(file, "#include <stdint.h>\n\nuint8_t %s[] = {\n", name);
-	fprintf(file, "\t0x%x", output[0]);
-	for (size_t i = 1; i < output_size; ++i) {
-		fprintf(file, ",0x%x", output[i]);
+	char full_filename[256];
+
+	{
+		sprintf(full_filename, "%s.h", filename);
+		FILE *file = fopen(full_filename, "wb");
+		fprintf(file, "#include <stdint.h>\n\nextern uint8_t %s[%" PRIu64 "];\n", name, output_size);
+		fclose(file);
 	}
-	fprintf(file, "\n};\n");
-	fclose(file);
+
+	{
+		sprintf(full_filename, "%s.c", filename);
+
+		FILE *file = fopen(full_filename, "wb");
+		fprintf(file, "#include \"%s.h\"\n\nuint8_t %s[%" PRIu64 "] = {\n", filename, name, output_size);
+		fprintf(file, "\t0x%x", output[0]);
+		for (size_t i = 1; i < output_size; ++i) {
+			fprintf(file, ",0x%x", output[i]);
+		}
+		fprintf(file, "\n};\n");
+		fclose(file);
+	}
 }
 
 static hlsl_export_vertex(void) {
@@ -165,7 +178,7 @@ static hlsl_export_vertex(void) {
 	size_t output_size;
 	compile_hlsl_to_d3d11(hlsl, &output, &output_size, EShLangVertex, false);
 
-	write_bytecode("vert.c", "kong_vert", output, output_size);
+	write_bytecode("vert", "kong_vert_bytecode", output, output_size);
 }
 
 static void hlsl_export_pixel(void) {
@@ -285,7 +298,7 @@ static void hlsl_export_pixel(void) {
 	size_t output_size;
 	compile_hlsl_to_d3d11(hlsl, &output, &output_size, EShLangFragment, false);
 
-	write_bytecode("frag.c", "kong_frag", output, output_size);
+	write_bytecode("frag", "kong_frag_bytecode", output, output_size);
 }
 
 void hlsl_export(void) {
