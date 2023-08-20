@@ -301,7 +301,7 @@ void resolve_types(void) {
 	}
 }
 
-typedef enum arg_mode { MODE_MODECHECK, MODE_INPUT, MODE_OUTPUT, MODE_PLATFORM } arg_mode;
+typedef enum arg_mode { MODE_MODECHECK, MODE_INPUT, MODE_OUTPUT, MODE_PLATFORM, MODE_API } arg_mode;
 
 void help(void) {
 	printf("No help is coming.");
@@ -313,6 +313,7 @@ int main(int argc, char **argv) {
 	char *input[256] = {0};
 	size_t input_index = 0;
 	char *platform = NULL;
+	char *api = NULL;
 	char *output = NULL;
 
 	for (int i = 1; i < argc; ++i) {
@@ -328,6 +329,9 @@ int main(int argc, char **argv) {
 					}
 					else if (strcmp(&argv[i][2], "platform")) {
 						mode = MODE_PLATFORM;
+					}
+					else if (strcmp(&argv[i][2], "api")) {
+						mode = MODE_API;
 					}
 					else if (strcmp(&argv[i][2], "help")) {
 						help();
@@ -349,6 +353,9 @@ int main(int argc, char **argv) {
 						break;
 					case 'p':
 						mode = MODE_PLATFORM;
+						break;
+					case 'a':
+						mode = MODE_API;
 						break;
 					case 'h':
 						help();
@@ -374,6 +381,11 @@ int main(int argc, char **argv) {
 		}
 		case MODE_PLATFORM: {
 			platform = argv[i];
+			mode = MODE_MODECHECK;
+			break;
+		}
+		case MODE_API: {
+			api = argv[i];
 			mode = MODE_MODECHECK;
 			break;
 		}
