@@ -38,7 +38,7 @@ variables:
   escaped_byte: '\\(x\h{2}|n|r|t|0|"|''|\\)'
   escaped_char: '\\(x\h{2}|n|r|t|0|"|''|\\|u\{\h{1,6}\})'
   int_suffixes: 'i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize'
-  support_type: \b(Copy|Send|Sized|Sync|Drop|Fn|FnMut|FnOnce|Box|ToOwned|Clone|PartialEq|PartialOrd|Eq|Ord|AsRef|AsMut|Into|From|Default|Iterator|Extend|IntoIterator|DoubleEndedIterator|ExactSizeIterator|Option|Some|None|Result|Ok|Err|SliceConcatExt|String|ToString|Vec)\b
+  support_type: \b(Copy|Send|Sized|Sync|Drop|Fun|FunMut|FunOnce|Box|ToOwned|Clone|PartialEq|PartialOrd|Eq|Ord|AsRef|AsMut|Into|From|Default|Iterator|Extend|IntoIterator|DoubleEndedIterator|ExactSizeIterator|Option|Some|None|Result|Ok|Err|SliceConcatExt|String|ToString|Vec)\b
 contexts:
   main:
     - include: statements
@@ -86,12 +86,12 @@ contexts:
         2: keyword.operator.kong
       push: closure
 
-    - match: '\b(?:(pub)\s+)?\b(fn)\s+(?={{identifier}})'
+    - match: '\b(?:(pub)\s+)?\b(fun)\s+(?={{identifier}})'
       scope: meta.function.kong
       captures:
         1: storage.modifier.kong
         2: storage.type.function.kong
-      push: fn-definition
+      push: fun-definition
 
     - match: '\b(?:(pub)\s+)?(struct)\s+'
       scope: meta.struct.kong
@@ -128,13 +128,13 @@ contexts:
         - meta_scope: meta.enum.kong
         - include: statements-block
 
-    - match: \b(let|const|static)\b
+    - match: \b(var|const|static)\b
       scope: storage.type.kong
 
     - match: \*const\b
       scope: storage.type.kong
 
-    - match: \bfn\b
+    - match: \bfun\b
       scope: storage.type.function.kong
 
     - match: \bmod\b
@@ -485,7 +485,7 @@ contexts:
       captures:
         1: support.type.kong
       push: generic-angles
-    - match: \b(Self|i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize|f32|f64|bool|char|str)\b
+    - match: \b(Self|i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize|f32|f64|float2|float3|float4|bool|char|str)\b
       scope: storage.type.kong
 
   generic-angles:
@@ -573,7 +573,7 @@ contexts:
       scope: storage.modifier.kong
     - match: (?:\b|\*)(?:mut|const)\b
       scope: storage.modifier.kong
-    - match: \b(fn)\b(\()
+    - match: \b(fun)\b(\()
       captures:
         1: storage.type.function.kong
         2: meta.group.kong punctuation.section.group.begin.kong
@@ -850,29 +850,29 @@ contexts:
     - meta_scope: meta.impl.kong
     - include: statements-block
 
-  fn-definition:
+  fun-definition:
     - meta_scope: meta.function.kong
     - include: comments
     - match: '{{identifier}}'
       scope: entity.name.function.kong
-      set: fn-generic
+      set: fun-generic
 
-  fn-generic:
+  fun-generic:
     - include: comments
     - match: '(?=<)'
       push: generic-angles
     - match: '(?=\()'
-      set: fn-parameters
+      set: fun-parameters
     # Escape for incomplete expression
     - match: '(?=\S)'
       pop: true
 
-  fn-parameters:
+  fun-parameters:
     - meta_scope: meta.function.kong
     - include: comments
     - match: '\)'
       scope: meta.function.parameters.kong punctuation.section.parameters.end.kong
-      set: fn-return
+      set: fun-return
     - match: '\('
       scope: punctuation.section.parameters.begin.kong
       push:
@@ -911,23 +911,23 @@ contexts:
             2: punctuation.separator.kong
         - include: type-any-identifier
 
-  fn-return:
+  fun-return:
     - meta_scope: meta.function.kong
     - include: comments
     - match: '(?=\{)'
-      set: fn-body
+      set: fun-body
     - match: '(?=\bwhere\b)'
-      set: fn-where
+      set: fun-where
     - include: return-type
     # Escape for incomplete expression
     - match: '(?=\S)'
       pop: true
 
-  fn-where:
+  fun-where:
     - meta_scope: meta.function.kong
     - include: comments
     - match: '(?=\{)'
-      set: fn-body
+      set: fun-body
     - match: \bfor\b
       scope: keyword.other.kong
     - match: \bwhere\b
@@ -936,7 +936,7 @@ contexts:
     - match: ':'
       scope: punctuation.separator.kong
 
-  fn-body:
+  fun-body:
     - meta_scope: meta.function.kong
     - match: '\}'
       scope: meta.block.kong punctuation.section.block.end.kong
@@ -1137,7 +1137,7 @@ contexts:
     - include: integers
 
   floats:
-    - match: '\b((?:\d[\d_]*)?\d\.)(\d[\d_]*(?:[eE][+-]?[\d_]*\d[\d_]*)?)(f32|f64)?'
+    - match: '\b((?:\d[\d_]*)?\d\.)(\d[\d_]*(?:[eE][+-]?[\d_]*\d[\d_]*)?)(f32|f64|float2|float3|float4)?'
       captures:
         1: constant.numeric.float.kong
         2: constant.numeric.float.kong

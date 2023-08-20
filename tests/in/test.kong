@@ -1,25 +1,25 @@
 struct VertexIn {
-    position: vec3;
+    position: float3;
 }
 
 struct FragmentIn {
-    position: vec4;
+    position: float4;
 }
 
 #[vertex]
-fn pos(input: VertexIn) -> FragmentIn {
-    let mut output: FragmentIn;
+fun pos(input: VertexIn): FragmentIn {
+    var output: FragmentIn;
     output.position.xyz = input.position.xyz;
     output.position.z = 1.0;
     output.position.w = 1.0;
-    output
+    return output;
 }
 
 #[fragment]
-fn pixel(input: FragmentIn) -> vec4 {
-    let mut color: vec4;
+fun pixel(input: FragmentIn): float4 {
+    var color: float4;
     color.r = 1.0;
-    color
+    return color;
 }
 
 #[pipe]
