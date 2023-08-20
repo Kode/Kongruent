@@ -106,11 +106,11 @@ void c_export(void) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					fprintf(output, "\tkinc_g4_shader_t %s;\n", get_name(t->members.m[j].value));
 					if (t->members.m[j].name == add_name("vertex_shader")) {
-						fprintf(output, "\tkinc_g4_shader_init(&%s, kong_vert_bytecode, sizeof(kong_vert_bytecode), KINC_G4_SHADER_TYPE_VERTEX);\n",
+						fprintf(output, "\tkinc_g4_shader_init(&%s, kong_vert_code, kong_vert_code_size, KINC_G4_SHADER_TYPE_VERTEX);\n",
 						        get_name(t->members.m[j].value));
 					}
 					else if (t->members.m[j].name == add_name("fragment_shader")) {
-						fprintf(output, "\tkinc_g4_shader_init(&%s, kong_frag_bytecode, sizeof(kong_frag_bytecode), KINC_G4_SHADER_TYPE_FRAGMENT);\n",
+						fprintf(output, "\tkinc_g4_shader_init(&%s, kong_frag_code, kong_frag_code_size, KINC_G4_SHADER_TYPE_FRAGMENT);\n",
 						        get_name(t->members.m[j].value));
 					}
 					else {

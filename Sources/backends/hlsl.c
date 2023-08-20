@@ -34,7 +34,9 @@ static void write_bytecode(const char *filename, const char *name, uint8_t *outp
 	{
 		sprintf(full_filename, "%s.h", filename);
 		FILE *file = fopen(full_filename, "wb");
-		fprintf(file, "#include <stdint.h>\n\nextern uint8_t %s[%" PRIu64 "];\n", name, output_size);
+		fprintf(file, "#include <stdint.h>\n\n");
+		fprintf(file, "extern uint8_t *%s;\n", name);
+		fprintf(file, "extern size_t %s_size;\n", name);
 		fclose(file);
 	}
 
@@ -42,12 +44,49 @@ static void write_bytecode(const char *filename, const char *name, uint8_t *outp
 		sprintf(full_filename, "%s.c", filename);
 
 		FILE *file = fopen(full_filename, "wb");
-		fprintf(file, "#include \"%s.h\"\n\nuint8_t %s[%" PRIu64 "] = {\n", filename, name, output_size);
-		fprintf(file, "\t0x%x", output[0]);
-		for (size_t i = 1; i < output_size; ++i) {
-			fprintf(file, ",0x%x", output[i]);
+		fprintf(file, "#include \"%s.h\"\n\n", filename);
+
+		fprintf(file, "uint8_t *%s = \"", name);
+		for (size_t i = 0; i < output_size; ++i) {
+			if ((output[i] >= 'a' && output[i] <= 'z') || (output[i] >= 'A' && output[i] <= 'Z') || (output[i] >= '0' && output[i] <= '9') ||
+			    output[i] == '!' || output[i] == '#' || output[i] == '%' || output[i] == '&' || output[i] == '\'' || output[i] == '(' || output[i] == ')' ||
+			    output[i] == '*' || output[i] == '+' || output[i] == ',' || output[i] == '-' || output[i] == '.' || output[i] == '/' || output[i] == ':' ||
+			    output[i] == ';' || output[i] == '<' || output[i] == '=' || output[i] == '>' || output[i] == '?' || output[i] == '[' || output[i] == ']' ||
+			    output[i] == '^' || output[i] == '_' || output[i] == '`' || output[i] == '{' || output[i] == '|' || output[i] == '}' || output[i] == '~') {
+				fprintf(file, "%c", output[i]);
+			}
+			else if (output[i] == '\a') {
+				fprintf(file, "\\a");
+			}
+			else if (output[i] == '\b') {
+				fprintf(file, "\\b");
+			}
+			else if (output[i] == '\t') {
+				fprintf(file, "\\t");
+			}
+			else if (output[i] == '\v') {
+				fprintf(file, "\\v");
+			}
+			else if (output[i] == '\f') {
+				fprintf(file, "\\f");
+			}
+			else if (output[i] == '\r') {
+				fprintf(file, "\\r");
+			}
+			else if (output[i] == '\"') {
+				fprintf(file, "\\\"");
+			}
+			else if (output[i] == '\\') {
+				fprintf(file, "\\\\");
+			}
+			else {
+				fprintf(file, "\\%03o", output[i]);
+			}
 		}
-		fprintf(file, "\n};\n");
+		fprintf(file, "\";\n");
+
+		fprintf(file, "size_t %s_size = %" PRIu64 ";\n", name, output_size);
+
 		fclose(file);
 	}
 }
@@ -178,7 +217,7 @@ static hlsl_export_vertex(void) {
 	size_t output_size;
 	compile_hlsl_to_d3d11(hlsl, &output, &output_size, EShLangVertex, false);
 
-	write_bytecode("vert", "kong_vert_bytecode", output, output_size);
+	write_bytecode("vert", "kong_vert_code", output, output_size);
 }
 
 static void hlsl_export_pixel(void) {
@@ -298,7 +337,7 @@ static void hlsl_export_pixel(void) {
 	size_t output_size;
 	compile_hlsl_to_d3d11(hlsl, &output, &output_size, EShLangFragment, false);
 
-	write_bytecode("frag", "kong_frag_bytecode", output, output_size);
+	write_bytecode("frag", "kong_frag_code", output, output_size);
 }
 
 void hlsl_export(void) {
