@@ -48,11 +48,9 @@ static void write_bytecode(const char *filename, const char *name, uint8_t *outp
 
 		fprintf(file, "uint8_t *%s = \"", name);
 		for (size_t i = 0; i < output_size; ++i) {
-			if ((output[i] >= 'a' && output[i] <= 'z') || (output[i] >= 'A' && output[i] <= 'Z') || (output[i] >= '0' && output[i] <= '9') ||
-			    output[i] == '!' || output[i] == '#' || output[i] == '%' || output[i] == '&' || output[i] == '\'' || output[i] == '(' || output[i] == ')' ||
-			    output[i] == '*' || output[i] == '+' || output[i] == ',' || output[i] == '-' || output[i] == '.' || output[i] == '/' || output[i] == ':' ||
-			    output[i] == ';' || output[i] == '<' || output[i] == '=' || output[i] == '>' || output[i] == '?' || output[i] == '[' || output[i] == ']' ||
-			    output[i] == '^' || output[i] == '_' || output[i] == '`' || output[i] == '{' || output[i] == '|' || output[i] == '}' || output[i] == '~') {
+			// based on the encoding described in https://github.com/adobe/bin2c
+			if (output[i] == '!' || output[i] == '#' || (output[i] >= '%' && output[i] <= '>') || (output[i] >= 'A' && output[i] <= '[') ||
+			    (output[i] >= ']' && output[i] <= '~')) {
 				fprintf(file, "%c", output[i]);
 			}
 			else if (output[i] == '\a') {
