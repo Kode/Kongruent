@@ -150,7 +150,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		break;
 	}
 	case EXPRESSION_NUMBER: {
-		e->type.type = f32_id;
+		e->type.type = float_id;
 		e->type.resolved = true;
 		break;
 	}

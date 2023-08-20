@@ -271,13 +271,8 @@ static statement *parse_statement(state_t *state) {
 	case TOKEN_LEFT_CURLY: {
 		return parse_block(state);
 	}
-	case TOKEN_LET: {
+	case TOKEN_VAR: {
 		advance_state(state);
-		bool mutable = false;
-		if (current(state).kind == TOKEN_MUT) {
-			mutable = true;
-			advance_state(state);
-		}
 
 		match_token_identifier(state);
 		token name = current(state);
@@ -302,22 +297,27 @@ static statement *parse_statement(state_t *state) {
 		statement->local_variable.init = NULL;
 		return statement;
 	}
+	case TOKEN_RETURN: {
+		advance_state(state);
+
+		expression *expr = parse_expression(state);
+		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
+		advance_state(state);
+
+		statement *statement = statement_allocate();
+		statement->kind = STATEMENT_RETURN_EXPRESSION;
+		statement->expression = expr;
+		return statement;
+	}
 	default: {
 		expression *expr = parse_expression(state);
-		if (current(state).kind == TOKEN_SEMICOLON) {
-			advance_state(state);
+		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
+		advance_state(state);
 
-			statement *statement = statement_allocate();
-			statement->kind = STATEMENT_EXPRESSION;
-			statement->expression = expr;
-			return statement;
-		}
-		else {
-			statement *statement = statement_allocate();
-			statement->kind = STATEMENT_RETURN_EXPRESSION;
-			statement->expression = expr;
-			return statement;
-		}
+		statement *statement = statement_allocate();
+		statement->kind = STATEMENT_EXPRESSION;
+		statement->expression = expr;
+		return statement;
 	}
 	}
 }
@@ -787,7 +787,7 @@ static definition parse_function(state_t *state) {
 	advance_state(state);
 	match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
 	advance_state(state);
-	match_token(state, TOKEN_FUNCTION_THINGY, "Expected a function-thingy");
+	match_token(state, TOKEN_COLON, "Expected a colon");
 	advance_state(state);
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 

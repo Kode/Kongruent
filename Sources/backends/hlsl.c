@@ -13,16 +13,16 @@
 #include <stdlib.h>
 
 static char *type_string(type_id type) {
-	if (type == f32_id) {
+	if (type == float_id) {
 		return "float";
 	}
-	if (type == vec2_id) {
+	if (type == float2_id) {
 		return "float2";
 	}
-	if (type == vec3_id) {
+	if (type == float3_id) {
 		return "float3";
 	}
-	if (type == vec4_id) {
+	if (type == float4_id) {
 		return "float4";
 	}
 	return get_name(get_type(type)->name);

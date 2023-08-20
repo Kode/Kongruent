@@ -160,14 +160,14 @@ static void tokens_add_identifier(tokenizer_state *state, tokens *tokens, tokeni
 	else if (tokenizer_buffer_equals(buffer, "struct")) {
 		token = token_create(TOKEN_STRUCT, state);
 	}
-	else if (tokenizer_buffer_equals(buffer, "fn")) {
+	else if (tokenizer_buffer_equals(buffer, "fun")) {
 		token = token_create(TOKEN_FUNCTION, state);
 	}
-	else if (tokenizer_buffer_equals(buffer, "let")) {
-		token = token_create(TOKEN_LET, state);
+	else if (tokenizer_buffer_equals(buffer, "var")) {
+		token = token_create(TOKEN_VAR, state);
 	}
-	else if (tokenizer_buffer_equals(buffer, "mut")) {
-		token = token_create(TOKEN_MUT, state);
+	else if (tokenizer_buffer_equals(buffer, "return")) {
+		token = token_create(TOKEN_RETURN, state);
 	}
 	else {
 		token = token_create(TOKEN_IDENTIFIER, state);
@@ -435,9 +435,6 @@ tokens tokenize(const char *source) {
 					token token = token_create(TOKEN_OPERATOR, &state);
 					token.op = OPERATOR_ASSIGN;
 					tokens_add(&tokens, token);
-				}
-				else if (tokenizer_buffer_equals(&buffer, "->")) {
-					tokens_add(&tokens, token_create(TOKEN_FUNCTION_THINGY, &state));
 				}
 				else {
 					error("Weird operator", state.column, state.line);

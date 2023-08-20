@@ -45,8 +45,8 @@ type_id find_type(name_id name);
 
 type *get_type(type_id t);
 
-extern type_id f32_id;
-extern type_id vec2_id;
-extern type_id vec3_id;
-extern type_id vec4_id;
+extern type_id float_id;
+extern type_id float2_id;
+extern type_id float3_id;
+extern type_id float4_id;
 extern type_id bool_id;

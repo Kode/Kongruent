@@ -46,9 +46,8 @@ typedef struct token {
 		TOKEN_VOID,
 		TOKEN_STRUCT,
 		TOKEN_FUNCTION,
-		TOKEN_LET,
-		TOKEN_MUT,
-		TOKEN_FUNCTION_THINGY
+		TOKEN_VAR,
+		TOKEN_RETURN
 	} kind;
 
 	union {

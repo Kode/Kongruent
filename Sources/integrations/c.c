@@ -11,32 +11,32 @@
 #include <stdio.h>
 
 static char *type_string(type_id type) {
-	if (type == f32_id) {
+	if (type == float_id) {
 		return "float";
 	}
-	if (type == vec2_id) {
+	if (type == float2_id) {
 		return "kinc_vector2_t";
 	}
-	if (type == vec3_id) {
+	if (type == float3_id) {
 		return "kinc_vector3_t";
 	}
-	if (type == vec4_id) {
+	if (type == float4_id) {
 		return "kinc_vector4_t";
 	}
 	return get_name(get_type(type)->name);
 }
 
 static const char *structure_type(type_id type) {
-	if (type == f32_id) {
+	if (type == float_id) {
 		return "KINC_G4_VERTEX_DATA_F32_1X";
 	}
-	if (type == vec2_id) {
+	if (type == float2_id) {
 		return "KINC_G4_VERTEX_DATA_F32_2X";
 	}
-	if (type == vec3_id) {
+	if (type == float3_id) {
 		return "KINC_G4_VERTEX_DATA_F32_3X";
 	}
-	if (type == vec4_id) {
+	if (type == float4_id) {
 		return "KINC_G4_VERTEX_DATA_F32_4X";
 	}
 	assert(false);

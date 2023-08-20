@@ -8,10 +8,10 @@ static type *types = NULL;
 static type_id types_size = 1024;
 static type_id next_type_index = 0;
 
-type_id f32_id;
-type_id vec2_id;
-type_id vec3_id;
-type_id vec4_id;
+type_id float_id;
+type_id float2_id;
+type_id float3_id;
+type_id float4_id;
 type_id bool_id;
 
 typedef struct prefix {
@@ -41,82 +41,82 @@ static void permute(const char *set, int n, int k, void (*found)(char *)) {
 }
 
 static void vec2_found_f32(char *permutation) {
-	type *t = get_type(vec2_id);
+	type *t = get_type(float2_id);
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
-	t->members.m[t->members.size].type.type = f32_id;
+	t->members.m[t->members.size].type.type = float_id;
 	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
 static void vec2_found_vec2(char *permutation) {
-	type *t = get_type(vec2_id);
+	type *t = get_type(float2_id);
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
-	t->members.m[t->members.size].type.type = vec2_id;
+	t->members.m[t->members.size].type.type = float2_id;
 	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
 static void vec3_found_f32(char *permutation) {
-	type *t = get_type(vec3_id);
+	type *t = get_type(float3_id);
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
-	t->members.m[t->members.size].type.type = f32_id;
+	t->members.m[t->members.size].type.type = float_id;
 	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
 static void vec3_found_vec2(char *permutation) {
-	type *t = get_type(vec3_id);
+	type *t = get_type(float3_id);
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
-	t->members.m[t->members.size].type.type = vec2_id;
+	t->members.m[t->members.size].type.type = float2_id;
 	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
 static void vec3_found_vec3(char *permutation) {
-	type *t = get_type(vec3_id);
+	type *t = get_type(float3_id);
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
-	t->members.m[t->members.size].type.type = vec3_id;
+	t->members.m[t->members.size].type.type = float3_id;
 	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
 static void vec4_found_f32(char *permutation) {
-	type *t = get_type(vec4_id);
+	type *t = get_type(float4_id);
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
-	t->members.m[t->members.size].type.type = f32_id;
+	t->members.m[t->members.size].type.type = float_id;
 	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
 static void vec4_found_vec2(char *permutation) {
-	type *t = get_type(vec4_id);
+	type *t = get_type(float4_id);
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
-	t->members.m[t->members.size].type.type = vec2_id;
+	t->members.m[t->members.size].type.type = float2_id;
 	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
 static void vec4_found_vec3(char *permutation) {
-	type *t = get_type(vec4_id);
+	type *t = get_type(float4_id);
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
-	t->members.m[t->members.size].type.type = vec3_id;
+	t->members.m[t->members.size].type.type = float3_id;
 	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
 static void vec4_found_vec4(char *permutation) {
-	type *t = get_type(vec4_id);
+	type *t = get_type(float4_id);
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
-	t->members.m[t->members.size].type.type = vec4_id;
+	t->members.m[t->members.size].type.type = float4_id;
 	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
@@ -129,12 +129,12 @@ void types_init(void) {
 
 	bool_id = add_type(add_name("bool"));
 	get_type(bool_id)->built_in = true;
-	f32_id = add_type(add_name("f32"));
-	get_type(f32_id)->built_in = true;
+	float_id = add_type(add_name("float"));
+	get_type(float_id)->built_in = true;
 
 	{
-		vec2_id = add_type(add_name("vec2"));
-		get_type(vec2_id)->built_in = true;
+		float2_id = add_type(add_name("float2"));
+		get_type(float2_id)->built_in = true;
 		const char *letters = "xy";
 		permute(letters, (int)strlen(letters), 1, vec2_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec2_found_vec2);
@@ -144,8 +144,8 @@ void types_init(void) {
 	}
 
 	{
-		vec3_id = add_type(add_name("vec3"));
-		get_type(vec3_id)->built_in = true;
+		float3_id = add_type(add_name("float3"));
+		get_type(float3_id)->built_in = true;
 		const char *letters = "xyz";
 		permute(letters, (int)strlen(letters), 1, vec3_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec3_found_vec2);
@@ -157,8 +157,8 @@ void types_init(void) {
 	}
 
 	{
-		vec4_id = add_type(add_name("vec4"));
-		get_type(vec4_id)->built_in = true;
+		float4_id = add_type(add_name("float4"));
+		get_type(float4_id)->built_in = true;
 		const char *letters = "xyzw";
 		permute(letters, (int)strlen(letters), 1, vec4_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec4_found_vec2);

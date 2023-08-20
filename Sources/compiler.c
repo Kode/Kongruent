@@ -206,7 +206,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	case EXPRESSION_BOOLEAN:
 		error("not implemented", 0, 0);
 	case EXPRESSION_NUMBER: {
-		variable v = allocate_variable(f32_id);
+		variable v = allocate_variable(float_id);
 
 		opcode o;
 		o.type = OPCODE_LOAD_CONSTANT;
