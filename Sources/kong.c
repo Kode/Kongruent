@@ -11,13 +11,13 @@
 
 #include "integrations/c.h"
 
+#include "dir.h"
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-const char *filename = "in/test.kong";
 
 type_id find_local_var_type(block *b, name_id name) {
 	if (b == NULL) {
@@ -303,15 +303,42 @@ void resolve_types(void) {
 
 typedef enum arg_mode { MODE_MODECHECK, MODE_INPUT, MODE_OUTPUT, MODE_PLATFORM, MODE_API } arg_mode;
 
-void help(void) {
+static void help(void) {
 	printf("No help is coming.");
+}
+
+static void read_file(char *filename) {
+	FILE *file = fopen(filename, "rb");
+
+	if (file == NULL) {
+		kong_log(LOG_LEVEL_ERROR, "File %s not found.", filename);
+		exit(1);
+	}
+
+	fseek(file, 0, SEEK_END);
+	size_t size = ftell(file);
+	fseek(file, 0, SEEK_SET);
+
+	char *data = (char *)malloc(size + 1);
+	assert(data != NULL);
+
+	fread(data, 1, size, file);
+	data[size] = 0;
+
+	fclose(file);
+
+	tokens tokens = tokenize(data);
+
+	free(data);
+
+	parse(&tokens);
 }
 
 int main(int argc, char **argv) {
 	arg_mode mode = MODE_MODECHECK;
 
-	char *input[256] = {0};
-	size_t input_index = 0;
+	char *inputs[256] = {0};
+	size_t inputs_size = 0;
 	char *platform = NULL;
 	char *api = NULL;
 	char *output = NULL;
@@ -369,8 +396,8 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case MODE_INPUT: {
-			input[input_index] = argv[i];
-			input_index += 1;
+			inputs[inputs_size] = argv[i];
+			inputs_size += 1;
 			mode = MODE_MODECHECK;
 			break;
 		}
@@ -394,34 +421,27 @@ int main(int argc, char **argv) {
 
 	assert(mode == MODE_MODECHECK);
 
-	FILE *file = fopen(filename, "rb");
-
-	if (file == NULL) {
-		kong_log(LOG_LEVEL_ERROR, "File %s not found.", filename);
-		return 1;
-	}
-
-	fseek(file, 0, SEEK_END);
-	size_t size = ftell(file);
-	fseek(file, 0, SEEK_SET);
-
-	char *data = (char *)malloc(size + 1);
-	assert(data != NULL);
-
-	fread(data, 1, size, file);
-	data[size] = 0;
-
-	fclose(file);
-
 	names_init();
 	types_init();
 	functions_init();
 
-	tokens tokens = tokenize(data);
+	for (size_t i = 0; i < inputs_size; ++i) {
+		directory dir = open_dir(inputs[i]);
 
-	free(data);
+		file f = read_next_file(&dir);
+		while (f.valid) {
+			char path[1024];
+			strcpy(path, inputs[i]);
+			strcat(path, "/");
+			strcat(path, f.name);
 
-	parse(&tokens);
+			read_file(path);
+
+			f = read_next_file(&dir);
+		}
+
+		close_dir(&dir);
+	}
 
 	kong_log(LOG_LEVEL_INFO, "Functions:");
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
