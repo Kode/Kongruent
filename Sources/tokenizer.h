@@ -47,6 +47,8 @@ typedef struct token {
 		TOKEN_STRUCT,
 		TOKEN_FUNCTION,
 		TOKEN_VAR,
+		TOKEN_TEX2D,
+		TOKEN_SAMPLER,
 		TOKEN_RETURN
 	} kind;
 

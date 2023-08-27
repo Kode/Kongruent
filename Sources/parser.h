@@ -47,7 +47,7 @@ typedef struct expression {
 		struct expression *grouping;
 		struct {
 			name_id func_name;
-			struct expression *parameters;
+			expressions parameters;
 		} call;
 		struct {
 			struct expression *left;
@@ -101,7 +101,7 @@ typedef struct statement {
 } statement;
 
 typedef struct definition {
-	enum { DEFINITION_FUNCTION, DEFINITION_STRUCT } kind;
+	enum { DEFINITION_FUNCTION, DEFINITION_STRUCT, DEFINITION_TEX2D, DEFINITION_SAMPLER } kind;
 
 	union {
 		function_id function;

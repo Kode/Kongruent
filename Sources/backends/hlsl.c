@@ -136,6 +136,12 @@ static hlsl_export_vertex(void) {
 
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
+
+		if (f->block == NULL) {
+			// built-in
+			continue;
+		}
+
 		uint8_t *data = f->code.o;
 		size_t size = f->code.size;
 
@@ -203,6 +209,12 @@ static hlsl_export_vertex(void) {
 				}
 				break;
 			}
+			case OPCODE_CALL: {
+				break;
+			}
+			default:
+				assert(false);
+				break;
 			}
 
 			index += o->size;
@@ -213,7 +225,8 @@ static hlsl_export_vertex(void) {
 
 	char *output;
 	size_t output_size;
-	compile_hlsl_to_d3d11(hlsl, &output, &output_size, EShLangVertex, false);
+	int result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, EShLangVertex, false);
+	assert(result == 0);
 
 	write_bytecode("vert", "kong_vert_code", output, output_size);
 }

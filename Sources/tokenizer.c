@@ -166,6 +166,12 @@ static void tokens_add_identifier(tokenizer_state *state, tokens *tokens, tokeni
 	else if (tokenizer_buffer_equals(buffer, "var")) {
 		token = token_create(TOKEN_VAR, state);
 	}
+	else if (tokenizer_buffer_equals(buffer, "tex2d")) {
+		token = token_create(TOKEN_TEX2D, state);
+	}
+	else if (tokenizer_buffer_equals(buffer, "sampler")) {
+		token = token_create(TOKEN_SAMPLER, state);
+	}
 	else if (tokenizer_buffer_equals(buffer, "return")) {
 		token = token_create(TOKEN_RETURN, state);
 	}

@@ -219,6 +219,8 @@ static void modifiers_add(modifiers_t *modifiers, modifier_t modifier) {
 
 static definition parse_struct(state_t *state);
 static definition parse_function(state_t *state);
+static definition parse_tex2d(state_t *state);
+static definition parse_sampler(state_t *state);
 
 static definition parse_definition(state_t *state) {
 	name_id attribute = NO_NAME;
@@ -239,6 +241,14 @@ static definition parse_definition(state_t *state) {
 		definition d = parse_function(state);
 		function *f = get_function(d.function);
 		f->attribute = attribute;
+		return d;
+	}
+	case TOKEN_TEX2D: {
+		definition d = parse_tex2d(state);
+		return d;
+	}
+	case TOKEN_SAMPLER: {
+		definition d = parse_sampler(state);
 		return d;
 	}
 	default: {
@@ -645,30 +655,39 @@ static expression *parse_primary(state_t *state) {
 	return left;
 }
 
+static expressions parse_parameters(state_t *state) {
+	expressions e;
+	e.size = 0;
+
+	if (current(state).kind == TOKEN_RIGHT_PAREN) {
+		return e;
+	}
+
+	for (;;) {
+		e.e[e.size] = parse_expression(state);
+		e.size += 1;
+
+		if (current(state).kind == TOKEN_COMMA) {
+			advance_state(state);
+		}
+		else {
+			match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
+			advance_state(state);
+			return e;
+		}
+	}
+}
+
 static expression *parse_call(state_t *state, name_id func_name) {
 	match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
 	advance_state(state);
 
 	expression *call = NULL;
 
-	if (current(state).kind == TOKEN_RIGHT_PAREN) {
-		advance_state(state);
-
-		call = expression_allocate();
-		call->kind = EXPRESSION_CALL;
-		call->call.func_name = func_name;
-		call->call.parameters = NULL;
-	}
-	else {
-		expression *expr = parse_expression(state);
-		match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
-		advance_state(state);
-
-		call = expression_allocate();
-		call->kind = EXPRESSION_CALL;
-		call->call.func_name = func_name;
-		call->call.parameters = expr;
-	}
+	call = expression_allocate();
+	call->kind = EXPRESSION_CALL;
+	call->call.func_name = func_name;
+	call->call.parameters = parse_parameters(state);
 
 	if (current(state).kind == TOKEN_DOT) {
 		advance_state(state);
@@ -805,6 +824,38 @@ static definition parse_function(state_t *state) {
 	f->parameter_type.resolved = false;
 	f->parameter_type.name = param_type_name.identifier;
 	f->block = block;
+
+	return d;
+}
+
+static definition parse_tex2d(state_t *state) {
+	advance_state(state);
+	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+
+	token name = current(state);
+	advance_state(state);
+	match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
+	advance_state(state);
+
+	definition d;
+
+	d.kind = DEFINITION_TEX2D;
+
+	return d;
+}
+
+static definition parse_sampler(state_t *state) {
+	advance_state(state);
+	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+
+	token name = current(state);
+	advance_state(state);
+	match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
+	advance_state(state);
+
+	definition d;
+
+	d.kind = DEFINITION_SAMPLER;
 
 	return d;
 }

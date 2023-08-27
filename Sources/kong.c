@@ -292,6 +292,11 @@ void resolve_types(void) {
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
 
+		if (f->block == NULL) {
+			// built in
+			continue;
+		}
+
 		f->block->block.vars.v[f->block->block.vars.size].name = f->parameter_name;
 		f->block->block.vars.v[f->block->block.vars.size].type = f->parameter_type;
 		f->block->block.vars.v[f->block->block.vars.size].variable_id = 0;

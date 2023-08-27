@@ -128,7 +128,7 @@ contexts:
         - meta_scope: meta.enum.kong
         - include: statements-block
 
-    - match: \b(var|const|static)\b
+    - match: \b(var|const|static|tex2d|sampler)\b
       scope: storage.type.kong
 
     - match: \*const\b

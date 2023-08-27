@@ -226,8 +226,15 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	}
 	case EXPRESSION_GROUPING:
 		error("not implemented", 0, 0);
-	case EXPRESSION_CALL:
-		error("not implemented", 0, 0);
+	case EXPRESSION_CALL: {
+		opcode o;
+		o.type = OPCODE_CALL;
+		o.size = OP_SIZE(o, op_call);
+		emit_op(code, &o);
+
+		variable v = allocate_variable(float4_id);
+		return v;
+	}
 	case EXPRESSION_MEMBER: {
 		variable v = allocate_variable(e->type.type);
 
@@ -339,6 +346,11 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 }
 
 void convert_function_block(opcodes *code, struct statement *block) {
+	if (block == NULL) {
+		// built-in
+		return;
+	}
+
 	if (block->kind != STATEMENT_BLOCK) {
 		error("Expected a block", 0, 0);
 	}

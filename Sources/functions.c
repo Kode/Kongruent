@@ -8,11 +8,23 @@ static function *functions = NULL;
 static function_id functions_size = 1024;
 static function_id next_function_index = 0;
 
+function_id sample_id;
+
 void functions_init(void) {
 	function *new_functions = realloc(functions, functions_size * sizeof(function));
 	assert(new_functions != NULL);
 	functions = new_functions;
 	next_function_index = 0;
+
+	sample_id = add_function(add_name("sample"));
+
+	function *f = get_function(sample_id);
+	f->return_type.resolved = true;
+	f->return_type.name = add_name("float4");
+	f->parameter_name = add_name("tex_coord");
+	f->parameter_type.resolved = false;
+	f->parameter_type.name = add_name("float2");
+	f->block = NULL;
 }
 
 static void grow_if_needed(uint64_t size) {
