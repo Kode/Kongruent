@@ -1,6 +1,7 @@
 #pragma once
 
 #include "functions.h"
+#include "globals.h"
 #include "names.h"
 #include "tokenizer.h"
 #include "types.h"
@@ -105,6 +106,7 @@ typedef struct definition {
 
 	union {
 		function_id function;
+		global_id global;
 		type_id type;
 	};
 } definition;

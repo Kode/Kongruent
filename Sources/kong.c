@@ -1,6 +1,7 @@
 #include "compiler.h"
 #include "errors.h"
 #include "functions.h"
+#include "globals.h"
 #include "log.h"
 #include "names.h"
 #include "parser.h"
@@ -428,10 +429,15 @@ int main(int argc, char **argv) {
 	}
 
 	assert(mode == MODE_MODECHECK);
+	assert(inputs_size > 0);
+	assert(output != NULL);
+	assert(platform != NULL);
+	assert(api != NULL);
 
 	names_init();
 	types_init();
 	functions_init();
+	globals_init();
 
 	for (size_t i = 0; i < inputs_size; ++i) {
 		directory dir = open_dir(inputs[i]);

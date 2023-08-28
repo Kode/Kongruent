@@ -840,6 +840,7 @@ static definition parse_tex2d(state_t *state) {
 	definition d;
 
 	d.kind = DEFINITION_TEX2D;
+	d.global = add_global(GLOBAL_TEX2D, name.identifier);
 
 	return d;
 }
@@ -856,6 +857,7 @@ static definition parse_sampler(state_t *state) {
 	definition d;
 
 	d.kind = DEFINITION_SAMPLER;
+	d.global = add_global(GLOBAL_SAMPLER, name.identifier);
 
 	return d;
 }
