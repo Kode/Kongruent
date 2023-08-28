@@ -28,6 +28,13 @@ static char *type_string(type_id type) {
 	return get_name(get_type(type)->name);
 }
 
+static char *function_string(name_id func) {
+	if (func == add_name("sample")) {
+		return "Sample";
+	}
+	return get_name(func);
+}
+
 static void write_bytecode(const char *filename, const char *name, uint8_t *output, size_t output_size) {
 	char full_filename[256];
 
@@ -210,6 +217,15 @@ static hlsl_export_vertex(void) {
 				break;
 			}
 			case OPCODE_CALL: {
+				offset +=
+				    sprintf(&hlsl[offset], "\t%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type), o->op_call.var.index, function_string(o->op_call.func));
+				if (o->op_call.parameters_size > 0) {
+					offset += sprintf(&hlsl[offset], "_%" PRIu64, o->op_call.parameters[0].index);
+					for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
+						offset += sprintf(&hlsl[offset], ", _%" PRIu64, o->op_call.parameters[i].index);
+					}
+				}
+				offset += sprintf(&hlsl[offset], ");\n");
 				break;
 			}
 			default:

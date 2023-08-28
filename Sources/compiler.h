@@ -48,7 +48,10 @@ typedef struct opcode {
 			variable var;
 		} op_return;
 		struct {
-			int nothing;
+			variable var;
+			name_id func;
+			variable parameters[64];
+			uint8_t parameters_size;
 		} op_call;
 	};
 } opcode;

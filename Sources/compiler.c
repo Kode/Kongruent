@@ -227,12 +227,22 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	case EXPRESSION_GROUPING:
 		error("not implemented", 0, 0);
 	case EXPRESSION_CALL: {
+		variable v = allocate_variable(float4_id);
+
 		opcode o;
 		o.type = OPCODE_CALL;
 		o.size = OP_SIZE(o, op_call);
+		o.op_call.func = e->call.func_name;
+		o.op_call.var = v;
+
+		assert(e->call.parameters.size <= sizeof(o.op_call.parameters) / sizeof(variable));
+		for (size_t i = 0; i < e->call.parameters.size; ++i) {
+			o.op_call.parameters[i] = emit_expression(code, parent, e->call.parameters.e[i]);
+		}
+		o.op_call.parameters_size = (uint8_t)e->call.parameters.size;
+
 		emit_op(code, &o);
 
-		variable v = allocate_variable(float4_id);
 		return v;
 	}
 	case EXPRESSION_MEMBER: {

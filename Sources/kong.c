@@ -178,6 +178,9 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 				break;
 			}
 		}
+		for (size_t i = 0; i < e->call.parameters.size; ++i) {
+			resolve_types_in_expression(parent, e->call.parameters.e[i]);
+		}
 		break;
 	}
 	case EXPRESSION_MEMBER: {
