@@ -61,4 +61,6 @@ typedef struct opcodes {
 	size_t size;
 } opcodes;
 
+void convert_globals(void);
+
 void convert_function_block(opcodes *code, struct statement *block);

@@ -7,6 +7,28 @@
 #include <stddef.h>
 #include <string.h>
 
+typedef struct allocated_global {
+	global g;
+	uint64_t variable_id;
+} allocated_global;
+
+static allocated_global allocated_globals[1024];
+static size_t allocated_globals_size = 0;
+
+allocated_global find_allocated_global(name_id name) {
+	for (size_t i = 0; i < allocated_globals_size; ++i) {
+		if (name == allocated_globals[i].g.name) {
+			return allocated_globals[i];
+		}
+	}
+
+	allocated_global a;
+	a.g.kind = GLOBAL_NONE;
+	a.g.name = NO_NAME;
+	a.variable_id = 0;
+	return a;
+}
+
 variable find_local_var(block *b, name_id name) {
 	if (b == NULL) {
 		variable var;
@@ -220,9 +242,33 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	// case EXPRESSION_STRING:
 	//	error("not implemented", 0, 0);
 	case EXPRESSION_VARIABLE: {
-		variable var = find_local_var(parent, e->variable);
-		assert(var.index != 0);
-		return var;
+		allocated_global g = find_allocated_global(e->variable);
+		if (g.g.kind != GLOBAL_NONE) {
+			assert(g.variable_id != 0);
+
+			type_id t;
+
+			switch (g.g.kind) {
+			case GLOBAL_TEX2D:
+				t = find_type(add_name("tex2d"));
+				break;
+			case GLOBAL_SAMPLER:
+				t = find_type(add_name("sampler"));
+				break;
+			default:
+				assert(false);
+			}
+
+			variable var;
+			var.type = t;
+			var.index = g.variable_id;
+			return var;
+		}
+		else {
+			variable var = find_local_var(parent, e->variable);
+			assert(var.index != 0);
+			return var;
+		}
 	}
 	case EXPRESSION_GROUPING:
 		error("not implemented", 0, 0);
@@ -352,6 +398,30 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		emit_op(code, &o);
 		break;
 	}
+	}
+}
+
+void convert_globals(void) {
+	for (global_id i = 0; get_global(i).kind != GLOBAL_NONE; ++i) {
+		global g = get_global(i);
+
+		type_id t;
+
+		switch (g.kind) {
+		case GLOBAL_TEX2D:
+			t = find_type(add_name("tex2d"));
+			break;
+		case GLOBAL_SAMPLER:
+			t = find_type(add_name("sampler"));
+			break;
+		default:
+			assert(false);
+		}
+
+		variable v = allocate_variable(t);
+		allocated_globals[allocated_globals_size].g = g;
+		allocated_globals[allocated_globals_size].variable_id = v.index;
+		allocated_globals_size += 1;
 	}
 }
 

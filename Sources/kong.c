@@ -156,14 +156,28 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		break;
 	}
 	case EXPRESSION_VARIABLE: {
-		type_id type = find_local_var_type(&parent->block, e->variable);
-		if (type == NO_TYPE) {
-			char output[256];
-			sprintf(output, "Variable %s not found", get_name(e->variable));
-			error(output, 0, 0);
+		global g = find_global(e->variable);
+		if (g.kind != GLOBAL_NONE) {
+			switch (g.kind) {
+			case GLOBAL_SAMPLER:
+				e->type.type = find_type(add_name("sampler"));
+				break;
+			case GLOBAL_TEX2D:
+				e->type.type = find_type(add_name("tex2d"));
+				break;
+			}
+			e->type.resolved = true;
 		}
-		e->type.type = type;
-		e->type.resolved = true;
+		else {
+			type_id type = find_local_var_type(&parent->block, e->variable);
+			if (type == NO_TYPE) {
+				char output[256];
+				sprintf(output, "Variable %s not found", get_name(e->variable));
+				error(output, 0, 0);
+			}
+			e->type.type = type;
+			e->type.resolved = true;
+		}
 		break;
 	}
 	case EXPRESSION_GROUPING: {
@@ -470,6 +484,7 @@ int main(int argc, char **argv) {
 
 	resolve_types();
 
+	convert_globals();
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		convert_function_block(&get_function(i)->code, get_function(i)->block);
 	}

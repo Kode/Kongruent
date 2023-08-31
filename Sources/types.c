@@ -127,6 +127,11 @@ void types_init(void) {
 	types = new_types;
 	next_type_index = 0;
 
+	type_id sampler_id = add_type(add_name("sampler"));
+	get_type(sampler_id)->built_in = true;
+	type_id tex2d_id = add_type(add_name("tex2d"));
+	get_type(tex2d_id)->built_in = true;
+
 	bool_id = add_type(add_name("bool"));
 	get_type(bool_id)->built_in = true;
 	float_id = add_type(add_name("float"));
