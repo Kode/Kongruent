@@ -29,9 +29,6 @@ static char *type_string(type_id type) {
 }
 
 static char *function_string(name_id func) {
-	if (func == add_name("sample")) {
-		return "Sample";
-	}
 	return get_name(func);
 }
 
@@ -129,7 +126,13 @@ static hlsl_export_vertex(void) {
 			}
 			else if (i == vertex_output) {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					offset += sprintf(&hlsl[offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+					if (j == 0) {
+						offset += sprintf(&hlsl[offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+					}
+					else {
+						offset += sprintf(&hlsl[offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type),
+						                  get_name(t->members.m[j].name), j - 1);
+					}
 				}
 			}
 			else {
@@ -138,6 +141,20 @@ static hlsl_export_vertex(void) {
 				}
 			}
 			offset += sprintf(&hlsl[offset], "};\n\n");
+		}
+	}
+
+	for (global_id i = 0; get_global(i).kind != GLOBAL_NONE; ++i) {
+		global g = get_global(i);
+		switch (g.kind) {
+		case GLOBAL_SAMPLER:
+			offset += sprintf(&hlsl[offset], "SamplerState _%" PRIu64 " : register(s0);\n\n", g.var_index);
+			break;
+		case GLOBAL_TEX2D:
+			offset += sprintf(&hlsl[offset], "Texture2D<float4> _%" PRIu64 " : register(t0);\n\n", g.var_index);
+			break;
+		default:
+			assert(false);
 		}
 	}
 
@@ -217,15 +234,22 @@ static hlsl_export_vertex(void) {
 				break;
 			}
 			case OPCODE_CALL: {
-				offset +=
-				    sprintf(&hlsl[offset], "\t%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type), o->op_call.var.index, function_string(o->op_call.func));
-				if (o->op_call.parameters_size > 0) {
-					offset += sprintf(&hlsl[offset], "_%" PRIu64, o->op_call.parameters[0].index);
-					for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
-						offset += sprintf(&hlsl[offset], ", _%" PRIu64, o->op_call.parameters[i].index);
-					}
+				if (o->op_call.func == add_name("sample")) {
+					assert(o->op_call.parameters_size == 3);
+					offset += sprintf(&hlsl[offset], "\t%s _%" PRIu64 " = _%" PRIu64 ".Sample(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type),
+					                  o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index, o->op_call.parameters[2].index);
 				}
-				offset += sprintf(&hlsl[offset], ");\n");
+				else {
+					offset += sprintf(&hlsl[offset], "\t%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type), o->op_call.var.index,
+					                  function_string(o->op_call.func));
+					if (o->op_call.parameters_size > 0) {
+						offset += sprintf(&hlsl[offset], "_%" PRIu64, o->op_call.parameters[0].index);
+						for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
+							offset += sprintf(&hlsl[offset], ", _%" PRIu64, o->op_call.parameters[i].index);
+						}
+					}
+					offset += sprintf(&hlsl[offset], ");\n");
+				}
 				break;
 			}
 			default:
@@ -271,7 +295,13 @@ static void hlsl_export_pixel(void) {
 
 			if (i == pixel_input) {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					offset += sprintf(&hlsl[offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+					if (j == 0) {
+						offset += sprintf(&hlsl[offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+					}
+					else {
+						offset += sprintf(&hlsl[offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type),
+						                  get_name(t->members.m[j].name), j - 1);
+					}
 				}
 			}
 			else {
@@ -283,8 +313,28 @@ static void hlsl_export_pixel(void) {
 		}
 	}
 
+	for (global_id i = 0; get_global(i).kind != GLOBAL_NONE; ++i) {
+		global g = get_global(i);
+		switch (g.kind) {
+		case GLOBAL_SAMPLER:
+			offset += sprintf(&hlsl[offset], "SamplerState _%" PRIu64 " : register(s0);\n\n", g.var_index);
+			break;
+		case GLOBAL_TEX2D:
+			offset += sprintf(&hlsl[offset], "Texture2D<float4> _%" PRIu64 " : register(t0);\n\n", g.var_index);
+			break;
+		default:
+			assert(false);
+		}
+	}
+
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
+
+		if (f->block == NULL) {
+			// built-in
+			continue;
+		}
+
 		uint8_t *data = f->code.o;
 		size_t size = f->code.size;
 
@@ -352,6 +402,28 @@ static void hlsl_export_pixel(void) {
 				}
 				break;
 			}
+			case OPCODE_CALL: {
+				if (o->op_call.func == add_name("sample")) {
+					assert(o->op_call.parameters_size == 3);
+					offset += sprintf(&hlsl[offset], "\t%s _%" PRIu64 " = _%" PRIu64 ".Sample(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type),
+					                  o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index, o->op_call.parameters[2].index);
+				}
+				else {
+					offset += sprintf(&hlsl[offset], "\t%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type), o->op_call.var.index,
+					                  function_string(o->op_call.func));
+					if (o->op_call.parameters_size > 0) {
+						offset += sprintf(&hlsl[offset], "_%" PRIu64, o->op_call.parameters[0].index);
+						for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
+							offset += sprintf(&hlsl[offset], ", _%" PRIu64, o->op_call.parameters[i].index);
+						}
+					}
+					offset += sprintf(&hlsl[offset], ");\n");
+				}
+				break;
+			}
+			default:
+				assert(false);
+				break;
 			}
 
 			index += o->size;
@@ -362,7 +434,8 @@ static void hlsl_export_pixel(void) {
 
 	uint8_t *output;
 	size_t output_size;
-	compile_hlsl_to_d3d11(hlsl, &output, &output_size, EShLangFragment, false);
+	int result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, EShLangFragment, false);
+	assert(result == 0);
 
 	write_bytecode("frag", "kong_frag_code", output, output_size);
 }

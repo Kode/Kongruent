@@ -1,5 +1,7 @@
 #include "globals.h"
 
+#include <assert.h>
+
 static global globals[1024];
 static global_id globals_size = 0;
 
@@ -9,6 +11,7 @@ global_id add_global(global_kind kind, name_id name) {
 	uint32_t index = globals_size;
 	globals[index].name = name;
 	globals[index].kind = kind;
+	globals[index].var_index = 0;
 	globals_size += 1;
 	return index;
 }
@@ -35,4 +38,9 @@ global get_global(global_id id) {
 	}
 
 	return globals[id];
+}
+
+void assign_global_var(global_id id, uint64_t var_index) {
+	assert(id < globals_size);
+	globals[id].var_index = var_index;
 }

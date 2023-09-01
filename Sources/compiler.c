@@ -422,6 +422,8 @@ void convert_globals(void) {
 		allocated_globals[allocated_globals_size].g = g;
 		allocated_globals[allocated_globals_size].variable_id = v.index;
 		allocated_globals_size += 1;
+
+		assign_global_var(i, v.index);
 	}
 }
 
