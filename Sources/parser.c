@@ -219,8 +219,7 @@ static void modifiers_add(modifiers_t *modifiers, modifier_t modifier) {
 
 static definition parse_struct(state_t *state);
 static definition parse_function(state_t *state);
-static definition parse_tex2d(state_t *state);
-static definition parse_sampler(state_t *state);
+static definition parse_const(state_t *state);
 
 static definition parse_definition(state_t *state) {
 	name_id attribute = NO_NAME;
@@ -243,16 +242,12 @@ static definition parse_definition(state_t *state) {
 		f->attribute = attribute;
 		return d;
 	}
-	case TOKEN_TEX2D: {
-		definition d = parse_tex2d(state);
-		return d;
-	}
-	case TOKEN_SAMPLER: {
-		definition d = parse_sampler(state);
+	case TOKEN_CONST: {
+		definition d = parse_const(state);
 		return d;
 	}
 	default: {
-		error("Expected a struct or function", current(state).column, current(state).line);
+		error("Expected a struct, a function or a const", current(state).column, current(state).line);
 
 		definition d = {0};
 		return d;
@@ -828,36 +823,34 @@ static definition parse_function(state_t *state) {
 	return d;
 }
 
-static definition parse_tex2d(state_t *state) {
+static definition parse_const(state_t *state) {
 	advance_state(state);
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 
 	token name = current(state);
 	advance_state(state);
+	match_token(state, TOKEN_COLON, "Expected a colon");
+	advance_state(state);
+
+	token type_name = current(state);
+	advance_state(state);
+
 	match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
 	advance_state(state);
 
 	definition d;
 
-	d.kind = DEFINITION_TEX2D;
-	d.global = add_global(GLOBAL_TEX2D, name.identifier);
-
-	return d;
-}
-
-static definition parse_sampler(state_t *state) {
-	advance_state(state);
-	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
-
-	token name = current(state);
-	advance_state(state);
-	match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
-	advance_state(state);
-
-	definition d;
-
-	d.kind = DEFINITION_SAMPLER;
-	d.global = add_global(GLOBAL_SAMPLER, name.identifier);
+	if (type_name.identifier == add_name("tex2d")) {
+		d.kind = DEFINITION_TEX2D;
+		d.global = add_global(GLOBAL_TEX2D, name.identifier);
+	}
+	else if (type_name.identifier == add_name("sampler")) {
+		d.kind = DEFINITION_SAMPLER;
+		d.global = add_global(GLOBAL_SAMPLER, name.identifier);
+	}
+	else {
+		assert(false);
+	}
 
 	return d;
 }
