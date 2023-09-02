@@ -9,6 +9,9 @@ static function_id functions_size = 1024;
 static function_id next_function_index = 0;
 
 function_id sample_id;
+function_id float2_constructor_id;
+function_id float3_constructor_id;
+function_id float4_constructor_id;
 
 void functions_init(void) {
 	function *new_functions = realloc(functions, functions_size * sizeof(function));
@@ -16,15 +19,49 @@ void functions_init(void) {
 	functions = new_functions;
 	next_function_index = 0;
 
-	sample_id = add_function(add_name("sample"));
+	{
+		sample_id = add_function(add_name("sample"));
+		function *f = get_function(sample_id);
+		f->return_type.resolved = true;
+		f->return_type.name = add_name("float4");
+		f->parameter_name = add_name("tex_coord");
+		f->parameter_type.resolved = false;
+		f->parameter_type.name = add_name("float2");
+		f->block = NULL;
+	}
 
-	function *f = get_function(sample_id);
-	f->return_type.resolved = true;
-	f->return_type.name = add_name("float4");
-	f->parameter_name = add_name("tex_coord");
-	f->parameter_type.resolved = false;
-	f->parameter_type.name = add_name("float2");
-	f->block = NULL;
+	{
+		float2_constructor_id = add_function(add_name("float2"));
+		function *f = get_function(float2_constructor_id);
+		f->return_type.resolved = true;
+		f->return_type.name = add_name("float2");
+		f->parameter_name = add_name("x");
+		f->parameter_type.resolved = false;
+		f->parameter_type.name = add_name("float");
+		f->block = NULL;
+	}
+
+	{
+		float3_constructor_id = add_function(add_name("float3"));
+		function *f = get_function(float3_constructor_id);
+		f->return_type.resolved = true;
+		f->return_type.name = add_name("float3");
+		f->parameter_name = add_name("x");
+		f->parameter_type.resolved = false;
+		f->parameter_type.name = add_name("float");
+		f->block = NULL;
+	}
+
+	{
+		float4_constructor_id = add_function(add_name("float4"));
+		function *f = get_function(float4_constructor_id);
+		f->return_type.resolved = true;
+		f->return_type.name = add_name("float4");
+		f->parameter_name = add_name("x");
+		f->parameter_type.resolved = false;
+		f->parameter_type.name = add_name("float");
+		f->block = NULL;
+	}
 }
 
 static void grow_if_needed(uint64_t size) {

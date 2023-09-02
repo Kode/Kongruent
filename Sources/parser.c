@@ -290,6 +290,14 @@ static statement *parse_statement(state_t *state) {
 		token type_name = current(state);
 		advance_state(state);
 
+		expression *init = NULL;
+
+		if (current(state).kind == TOKEN_OPERATOR) {
+			assert(current(state).op == OPERATOR_ASSIGN);
+			advance_state(state);
+			init = parse_expression(state);
+		}
+
 		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
 		advance_state(state);
 
@@ -299,7 +307,7 @@ static statement *parse_statement(state_t *state) {
 		statement->local_variable.var.type.resolved = false;
 		statement->local_variable.var.type.name = type_name.identifier;
 		statement->local_variable.var.variable_id = 0;
-		statement->local_variable.init = NULL;
+		statement->local_variable.init = init;
 		return statement;
 	}
 	case TOKEN_RETURN: {
