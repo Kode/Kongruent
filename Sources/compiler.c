@@ -387,15 +387,30 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		opcode o;
 		o.type = OPCODE_VAR;
 		o.size = OP_SIZE(o, op_var);
+
+		variable init_var;
 		if (statement->local_variable.init != NULL) {
-			emit_expression(code, parent, statement->local_variable.init);
+			init_var = emit_expression(code, parent, statement->local_variable.init);
 		}
+
 		variable local_var = find_local_var(parent, statement->local_variable.var.name);
 		statement->local_variable.var.variable_id = local_var.index;
 		o.op_var.var.index = statement->local_variable.var.variable_id;
 		assert(statement->local_variable.var.type.resolved);
 		o.op_var.var.type = statement->local_variable.var.type.type;
 		emit_op(code, &o);
+
+		if (statement->local_variable.init != NULL) {
+			opcode o;
+			o.type = OPCODE_STORE_VARIABLE;
+			o.size = OP_SIZE(o, op_store_var);
+
+			o.op_store_var.from = init_var;
+			o.op_store_var.to = local_var;
+
+			emit_op(code, &o);
+		}
+
 		break;
 	}
 	}
