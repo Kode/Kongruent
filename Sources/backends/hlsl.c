@@ -139,7 +139,54 @@ static void find_referenced_functions(function *f, function **functions, size_t 
 	}
 }
 
-static void find_referenced_types(function *f) {}
+static void add_found_type(type_id t, type_id *types, size_t *types_size) {
+	for (size_t i = 0; i < *types_size; ++i) {
+		if (types[i] == t) {
+			return;
+		}
+	}
+
+	types[*types_size] = t;
+	*types_size += 1;
+}
+
+static void find_referenced_types(function *f, type_id *types, size_t *types_size) {
+	if (f->block == NULL) {
+		// built-in
+		return;
+	}
+
+	function *functions[256];
+	size_t functions_size = 0;
+
+	functions[functions_size] = f;
+	functions_size += 1;
+
+	find_referenced_functions(f, functions, &functions_size);
+
+	for (size_t l = 0; l < functions_size; ++l) {
+		function *func = functions[l];
+		assert(func->parameter_type.resolved);
+		add_found_type(func->parameter_type.type, types, types_size);
+		assert(func->return_type.resolved);
+		add_found_type(func->return_type.type, types, types_size);
+
+		uint8_t *data = functions[l]->code.o;
+		size_t size = functions[l]->code.size;
+
+		size_t index = 0;
+		while (index < size) {
+			opcode *o = (opcode *)&data[index];
+			switch (o->type) {
+			case OPCODE_VAR:
+				add_found_type(o->op_var.var.type, types, types_size);
+				break;
+			}
+
+			index += o->size;
+		}
+	}
+}
 
 static void find_referenced_globals(function *f, global_id *globals, size_t *globals_size) {
 	if (f->block == NULL) {
@@ -194,19 +241,23 @@ static void find_referenced_globals(function *f, global_id *globals, size_t *glo
 }
 
 static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id input, type_id output, function *main) {
-	for (type_id i = 0; get_type(i) != NULL; ++i) {
-		type *t = get_type(i);
+	type_id types[256];
+	size_t types_size = 0;
+	find_referenced_types(main, types, &types_size);
+
+	for (size_t i = 0; i < types_size; ++i) {
+		type *t = get_type(types[i]);
 
 		if (!t->built_in && t->attribute != add_name("pipe")) {
 			*offset += sprintf(&hlsl[*offset], "struct %s {\n", get_name(t->name));
 
-			if (stage == SHADER_STAGE_VERTEX && i == input) {
+			if (stage == SHADER_STAGE_VERTEX && types[i] == input) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					*offset +=
 					    sprintf(&hlsl[*offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name), j);
 				}
 			}
-			else if (stage == SHADER_STAGE_VERTEX && i == output) {
+			else if (stage == SHADER_STAGE_VERTEX && types[i] == output) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (j == 0) {
 						*offset += sprintf(&hlsl[*offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
@@ -217,7 +268,7 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 					}
 				}
 			}
-			else if (stage == SHADER_STAGE_FRAGMENT && i == input) {
+			else if (stage == SHADER_STAGE_FRAGMENT && types[i] == input) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (j == 0) {
 						*offset += sprintf(&hlsl[*offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
