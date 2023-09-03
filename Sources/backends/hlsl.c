@@ -304,7 +304,7 @@ static hlsl_export_vertex(char *directory, function *main) {
 	write_bytecode(directory, filename, var_name, output, output_size);
 }
 
-static void hlsl_export_pixel(char *directory, function *main) {
+static void hlsl_export_fragment(char *directory, function *main) {
 	char *hlsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
@@ -335,19 +335,49 @@ static void hlsl_export_pixel(char *directory, function *main) {
 }
 
 void hlsl_export(char *directory) {
-	for (function_id i = 0; get_function(i) != NULL; ++i) {
-		function *f = get_function(i);
+	function *vertex_shaders[256];
+	size_t vertex_shaders_size = 0;
 
-		if (f->block == NULL) {
-			// built-in
-			continue;
-		}
+	function *fragment_shaders[256];
+	size_t fragment_shaders_size = 0;
 
-		if (f->attribute == add_name("vertex")) {
-			hlsl_export_vertex(directory, f);
+	for (type_id i = 0; get_type(i) != NULL; ++i) {
+		type *t = get_type(i);
+		if (!t->built_in && t->attribute == add_name("pipe")) {
+			name_id vertex_shader_name = NO_NAME;
+			name_id fragment_shader_name = NO_NAME;
+
+			for (size_t j = 0; j < t->members.size; ++j) {
+				if (t->members.m[j].name == add_name("vertex")) {
+					vertex_shader_name = t->members.m[j].value;
+				}
+				else if (t->members.m[j].name == add_name("fragment")) {
+					fragment_shader_name = t->members.m[j].value;
+				}
+			}
+
+			assert(vertex_shader_name != NO_NAME);
+			assert(fragment_shader_name != NO_NAME);
+
+			for (function_id i = 0; get_function(i) != NULL; ++i) {
+				function *f = get_function(i);
+				if (f->name == vertex_shader_name) {
+					vertex_shaders[vertex_shaders_size] = f;
+					vertex_shaders_size += 1;
+				}
+				else if (f->name == fragment_shader_name) {
+					fragment_shaders[fragment_shaders_size] = f;
+					fragment_shaders_size += 1;
+				}
+			}
 		}
-		else if (f->attribute == add_name("fragment")) {
-			hlsl_export_pixel(directory, f);
-		}
+	}
+
+	for (size_t i = 0; i < vertex_shaders_size; ++i) {
+		hlsl_export_vertex(directory, vertex_shaders[i]);
+	}
+
+	for (size_t i = 0; i < fragment_shaders_size; ++i) {
+		hlsl_export_fragment(directory, fragment_shaders[i]);
 	}
 }
