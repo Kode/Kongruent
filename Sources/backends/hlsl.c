@@ -3,6 +3,7 @@
 #include "../compiler.h"
 #include "../functions.h"
 #include "../parser.h"
+#include "../shader_stage.h"
 #include "../types.h"
 #include "d3d11.h"
 
@@ -93,22 +94,20 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 	}
 }
 
-typedef enum shader_type { SHADER_TYPE_VERTEX, SHADER_TYPE_FRAGMENT } shader_type;
-
-static void write_types(char *hlsl, size_t *offset, shader_type shader, type_id input, type_id output) {
+static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id input, type_id output) {
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 
 		if (!t->built_in && t->attribute != add_name("pipe")) {
 			*offset += sprintf(&hlsl[*offset], "struct %s {\n", get_name(t->name));
 
-			if (shader == SHADER_TYPE_VERTEX && i == input) {
+			if (stage == SHADER_STAGE_VERTEX && i == input) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					*offset +=
 					    sprintf(&hlsl[*offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name), j);
 				}
 			}
-			else if (shader == SHADER_TYPE_VERTEX && i == output) {
+			else if (stage == SHADER_STAGE_VERTEX && i == output) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (j == 0) {
 						*offset += sprintf(&hlsl[*offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
@@ -119,7 +118,7 @@ static void write_types(char *hlsl, size_t *offset, shader_type shader, type_id 
 					}
 				}
 			}
-			else if (shader == SHADER_TYPE_FRAGMENT && i == input) {
+			else if (stage == SHADER_STAGE_FRAGMENT && i == input) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (j == 0) {
 						*offset += sprintf(&hlsl[*offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
@@ -156,7 +155,7 @@ static void write_globals(char *hlsl, size_t *offset) {
 	}
 }
 
-static void write_functions(char *hlsl, size_t *offset, shader_type shader, function *main) {
+static void write_functions(char *hlsl, size_t *offset, shader_stage stage, function *main) {
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
 
@@ -178,11 +177,11 @@ static void write_functions(char *hlsl, size_t *offset, shader_type shader, func
 
 		assert(parameter_id != 0);
 		if (f == main) {
-			if (shader == SHADER_TYPE_VERTEX) {
+			if (stage == SHADER_STAGE_VERTEX) {
 				*offset += sprintf(&hlsl[*offset], "%s main(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), type_string(f->parameter_type.type),
 				                   parameter_id);
 			}
-			else if (shader == SHADER_TYPE_FRAGMENT) {
+			else if (stage == SHADER_STAGE_FRAGMENT) {
 				*offset += sprintf(&hlsl[*offset], "%s main(%s _%" PRIu64 ") : SV_Target0 {\n", type_string(f->return_type.type),
 				                   type_string(f->parameter_type.type), parameter_id);
 			}
@@ -283,15 +282,15 @@ static hlsl_export_vertex(char *directory, function *main) {
 	assert(vertex_input != NO_TYPE);
 	assert(vertex_output != NO_TYPE);
 
-	write_types(hlsl, &offset, SHADER_TYPE_VERTEX, vertex_input, vertex_output);
+	write_types(hlsl, &offset, SHADER_STAGE_VERTEX, vertex_input, vertex_output);
 
 	write_globals(hlsl, &offset);
 
-	write_functions(hlsl, &offset, SHADER_TYPE_VERTEX, main);
+	write_functions(hlsl, &offset, SHADER_STAGE_VERTEX, main);
 
 	char *output;
 	size_t output_size;
-	int result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, EShLangVertex, false);
+	int result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
 	assert(result == 0);
 
 	char *name = get_name(main->name);
@@ -313,15 +312,15 @@ static void hlsl_export_pixel(char *directory, function *main) {
 
 	assert(pixel_input != NO_TYPE);
 
-	write_types(hlsl, &offset, SHADER_TYPE_FRAGMENT, pixel_input, NO_TYPE);
+	write_types(hlsl, &offset, SHADER_STAGE_FRAGMENT, pixel_input, NO_TYPE);
 
 	write_globals(hlsl, &offset);
 
-	write_functions(hlsl, &offset, SHADER_TYPE_FRAGMENT, main);
+	write_functions(hlsl, &offset, SHADER_STAGE_FRAGMENT, main);
 
 	uint8_t *output;
 	size_t output_size;
-	int result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, EShLangFragment, false);
+	int result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
 	assert(result == 0);
 
 	char *name = get_name(main->name);

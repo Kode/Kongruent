@@ -15,39 +15,41 @@
 #include <stdint.h>
 #endif
 
-static const char *shaderString(EShLanguage stage, int version) {
+static const char *shaderString(shader_stage stage, int version) {
 	if (version == 4) {
 		switch (stage) {
-		case EShLangVertex:
+		case SHADER_STAGE_VERTEX:
 			return "vs_4_0";
-		case EShLangFragment:
+		case SHADER_STAGE_FRAGMENT:
 			return "ps_4_0";
-		case EShLangGeometry:
-			return "gs_4_0";
-		case EShLangTessControl:
-			return "unsupported";
-		case EShLangTessEvaluation:
-			return "unsupported";
-		case EShLangCompute:
-			return "cs_4_0";
+			/*case EShLangGeometry:
+			    return "gs_4_0";
+			case EShLangTessControl:
+			    return "unsupported";
+			case EShLangTessEvaluation:
+			    return "unsupported";
+			case EShLangCompute:
+			    return "cs_4_0";*/
 		}
 	}
 	else if (version == 5) {
 		switch (stage) {
-		case EShLangVertex:
+		case SHADER_STAGE_VERTEX:
 			return "vs_5_0";
-		case EShLangFragment:
+		case SHADER_STAGE_FRAGMENT:
 			return "ps_5_0";
-		case EShLangGeometry:
-			return "gs_5_0";
-		case EShLangTessControl:
-			return "hs_5_0";
-		case EShLangTessEvaluation:
-			return "ds_5_0";
-		case EShLangCompute:
-			return "cs_5_0";
+			/*case EShLangGeometry:
+			    return "gs_5_0";
+			case EShLangTessControl:
+			    return "hs_5_0";
+			case EShLangTessEvaluation:
+			    return "ds_5_0";
+			case EShLangCompute:
+			    return "cs_5_0";*/
 		}
 	}
+
+	assert(false);
 	return "unsupported";
 }
 
@@ -55,7 +57,7 @@ struct map {
 	int nothing;
 };
 
-int compile_hlsl_to_d3d11(const char *source, uint8_t **output, size_t *outputlength, EShLanguage stage, bool debug) {
+int compile_hlsl_to_d3d11(const char *source, uint8_t **output, size_t *outputlength, shader_stage stage, bool debug) {
 #ifdef _WIN32
 	size_t length = strlen(source);
 
