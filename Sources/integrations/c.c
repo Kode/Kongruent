@@ -9,6 +9,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 
 static char *type_string(type_id type) {
 	if (type == float_id) {
@@ -142,7 +143,16 @@ void c_export(char *directory) {
 					else {
 						assert(false);
 					}
-					fprintf(output, "\t%s.%s = &%s;\n\n", get_name(t->name), get_name(t->members.m[j].name), get_name(t->members.m[j].value));
+
+					char *member_name = "unknown";
+					if (strcmp(get_name(t->members.m[j].name), "vertex") == 0) {
+						member_name = "vertex_shader";
+					}
+					else if (strcmp(get_name(t->members.m[j].name), "fragment") == 0) {
+						member_name = "fragment_shader";
+					}
+
+					fprintf(output, "\t%s.%s = &%s;\n\n", get_name(t->name), member_name, get_name(t->members.m[j].value));
 				}
 
 				assert(vertex_shader_name != NO_NAME);
@@ -174,7 +184,7 @@ void c_export(char *directory) {
 				fprintf(output, "\t%s.input_layout[0] = &%s_structure;\n", get_name(t->name), get_name(get_type(vertex_input)->name));
 				fprintf(output, "\t%s.input_layout[1] = NULL;\n\n", get_name(t->name));
 
-				fprintf(output, "\tkinc_g4_pipeline_compile(&%s);\n", get_name(t->name));
+				fprintf(output, "\tkinc_g4_pipeline_compile(&%s);\n\n", get_name(t->name));
 			}
 		}
 		fprintf(output, "}\n");
