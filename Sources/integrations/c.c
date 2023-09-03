@@ -86,8 +86,25 @@ void c_export(char *directory) {
 		FILE *output = fopen(filename, "wb");
 
 		fprintf(output, "#include \"kong.h\"\n\n");
-		fprintf(output, "#include \"vert.h\"\n");
-		fprintf(output, "#include \"frag.h\"\n\n");
+
+		for (type_id i = 0; get_type(i) != NULL; ++i) {
+			type *t = get_type(i);
+			if (!t->built_in && t->attribute == add_name("pipe")) {
+				for (size_t j = 0; j < t->members.size; ++j) {
+					if (t->members.m[j].name == add_name("vertex")) {
+						fprintf(output, "#include \"kong_%s.h\"\n", get_name(t->members.m[j].value));
+					}
+					else if (t->members.m[j].name == add_name("fragment")) {
+						fprintf(output, "#include \"kong_%s.h\"\n", get_name(t->members.m[j].value));
+					}
+					else {
+						assert(false);
+					}
+				}
+			}
+		}
+
+		fprintf(output, "\n");
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
@@ -109,15 +126,18 @@ void c_export(char *directory) {
 			if (!t->built_in && t->attribute == add_name("pipe")) {
 				fprintf(output, "\tkinc_g4_pipeline_init(&%s);\n\n", get_name(t->name));
 
+				name_id vertex_shader_name = NO_NAME;
+
 				for (size_t j = 0; j < t->members.size; ++j) {
 					fprintf(output, "\tkinc_g4_shader_t %s;\n", get_name(t->members.m[j].value));
 					if (t->members.m[j].name == add_name("vertex")) {
-						fprintf(output, "\tkinc_g4_shader_init(&%s, kong_vert_code, kong_vert_code_size, KINC_G4_SHADER_TYPE_VERTEX);\n",
-						        get_name(t->members.m[j].value));
+						fprintf(output, "\tkinc_g4_shader_init(&%s, %s_code, %s_code_size, KINC_G4_SHADER_TYPE_VERTEX);\n", get_name(t->members.m[j].value),
+						        get_name(t->members.m[j].value), get_name(t->members.m[j].value));
+						vertex_shader_name = t->members.m[j].value;
 					}
 					else if (t->members.m[j].name == add_name("fragment")) {
-						fprintf(output, "\tkinc_g4_shader_init(&%s, kong_frag_code, kong_frag_code_size, KINC_G4_SHADER_TYPE_FRAGMENT);\n",
-						        get_name(t->members.m[j].value));
+						fprintf(output, "\tkinc_g4_shader_init(&%s, %s_code, %s_code_size, KINC_G4_SHADER_TYPE_FRAGMENT);\n", get_name(t->members.m[j].value),
+						        get_name(t->members.m[j].value), get_name(t->members.m[j].value));
 					}
 					else {
 						assert(false);
@@ -125,9 +145,23 @@ void c_export(char *directory) {
 					fprintf(output, "\t%s.%s = &%s;\n\n", get_name(t->name), get_name(t->members.m[j].name), get_name(t->members.m[j].value));
 				}
 
+				assert(vertex_shader_name != NO_NAME);
+
+				type_id vertex_input = NO_TYPE;
+
+				for (function_id i = 0; get_function(i) != NULL; ++i) {
+					function *f = get_function(i);
+					if (f->name == vertex_shader_name) {
+						vertex_input = f->parameter_type.type;
+						break;
+					}
+				}
+
+				assert(vertex_input != NO_TYPE);
+
 				for (type_id i = 0; get_type(i) != NULL; ++i) {
-					type *t = get_type(i);
-					if (!t->built_in && t->attribute != add_name("pipe")) {
+					if (i == vertex_input) {
+						type *t = get_type(i);
 						fprintf(output, "\tkinc_g4_vertex_structure_init(&%s_structure);\n", get_name(t->name));
 						for (size_t j = 0; j < t->members.size; ++j) {
 							fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s\", %s);\n", get_name(t->name), get_name(t->members.m[j].name),
@@ -136,18 +170,6 @@ void c_export(char *directory) {
 						fprintf(output, "\n");
 					}
 				}
-
-				type_id vertex_input = NO_TYPE;
-
-				for (function_id i = 0; get_function(i) != NULL; ++i) {
-					function *f = get_function(i);
-					if (f->attribute == add_name("vertex")) {
-						vertex_input = f->parameter_type.type;
-						break;
-					}
-				}
-
-				assert(vertex_input != NO_TYPE);
 
 				fprintf(output, "\t%s.input_layout[0] = &%s_structure;\n", get_name(t->name), get_name(get_type(vertex_input)->name));
 				fprintf(output, "\t%s.input_layout[1] = NULL;\n\n", get_name(t->name));
