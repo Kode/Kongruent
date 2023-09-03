@@ -32,11 +32,11 @@ static char *function_string(name_id func) {
 	return get_name(func);
 }
 
-static void write_bytecode(const char *filename, const char *name, uint8_t *output, size_t output_size) {
-	char full_filename[256];
+static void write_bytecode(char *directory, const char *filename, const char *name, uint8_t *output, size_t output_size) {
+	char full_filename[512];
 
 	{
-		sprintf(full_filename, "%s.h", filename);
+		sprintf(full_filename, "%s/%s.h", directory, filename);
 		FILE *file = fopen(full_filename, "wb");
 		fprintf(file, "#include <stdint.h>\n\n");
 		fprintf(file, "extern uint8_t *%s;\n", name);
@@ -45,7 +45,7 @@ static void write_bytecode(const char *filename, const char *name, uint8_t *outp
 	}
 
 	{
-		sprintf(full_filename, "%s.c", filename);
+		sprintf(full_filename, "%s/%s.c", directory, filename);
 
 		FILE *file = fopen(full_filename, "wb");
 		fprintf(file, "#include \"%s.h\"\n\n", filename);
@@ -297,12 +297,12 @@ static hlsl_export_vertex(char *directory, function *main) {
 	char *name = get_name(main->name);
 
 	char filename[512];
-	sprintf(filename, "%s/%s", directory, name);
+	sprintf(filename, "kong_%s", name);
 
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(filename, var_name, output, output_size);
+	write_bytecode(directory, filename, var_name, output, output_size);
 }
 
 static void hlsl_export_pixel(char *directory, function *main) {
@@ -327,12 +327,12 @@ static void hlsl_export_pixel(char *directory, function *main) {
 	char *name = get_name(main->name);
 
 	char filename[512];
-	sprintf(filename, "%s/%s", directory, name);
+	sprintf(filename, "kong_%s", name);
 
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(filename, var_name, output, output_size);
+	write_bytecode(directory, filename, var_name, output, output_size);
 }
 
 void hlsl_export(char *directory) {

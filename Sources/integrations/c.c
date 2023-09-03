@@ -85,7 +85,7 @@ void c_export(char *directory) {
 
 		FILE *output = fopen(filename, "wb");
 
-		fprintf(output, "#include \"test.h\"\n\n");
+		fprintf(output, "#include \"kong.h\"\n\n");
 		fprintf(output, "#include \"vert.h\"\n");
 		fprintf(output, "#include \"frag.h\"\n\n");
 
