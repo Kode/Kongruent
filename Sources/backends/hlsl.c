@@ -141,9 +141,59 @@ static void find_referenced_functions(function *f, function **functions, size_t 
 
 static void find_referenced_types(function *f) {}
 
-static void find_referenced_globals(function *f) {}
+static void find_referenced_globals(function *f, global_id *globals, size_t *globals_size) {
+	if (f->block == NULL) {
+		// built-in
+		return;
+	}
 
-static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id input, type_id output) {
+	function *functions[256];
+	size_t functions_size = 0;
+
+	functions[functions_size] = f;
+	functions_size += 1;
+
+	find_referenced_functions(f, functions, &functions_size);
+
+	for (size_t l = 0; l < functions_size; ++l) {
+		uint8_t *data = functions[l]->code.o;
+		size_t size = functions[l]->code.size;
+
+		size_t index = 0;
+		while (index < size) {
+			opcode *o = (opcode *)&data[index];
+			switch (o->type) {
+			case OPCODE_CALL: {
+				for (uint8_t i = 0; i < o->op_call.parameters_size; ++i) {
+					variable v = o->op_call.parameters[i];
+					for (global_id j = 0; get_global(j).kind != GLOBAL_NONE; ++j) {
+						global g = get_global(j);
+						if (v.index == g.var_index) {
+							bool found = false;
+							for (size_t k = 0; k < *globals_size; ++k) {
+								if (globals[k] == j) {
+									found = true;
+									break;
+								}
+							}
+							if (!found) {
+								globals[*globals_size] = j;
+								*globals_size += 1;
+							}
+							break;
+						}
+					}
+				}
+				break;
+			}
+			}
+
+			index += o->size;
+		}
+	}
+}
+
+static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id input, type_id output, function *main) {
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 
@@ -188,9 +238,13 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 	}
 }
 
-static void write_globals(char *hlsl, size_t *offset) {
-	for (global_id i = 0; get_global(i).kind != GLOBAL_NONE; ++i) {
-		global g = get_global(i);
+static void write_globals(char *hlsl, size_t *offset, function *main) {
+	global_id globals[256];
+	size_t globals_size = 0;
+	find_referenced_globals(main, globals, &globals_size);
+
+	for (size_t i = 0; i < globals_size; ++i) {
+		global g = get_global(globals[i]);
 		switch (g.kind) {
 		case GLOBAL_SAMPLER:
 			*offset += sprintf(&hlsl[*offset], "SamplerState _%" PRIu64 " : register(s0);\n\n", g.var_index);
@@ -336,9 +390,9 @@ static hlsl_export_vertex(char *directory, function *main) {
 	assert(vertex_input != NO_TYPE);
 	assert(vertex_output != NO_TYPE);
 
-	write_types(hlsl, &offset, SHADER_STAGE_VERTEX, vertex_input, vertex_output);
+	write_types(hlsl, &offset, SHADER_STAGE_VERTEX, vertex_input, vertex_output, main);
 
-	write_globals(hlsl, &offset);
+	write_globals(hlsl, &offset, main);
 
 	write_functions(hlsl, &offset, SHADER_STAGE_VERTEX, main);
 
@@ -366,9 +420,9 @@ static void hlsl_export_fragment(char *directory, function *main) {
 
 	assert(pixel_input != NO_TYPE);
 
-	write_types(hlsl, &offset, SHADER_STAGE_FRAGMENT, pixel_input, NO_TYPE);
+	write_types(hlsl, &offset, SHADER_STAGE_FRAGMENT, pixel_input, NO_TYPE, main);
 
-	write_globals(hlsl, &offset);
+	write_globals(hlsl, &offset, main);
 
 	write_functions(hlsl, &offset, SHADER_STAGE_FRAGMENT, main);
 
