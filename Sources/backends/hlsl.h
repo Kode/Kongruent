@@ -2,4 +2,4 @@
 
 #include <stdint.h>
 
-void hlsl_export(void);
+void hlsl_export(char *directory);

@@ -43,9 +43,12 @@ static const char *structure_type(type_id type) {
 	return "UNKNOWN";
 }
 
-void c_export(void) {
+void c_export(char *directory) {
 	{
-		FILE *output = fopen("test.h", "wb");
+		char filename[512];
+		sprintf(filename, "%s/%s", directory, "kong.h");
+
+		FILE *output = fopen(filename, "wb");
 
 		fprintf(output, "#include <kinc/graphics4/pipeline.h>\n");
 		fprintf(output, "#include <kinc/graphics4/vertexbuffer.h>\n");
@@ -77,7 +80,10 @@ void c_export(void) {
 	}
 
 	{
-		FILE *output = fopen("test.c", "wb");
+		char filename[512];
+		sprintf(filename, "%s/%s", directory, "kong.c");
+
+		FILE *output = fopen(filename, "wb");
 
 		fprintf(output, "#include \"test.h\"\n\n");
 		fprintf(output, "#include \"vert.h\"\n");
@@ -105,11 +111,11 @@ void c_export(void) {
 
 				for (size_t j = 0; j < t->members.size; ++j) {
 					fprintf(output, "\tkinc_g4_shader_t %s;\n", get_name(t->members.m[j].value));
-					if (t->members.m[j].name == add_name("vertex_shader")) {
+					if (t->members.m[j].name == add_name("vertex")) {
 						fprintf(output, "\tkinc_g4_shader_init(&%s, kong_vert_code, kong_vert_code_size, KINC_G4_SHADER_TYPE_VERTEX);\n",
 						        get_name(t->members.m[j].value));
 					}
-					else if (t->members.m[j].name == add_name("fragment_shader")) {
+					else if (t->members.m[j].name == add_name("fragment")) {
 						fprintf(output, "\tkinc_g4_shader_init(&%s, kong_frag_code, kong_frag_code_size, KINC_G4_SHADER_TYPE_FRAGMENT);\n",
 						        get_name(t->members.m[j].value));
 					}

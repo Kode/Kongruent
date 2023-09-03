@@ -273,7 +273,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_type shader, func
 	}
 }
 
-static hlsl_export_vertex(function *main) {
+static hlsl_export_vertex(char *directory, function *main) {
 	char *hlsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
@@ -295,12 +295,17 @@ static hlsl_export_vertex(function *main) {
 	assert(result == 0);
 
 	char *name = get_name(main->name);
+
+	char filename[512];
+	sprintf(filename, "%s/%s", directory, name);
+
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
-	write_bytecode(name, var_name, output, output_size);
+
+	write_bytecode(filename, var_name, output, output_size);
 }
 
-static void hlsl_export_pixel(function *main) {
+static void hlsl_export_pixel(char *directory, function *main) {
 	char *hlsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
@@ -320,12 +325,17 @@ static void hlsl_export_pixel(function *main) {
 	assert(result == 0);
 
 	char *name = get_name(main->name);
+
+	char filename[512];
+	sprintf(filename, "%s/%s", directory, name);
+
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
-	write_bytecode(name, var_name, output, output_size);
+
+	write_bytecode(filename, var_name, output, output_size);
 }
 
-void hlsl_export(void) {
+void hlsl_export(char *directory) {
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
 
@@ -335,10 +345,10 @@ void hlsl_export(void) {
 		}
 
 		if (f->attribute == add_name("vertex")) {
-			hlsl_export_vertex(f);
+			hlsl_export_vertex(directory, f);
 		}
 		else if (f->attribute == add_name("fragment")) {
-			hlsl_export_pixel(f);
+			hlsl_export_pixel(directory, f);
 		}
 	}
 }

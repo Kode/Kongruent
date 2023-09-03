@@ -489,9 +489,9 @@ int main(int argc, char **argv) {
 		convert_function_block(&get_function(i)->code, get_function(i)->block);
 	}
 
-	hlsl_export();
+	hlsl_export(output);
 
-	c_export();
+	c_export(output);
 
 	return 0;
 }

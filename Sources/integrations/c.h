@@ -2,4 +2,4 @@
 
 #include <stdint.h>
 
-void c_export(void);
+void c_export(char *directory);
