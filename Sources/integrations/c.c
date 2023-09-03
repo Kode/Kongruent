@@ -45,6 +45,39 @@ static const char *structure_type(type_id type) {
 }
 
 void c_export(char *directory) {
+	type_id vertex_inputs[256];
+	size_t vertex_inputs_size = 0;
+
+	for (type_id i = 0; get_type(i) != NULL; ++i) {
+		type *t = get_type(i);
+		if (!t->built_in && t->attribute == add_name("pipe")) {
+			name_id vertex_shader_name = NO_NAME;
+
+			for (size_t j = 0; j < t->members.size; ++j) {
+				if (t->members.m[j].name == add_name("vertex")) {
+					vertex_shader_name = t->members.m[j].value;
+				}
+			}
+
+			assert(vertex_shader_name != NO_NAME);
+
+			type_id vertex_input = NO_TYPE;
+
+			for (function_id i = 0; get_function(i) != NULL; ++i) {
+				function *f = get_function(i);
+				if (f->name == vertex_shader_name) {
+					vertex_input = f->parameter_type.type;
+					break;
+				}
+			}
+
+			assert(vertex_input != NO_TYPE);
+
+			vertex_inputs[vertex_inputs_size] = vertex_input;
+			vertex_inputs_size += 1;
+		}
+	}
+
 	{
 		char filename[512];
 		sprintf(filename, "%s/%s", directory, "kong.h");
@@ -55,17 +88,16 @@ void c_export(char *directory) {
 		fprintf(output, "#include <kinc/graphics4/vertexbuffer.h>\n");
 		fprintf(output, "#include <kinc/math/vector.h>\n\n");
 
-		for (type_id i = 0; get_type(i) != NULL; ++i) {
-			type *t = get_type(i);
-			if (!t->built_in && t->attribute != add_name("pipe")) {
-				fprintf(output, "typedef struct %s {\n", get_name(t->name));
-				for (size_t j = 0; j < t->members.size; ++j) {
-					fprintf(output, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
-				}
-				fprintf(output, "} %s;\n\n", get_name(t->name));
+		for (size_t i = 0; i < vertex_inputs_size; ++i) {
+			type *t = get_type(vertex_inputs[i]);
 
-				fprintf(output, "extern kinc_g4_vertex_structure_t %s_structure;\n\n", get_name(t->name));
+			fprintf(output, "typedef struct %s {\n", get_name(t->name));
+			for (size_t j = 0; j < t->members.size; ++j) {
+				fprintf(output, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 			}
+			fprintf(output, "} %s;\n\n", get_name(t->name));
+
+			fprintf(output, "extern kinc_g4_vertex_structure_t %s_structure;\n\n", get_name(t->name));
 		}
 
 		fprintf(output, "void kong_init(void);\n\n");
@@ -114,11 +146,9 @@ void c_export(char *directory) {
 			}
 		}
 
-		for (type_id i = 0; get_type(i) != NULL; ++i) {
-			type *t = get_type(i);
-			if (!t->built_in && t->attribute != add_name("pipe")) {
-				fprintf(output, "kinc_g4_vertex_structure_t %s_structure;\n", get_name(t->name));
-			}
+		for (size_t i = 0; i < vertex_inputs_size; ++i) {
+			type *t = get_type(vertex_inputs[i]);
+			fprintf(output, "kinc_g4_vertex_structure_t %s_structure;\n", get_name(t->name));
 		}
 
 		fprintf(output, "\nvoid kong_init(void) {\n");
