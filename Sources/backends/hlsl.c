@@ -94,6 +94,55 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 	}
 }
 
+static void find_referenced_functions(function *f, function **functions, size_t *functions_size) {
+	if (f->block == NULL) {
+		// built-in
+		return;
+	}
+
+	uint8_t *data = f->code.o;
+	size_t size = f->code.size;
+
+	size_t index = 0;
+	while (index < size) {
+		opcode *o = (opcode *)&data[index];
+		switch (o->type) {
+		case OPCODE_CALL: {
+			for (function_id i = 0; get_function(i) != NULL; ++i) {
+				function *f = get_function(i);
+				if (f->name == o->op_call.func) {
+					if (f->block == NULL) {
+						// built-in
+						break;
+					}
+
+					bool found = false;
+					for (size_t j = 0; j < *functions_size; ++j) {
+						if (functions[j]->name == o->op_call.func) {
+							found = true;
+							break;
+						}
+					}
+					if (!found) {
+						functions[*functions_size] = f;
+						*functions_size += 1;
+						find_referenced_functions(f, functions, functions_size);
+					}
+					break;
+				}
+			}
+			break;
+		}
+		}
+
+		index += o->size;
+	}
+}
+
+static void find_referenced_types(function *f) {}
+
+static void find_referenced_globals(function *f) {}
+
 static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id input, type_id output) {
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
@@ -156,13 +205,18 @@ static void write_globals(char *hlsl, size_t *offset) {
 }
 
 static void write_functions(char *hlsl, size_t *offset, shader_stage stage, function *main) {
-	for (function_id i = 0; get_function(i) != NULL; ++i) {
-		function *f = get_function(i);
+	function *functions[256];
+	size_t functions_size = 0;
 
-		if (f->block == NULL) {
-			// built-in
-			continue;
-		}
+	functions[functions_size] = main;
+	functions_size += 1;
+
+	find_referenced_functions(main, functions, &functions_size);
+
+	for (size_t i = 0; i < functions_size; ++i) {
+		function *f = functions[i];
+
+		assert(f->block != NULL);
 
 		uint8_t *data = f->code.o;
 		size_t size = f->code.size;
