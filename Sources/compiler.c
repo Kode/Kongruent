@@ -233,7 +233,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		opcode o;
 		o.type = OPCODE_LOAD_CONSTANT;
 		o.size = OP_SIZE(o, op_load_constant);
-		o.op_load_constant.number = 1.0f;
+		o.op_load_constant.number = (float)e->number;
 		o.op_load_constant.to = v;
 		emit_op(code, &o);
 
