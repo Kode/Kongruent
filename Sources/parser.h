@@ -102,7 +102,7 @@ typedef struct statement {
 } statement;
 
 typedef struct definition {
-	enum { DEFINITION_FUNCTION, DEFINITION_STRUCT, DEFINITION_TEX2D, DEFINITION_SAMPLER } kind;
+	enum { DEFINITION_FUNCTION, DEFINITION_STRUCT, DEFINITION_TEX2D, DEFINITION_SAMPLER, DEFINITION_CONST_CUSTOM } kind;
 
 	union {
 		function_id function;

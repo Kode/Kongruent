@@ -714,13 +714,7 @@ static expression *parse_call(state_t *state, name_id func_name) {
 	return call;
 }
 
-static definition parse_struct(state_t *state) {
-	advance_state(state);
-
-	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
-	token name = current(state);
-	advance_state(state);
-
+static definition parse_struct_inner(state_t *state, name_id name) {
 	match_token(state, TOKEN_LEFT_CURLY, "Expected an opening curly bracket");
 	advance_state(state);
 
@@ -773,7 +767,7 @@ static definition parse_struct(state_t *state) {
 	definition definition;
 	definition.kind = DEFINITION_STRUCT;
 
-	definition.type = add_type(name.identifier);
+	definition.type = add_type(name);
 
 	type *s = get_type(definition.type);
 
@@ -789,6 +783,16 @@ static definition parse_struct(state_t *state) {
 	s->members.size = count;
 
 	return definition;
+}
+
+static definition parse_struct(state_t *state) {
+	advance_state(state);
+
+	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+	token name = current(state);
+	advance_state(state);
+
+	return parse_struct_inner(state, name.identifier);
 }
 
 static definition parse_function(state_t *state) {
@@ -840,19 +844,30 @@ static definition parse_const(state_t *state) {
 	match_token(state, TOKEN_COLON, "Expected a colon");
 	advance_state(state);
 
-	token type_name = current(state);
-	advance_state(state);
+	name_id type_name = NO_NAME;
+
+	if (current(state).kind == TOKEN_LEFT_CURLY) {
+		parse_struct_inner(state, NO_NAME);
+	}
+	else {
+		match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+		type_name = current(state).identifier;
+		advance_state(state);
+	}
 
 	match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
 	advance_state(state);
 
 	definition d;
 
-	if (type_name.identifier == add_name("tex2d")) {
+	if (type_name == NO_NAME) {
+		d.kind = DEFINITION_CONST_CUSTOM;
+	}
+	else if (type_name == add_name("tex2d")) {
 		d.kind = DEFINITION_TEX2D;
 		d.global = add_global(GLOBAL_TEX2D, name.identifier);
 	}
-	else if (type_name.identifier == add_name("sampler")) {
+	else if (type_name == add_name("sampler")) {
 		d.kind = DEFINITION_SAMPLER;
 		d.global = add_global(GLOBAL_SAMPLER, name.identifier);
 	}
