@@ -188,6 +188,26 @@ static void find_referenced_types(function *f, type_id *types, size_t *types_siz
 	}
 }
 
+static void find_referenced_global_for_var(variable v, global_id *globals, size_t *globals_size) {
+	for (global_id j = 0; get_global(j).type != NO_TYPE; ++j) {
+		global g = get_global(j);
+		if (v.index == g.var_index) {
+			bool found = false;
+			for (size_t k = 0; k < *globals_size; ++k) {
+				if (globals[k] == j) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				globals[*globals_size] = j;
+				*globals_size += 1;
+			}
+			return;
+		}
+	}
+}
+
 static void find_referenced_globals(function *f, global_id *globals, size_t *globals_size) {
 	if (f->block == NULL) {
 		// built-in
@@ -210,26 +230,18 @@ static void find_referenced_globals(function *f, global_id *globals, size_t *glo
 		while (index < size) {
 			opcode *o = (opcode *)&data[index];
 			switch (o->type) {
+			case OPCODE_MULTIPLY: {
+				find_referenced_global_for_var(o->op_multiply.left, globals, globals_size);
+				find_referenced_global_for_var(o->op_multiply.right, globals, globals_size);
+				break;
+			}
+			case OPCODE_LOAD_MEMBER: {
+				find_referenced_global_for_var(o->op_load_member.from, globals, globals_size);
+				break;
+			}
 			case OPCODE_CALL: {
 				for (uint8_t i = 0; i < o->op_call.parameters_size; ++i) {
-					variable v = o->op_call.parameters[i];
-					for (global_id j = 0; get_global(j).type != NO_TYPE; ++j) {
-						global g = get_global(j);
-						if (v.index == g.var_index) {
-							bool found = false;
-							for (size_t k = 0; k < *globals_size; ++k) {
-								if (globals[k] == j) {
-									found = true;
-									break;
-								}
-							}
-							if (!found) {
-								globals[*globals_size] = j;
-								*globals_size += 1;
-							}
-							break;
-						}
-					}
+					find_referenced_global_for_var(o->op_call.parameters[i], globals, globals_size);
 				}
 				break;
 			}
@@ -303,7 +315,13 @@ static void write_globals(char *hlsl, size_t *offset, function *main) {
 			*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t0);\n\n", g.var_index);
 		}
 		else {
-			assert(false);
+			*offset += sprintf(&hlsl[*offset], "cbuffer _%" PRIu64 " {\n", g.var_index);
+			type *t = get_type(g.type);
+			for (size_t i = 0; i < t->members.size; ++i) {
+				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 "_%s;\n", get_name(get_type(t->members.m[i].type.type)->name), g.var_index,
+				                   get_name(t->members.m[i].name));
+			}
+			*offset += sprintf(&hlsl[*offset], "}\n\n");
 		}
 	}
 }
@@ -379,11 +397,25 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				                   o->op_load_constant.number);
 				break;
 			case OPCODE_LOAD_MEMBER: {
+				uint64_t global_var_index = 0;
+				for (global_id j = 0; get_global(j).type != NO_TYPE; ++j) {
+					global g = get_global(j);
+					if (o->op_load_member.from.index == g.var_index) {
+						global_var_index = g.var_index;
+						break;
+					}
+				}
+
 				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type), o->op_load_member.to.index,
 				                   o->op_load_member.from.index);
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
-					*offset += sprintf(&hlsl[*offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+					if (global_var_index != 0) {
+						*offset += sprintf(&hlsl[*offset], "_%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+					}
+					else {
+						*offset += sprintf(&hlsl[*offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+					}
 					s = get_type(s->members.m[o->op_load_member.member_indices[i]].type.type);
 				}
 				*offset += sprintf(&hlsl[*offset], ";\n");
@@ -419,9 +451,14 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				break;
 			}
 			case OPCODE_MULTIPLY: {
-				o->op_multiply.left;
-				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type),
-				                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
+				if (o->op_multiply.left.type == float4x4_id) {
+					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = mul(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_multiply.result.type),
+					                   o->op_multiply.result.index, o->op_multiply.right.index, o->op_multiply.left.index);
+				}
+				else {
+					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type),
+					                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
+				}
 				break;
 			}
 			default:
