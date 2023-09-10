@@ -30,7 +30,7 @@ static void statements_add(statements *statements, statement *statement) {
 static expression *expression_allocate(void) {
 	expression *e = (expression *)malloc(sizeof(expression));
 	assert(e != NULL);
-	e->type.resolved = false;
+	e->type.type = NO_TYPE;
 	e->type.name = NO_NAME;
 	return e;
 }
@@ -304,7 +304,7 @@ static statement *parse_statement(state_t *state) {
 		statement *statement = statement_allocate();
 		statement->kind = STATEMENT_LOCAL_VARIABLE;
 		statement->local_variable.var.name = name.identifier;
-		statement->local_variable.var.type.resolved = false;
+		statement->local_variable.var.type.type = NO_TYPE;
 		statement->local_variable.var.type.name = type_name.identifier;
 		statement->local_variable.var.variable_id = 0;
 		statement->local_variable.init = init;
@@ -774,7 +774,7 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 	for (size_t i = 0; i < count; ++i) {
 		member member;
 		member.name = member_names[i].identifier;
-		member.type.resolved = false;
+		member.type.type = NO_TYPE;
 		member.type.name = type_names[i].identifier;
 		member.value = member_values[i].identifier;
 
@@ -825,10 +825,10 @@ static definition parse_function(state_t *state) {
 	d.kind = DEFINITION_FUNCTION;
 	d.function = add_function(name.identifier);
 	function *f = get_function(d.function);
-	f->return_type.resolved = false;
+	f->return_type.type = NO_TYPE;
 	f->return_type.name = return_type_name.identifier;
 	f->parameter_name = param_name.identifier;
-	f->parameter_type.resolved = false;
+	f->parameter_type.type = NO_TYPE;
 	f->parameter_type.name = param_type_name.identifier;
 	f->block = block;
 

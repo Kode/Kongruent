@@ -39,7 +39,7 @@ variable find_local_var(block *b, name_id name) {
 
 	for (size_t i = 0; i < b->vars.size; ++i) {
 		if (b->vars.v[i].name == name) {
-			assert(b->vars.v[i].type.resolved);
+			assert(b->vars.v[i].type.type != NO_TYPE);
 			variable var;
 			var.index = b->vars.v[i].variable_id;
 			var.type = b->vars.v[i].type.type;
@@ -137,7 +137,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				o.op_store_member.member_parent_type = prev_struct;
 
 				while (right->kind == EXPRESSION_MEMBER) {
-					assert(right->type.resolved && right->type.type != NO_TYPE);
+					assert(right->type.type != NO_TYPE);
 					assert(right->member.left->kind == EXPRESSION_VARIABLE);
 
 					bool found = false;
@@ -157,7 +157,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				}
 
 				{
-					assert(right->type.resolved && right->type.type != NO_TYPE);
+					assert(right->type.type != NO_TYPE);
 					assert(right->kind == EXPRESSION_VARIABLE);
 
 					bool found = false;
@@ -309,7 +309,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		o.op_load_member.member_parent_type = prev_struct;
 
 		while (right->kind == EXPRESSION_MEMBER) {
-			assert(right->type.resolved && right->type.type != NO_TYPE);
+			assert(right->type.type != NO_TYPE);
 			assert(right->member.left->kind == EXPRESSION_VARIABLE);
 
 			bool found = false;
@@ -329,7 +329,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		}
 
 		{
-			assert(right->type.resolved && right->type.type != NO_TYPE);
+			assert(right->type.type != NO_TYPE);
 			assert(right->kind == EXPRESSION_VARIABLE);
 
 			bool found = false;
@@ -396,7 +396,7 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		variable local_var = find_local_var(parent, statement->local_variable.var.name);
 		statement->local_variable.var.variable_id = local_var.index;
 		o.op_var.var.index = statement->local_variable.var.variable_id;
-		assert(statement->local_variable.var.type.resolved);
+		assert(statement->local_variable.var.type.type != NO_TYPE);
 		o.op_var.var.type = statement->local_variable.var.type.type;
 		emit_op(code, &o);
 

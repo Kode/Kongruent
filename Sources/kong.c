@@ -27,7 +27,7 @@ type_id find_local_var_type(block *b, name_id name) {
 
 	for (size_t i = 0; i < b->vars.size; ++i) {
 		if (b->vars.v[i].name == name) {
-			assert(b->vars.v[i].type.resolved);
+			assert(b->vars.v[i].type.type != NO_TYPE);
 			return b->vars.v[i].type.type;
 		}
 	}
@@ -93,7 +93,6 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		case OPERATOR_OR:
 		case OPERATOR_AND: {
 			e->type.type = bool_id;
-			e->type.resolved = true;
 			break;
 		}
 		case OPERATOR_MINUS:
@@ -125,7 +124,6 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		}
 		case OPERATOR_NOT: {
 			e->type.type = bool_id;
-			e->type.resolved = true;
 			break;
 		}
 		case OPERATOR_EQUALS:
@@ -147,12 +145,10 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 	}
 	case EXPRESSION_BOOLEAN: {
 		e->type.type = bool_id;
-		e->type.resolved = true;
 		break;
 	}
 	case EXPRESSION_NUMBER: {
 		e->type.type = float_id;
-		e->type.resolved = true;
 		break;
 	}
 	case EXPRESSION_VARIABLE: {
@@ -166,7 +162,6 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 				e->type.type = find_type(add_name("tex2d"));
 				break;
 			}
-			e->type.resolved = true;
 		}
 		else {
 			type_id type = find_local_var_type(&parent->block, e->variable);
@@ -176,7 +171,6 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 				error(output, 0, 0);
 			}
 			e->type.type = type;
-			e->type.resolved = true;
 		}
 		break;
 	}
@@ -208,7 +202,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 	}
 	}
 
-	if (!e->type.resolved) {
+	if (e->type.type == NO_TYPE) {
 		error("Could not resolve type", 0, 0);
 	}
 }
@@ -239,13 +233,14 @@ void resolve_types_in_block(statement *parent, statement *block) {
 		case STATEMENT_LOCAL_VARIABLE: {
 			name_id var_name = s->local_variable.var.name;
 			name_id var_type_name = s->local_variable.var.type.name;
-			s->local_variable.var.type.type = find_type(var_type_name);
+			if (var_type_name != NO_NAME && s->local_variable.var.type.type == NO_TYPE) {
+				s->local_variable.var.type.type = find_type(var_type_name);
+			}
 			if (s->local_variable.var.type.type == NO_TYPE) {
 				char output[256];
 				sprintf(output, "Could not find type %s for %s", get_name(var_type_name), get_name(var_name));
 				error(output, 0, 0);
 			}
-			s->local_variable.var.type.resolved = true;
 
 			if (s->local_variable.init != NULL) {
 				resolve_types_in_expression(block, s->local_variable.init);
@@ -264,18 +259,15 @@ void resolve_types(void) {
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *s = get_type(i);
 		for (size_t j = 0; j < s->members.size; ++j) {
-			if (!s->members.m[j].type.resolved) {
+			if (s->members.m[j].type.type == NO_TYPE) {
 				name_id name = s->members.m[j].type.name;
-				if (name != NO_NAME) {
-					s->members.m[j].type.type = find_type(name);
-					if (s->members.m[j].type.type == NO_TYPE) {
-						char output[256];
-						char *struct_name = get_name(s->name);
-						char *member_type_name = get_name(name);
-						sprintf(output, "Could not find type %s in %s", member_type_name, struct_name);
-						error(output, 0, 0);
-					}
-					s->members.m[j].type.resolved = true;
+				s->members.m[j].type.type = find_type(name);
+				if (s->members.m[j].type.type == NO_TYPE) {
+					char output[256];
+					char *struct_name = get_name(s->name);
+					char *member_type_name = get_name(name);
+					sprintf(output, "Could not find type %s in %s", member_type_name, struct_name);
+					error(output, 0, 0);
 				}
 			}
 		}
@@ -284,27 +276,29 @@ void resolve_types(void) {
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
 
-		name_id parameter_type_name = f->parameter_type.name;
-		f->parameter_type.type = find_type(parameter_type_name);
 		if (f->parameter_type.type == NO_TYPE) {
-			char output[256];
-			char *function_name = get_name(f->name);
-			char *parameter_type_name_name = get_name(parameter_type_name);
-			sprintf(output, "Could not find type %s for %s", parameter_type_name_name, function_name);
-			error(output, 0, 0);
+			name_id parameter_type_name = f->parameter_type.name;
+			f->parameter_type.type = find_type(parameter_type_name);
+			if (f->parameter_type.type == NO_TYPE) {
+				char output[256];
+				char *function_name = get_name(f->name);
+				char *parameter_type_name_name = get_name(parameter_type_name);
+				sprintf(output, "Could not find type %s for %s", parameter_type_name_name, function_name);
+				error(output, 0, 0);
+			}
 		}
-		f->parameter_type.resolved = true;
 
-		name_id return_type_name = f->return_type.name;
-		f->return_type.type = find_type(return_type_name);
 		if (f->return_type.type == NO_TYPE) {
-			char output[256];
-			char *function_name = get_name(f->name);
-			char *return_type_name_name = get_name(return_type_name);
-			sprintf(output, "Could not find type %s for %s", return_type_name_name, function_name);
-			error(output, 0, 0);
+			name_id return_type_name = f->return_type.name;
+			f->return_type.type = find_type(return_type_name);
+			if (f->return_type.type == NO_TYPE) {
+				char output[256];
+				char *function_name = get_name(f->name);
+				char *return_type_name_name = get_name(return_type_name);
+				sprintf(output, "Could not find type %s for %s", return_type_name_name, function_name);
+				error(output, 0, 0);
+			}
 		}
-		f->return_type.resolved = true;
 	}
 
 	for (function_id i = 0; get_function(i) != NULL; ++i) {

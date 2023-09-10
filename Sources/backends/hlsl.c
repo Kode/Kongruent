@@ -166,9 +166,9 @@ static void find_referenced_types(function *f, type_id *types, size_t *types_siz
 
 	for (size_t l = 0; l < functions_size; ++l) {
 		function *func = functions[l];
-		assert(func->parameter_type.resolved);
+		assert(func->parameter_type.type != NO_TYPE);
 		add_found_type(func->parameter_type.type, types, types_size);
-		assert(func->return_type.resolved);
+		assert(func->return_type.type != NO_TYPE);
 		add_found_type(func->return_type.type, types, types_size);
 
 		uint8_t *data = functions[l]->code.o;

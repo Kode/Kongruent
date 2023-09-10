@@ -22,44 +22,44 @@ void functions_init(void) {
 	{
 		sample_id = add_function(add_name("sample"));
 		function *f = get_function(sample_id);
-		f->return_type.resolved = true;
 		f->return_type.name = add_name("float4");
+		f->return_type.type = find_type(f->return_type.name);
 		f->parameter_name = add_name("tex_coord");
-		f->parameter_type.resolved = false;
 		f->parameter_type.name = add_name("float2");
+		f->parameter_type.type = find_type(f->parameter_type.name);
 		f->block = NULL;
 	}
 
 	{
 		float2_constructor_id = add_function(add_name("float2"));
 		function *f = get_function(float2_constructor_id);
-		f->return_type.resolved = true;
 		f->return_type.name = add_name("float2");
+		f->return_type.type = find_type(f->return_type.name);
 		f->parameter_name = add_name("x");
-		f->parameter_type.resolved = false;
 		f->parameter_type.name = add_name("float");
+		f->parameter_type.type = find_type(f->parameter_type.name);
 		f->block = NULL;
 	}
 
 	{
 		float3_constructor_id = add_function(add_name("float3"));
 		function *f = get_function(float3_constructor_id);
-		f->return_type.resolved = true;
 		f->return_type.name = add_name("float3");
+		f->return_type.type = find_type(f->return_type.name);
 		f->parameter_name = add_name("x");
-		f->parameter_type.resolved = false;
 		f->parameter_type.name = add_name("float");
+		f->parameter_type.type = find_type(f->parameter_type.name);
 		f->block = NULL;
 	}
 
 	{
 		float4_constructor_id = add_function(add_name("float4"));
 		function *f = get_function(float4_constructor_id);
-		f->return_type.resolved = true;
 		f->return_type.name = add_name("float4");
+		f->return_type.type = find_type(f->return_type.name);
 		f->parameter_name = add_name("x");
-		f->parameter_type.resolved = false;
 		f->parameter_type.name = add_name("float");
+		f->parameter_type.type = find_type(f->parameter_type.name);
 		f->block = NULL;
 	}
 }
@@ -81,10 +81,10 @@ function_id add_function(name_id name) {
 
 	functions[f].name = name;
 	functions[f].attribute = NO_NAME;
-	functions[f].return_type.resolved = false;
+	functions[f].return_type.type = NO_TYPE;
 	functions[f].return_type.name = NO_NAME;
 	functions[f].parameter_name = NO_NAME;
-	functions[f].parameter_type.resolved = false;
+	functions[f].parameter_type.type = NO_TYPE;
 	functions[f].parameter_type.name = NO_NAME;
 	functions[f].block = NULL;
 	memset(functions[f].code.o, 0, sizeof(functions[f].code.o));

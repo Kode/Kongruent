@@ -45,7 +45,6 @@ static void vec2_found_f32(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float_id;
-	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
@@ -54,7 +53,6 @@ static void vec2_found_vec2(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float2_id;
-	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
@@ -63,7 +61,6 @@ static void vec3_found_f32(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float_id;
-	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
@@ -72,7 +69,6 @@ static void vec3_found_vec2(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float2_id;
-	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
@@ -81,7 +77,6 @@ static void vec3_found_vec3(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float3_id;
-	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
@@ -90,7 +85,6 @@ static void vec4_found_f32(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float_id;
-	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
@@ -99,7 +93,6 @@ static void vec4_found_vec2(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float2_id;
-	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
@@ -108,7 +101,6 @@ static void vec4_found_vec3(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float3_id;
-	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
@@ -117,7 +109,6 @@ static void vec4_found_vec4(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float4_id;
-	t->members.m[t->members.size].type.resolved = true;
 	++t->members.size;
 }
 
@@ -201,6 +192,7 @@ type_id add_type(name_id name) {
 }
 
 type_id find_type(name_id name) {
+	assert(name != NO_NAME);
 	for (type_id i = 0; i < next_type_index; ++i) {
 		if (types[i].name == name) {
 			return i;
