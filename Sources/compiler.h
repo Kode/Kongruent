@@ -11,7 +11,17 @@ typedef struct variable {
 } variable;
 
 typedef struct opcode {
-	enum { OPCODE_VAR, OPCODE_NOT, OPCODE_STORE_VARIABLE, OPCODE_STORE_MEMBER, OPCODE_LOAD_CONSTANT, OPCODE_LOAD_MEMBER, OPCODE_RETURN, OPCODE_CALL } type;
+	enum {
+		OPCODE_VAR,
+		OPCODE_NOT,
+		OPCODE_STORE_VARIABLE,
+		OPCODE_STORE_MEMBER,
+		OPCODE_LOAD_CONSTANT,
+		OPCODE_LOAD_MEMBER,
+		OPCODE_RETURN,
+		OPCODE_CALL,
+		OPCODE_MULTIPLY
+	} type;
 	uint32_t size;
 
 	union {
@@ -53,6 +63,11 @@ typedef struct opcode {
 			variable parameters[64];
 			uint8_t parameters_size;
 		} op_call;
+		struct {
+			variable right;
+			variable left;
+			variable result;
+		} op_multiply;
 	};
 } opcode;
 

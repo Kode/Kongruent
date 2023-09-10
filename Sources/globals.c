@@ -7,10 +7,10 @@ static global_id globals_size = 0;
 
 void globals_init(void) {}
 
-global_id add_global(global_kind kind, name_id name) {
+global_id add_global(type_id type, name_id name) {
 	uint32_t index = globals_size;
 	globals[index].name = name;
-	globals[index].kind = kind;
+	globals[index].type = type;
 	globals[index].var_index = 0;
 	globals_size += 1;
 	return index;
@@ -24,7 +24,7 @@ global find_global(name_id name) {
 	}
 
 	global g;
-	g.kind = GLOBAL_NONE;
+	g.type = NO_TYPE;
 	g.name = NO_NAME;
 	return g;
 }
@@ -32,7 +32,7 @@ global find_global(name_id name) {
 global get_global(global_id id) {
 	if (id >= globals_size) {
 		global g;
-		g.kind = GLOBAL_NONE;
+		g.type = NO_TYPE;
 		g.name = NO_NAME;
 		return g;
 	}

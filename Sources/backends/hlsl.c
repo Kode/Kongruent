@@ -213,7 +213,7 @@ static void find_referenced_globals(function *f, global_id *globals, size_t *glo
 			case OPCODE_CALL: {
 				for (uint8_t i = 0; i < o->op_call.parameters_size; ++i) {
 					variable v = o->op_call.parameters[i];
-					for (global_id j = 0; get_global(j).kind != GLOBAL_NONE; ++j) {
+					for (global_id j = 0; get_global(j).type != NO_TYPE; ++j) {
 						global g = get_global(j);
 						if (v.index == g.var_index) {
 							bool found = false;
@@ -296,14 +296,13 @@ static void write_globals(char *hlsl, size_t *offset, function *main) {
 
 	for (size_t i = 0; i < globals_size; ++i) {
 		global g = get_global(globals[i]);
-		switch (g.kind) {
-		case GLOBAL_SAMPLER:
+		if (g.type == sampler_type_id) {
 			*offset += sprintf(&hlsl[*offset], "SamplerState _%" PRIu64 " : register(s0);\n\n", g.var_index);
-			break;
-		case GLOBAL_TEX2D:
+		}
+		else if (g.type == tex2d_type_id) {
 			*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t0);\n\n", g.var_index);
-			break;
-		default:
+		}
+		else {
 			assert(false);
 		}
 	}

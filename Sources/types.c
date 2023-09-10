@@ -15,6 +15,8 @@ type_id float4_id;
 type_id float4x4_id;
 type_id bool_id;
 type_id function_type_id;
+type_id tex2d_type_id;
+type_id sampler_type_id;
 
 typedef struct prefix {
 	char str[5];
@@ -120,10 +122,10 @@ void types_init(void) {
 	types = new_types;
 	next_type_index = 0;
 
-	type_id sampler_id = add_type(add_name("sampler"));
-	get_type(sampler_id)->built_in = true;
-	type_id tex2d_id = add_type(add_name("tex2d"));
-	get_type(tex2d_id)->built_in = true;
+	sampler_type_id = add_type(add_name("sampler"));
+	get_type(sampler_type_id)->built_in = true;
+	tex2d_type_id = add_type(add_name("tex2d"));
+	get_type(tex2d_type_id)->built_in = true;
 
 	bool_id = add_type(add_name("bool"));
 	get_type(bool_id)->built_in = true;

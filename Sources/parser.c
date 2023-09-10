@@ -873,11 +873,11 @@ static definition parse_const(state_t *state) {
 	}
 	else if (type_name == add_name("tex2d")) {
 		d.kind = DEFINITION_TEX2D;
-		d.global = add_global(GLOBAL_TEX2D, name.identifier);
+		d.global = add_global(tex2d_type_id, name.identifier);
 	}
 	else if (type_name == add_name("sampler")) {
 		d.kind = DEFINITION_SAMPLER;
-		d.global = add_global(GLOBAL_SAMPLER, name.identifier);
+		d.global = add_global(sampler_type_id, name.identifier);
 	}
 	else {
 		assert(false);

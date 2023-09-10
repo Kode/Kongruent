@@ -95,14 +95,30 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 			e->type.type = bool_id;
 			break;
 		}
+		case OPERATOR_MULTIPLY: {
+			type_id left_type = e->binary.left->type.type;
+			type_id right_type = e->binary.right->type.type;
+			if (left_type == right_type || (left_type == float4x4_id && right_type == float4_id)) {
+				e->type = e->binary.right->type;
+			}
+			else {
+				char output[256];
+				sprintf(output, "Type mismatch %s vs %s", get_name(get_type(left_type)->name), get_name(get_type(right_type)->name));
+				error(output, 0, 0);
+			}
+			break;
+		}
 		case OPERATOR_MINUS:
 		case OPERATOR_PLUS:
 		case OPERATOR_DIVIDE:
-		case OPERATOR_MULTIPLY:
 		case OPERATOR_MOD:
 		case OPERATOR_ASSIGN: {
-			if (e->binary.left->type.type != e->binary.right->type.type) {
-				error("Type mismatch", 0, 0);
+			type_id left_type = e->binary.left->type.type;
+			type_id right_type = e->binary.right->type.type;
+			if (left_type != right_type) {
+				char output[256];
+				sprintf(output, "Type mismatch %s vs %s", get_name(get_type(left_type)->name), get_name(get_type(right_type)->name));
+				error(output, 0, 0);
 			}
 			e->type = e->binary.left->type;
 			break;
@@ -153,15 +169,8 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 	}
 	case EXPRESSION_VARIABLE: {
 		global g = find_global(e->variable);
-		if (g.kind != GLOBAL_NONE) {
-			switch (g.kind) {
-			case GLOBAL_SAMPLER:
-				e->type.type = find_type(add_name("sampler"));
-				break;
-			case GLOBAL_TEX2D:
-				e->type.type = find_type(add_name("tex2d"));
-				break;
-			}
+		if (g.type != NO_TYPE) {
+			e->type.type = g.type;
 		}
 		else {
 			type_id type = find_local_var_type(&parent->block, e->variable);

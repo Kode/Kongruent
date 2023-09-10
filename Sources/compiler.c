@@ -23,7 +23,7 @@ allocated_global find_allocated_global(name_id name) {
 	}
 
 	allocated_global a;
-	a.g.kind = GLOBAL_NONE;
+	a.g.type = NO_TYPE;
 	a.g.name = NO_NAME;
 	a.variable_id = 0;
 	return a;
@@ -97,8 +97,21 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			error("not implemented", 0, 0);
 		case OPERATOR_DIVIDE:
 			error("not implemented", 0, 0);
-		case OPERATOR_MULTIPLY:
-			error("not implemented", 0, 0);
+		case OPERATOR_MULTIPLY: {
+			variable right_var = emit_expression(code, parent, right);
+			variable left_var = emit_expression(code, parent, left);
+			variable result_var = allocate_variable(right_var.type);
+
+			opcode o;
+			o.type = OPCODE_MULTIPLY;
+			o.size = OP_SIZE(o, op_multiply);
+			o.op_multiply.right = right_var;
+			o.op_multiply.left = left_var;
+			o.op_multiply.result = result_var;
+			emit_op(code, &o);
+
+			return result_var;
+		}
 		case OPERATOR_NOT:
 			error("not implemented", 0, 0);
 		case OPERATOR_OR:
@@ -243,24 +256,11 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	//	error("not implemented", 0, 0);
 	case EXPRESSION_VARIABLE: {
 		allocated_global g = find_allocated_global(e->variable);
-		if (g.g.kind != GLOBAL_NONE) {
+		if (g.g.type != NO_TYPE) {
 			assert(g.variable_id != 0);
 
-			type_id t;
-
-			switch (g.g.kind) {
-			case GLOBAL_TEX2D:
-				t = find_type(add_name("tex2d"));
-				break;
-			case GLOBAL_SAMPLER:
-				t = find_type(add_name("sampler"));
-				break;
-			default:
-				assert(false);
-			}
-
 			variable var;
-			var.type = t;
+			var.type = g.g.type;
 			var.index = g.variable_id;
 			return var;
 		}
@@ -299,6 +299,15 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		o.size = OP_SIZE(o, op_load_member);
 		assert(e->member.left->kind == EXPRESSION_VARIABLE);
 		o.op_load_member.from = find_local_var(parent, e->member.left->variable);
+		if (o.op_load_member.from.index == 0) {
+			allocated_global global = find_allocated_global(e->member.left->variable);
+			if (global.g.type != NO_TYPE) {
+				variable v;
+				v.index = global.variable_id;
+				v.type = global.g.type;
+				o.op_load_member.from = v;
+			}
+		}
 		assert(o.op_load_member.from.index != 0);
 		o.op_load_member.to = v;
 
@@ -417,23 +426,10 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 }
 
 void convert_globals(void) {
-	for (global_id i = 0; get_global(i).kind != GLOBAL_NONE; ++i) {
+	for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
 		global g = get_global(i);
 
-		type_id t;
-
-		switch (g.kind) {
-		case GLOBAL_TEX2D:
-			t = find_type(add_name("tex2d"));
-			break;
-		case GLOBAL_SAMPLER:
-			t = find_type(add_name("sampler"));
-			break;
-		default:
-			assert(false);
-		}
-
-		variable v = allocate_variable(t);
+		variable v = allocate_variable(g.type);
 		allocated_globals[allocated_globals_size].g = g;
 		allocated_globals[allocated_globals_size].variable_id = v.index;
 		allocated_globals_size += 1;
