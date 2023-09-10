@@ -775,8 +775,13 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 		member member;
 		member.name = member_names[i].identifier;
 		member.type.type = NO_TYPE;
-		member.type.name = type_names[i].identifier;
 		member.value = member_values[i].identifier;
+		if (member.value != NO_NAME) {
+			member.type.name = add_name("fun");
+		}
+		else {
+			member.type.name = type_names[i].identifier;
+		}
 
 		s->members.m[i] = member;
 	}
@@ -845,9 +850,10 @@ static definition parse_const(state_t *state) {
 	advance_state(state);
 
 	name_id type_name = NO_NAME;
+	type_id type = NO_TYPE;
 
 	if (current(state).kind == TOKEN_LEFT_CURLY) {
-		parse_struct_inner(state, NO_NAME);
+		type = parse_struct_inner(state, NO_NAME).type;
 	}
 	else {
 		match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
@@ -861,7 +867,9 @@ static definition parse_const(state_t *state) {
 	definition d;
 
 	if (type_name == NO_NAME) {
+		assert(type != NO_TYPE);
 		d.kind = DEFINITION_CONST_CUSTOM;
+		d.global = add_global(type, name.identifier);
 	}
 	else if (type_name == add_name("tex2d")) {
 		d.kind = DEFINITION_TEX2D;

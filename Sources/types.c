@@ -12,7 +12,9 @@ type_id float_id;
 type_id float2_id;
 type_id float3_id;
 type_id float4_id;
+type_id float4x4_id;
 type_id bool_id;
+type_id function_type_id;
 
 typedef struct prefix {
 	char str[5];
@@ -165,6 +167,16 @@ void types_init(void) {
 		permute(letters, (int)strlen(letters), 2, vec4_found_vec2);
 		permute(letters, (int)strlen(letters), 3, vec4_found_vec3);
 		permute(letters, (int)strlen(letters), 3, vec4_found_vec4);
+	}
+
+	{
+		float4x4_id = add_type(add_name("float4x4"));
+		get_type(float4x4_id)->built_in = true;
+	}
+
+	{
+		function_type_id = add_type(add_name("fun"));
+		get_type(function_type_id)->built_in = true;
 	}
 }
 
