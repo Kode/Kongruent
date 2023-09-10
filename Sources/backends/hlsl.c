@@ -418,6 +418,12 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				}
 				break;
 			}
+			case OPCODE_MULTIPLY: {
+				o->op_multiply.left;
+				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type),
+				                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
+				break;
+			}
 			default:
 				assert(false);
 				break;
