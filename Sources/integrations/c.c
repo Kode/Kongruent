@@ -24,6 +24,9 @@ static char *type_string(type_id type) {
 	if (type == float4_id) {
 		return "kinc_vector4_t";
 	}
+	if (type == float4x4_id) {
+		return "kinc_matrix4x4_t";
+	}
 	return get_name(get_type(type)->name);
 }
 
@@ -44,7 +47,31 @@ static const char *structure_type(type_id type) {
 	return "UNKNOWN";
 }
 
+static int global_register_indices[512];
+
 void c_export(char *directory) {
+	int cbuffer_index = 0;
+	int texture_index = 0;
+	int sampler_index = 0;
+
+	memset(global_register_indices, 0, sizeof(global_register_indices));
+
+	for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
+		global g = get_global(i);
+		if (g.type == sampler_type_id) {
+			global_register_indices[i] = sampler_index;
+			sampler_index += 1;
+		}
+		else if (g.type == tex2d_type_id) {
+			global_register_indices[i] = texture_index;
+			texture_index += 1;
+		}
+		else {
+			global_register_indices[i] = cbuffer_index;
+			cbuffer_index += 1;
+		}
+	}
+
 	type_id vertex_inputs[256];
 	size_t vertex_inputs_size = 0;
 
@@ -86,7 +113,37 @@ void c_export(char *directory) {
 
 		fprintf(output, "#include <kinc/graphics4/pipeline.h>\n");
 		fprintf(output, "#include <kinc/graphics4/vertexbuffer.h>\n");
+		fprintf(output, "#include <kinc/math/matrix.h>\n");
 		fprintf(output, "#include <kinc/math/vector.h>\n\n");
+
+		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
+			global g = get_global(i);
+			if (g.type == tex2d_type_id || g.type == sampler_type_id) {
+				fprintf(output, "extern int %s;\n", get_name(g.name));
+			}
+			else {
+				type *t = get_type(g.type);
+
+				char name[256];
+				if (t->name != NO_NAME) {
+					strcpy(name, get_name(t->name));
+				}
+				else {
+					strcpy(name, get_name(g.name));
+					strcat(name, "_type");
+				}
+
+				fprintf(output, "typedef struct %s {\n", name);
+				for (size_t j = 0; j < t->members.size; ++j) {
+					fprintf(output, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+				}
+				fprintf(output, "} %s;\n\n", name);
+
+				fprintf(output, "void set_%s(%s *%s);\n\n", get_name(g.name), name, get_name(g.name));
+			}
+		}
+
+		fprintf(output, "\n");
 
 		for (size_t i = 0; i < vertex_inputs_size; ++i) {
 			type *t = get_type(vertex_inputs[i]);
@@ -99,8 +156,6 @@ void c_export(char *directory) {
 
 			fprintf(output, "extern kinc_g4_vertex_structure_t %s_structure;\n\n", get_name(t->name));
 		}
-
-		fprintf(output, "void kong_init(void);\n\n");
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
@@ -137,6 +192,15 @@ void c_export(char *directory) {
 			}
 		}
 
+		fprintf(output, "\n#include <kinc/graphics4/graphics.h>\n\n");
+
+		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
+			global g = get_global(i);
+			if (g.type == tex2d_type_id || g.type == sampler_type_id) {
+				fprintf(output, "int %s = %i;\n", get_name(g.name), global_register_indices[i]);
+			}
+		}
+
 		fprintf(output, "\n");
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
@@ -149,6 +213,26 @@ void c_export(char *directory) {
 		for (size_t i = 0; i < vertex_inputs_size; ++i) {
 			type *t = get_type(vertex_inputs[i]);
 			fprintf(output, "kinc_g4_vertex_structure_t %s_structure;\n", get_name(t->name));
+		}
+
+		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
+			global g = get_global(i);
+			if (g.type != tex2d_type_id && g.type != sampler_type_id) {
+				type *t = get_type(g.type);
+
+				char type_name[256];
+				if (t->name != NO_NAME) {
+					strcpy(type_name, get_name(t->name));
+				}
+				else {
+					strcpy(type_name, get_name(g.name));
+					strcat(type_name, "_type");
+				}
+
+				fprintf(output, "\nvoid set_%s(%s *%s) {\n", get_name(g.name), type_name, get_name(g.name));
+				fprintf(output, "\tkinc_g4_set_constants_block(%i, (uint8_t *)%s, sizeof(%s));\n", global_register_indices[i], get_name(g.name), type_name);
+				fprintf(output, "}\n\n");
+			}
 		}
 
 		fprintf(output, "\nvoid kong_init(void) {\n");
