@@ -140,6 +140,11 @@ void c_export(char *directory) {
 				fprintf(output, "} %s;\n\n", name);
 
 				fprintf(output, "void set_%s(%s *%s);\n\n", get_name(g.name), name, get_name(g.name));
+
+				fprintf(output, "void *create_%s_buffer();\n", name);
+				fprintf(output, "void *destroy_%s_buffer();\n", name);
+				fprintf(output, "void *lock_%s_buffer();\n", name);
+				fprintf(output, "void *unlock_%s_buffer();\n\n", name);
 			}
 		}
 
