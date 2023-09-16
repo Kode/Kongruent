@@ -140,7 +140,10 @@ void c_export(char *directory) {
 				}
 				fprintf(output, "} %s;\n\n", name);
 
-				fprintf(output, "typedef kinc_g4_constant_buffer %s_buffer;\n\n", name);
+				fprintf(output, "typedef struct %s_buffer {\n", name);
+				fprintf(output, "\tkinc_g4_constant_buffer buffer;\n");
+				fprintf(output, "\t%s *data;\n", name);
+				fprintf(output, "} %s_buffer;\n\n", name);
 
 				fprintf(output, "void %s_buffer_init(%s_buffer *buffer);\n", name, name);
 				fprintf(output, "void %s_buffer_destroy(%s_buffer *buffer);\n", name, name);
@@ -237,23 +240,35 @@ void c_export(char *directory) {
 				}
 
 				fprintf(output, "\nvoid %s_buffer_init(%s_buffer *buffer) {\n", type_name, type_name);
-				fprintf(output, "\tkinc_g4_constant_buffer_init(buffer, sizeof(%s));\n", type_name);
+				fprintf(output, "\tbuffer->data = NULL;\n");
+				fprintf(output, "\tkinc_g4_constant_buffer_init(&buffer->buffer, sizeof(%s));\n", type_name);
 				fprintf(output, "}\n\n");
 
 				fprintf(output, "void %s_buffer_destroy(%s_buffer *buffer) {\n", type_name, type_name);
-				fprintf(output, "\tkinc_g4_constant_buffer_destroy(buffer);\n");
+				fprintf(output, "\tbuffer->data = NULL;\n");
+				fprintf(output, "\tkinc_g4_constant_buffer_destroy(&buffer->buffer);\n");
 				fprintf(output, "}\n\n");
 
 				fprintf(output, "%s *%s_buffer_lock(%s_buffer *buffer) {\n", type_name, type_name, type_name);
-				fprintf(output, "\treturn (%s *)kinc_g4_constant_buffer_lock_all(buffer);\n", type_name);
+				fprintf(output, "\tbuffer->data = (%s *)kinc_g4_constant_buffer_lock_all(&buffer->buffer);\n", type_name);
+				fprintf(output, "\treturn buffer->data;\n");
 				fprintf(output, "}\n\n");
 
 				fprintf(output, "void %s_buffer_unlock(%s_buffer *buffer) {\n", type_name, type_name);
-				fprintf(output, "\tkinc_g4_constant_buffer_unlock_all(buffer);\n");
+				if (true) {
+					// transpose
+					for (size_t j = 0; j < t->members.size; ++j) {
+						if (t->members.m[j].type.type == float4x4_id) {
+							fprintf(output, "\tkinc_matrix4x4_transpose(&buffer->data->%s);\n", get_name(t->members.m[j].name));
+						}
+					}
+				}
+				fprintf(output, "\tbuffer->data = NULL;\n");
+				fprintf(output, "\tkinc_g4_constant_buffer_unlock_all(&buffer->buffer);\n");
 				fprintf(output, "}\n\n");
 
 				fprintf(output, "void %s_buffer_set(%s_buffer *buffer) {\n", type_name, type_name);
-				fprintf(output, "\tkinc_g4_set_constant_buffer(%i, buffer);\n", global_register_indices[i]);
+				fprintf(output, "\tkinc_g4_set_constant_buffer(%i, &buffer->buffer);\n", global_register_indices[i]);
 				fprintf(output, "}\n\n");
 			}
 		}
