@@ -111,6 +111,7 @@ void c_export(char *directory) {
 
 		FILE *output = fopen(filename, "wb");
 
+		fprintf(output, "#include <kinc/graphics4/constantbuffer.h>\n");
 		fprintf(output, "#include <kinc/graphics4/pipeline.h>\n");
 		fprintf(output, "#include <kinc/graphics4/vertexbuffer.h>\n");
 		fprintf(output, "#include <kinc/math/matrix.h>\n");
@@ -139,12 +140,13 @@ void c_export(char *directory) {
 				}
 				fprintf(output, "} %s;\n\n", name);
 
-				fprintf(output, "void set_%s(%s *%s);\n\n", get_name(g.name), name, get_name(g.name));
+				fprintf(output, "typedef kinc_g4_constant_buffer %s_buffer;\n\n", name);
 
-				fprintf(output, "void *create_%s_buffer();\n", name);
-				fprintf(output, "void *destroy_%s_buffer();\n", name);
-				fprintf(output, "void *lock_%s_buffer();\n", name);
-				fprintf(output, "void *unlock_%s_buffer();\n\n", name);
+				fprintf(output, "void %s_buffer_init(%s_buffer *buffer);\n", name, name);
+				fprintf(output, "void %s_buffer_destroy(%s_buffer *buffer);\n", name, name);
+				fprintf(output, "%s *%s_buffer_lock(%s_buffer *buffer);\n", name, name, name);
+				fprintf(output, "void %s_buffer_unlock(%s_buffer *buffer);\n", name, name);
+				fprintf(output, "void %s_buffer_set(%s_buffer *buffer);\n\n", name, name);
 			}
 		}
 
@@ -234,8 +236,24 @@ void c_export(char *directory) {
 					strcat(type_name, "_type");
 				}
 
-				fprintf(output, "\nvoid set_%s(%s *%s) {\n", get_name(g.name), type_name, get_name(g.name));
-				fprintf(output, "\tkinc_g4_set_constants_block(%i, (uint8_t *)%s, sizeof(%s));\n", global_register_indices[i], get_name(g.name), type_name);
+				fprintf(output, "\nvoid %s_buffer_init(%s_buffer *buffer) {\n", type_name, type_name);
+				fprintf(output, "\tkinc_g4_constant_buffer_init(buffer, sizeof(%s));\n", type_name);
+				fprintf(output, "}\n\n");
+
+				fprintf(output, "void %s_buffer_destroy(%s_buffer *buffer) {\n", type_name, type_name);
+				fprintf(output, "\tkinc_g4_constant_buffer_destroy(buffer);\n");
+				fprintf(output, "}\n\n");
+
+				fprintf(output, "%s *%s_buffer_lock(%s_buffer *buffer) {\n", type_name, type_name, type_name);
+				fprintf(output, "\treturn (%s *)kinc_g4_constant_buffer_lock_all(buffer);\n", type_name);
+				fprintf(output, "}\n\n");
+
+				fprintf(output, "void %s_buffer_unlock(%s_buffer *buffer) {\n", type_name, type_name);
+				fprintf(output, "\tkinc_g4_constant_buffer_unlock_all(buffer);\n");
+				fprintf(output, "}\n\n");
+
+				fprintf(output, "void %s_buffer_set(%s_buffer *buffer) {\n", type_name, type_name);
+				fprintf(output, "\tkinc_g4_set_constant_buffer(%i, buffer);\n", global_register_indices[i]);
 				fprintf(output, "}\n\n");
 			}
 		}
