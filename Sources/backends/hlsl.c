@@ -442,6 +442,12 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					    sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 ".Sample(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type),
 					            o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index, o->op_call.parameters[2].index);
 				}
+				else if (o->op_call.func == add_name("sample_lod")) {
+					assert(o->op_call.parameters_size == 4);
+					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 ".SampleLevel(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
+					                   type_string(o->op_call.var.type), o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index,
+					                   o->op_call.parameters[2].index, o->op_call.parameters[3].index);
+				}
 				else {
 					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type), o->op_call.var.index,
 					                   function_string(o->op_call.func));
@@ -464,6 +470,11 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type),
 					                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
 				}
+				break;
+			}
+			case OPCODE_ADD: {
+				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " + _%" PRIu64 ";\n", type_string(o->op_multiply.result.type),
+				                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
 				break;
 			}
 			default:

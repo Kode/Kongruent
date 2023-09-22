@@ -31,6 +31,17 @@ void functions_init(void) {
 	}
 
 	{
+		sample_id = add_function(add_name("sample_lod"));
+		function *f = get_function(sample_id);
+		f->return_type.name = add_name("float4");
+		f->return_type.type = find_type(f->return_type.name);
+		f->parameter_name = add_name("tex_coord");
+		f->parameter_type.name = add_name("float2");
+		f->parameter_type.type = find_type(f->parameter_type.name);
+		f->block = NULL;
+	}
+
+	{
 		float2_constructor_id = add_function(add_name("float2"));
 		function *f = get_function(float2_constructor_id);
 		f->return_type.name = add_name("float2");
