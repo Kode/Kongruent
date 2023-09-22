@@ -34,7 +34,7 @@ static char *function_string(name_id func) {
 	return get_name(func);
 }
 
-static void write_bytecode(char *directory, const char *filename, const char *name, uint8_t *output, size_t output_size) {
+static void write_bytecode(char *hlsl, char *directory, const char *filename, const char *name, uint8_t *output, size_t output_size) {
 	char full_filename[512];
 
 	{
@@ -89,7 +89,9 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 		}
 		fprintf(file, "\";\n");
 
-		fprintf(file, "size_t %s_size = %" PRIu64 ";\n", name, output_size);
+		fprintf(file, "size_t %s_size = %" PRIu64 ";\n\n", name, output_size);
+
+		fprintf(file, "/*\n%s*/\n", hlsl);
 
 		fclose(file);
 	}
@@ -518,7 +520,7 @@ static hlsl_export_vertex(char *directory, function *main) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(directory, filename, var_name, output, output_size);
+	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
 }
 
 static void hlsl_export_fragment(char *directory, function *main) {
@@ -548,7 +550,7 @@ static void hlsl_export_fragment(char *directory, function *main) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(directory, filename, var_name, output, output_size);
+	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
 }
 
 void hlsl_export(char *directory) {
