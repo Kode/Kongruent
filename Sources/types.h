@@ -48,4 +48,5 @@ extern type_id float4_id;
 extern type_id float4x4_id;
 extern type_id bool_id;
 extern type_id tex2d_type_id;
+extern type_id texcube_type_id;
 extern type_id sampler_type_id;

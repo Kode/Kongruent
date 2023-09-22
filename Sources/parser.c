@@ -875,6 +875,10 @@ static definition parse_const(state_t *state) {
 		d.kind = DEFINITION_TEX2D;
 		d.global = add_global(tex2d_type_id, name.identifier);
 	}
+	else if (type_name == add_name("texcube")) {
+		d.kind = DEFINITION_TEXCUBE;
+		d.global = add_global(texcube_type_id, name.identifier);
+	}
 	else if (type_name == add_name("sampler")) {
 		d.kind = DEFINITION_SAMPLER;
 		d.global = add_global(sampler_type_id, name.identifier);

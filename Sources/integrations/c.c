@@ -62,7 +62,7 @@ void c_export(char *directory) {
 			global_register_indices[i] = sampler_index;
 			sampler_index += 1;
 		}
-		else if (g.type == tex2d_type_id) {
+		else if (g.type == tex2d_type_id || g.type == texcube_type_id) {
 			global_register_indices[i] = texture_index;
 			texture_index += 1;
 		}
@@ -119,7 +119,7 @@ void c_export(char *directory) {
 
 		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
 			global g = get_global(i);
-			if (g.type == tex2d_type_id || g.type == sampler_type_id) {
+			if (g.type == tex2d_type_id || g.type == texcube_type_id || g.type == sampler_type_id) {
 				fprintf(output, "extern int %s;\n", get_name(g.name));
 			}
 			else {
@@ -206,7 +206,7 @@ void c_export(char *directory) {
 
 		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
 			global g = get_global(i);
-			if (g.type == tex2d_type_id || g.type == sampler_type_id) {
+			if (g.type == tex2d_type_id || g.type == texcube_type_id || g.type == sampler_type_id) {
 				fprintf(output, "int %s = %i;\n", get_name(g.name), global_register_indices[i]);
 			}
 		}
@@ -227,7 +227,7 @@ void c_export(char *directory) {
 
 		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
 			global g = get_global(i);
-			if (g.type != tex2d_type_id && g.type != sampler_type_id) {
+			if (g.type != tex2d_type_id && g.type != texcube_type_id && g.type != sampler_type_id) {
 				type *t = get_type(g.type);
 
 				char type_name[256];
