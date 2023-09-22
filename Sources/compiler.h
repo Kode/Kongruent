@@ -20,7 +20,8 @@ typedef struct opcode {
 		OPCODE_LOAD_MEMBER,
 		OPCODE_RETURN,
 		OPCODE_CALL,
-		OPCODE_MULTIPLY
+		OPCODE_MULTIPLY,
+		OPCODE_ADD
 	} type;
 	uint32_t size;
 
@@ -68,6 +69,11 @@ typedef struct opcode {
 			variable left;
 			variable result;
 		} op_multiply;
+		struct {
+			variable right;
+			variable left;
+			variable result;
+		} op_add;
 	};
 } opcode;
 

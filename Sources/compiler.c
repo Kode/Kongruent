@@ -93,8 +93,21 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			error("not implemented", 0, 0);
 		case OPERATOR_MINUS:
 			error("not implemented", 0, 0);
-		case OPERATOR_PLUS:
-			error("not implemented", 0, 0);
+		case OPERATOR_PLUS: {
+			variable right_var = emit_expression(code, parent, right);
+			variable left_var = emit_expression(code, parent, left);
+			variable result_var = allocate_variable(right_var.type);
+
+			opcode o;
+			o.type = OPCODE_ADD;
+			o.size = OP_SIZE(o, op_add);
+			o.op_add.right = right_var;
+			o.op_add.left = left_var;
+			o.op_add.result = result_var;
+			emit_op(code, &o);
+
+			return result_var;
+		}
 		case OPERATOR_DIVIDE:
 			error("not implemented", 0, 0);
 		case OPERATOR_MULTIPLY: {
