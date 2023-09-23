@@ -11,6 +11,7 @@ typedef uint32_t type_id;
 typedef struct type_ref {
 	name_id name;
 	type_id type;
+	uint32_t array_size;
 } type_ref;
 
 typedef struct member {

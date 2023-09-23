@@ -291,6 +291,12 @@ tokens tokenize(const char *source) {
 				else if (ch == '}') {
 					tokens_add(&tokens, token_create(TOKEN_RIGHT_CURLY, &state));
 				}
+				else if (ch == '[') {
+					tokens_add(&tokens, token_create(TOKEN_LEFT_SQUARE, &state));
+				}
+				else if (ch == ']') {
+					tokens_add(&tokens, token_create(TOKEN_RIGHT_SQUARE, &state));
+				}
 				else if (ch == ';') {
 					tokens_add(&tokens, token_create(TOKEN_SEMICOLON, &state));
 				}
@@ -464,8 +470,8 @@ tokens tokenize(const char *source) {
 				break;
 			}*/
 			case MODE_IDENTIFIER: {
-				if (is_whitespace(ch) || is_op(ch) || ch == '(' || ch == ')' || ch == '{' || ch == '}' || ch == '"' || ch == '\'' || ch == ';' || ch == '.' ||
-				    ch == ',' || ch == ':') {
+				if (is_whitespace(ch) || is_op(ch) || ch == '(' || ch == ')' || ch == '{' || ch == '}' || ch == '[' || ch == ']' || ch == '"' || ch == '\'' ||
+				    ch == ';' || ch == '.' || ch == ',' || ch == ':') {
 					tokens_add_identifier(&state, &tokens, &buffer);
 					mode = MODE_SELECT;
 				}

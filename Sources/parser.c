@@ -255,6 +255,28 @@ static definition parse_definition(state_t *state) {
 	}
 }
 
+static type_ref parse_type_ref(state_t *state) {
+	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+	token type_name = current(state);
+	advance_state(state);
+
+	uint32_t array_size = 0;
+	if (current(state).kind == TOKEN_LEFT_SQUARE) {
+		advance_state(state);
+		match_token(state, TOKEN_NUMBER, "Expected a number");
+		array_size = (uint32_t)current(state).number;
+		advance_state(state);
+		match_token(state, TOKEN_RIGHT_SQUARE, "Expected a closing square bracket");
+		advance_state(state);
+	}
+
+	type_ref t;
+	t.type = NO_TYPE;
+	t.name = type_name.identifier;
+	t.array_size = array_size;
+	return t;
+}
+
 static statement *parse_statement(state_t *state) {
 	switch (current(state).kind) {
 	case TOKEN_IF: {
@@ -286,9 +308,7 @@ static statement *parse_statement(state_t *state) {
 		match_token(state, TOKEN_COLON, "Expected a colon");
 		advance_state(state);
 
-		match_token_identifier(state);
-		token type_name = current(state);
-		advance_state(state);
+		type_ref type = parse_type_ref(state);
 
 		expression *init = NULL;
 
@@ -304,8 +324,7 @@ static statement *parse_statement(state_t *state) {
 		statement *statement = statement_allocate();
 		statement->kind = STATEMENT_LOCAL_VARIABLE;
 		statement->local_variable.var.name = name.identifier;
-		statement->local_variable.var.type.type = NO_TYPE;
-		statement->local_variable.var.type.name = type_name.identifier;
+		statement->local_variable.var.type = type;
 		statement->local_variable.var.variable_id = 0;
 		statement->local_variable.init = init;
 		return statement;
@@ -814,27 +833,22 @@ static definition parse_function(state_t *state) {
 	advance_state(state);
 	match_token(state, TOKEN_COLON, "Expected a colon");
 	advance_state(state);
-	token param_type_name = current(state);
-	advance_state(state);
+	type_ref param_type = parse_type_ref(state);
 	match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
 	advance_state(state);
 	match_token(state, TOKEN_COLON, "Expected a colon");
 	advance_state(state);
-	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+	type_ref return_type = parse_type_ref(state);
 
-	token return_type_name = current(state);
-	advance_state(state);
 	statement *block = parse_block(state);
 	definition d;
 
 	d.kind = DEFINITION_FUNCTION;
 	d.function = add_function(name.identifier);
 	function *f = get_function(d.function);
-	f->return_type.type = NO_TYPE;
-	f->return_type.name = return_type_name.identifier;
+	f->return_type = return_type;
 	f->parameter_name = param_name.identifier;
-	f->parameter_type.type = NO_TYPE;
-	f->parameter_type.name = param_type_name.identifier;
+	f->parameter_type = param_type;
 	f->block = block;
 
 	return d;
