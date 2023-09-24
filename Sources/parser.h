@@ -26,6 +26,7 @@ typedef struct expression {
 		EXPRESSION_GROUPING,
 		EXPRESSION_CALL,
 		EXPRESSION_MEMBER,
+		EXPRESSION_INDEX,
 		EXPRESSION_CONSTRUCTOR
 	} kind;
 
@@ -45,6 +46,7 @@ typedef struct expression {
 		double number;
 		// char string[MAX_IDENTIFIER_SIZE];
 		name_id variable;
+		uint32_t index;
 		struct expression *grouping;
 		struct {
 			name_id func_name;

@@ -164,18 +164,26 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 				while (right->kind == EXPRESSION_MEMBER) {
 					assert(right->type.type != NO_TYPE);
-					assert(right->member.left->kind == EXPRESSION_VARIABLE);
 
-					bool found = false;
-					for (size_t i = 0; i < prev_s->members.size; ++i) {
-						if (prev_s->members.m[i].name == right->member.left->variable) {
-							o.op_store_member.member_indices[o.op_store_member.member_indices_size] = (uint16_t)i;
-							++o.op_store_member.member_indices_size;
-							found = true;
-							break;
+					if (right->member.left->kind == EXPRESSION_VARIABLE) {
+						bool found = false;
+						for (size_t i = 0; i < prev_s->members.size; ++i) {
+							if (prev_s->members.m[i].name == right->member.left->variable) {
+								o.op_store_member.member_indices[o.op_store_member.member_indices_size] = (uint16_t)i;
+								++o.op_store_member.member_indices_size;
+								found = true;
+								break;
+							}
 						}
+						assert(found);
 					}
-					assert(found);
+					else if (right->member.left->kind == EXPRESSION_INDEX) {
+						o.op_store_member.member_indices[o.op_store_member.member_indices_size] = (uint16_t)right->member.left->index;
+						++o.op_store_member.member_indices_size;
+					}
+					else {
+						assert(false);
+					}
 
 					prev_struct = right->member.left->type.type;
 					prev_s = get_type(prev_struct);
@@ -184,18 +192,25 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 				{
 					assert(right->type.type != NO_TYPE);
-					assert(right->kind == EXPRESSION_VARIABLE);
-
-					bool found = false;
-					for (size_t i = 0; i < prev_s->members.size; ++i) {
-						if (prev_s->members.m[i].name == right->variable) {
-							o.op_store_member.member_indices[o.op_store_member.member_indices_size] = (uint16_t)i;
-							++o.op_store_member.member_indices_size;
-							found = true;
-							break;
+					if (right->kind == EXPRESSION_VARIABLE) {
+						bool found = false;
+						for (size_t i = 0; i < prev_s->members.size; ++i) {
+							if (prev_s->members.m[i].name == right->variable) {
+								o.op_store_member.member_indices[o.op_store_member.member_indices_size] = (uint16_t)i;
+								++o.op_store_member.member_indices_size;
+								found = true;
+								break;
+							}
 						}
+						assert(found);
 					}
-					assert(found);
+					else if (right->kind == EXPRESSION_INDEX) {
+						o.op_store_member.member_indices[o.op_store_member.member_indices_size] = (uint16_t)right->index;
+						++o.op_store_member.member_indices_size;
+					}
+					else {
+						assert(false);
+					}
 				}
 
 				emit_op(code, &o);

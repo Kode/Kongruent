@@ -563,15 +563,17 @@ static expression *parse_unary(state_t *state) {
 
 static expression *parse_call(state_t *state, name_id func_name);
 
-static expression *parse_member(state_t *state) {
-	if (current(state).kind == TOKEN_IDENTIFIER) {
+static expression *parse_member(state_t *state, bool number) {
+	if (current(state).kind == TOKEN_IDENTIFIER && !number) {
 		token token = current(state);
 		advance_state(state);
 
 		if (current(state).kind == TOKEN_LEFT_PAREN) {
 			return parse_call(state, token.identifier);
 		}
-		else if (current(state).kind == TOKEN_DOT) {
+		else if (current(state).kind == TOKEN_DOT || current(state).kind == TOKEN_LEFT_SQUARE) {
+			bool number = current(state).kind == TOKEN_LEFT_SQUARE;
+
 			advance_state(state);
 
 			expression *var = expression_allocate();
@@ -581,7 +583,7 @@ static expression *parse_member(state_t *state) {
 			expression *member = expression_allocate();
 			member->kind = EXPRESSION_MEMBER;
 			member->member.left = var;
-			member->member.right = parse_member(state);
+			member->member.right = parse_member(state, number);
 
 			return member;
 		}
@@ -589,6 +591,35 @@ static expression *parse_member(state_t *state) {
 			expression *var = expression_allocate();
 			var->kind = EXPRESSION_VARIABLE;
 			var->variable = token.identifier;
+			return var;
+		}
+	}
+	else if (current(state).kind == TOKEN_NUMBER && number) {
+		uint32_t index = (uint32_t)current(state).number;
+		advance_state(state);
+		match_token(state, TOKEN_RIGHT_SQUARE, "Expected a closing square bracket");
+		advance_state(state);
+
+		if (current(state).kind == TOKEN_DOT || current(state).kind == TOKEN_LEFT_SQUARE) {
+			bool number = current(state).kind == TOKEN_LEFT_SQUARE;
+
+			advance_state(state);
+
+			expression *var = expression_allocate();
+			var->kind = EXPRESSION_INDEX;
+			var->index = index;
+
+			expression *member = expression_allocate();
+			member->kind = EXPRESSION_MEMBER;
+			member->member.left = var;
+			member->member.right = parse_member(state, number);
+
+			return member;
+		}
+		else {
+			expression *var = expression_allocate();
+			var->kind = EXPRESSION_INDEX;
+			var->index = index;
 			return var;
 		}
 	}
@@ -655,9 +686,11 @@ static expression *parse_primary(state_t *state) {
 		return NULL;
 	}
 
-	if (current(state).kind == TOKEN_DOT) {
+	if (current(state).kind == TOKEN_DOT || current(state).kind == TOKEN_LEFT_SQUARE) {
+		bool number = current(state).kind == TOKEN_LEFT_SQUARE;
+
 		advance_state(state);
-		expression *right = parse_member(state);
+		expression *right = parse_member(state, number);
 
 		expression *member = expression_allocate();
 		member->kind = EXPRESSION_MEMBER;

@@ -37,43 +37,52 @@ type_id find_local_var_type(block *b, name_id name) {
 
 void resolve_types_in_expression(statement *parent, expression *e);
 
-type *resolve_member_var_type(statement *parent_block, type *parent_struct, expression *left) {
-	assert(left->kind == EXPRESSION_VARIABLE);
+type_id resolve_member_var_type(statement *parent_block, type_id parent_type, expression *left) {
+	if (left->kind == EXPRESSION_VARIABLE) {
+		if (parent_type != NO_TYPE) {
+			name_id name = left->variable;
 
-	if (parent_struct != NULL) {
-		name_id name = left->variable;
-
-		for (size_t i = 0; i < parent_struct->members.size; ++i) {
-			if (parent_struct->members.m[i].name == name) {
-				left->type = parent_struct->members.m[i].type;
-				return get_type(left->type.type);
+			type *parent_struct = get_type(parent_type);
+			for (size_t i = 0; i < parent_struct->members.size; ++i) {
+				if (parent_struct->members.m[i].name == name) {
+					left->type = parent_struct->members.m[i].type;
+					return left->type.type;
+				}
 			}
+
+			assert(false);
+			return NO_TYPE;
 		}
 
-		assert(false);
-		return NULL;
+		if (parent_block != NULL) {
+			resolve_types_in_expression(parent_block, left);
+			return left->type.type;
+		}
 	}
-
-	if (parent_block != NULL) {
-		resolve_types_in_expression(parent_block, left);
-		return get_type(left->type.type);
+	else if (left->kind == EXPRESSION_INDEX) {
+		if (parent_type != NO_TYPE) {
+			left->type.type = parent_type;
+			left->type.name = NO_NAME;
+			left->type.array_size = 0;
+			return parent_type;
+		}
 	}
 
 	assert(false);
-	return NULL;
+	return NO_TYPE;
 }
 
-void resolve_member_type(statement *parent_block, type *parent_struct, expression *e) {
+void resolve_member_type(statement *parent_block, type_id parent_type, expression *e) {
 	if (e->kind == EXPRESSION_VARIABLE) {
-		resolve_member_var_type(parent_block, parent_struct, e);
+		resolve_member_var_type(parent_block, parent_type, e);
 		return;
 	}
 
 	assert(e->kind == EXPRESSION_MEMBER);
 
-	type *s = resolve_member_var_type(parent_block, parent_struct, e->member.left);
+	type_id t = resolve_member_var_type(parent_block, parent_type, e->member.left);
 
-	resolve_member_type(parent_block, s, e->member.right);
+	resolve_member_type(parent_block, t, e->member.right);
 
 	e->type = e->member.right->type;
 }
@@ -202,7 +211,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		break;
 	}
 	case EXPRESSION_MEMBER: {
-		resolve_member_type(parent, NULL, e);
+		resolve_member_type(parent, NO_TYPE, e);
 		break;
 	}
 	case EXPRESSION_CONSTRUCTOR: {
