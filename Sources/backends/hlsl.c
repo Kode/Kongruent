@@ -396,9 +396,18 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			case OPCODE_STORE_MEMBER:
 				*offset += sprintf(&hlsl[*offset], "\t_%" PRIu64, o->op_store_member.to.index);
 				type *s = get_type(o->op_store_member.member_parent_type);
+				bool is_array = o->op_store_member.member_parent_array;
 				for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
-					*offset += sprintf(&hlsl[*offset], ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
-					s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
+					if (is_array) {
+						*offset += sprintf(&hlsl[*offset], "[%i]", o->op_store_member.member_indices[i]);
+						s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
+						is_array = false;
+					}
+					else {
+						*offset += sprintf(&hlsl[*offset], ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
+						s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
+						is_array = s->members.m[o->op_store_member.member_indices[i]].type.array_size > 0;
+					}
 				}
 				*offset += sprintf(&hlsl[*offset], " = _%" PRIu64 ";\n", o->op_store_member.from.index);
 				break;

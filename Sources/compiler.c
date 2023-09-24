@@ -161,6 +161,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				type_id prev_struct = left->member.left->type.type;
 				type *prev_s = get_type(prev_struct);
 				o.op_store_member.member_parent_type = prev_struct;
+				o.op_store_member.member_parent_array = left->member.left->type.array_size > 0;
 
 				while (right->kind == EXPRESSION_MEMBER) {
 					assert(right->type.type != NO_TYPE);

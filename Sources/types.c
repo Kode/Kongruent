@@ -50,6 +50,7 @@ static void vec2_found_f32(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float_id;
+	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -58,6 +59,7 @@ static void vec2_found_vec2(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float2_id;
+	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -66,6 +68,7 @@ static void vec3_found_f32(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float_id;
+	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -74,6 +77,7 @@ static void vec3_found_vec2(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float2_id;
+	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -82,6 +86,7 @@ static void vec3_found_vec3(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float3_id;
+	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -90,6 +95,7 @@ static void vec4_found_f32(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float_id;
+	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -98,6 +104,7 @@ static void vec4_found_vec2(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float2_id;
+	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -106,6 +113,7 @@ static void vec4_found_vec3(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float3_id;
+	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -114,6 +122,7 @@ static void vec4_found_vec4(char *permutation) {
 	assert(t->members.size < MAX_MEMBERS);
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float4_id;
+	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 

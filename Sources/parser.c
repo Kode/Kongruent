@@ -31,6 +31,7 @@ static expression *expression_allocate(void) {
 	expression *e = (expression *)malloc(sizeof(expression));
 	assert(e != NULL);
 	e->type.type = NO_TYPE;
+	e->type.array_size = 0;
 	e->type.name = NO_NAME;
 	return e;
 }
@@ -827,6 +828,7 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 		member member;
 		member.name = member_names[i].identifier;
 		member.type.type = NO_TYPE;
+		member.type.array_size = 0;
 		member.value = member_values[i].identifier;
 		if (member.value != NO_NAME) {
 			member.type.name = add_name("fun");
