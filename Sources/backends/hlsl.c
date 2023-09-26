@@ -400,13 +400,13 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
 					if (is_array) {
 						*offset += sprintf(&hlsl[*offset], "[%i]", o->op_store_member.member_indices[i]);
-						s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
 						is_array = false;
 					}
 					else {
+						assert(o->op_store_member.member_indices[i] < s->members.size);
 						*offset += sprintf(&hlsl[*offset], ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
-						s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
 						is_array = s->members.m[o->op_store_member.member_indices[i]].type.array_size > 0;
+						s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
 					}
 				}
 				*offset += sprintf(&hlsl[*offset], " = _%" PRIu64 ";\n", o->op_store_member.from.index);
