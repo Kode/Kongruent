@@ -7,7 +7,7 @@
 
 typedef struct variable {
 	uint64_t index;
-	type_id type;
+	type_ref type;
 } variable;
 
 typedef struct opcode {

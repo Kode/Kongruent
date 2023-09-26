@@ -182,7 +182,7 @@ static void find_referenced_types(function *f, type_id *types, size_t *types_siz
 			opcode *o = (opcode *)&data[index];
 			switch (o->type) {
 			case OPCODE_VAR:
-				add_found_type(o->op_var.var.type, types, types_size);
+				add_found_type(o->op_var.var.type.type, types, types_size);
 				break;
 			}
 
@@ -385,7 +385,13 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			opcode *o = (opcode *)&data[index];
 			switch (o->type) {
 			case OPCODE_VAR:
-				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 ";\n", type_string(o->op_var.var.type), o->op_var.var.index);
+				if (o->op_var.var.type.array_size > 0) {
+					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 "[%i];\n", type_string(o->op_var.var.type.type), o->op_var.var.index,
+					                   o->op_var.var.type.array_size);
+				}
+				else {
+					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 ";\n", type_string(o->op_var.var.type.type), o->op_var.var.index);
+				}
 				break;
 			case OPCODE_NOT:
 				*offset += sprintf(&hlsl[*offset], "\t_%" PRIu64 " = !_%" PRIu64 ";\n", o->op_not.to.index, o->op_not.from.index);
@@ -412,7 +418,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				*offset += sprintf(&hlsl[*offset], " = _%" PRIu64 ";\n", o->op_store_member.from.index);
 				break;
 			case OPCODE_LOAD_CONSTANT:
-				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = %f;\n", type_string(o->op_load_constant.to.type), o->op_load_constant.to.index,
+				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = %f;\n", type_string(o->op_load_constant.to.type.type), o->op_load_constant.to.index,
 				                   o->op_load_constant.number);
 				break;
 			case OPCODE_LOAD_MEMBER: {
@@ -425,7 +431,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					}
 				}
 
-				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type), o->op_load_member.to.index,
+				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
 				                   o->op_load_member.from.index);
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
@@ -453,17 +459,17 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				if (o->op_call.func == add_name("sample")) {
 					assert(o->op_call.parameters_size == 3);
 					*offset +=
-					    sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 ".Sample(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type),
+					    sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 ".Sample(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
 					            o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index, o->op_call.parameters[2].index);
 				}
 				else if (o->op_call.func == add_name("sample_lod")) {
 					assert(o->op_call.parameters_size == 4);
 					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 ".SampleLevel(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
-					                   type_string(o->op_call.var.type), o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index,
-					                   o->op_call.parameters[2].index, o->op_call.parameters[3].index);
+					                   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index,
+					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index, o->op_call.parameters[3].index);
 				}
 				else {
-					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type), o->op_call.var.index,
+					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index,
 					                   function_string(o->op_call.func));
 					if (o->op_call.parameters_size > 0) {
 						*offset += sprintf(&hlsl[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
@@ -476,18 +482,18 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				break;
 			}
 			case OPCODE_MULTIPLY: {
-				if (o->op_multiply.left.type == float4x4_id) {
-					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = mul(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_multiply.result.type),
+				if (o->op_multiply.left.type.type == float4x4_id) {
+					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = mul(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_multiply.result.type.type),
 					                   o->op_multiply.result.index, o->op_multiply.right.index, o->op_multiply.left.index);
 				}
 				else {
-					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type),
+					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
 					                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
 				}
 				break;
 			}
 			case OPCODE_ADD: {
-				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " + _%" PRIu64 ";\n", type_string(o->op_multiply.result.type),
+				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " + _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
 				                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
 				break;
 			}

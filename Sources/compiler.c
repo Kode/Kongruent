@@ -33,7 +33,7 @@ variable find_local_var(block *b, name_id name) {
 	if (b == NULL) {
 		variable var;
 		var.index = 0;
-		var.type = NO_TYPE;
+		init_type_ref(&var.type, NO_NAME);
 		return var;
 	}
 
@@ -42,7 +42,7 @@ variable find_local_var(block *b, name_id name) {
 			assert(b->vars.v[i].type.type != NO_TYPE);
 			variable var;
 			var.index = b->vars.v[i].variable_id;
-			var.type = b->vars.v[i].type.type;
+			var.type = b->vars.v[i].type;
 			return var;
 		}
 	}
@@ -56,7 +56,7 @@ static uint64_t next_variable_id = 1;
 
 variable all_variables[1024 * 1024];
 
-variable allocate_variable(type_id type) {
+variable allocate_variable(type_ref type) {
 	variable v;
 	v.index = next_variable_id;
 	v.type = type;
@@ -270,7 +270,10 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	case EXPRESSION_BOOLEAN:
 		error("not implemented", 0, 0);
 	case EXPRESSION_NUMBER: {
-		variable v = allocate_variable(float_id);
+		type_ref t;
+		init_type_ref(&t, NO_NAME);
+		t.type = float_id;
+		variable v = allocate_variable(t);
 
 		opcode o;
 		o.type = OPCODE_LOAD_CONSTANT;
@@ -289,7 +292,8 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			assert(g.variable_id != 0);
 
 			variable var;
-			var.type = g.g.type;
+			init_type_ref(&var.type, NO_NAME);
+			var.type.type = g.g.type;
 			var.index = g.variable_id;
 			return var;
 		}
@@ -302,7 +306,10 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	case EXPRESSION_GROUPING:
 		error("not implemented", 0, 0);
 	case EXPRESSION_CALL: {
-		variable v = allocate_variable(float4_id);
+		type_ref t;
+		init_type_ref(&t, NO_NAME);
+		t.type = float4_id;
+		variable v = allocate_variable(t);
 
 		opcode o;
 		o.type = OPCODE_CALL;
@@ -321,7 +328,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		return v;
 	}
 	case EXPRESSION_MEMBER: {
-		variable v = allocate_variable(e->type.type);
+		variable v = allocate_variable(e->type);
 
 		opcode o;
 		o.type = OPCODE_LOAD_MEMBER;
@@ -333,7 +340,8 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			if (global.g.type != NO_TYPE) {
 				variable v;
 				v.index = global.variable_id;
-				v.type = global.g.type;
+				init_type_ref(&v.type, NO_NAME);
+				v.type.type = global.g.type;
 				o.op_load_member.from = v;
 			}
 		}
@@ -435,7 +443,7 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		statement->local_variable.var.variable_id = local_var.index;
 		o.op_var.var.index = statement->local_variable.var.variable_id;
 		assert(statement->local_variable.var.type.type != NO_TYPE);
-		o.op_var.var.type = statement->local_variable.var.type.type;
+		o.op_var.var.type = statement->local_variable.var.type;
 		emit_op(code, &o);
 
 		if (statement->local_variable.init != NULL) {
@@ -458,7 +466,10 @@ void convert_globals(void) {
 	for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
 		global g = get_global(i);
 
-		variable v = allocate_variable(g.type);
+		type_ref t;
+		init_type_ref(&t, NO_NAME);
+		t.type = g.type;
+		variable v = allocate_variable(t);
 		allocated_globals[allocated_globals_size].g = g;
 		allocated_globals[allocated_globals_size].variable_id = v.index;
 		allocated_globals_size += 1;
@@ -477,7 +488,7 @@ void convert_function_block(opcodes *code, struct statement *block) {
 		error("Expected a block", 0, 0);
 	}
 	for (size_t i = 0; i < block->block.vars.size; ++i) {
-		variable var = allocate_variable(block->block.vars.v[i].type.type);
+		variable var = allocate_variable(block->block.vars.v[i].type);
 		block->block.vars.v[i].variable_id = var.index;
 	}
 	for (size_t i = 0; i < block->block.statements.size; ++i) {
