@@ -14,6 +14,8 @@ typedef struct type_ref {
 	uint32_t array_size;
 } type_ref;
 
+void init_type_ref(type_ref *t, name_id name);
+
 typedef struct member {
 	name_id name;
 	type_ref type;
@@ -38,7 +40,9 @@ void types_init(void);
 
 type_id add_type(name_id name);
 
-type_id find_type(name_id name);
+type_id find_type_by_name(name_id name);
+
+type_id find_type_by_ref(type_ref *t);
 
 type *get_type(type_id t);
 

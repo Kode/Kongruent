@@ -30,9 +30,7 @@ static void statements_add(statements *statements, statement *statement) {
 static expression *expression_allocate(void) {
 	expression *e = (expression *)malloc(sizeof(expression));
 	assert(e != NULL);
-	e->type.type = NO_TYPE;
-	e->type.array_size = 0;
-	e->type.name = NO_NAME;
+	init_type_ref(&e->type, NO_NAME);
 	return e;
 }
 
@@ -272,8 +270,7 @@ static type_ref parse_type_ref(state_t *state) {
 	}
 
 	type_ref t;
-	t.type = NO_TYPE;
-	t.name = type_name.identifier;
+	init_type_ref(&t, type_name.identifier);
 	t.array_size = array_size;
 	return t;
 }
@@ -827,14 +824,12 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 	for (size_t i = 0; i < count; ++i) {
 		member member;
 		member.name = member_names[i].identifier;
-		member.type.type = NO_TYPE;
-		member.type.array_size = 0;
 		member.value = member_values[i].identifier;
 		if (member.value != NO_NAME) {
-			member.type.name = add_name("fun");
+			init_type_ref(&member.type, add_name("fun"));
 		}
 		else {
-			member.type.name = type_names[i].identifier;
+			init_type_ref(&member.type, type_names[i].identifier);
 		}
 
 		s->members.m[i] = member;

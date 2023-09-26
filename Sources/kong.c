@@ -61,9 +61,8 @@ type_id resolve_member_var_type(statement *parent_block, type_id parent_type, ex
 	}
 	else if (left->kind == EXPRESSION_INDEX) {
 		if (parent_type != NO_TYPE) {
+			init_type_ref(&left->type, NO_NAME);
 			left->type.type = parent_type;
-			left->type.name = NO_NAME;
-			left->type.array_size = 0;
 			return parent_type;
 		}
 	}
@@ -252,7 +251,7 @@ void resolve_types_in_block(statement *parent, statement *block) {
 			name_id var_name = s->local_variable.var.name;
 			name_id var_type_name = s->local_variable.var.type.name;
 			if (var_type_name != NO_NAME && s->local_variable.var.type.type == NO_TYPE) {
-				s->local_variable.var.type.type = find_type(var_type_name);
+				s->local_variable.var.type.type = find_type_by_name(var_type_name);
 			}
 			if (s->local_variable.var.type.type == NO_TYPE) {
 				char output[256];
@@ -279,7 +278,7 @@ void resolve_types(void) {
 		for (size_t j = 0; j < s->members.size; ++j) {
 			if (s->members.m[j].type.type == NO_TYPE) {
 				name_id name = s->members.m[j].type.name;
-				s->members.m[j].type.type = find_type(name);
+				s->members.m[j].type.type = find_type_by_name(name);
 				if (s->members.m[j].type.type == NO_TYPE) {
 					char output[256];
 					char *struct_name = get_name(s->name);
@@ -296,7 +295,7 @@ void resolve_types(void) {
 
 		if (f->parameter_type.type == NO_TYPE) {
 			name_id parameter_type_name = f->parameter_type.name;
-			f->parameter_type.type = find_type(parameter_type_name);
+			f->parameter_type.type = find_type_by_name(parameter_type_name);
 			if (f->parameter_type.type == NO_TYPE) {
 				char output[256];
 				char *function_name = get_name(f->name);
@@ -308,7 +307,7 @@ void resolve_types(void) {
 
 		if (f->return_type.type == NO_TYPE) {
 			name_id return_type_name = f->return_type.name;
-			f->return_type.type = find_type(return_type_name);
+			f->return_type.type = find_type_by_name(return_type_name);
 			if (f->return_type.type == NO_TYPE) {
 				char output[256];
 				char *function_name = get_name(f->name);

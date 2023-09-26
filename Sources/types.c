@@ -126,6 +126,12 @@ static void vec4_found_vec4(char *permutation) {
 	++t->members.size;
 }
 
+void init_type_ref(type_ref *t, name_id name) {
+	t->name = name;
+	t->type = NO_TYPE;
+	t->array_size = 0;
+}
+
 void types_init(void) {
 	type *new_types = realloc(types, types_size * sizeof(type));
 	assert(new_types != NULL);
@@ -217,10 +223,21 @@ type_id add_type(name_id name) {
 	return s;
 }
 
-type_id find_type(name_id name) {
+type_id find_type_by_name(name_id name) {
 	assert(name != NO_NAME);
 	for (type_id i = 0; i < next_type_index; ++i) {
 		if (types[i].name == name) {
+			return i;
+		}
+	}
+
+	return NO_TYPE;
+}
+
+type_id find_type_by_ref(type_ref *t) {
+	assert(t->name != NO_NAME);
+	for (type_id i = 0; i < next_type_index; ++i) {
+		if (types[i].name == t->name) {
 			return i;
 		}
 	}
