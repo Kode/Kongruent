@@ -82,7 +82,8 @@ void c_export(char *directory) {
 
 			for (size_t j = 0; j < t->members.size; ++j) {
 				if (t->members.m[j].name == add_name("vertex")) {
-					vertex_shader_name = t->members.m[j].value;
+					assert(t->members.m[j].value.kind == TOKEN_IDENTIFIER);
+					vertex_shader_name = t->members.m[j].value.identifier;
 				}
 			}
 
@@ -119,7 +120,9 @@ void c_export(char *directory) {
 
 		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
 			global g = get_global(i);
-			if (g.type == tex2d_type_id || g.type == texcube_type_id || g.type == sampler_type_id) {
+			if (g.type == float_id) {
+			}
+			else if (g.type == tex2d_type_id || g.type == texcube_type_id || g.type == sampler_type_id) {
 				fprintf(output, "extern int %s;\n", get_name(g.name));
 			}
 			else {
@@ -190,13 +193,12 @@ void c_export(char *directory) {
 			if (!t->built_in && t->attribute == add_name("pipe")) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("vertex")) {
-						fprintf(output, "#include \"kong_%s.h\"\n", get_name(t->members.m[j].value));
+						assert(t->members.m[j].value.kind == TOKEN_IDENTIFIER);
+						fprintf(output, "#include \"kong_%s.h\"\n", get_name(t->members.m[j].value.identifier));
 					}
 					else if (t->members.m[j].name == add_name("fragment")) {
-						fprintf(output, "#include \"kong_%s.h\"\n", get_name(t->members.m[j].value));
-					}
-					else {
-						assert(false);
+						assert(t->members.m[j].value.kind == TOKEN_IDENTIFIER);
+						fprintf(output, "#include \"kong_%s.h\"\n", get_name(t->members.m[j].value.identifier));
 					}
 				}
 			}
@@ -227,7 +229,7 @@ void c_export(char *directory) {
 
 		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
 			global g = get_global(i);
-			if (g.type != tex2d_type_id && g.type != texcube_type_id && g.type != sampler_type_id) {
+			if (g.type != tex2d_type_id && g.type != texcube_type_id && g.type != sampler_type_id && g.type != float_id) {
 				type *t = get_type(g.type);
 
 				char type_name[256];
@@ -277,7 +279,10 @@ void c_export(char *directory) {
 			type *t = get_type(i);
 			if (!t->built_in && t->attribute == add_name("pipe")) {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					fprintf(output, "static kinc_g4_shader_t %s;\n", get_name(t->members.m[j].value));
+					if (t->members.m[j].name == add_name("vertex") || t->members.m[j].name == add_name("fragment")) {
+						assert(t->members.m[j].value.kind == TOKEN_IDENTIFIER);
+						fprintf(output, "static kinc_g4_shader_t %s;\n", get_name(t->members.m[j].value.identifier));
+					}
 				}
 			}
 		}
@@ -292,27 +297,30 @@ void c_export(char *directory) {
 
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("vertex")) {
-						fprintf(output, "\tkinc_g4_shader_init(&%s, %s_code, %s_code_size, KINC_G4_SHADER_TYPE_VERTEX);\n", get_name(t->members.m[j].value),
-						        get_name(t->members.m[j].value), get_name(t->members.m[j].value));
-						vertex_shader_name = t->members.m[j].value;
+						fprintf(output, "\tkinc_g4_shader_init(&%s, %s_code, %s_code_size, KINC_G4_SHADER_TYPE_VERTEX);\n",
+						        get_name(t->members.m[j].value.identifier), get_name(t->members.m[j].value.identifier),
+						        get_name(t->members.m[j].value.identifier));
+						fprintf(output, "\t%s.vertex_shader = &%s;\n\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
+						vertex_shader_name = t->members.m[j].value.identifier;
 					}
 					else if (t->members.m[j].name == add_name("fragment")) {
-						fprintf(output, "\tkinc_g4_shader_init(&%s, %s_code, %s_code_size, KINC_G4_SHADER_TYPE_FRAGMENT);\n", get_name(t->members.m[j].value),
-						        get_name(t->members.m[j].value), get_name(t->members.m[j].value));
+						fprintf(output, "\tkinc_g4_shader_init(&%s, %s_code, %s_code_size, KINC_G4_SHADER_TYPE_FRAGMENT);\n",
+						        get_name(t->members.m[j].value.identifier), get_name(t->members.m[j].value.identifier),
+						        get_name(t->members.m[j].value.identifier));
+						fprintf(output, "\t%s.fragment_shader = &%s;\n\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
+					}
+					else if (t->members.m[j].name == add_name("depth_write")) {
+						assert(t->members.m[j].value.kind == TOKEN_BOOLEAN);
+						fprintf(output, "\t%s.depth_write = %s;\n\n", get_name(t->name), t->members.m[j].value.boolean ? "true" : "false");
+					}
+					else if (t->members.m[j].name == add_name("depth_mode")) {
+						assert(t->members.m[j].value.kind == TOKEN_IDENTIFIER);
+						global g = find_global(t->members.m[j].value.identifier);
+						fprintf(output, "\t%s.depth_mode = %i;\n\n", get_name(t->name), (int)g.value);
 					}
 					else {
 						assert(false);
 					}
-
-					char *member_name = "unknown";
-					if (strcmp(get_name(t->members.m[j].name), "vertex") == 0) {
-						member_name = "vertex_shader";
-					}
-					else if (strcmp(get_name(t->members.m[j].name), "fragment") == 0) {
-						member_name = "fragment_shader";
-					}
-
-					fprintf(output, "\t%s.%s = &%s;\n\n", get_name(t->name), member_name, get_name(t->members.m[j].value));
 				}
 
 				assert(vertex_shader_name != NO_NAME);

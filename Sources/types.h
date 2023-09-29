@@ -1,6 +1,7 @@
 #pragma once
 
 #include "names.h"
+#include "tokenizer.h"
 
 #include <stdbool.h>
 
@@ -19,7 +20,7 @@ void init_type_ref(type_ref *t, name_id name);
 typedef struct member {
 	name_id name;
 	type_ref type;
-	name_id value;
+	token value;
 } member;
 
 #define MAX_MEMBERS 1024

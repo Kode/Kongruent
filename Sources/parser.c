@@ -75,7 +75,7 @@ void parse(tokens *tokens) {
 
 	for (;;) {
 		token token = current(&state);
-		if (token.kind == TOKEN_EOF) {
+		if (token.kind == TOKEN_NONE) {
 			return;
 		}
 		else {
@@ -102,7 +102,7 @@ static statement *parse_block(state_t *state) {
 			statement->block.statements = statements;
 			return statement;
 		}
-		case TOKEN_EOF:
+		case TOKEN_NONE:
 			error("File ended before a block ended", current(state).column, current(state).line);
 			return NULL;
 		default:
@@ -796,12 +796,16 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 
 		if (current(state).kind == TOKEN_OPERATOR && current(state).op == OPERATOR_ASSIGN) {
 			advance_state(state);
-			match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
-			member_values[count] = current(state);
-			advance_state(state);
+			if (current(state).kind == TOKEN_BOOLEAN || current(state).kind == TOKEN_NUMBER || current(state).kind == TOKEN_IDENTIFIER) {
+				member_values[count] = current(state);
+				advance_state(state);
+			}
+			else {
+				assert(false);
+			}
 		}
 		else {
-			member_values[count].kind = TOKEN_IDENTIFIER;
+			member_values[count].kind = TOKEN_NONE;
 			member_values[count].identifier = NO_NAME;
 		}
 
@@ -824,9 +828,26 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 	for (size_t i = 0; i < count; ++i) {
 		member member;
 		member.name = member_names[i].identifier;
-		member.value = member_values[i].identifier;
-		if (member.value != NO_NAME) {
-			init_type_ref(&member.type, add_name("fun"));
+		member.value = member_values[i];
+		if (member.value.kind != TOKEN_NONE) {
+			if (member.value.kind == TOKEN_BOOLEAN) {
+				init_type_ref(&member.type, add_name("bool"));
+			}
+			else if (member.value.kind == TOKEN_NUMBER) {
+				init_type_ref(&member.type, add_name("float"));
+			}
+			else if (member.value.kind == TOKEN_IDENTIFIER) {
+				global g = find_global(member.value.identifier);
+				if (g.name != NO_NAME) {
+					init_type_ref(&member.type, get_type(g.type)->name);
+				}
+				else {
+					init_type_ref(&member.type, add_name("fun"));
+				}
+			}
+			else {
+				assert(false);
+			}
 		}
 		else {
 			init_type_ref(&member.type, type_names[i].identifier);

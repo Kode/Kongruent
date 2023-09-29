@@ -228,7 +228,7 @@ tokens tokenize(const char *source) {
 				error("Unclosed comment", state.column, state.line);
 			}
 
-			tokens_add(&tokens, token_create(TOKEN_EOF, &state));
+			tokens_add(&tokens, token_create(TOKEN_NONE, &state));
 			return tokens;
 		}
 		else {

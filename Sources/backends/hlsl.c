@@ -629,10 +629,10 @@ void hlsl_export(char *directory) {
 
 			for (size_t j = 0; j < t->members.size; ++j) {
 				if (t->members.m[j].name == add_name("vertex")) {
-					vertex_shader_name = t->members.m[j].value;
+					vertex_shader_name = t->members.m[j].value.identifier;
 				}
 				else if (t->members.m[j].name == add_name("fragment")) {
-					fragment_shader_name = t->members.m[j].value;
+					fragment_shader_name = t->members.m[j].value.identifier;
 				}
 			}
 

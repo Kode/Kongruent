@@ -26,7 +26,7 @@ typedef struct token {
 	int line, column;
 
 	enum {
-		TOKEN_EOF,
+		TOKEN_NONE,
 		TOKEN_BOOLEAN,
 		TOKEN_NUMBER,
 		// TOKEN_STRING,

@@ -5,13 +5,33 @@
 static global globals[1024];
 static global_id globals_size = 0;
 
-void globals_init(void) {}
+void globals_init(void) {
+	add_global_with_value(float_id, add_name("COMPARE_ALWAYS"), 0);
+	add_global_with_value(float_id, add_name("COMPARE_NEVER"), 1);
+	add_global_with_value(float_id, add_name("COMPARE_EQUAL"), 2);
+	add_global_with_value(float_id, add_name("COMPARE_NOT_EQUAL"), 3);
+	add_global_with_value(float_id, add_name("COMPARE_LESS"), 4);
+	add_global_with_value(float_id, add_name("COMPARE_LESS_EQUAL"), 5);
+	add_global_with_value(float_id, add_name("COMPARE_GREATER"), 6);
+	add_global_with_value(float_id, add_name("COMPARE_GREATER_EQUAL"), 7);
+}
 
 global_id add_global(type_id type, name_id name) {
 	uint32_t index = globals_size;
 	globals[index].name = name;
 	globals[index].type = type;
 	globals[index].var_index = 0;
+	globals[index].value = 0;
+	globals_size += 1;
+	return index;
+}
+
+global_id add_global_with_value(type_id type, name_id name, float value) {
+	uint32_t index = globals_size;
+	globals[index].name = name;
+	globals[index].type = type;
+	globals[index].var_index = 0;
+	globals[index].value = value;
 	globals_size += 1;
 	return index;
 }
