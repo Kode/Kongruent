@@ -27,6 +27,9 @@ static char *type_string(type_id type) {
 	if (type == float4_id) {
 		return "float4";
 	}
+	if (type == float4x4_id) {
+		return "float4x4";
+	}
 	return get_name(get_type(type)->name);
 }
 

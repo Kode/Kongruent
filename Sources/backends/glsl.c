@@ -19,13 +19,16 @@ static char *type_string(type_id type) {
 		return "float";
 	}
 	if (type == float2_id) {
-		return "float2";
+		return "vec2";
 	}
 	if (type == float3_id) {
-		return "float3";
+		return "vec3";
 	}
 	if (type == float4_id) {
-		return "float4";
+		return "vec4";
+	}
+	if (type == float4x4_id) {
+		return "mat4";
 	}
 	return get_name(get_type(type)->name);
 }
