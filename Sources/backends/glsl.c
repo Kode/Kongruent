@@ -34,14 +34,14 @@ static char *function_string(name_id func) {
 	return get_name(func);
 }
 
-static void write_bytecode(char *glsl, char *directory, const char *filename, const char *name, uint8_t *output, size_t output_size) {
+static void write_code(char *glsl, char *directory, const char *filename, const char *name) {
 	char full_filename[512];
 
 	{
 		sprintf(full_filename, "%s/%s.h", directory, filename);
 		FILE *file = fopen(full_filename, "wb");
 		fprintf(file, "#include <stdint.h>\n\n");
-		fprintf(file, "extern uint8_t *%s;\n", name);
+		fprintf(file, "extern const char *%s;\n", name);
 		fprintf(file, "extern size_t %s_size;\n", name);
 		fclose(file);
 	}
@@ -52,46 +52,9 @@ static void write_bytecode(char *glsl, char *directory, const char *filename, co
 		FILE *file = fopen(full_filename, "wb");
 		fprintf(file, "#include \"%s.h\"\n\n", filename);
 
-		fprintf(file, "uint8_t *%s = \"", name);
-		for (size_t i = 0; i < output_size; ++i) {
-			// based on the encoding described in https://github.com/adobe/bin2c
-			if (output[i] == '!' || output[i] == '#' || (output[i] >= '%' && output[i] <= '>') || (output[i] >= 'A' && output[i] <= '[') ||
-			    (output[i] >= ']' && output[i] <= '~')) {
-				fprintf(file, "%c", output[i]);
-			}
-			else if (output[i] == '\a') {
-				fprintf(file, "\\a");
-			}
-			else if (output[i] == '\b') {
-				fprintf(file, "\\b");
-			}
-			else if (output[i] == '\t') {
-				fprintf(file, "\\t");
-			}
-			else if (output[i] == '\v') {
-				fprintf(file, "\\v");
-			}
-			else if (output[i] == '\f') {
-				fprintf(file, "\\f");
-			}
-			else if (output[i] == '\r') {
-				fprintf(file, "\\r");
-			}
-			else if (output[i] == '\"') {
-				fprintf(file, "\\\"");
-			}
-			else if (output[i] == '\\') {
-				fprintf(file, "\\\\");
-			}
-			else {
-				fprintf(file, "\\%03o", output[i]);
-			}
-		}
-		fprintf(file, "\";\n");
+		fprintf(file, "const char *%s = \"%s\";\n", name, glsl);
 
-		fprintf(file, "size_t %s_size = %" PRIu64 ";\n\n", name, output_size);
-
-		fprintf(file, "/*\n%s*/\n", glsl);
+		fprintf(file, "size_t %s_size = %" PRIu64 ";\n\n", name, strlen(glsl));
 
 		fclose(file);
 	}
@@ -546,11 +509,6 @@ static glsl_export_vertex(char *directory, function *main) {
 
 	write_functions(glsl, &offset, SHADER_STAGE_VERTEX, main);
 
-	char *output;
-	size_t output_size;
-	int result = compile_hlsl_to_d3d11(glsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
-	assert(result == 0);
-
 	char *name = get_name(main->name);
 
 	char filename[512];
@@ -559,7 +517,7 @@ static glsl_export_vertex(char *directory, function *main) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(glsl, directory, filename, var_name, output, output_size);
+	write_code(glsl, directory, filename, var_name);
 }
 
 static void glsl_export_fragment(char *directory, function *main) {
@@ -576,11 +534,6 @@ static void glsl_export_fragment(char *directory, function *main) {
 
 	write_functions(glsl, &offset, SHADER_STAGE_FRAGMENT, main);
 
-	uint8_t *output;
-	size_t output_size;
-	int result = compile_hlsl_to_d3d11(glsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
-	assert(result == 0);
-
 	char *name = get_name(main->name);
 
 	char filename[512];
@@ -589,7 +542,7 @@ static void glsl_export_fragment(char *directory, function *main) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(glsl, directory, filename, var_name, output, output_size);
+	write_code(glsl, directory, filename, var_name);
 }
 
 void glsl_export(char *directory) {
