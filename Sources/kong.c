@@ -8,6 +8,7 @@
 #include "tokenizer.h"
 #include "types.h"
 
+#include "backends/glsl.h"
 #include "backends/hlsl.h"
 
 #include "integrations/c.h"
@@ -507,7 +508,15 @@ int main(int argc, char **argv) {
 		convert_function_block(&get_function(i)->code, get_function(i)->block);
 	}
 
-	hlsl_export(output);
+	if (strcmp(api, "direct3d11") == 0) {
+		hlsl_export(output);
+	}
+	else if (strcmp(api, "opengl") == 0) {
+		glsl_export(output);
+	}
+	else {
+		error("Unknown API", 0, 0);
+	}
 
 	c_export(output);
 
