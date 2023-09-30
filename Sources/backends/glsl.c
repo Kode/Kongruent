@@ -1,4 +1,4 @@
-#include "hlsl.h"
+#include "glsl.h"
 
 #include "../compiler.h"
 #include "../functions.h"
@@ -34,7 +34,7 @@ static char *function_string(name_id func) {
 	return get_name(func);
 }
 
-static void write_bytecode(char *hlsl, char *directory, const char *filename, const char *name, uint8_t *output, size_t output_size) {
+static void write_bytecode(char *glsl, char *directory, const char *filename, const char *name, uint8_t *output, size_t output_size) {
 	char full_filename[512];
 
 	{
@@ -91,7 +91,7 @@ static void write_bytecode(char *hlsl, char *directory, const char *filename, co
 
 		fprintf(file, "size_t %s_size = %" PRIu64 ";\n\n", name, output_size);
 
-		fprintf(file, "/*\n%s*/\n", hlsl);
+		fprintf(file, "/*\n%s*/\n", glsl);
 
 		fclose(file);
 	}
@@ -255,7 +255,7 @@ static void find_referenced_globals(function *f, global_id *globals, size_t *glo
 	}
 }
 
-static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id input, type_id output, function *main) {
+static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id input, type_id output, function *main) {
 	type_id types[256];
 	size_t types_size = 0;
 	find_referenced_types(main, types, &types_size);
@@ -264,21 +264,21 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 		type *t = get_type(types[i]);
 
 		if (!t->built_in && t->attribute != add_name("pipe")) {
-			*offset += sprintf(&hlsl[*offset], "struct %s {\n", get_name(t->name));
+			*offset += sprintf(&glsl[*offset], "struct %s {\n", get_name(t->name));
 
 			if (stage == SHADER_STAGE_VERTEX && types[i] == input) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					*offset +=
-					    sprintf(&hlsl[*offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name), j);
+					    sprintf(&glsl[*offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name), j);
 				}
 			}
 			else if (stage == SHADER_STAGE_VERTEX && types[i] == output) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (j == 0) {
-						*offset += sprintf(&hlsl[*offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+						*offset += sprintf(&glsl[*offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 					}
 					else {
-						*offset += sprintf(&hlsl[*offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type),
+						*offset += sprintf(&glsl[*offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type),
 						                   get_name(t->members.m[j].name), j - 1);
 					}
 				}
@@ -286,27 +286,27 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 			else if (stage == SHADER_STAGE_FRAGMENT && types[i] == input) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (j == 0) {
-						*offset += sprintf(&hlsl[*offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+						*offset += sprintf(&glsl[*offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 					}
 					else {
-						*offset += sprintf(&hlsl[*offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type),
+						*offset += sprintf(&glsl[*offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type),
 						                   get_name(t->members.m[j].name), j - 1);
 					}
 				}
 			}
 			else {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					*offset += sprintf(&hlsl[*offset], "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+					*offset += sprintf(&glsl[*offset], "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 				}
 			}
-			*offset += sprintf(&hlsl[*offset], "};\n\n");
+			*offset += sprintf(&glsl[*offset], "};\n\n");
 		}
 	}
 }
 
 static int global_register_indices[512];
 
-static void write_globals(char *hlsl, size_t *offset, function *main) {
+static void write_globals(char *glsl, size_t *offset, function *main) {
 	global_id globals[256];
 	size_t globals_size = 0;
 	find_referenced_globals(main, globals, &globals_size);
@@ -316,27 +316,27 @@ static void write_globals(char *hlsl, size_t *offset, function *main) {
 		int register_index = global_register_indices[globals[i]];
 
 		if (g.type == sampler_type_id) {
-			*offset += sprintf(&hlsl[*offset], "SamplerState _%" PRIu64 " : register(s%i);\n\n", g.var_index, register_index);
+			*offset += sprintf(&glsl[*offset], "SamplerState _%" PRIu64 " : register(s%i);\n\n", g.var_index, register_index);
 		}
 		else if (g.type == tex2d_type_id) {
-			*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
+			*offset += sprintf(&glsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
 		}
 		else if (g.type == texcube_type_id) {
-			*offset += sprintf(&hlsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
+			*offset += sprintf(&glsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
 		}
 		else {
-			*offset += sprintf(&hlsl[*offset], "cbuffer _%" PRIu64 " : register(b%i) {\n", g.var_index, register_index);
+			*offset += sprintf(&glsl[*offset], "cbuffer _%" PRIu64 " : register(b%i) {\n", g.var_index, register_index);
 			type *t = get_type(g.type);
 			for (size_t i = 0; i < t->members.size; ++i) {
-				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 "_%s;\n", get_name(get_type(t->members.m[i].type.type)->name), g.var_index,
+				*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 "_%s;\n", get_name(get_type(t->members.m[i].type.type)->name), g.var_index,
 				                   get_name(t->members.m[i].name));
 			}
-			*offset += sprintf(&hlsl[*offset], "}\n\n");
+			*offset += sprintf(&glsl[*offset], "}\n\n");
 		}
 	}
 }
 
-static void write_functions(char *hlsl, size_t *offset, shader_stage stage, function *main) {
+static void write_functions(char *glsl, size_t *offset, shader_stage stage, function *main) {
 	function *functions[256];
 	size_t functions_size = 0;
 
@@ -364,20 +364,20 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 		assert(parameter_id != 0);
 		if (f == main) {
 			if (stage == SHADER_STAGE_VERTEX) {
-				*offset += sprintf(&hlsl[*offset], "%s main(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), type_string(f->parameter_type.type),
+				*offset += sprintf(&glsl[*offset], "%s main(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), type_string(f->parameter_type.type),
 				                   parameter_id);
 			}
 			else if (stage == SHADER_STAGE_FRAGMENT) {
 				if (f->return_type.array_size > 0) {
-					*offset += sprintf(&hlsl[*offset], "struct _render_targets {\n");
+					*offset += sprintf(&glsl[*offset], "struct _render_targets {\n");
 					for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
-						*offset += sprintf(&hlsl[*offset], "\t%s _%i : SV_Target%i;\n", type_string(f->return_type.type), j, j);
+						*offset += sprintf(&glsl[*offset], "\t%s _%i : SV_Target%i;\n", type_string(f->return_type.type), j, j);
 					}
-					*offset += sprintf(&hlsl[*offset], "};\n\n");
-					*offset += sprintf(&hlsl[*offset], "_render_targets main(%s _%" PRIu64 ") {\n", type_string(f->parameter_type.type), parameter_id);
+					*offset += sprintf(&glsl[*offset], "};\n\n");
+					*offset += sprintf(&glsl[*offset], "_render_targets main(%s _%" PRIu64 ") {\n", type_string(f->parameter_type.type), parameter_id);
 				}
 				else {
-					*offset += sprintf(&hlsl[*offset], "%s main(%s _%" PRIu64 ") : SV_Target0 {\n", type_string(f->return_type.type),
+					*offset += sprintf(&glsl[*offset], "%s main(%s _%" PRIu64 ") : SV_Target0 {\n", type_string(f->return_type.type),
 					                   type_string(f->parameter_type.type), parameter_id);
 				}
 			}
@@ -386,7 +386,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			}
 		}
 		else {
-			*offset += sprintf(&hlsl[*offset], "%s %s(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), get_name(f->name),
+			*offset += sprintf(&glsl[*offset], "%s %s(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), get_name(f->name),
 			                   type_string(f->parameter_type.type), parameter_id);
 		}
 
@@ -396,39 +396,39 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			switch (o->type) {
 			case OPCODE_VAR:
 				if (o->op_var.var.type.array_size > 0) {
-					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 "[%i];\n", type_string(o->op_var.var.type.type), o->op_var.var.index,
+					*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 "[%i];\n", type_string(o->op_var.var.type.type), o->op_var.var.index,
 					                   o->op_var.var.type.array_size);
 				}
 				else {
-					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 ";\n", type_string(o->op_var.var.type.type), o->op_var.var.index);
+					*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 ";\n", type_string(o->op_var.var.type.type), o->op_var.var.index);
 				}
 				break;
 			case OPCODE_NOT:
-				*offset += sprintf(&hlsl[*offset], "\t_%" PRIu64 " = !_%" PRIu64 ";\n", o->op_not.to.index, o->op_not.from.index);
+				*offset += sprintf(&glsl[*offset], "\t_%" PRIu64 " = !_%" PRIu64 ";\n", o->op_not.to.index, o->op_not.from.index);
 				break;
 			case OPCODE_STORE_VARIABLE:
-				*offset += sprintf(&hlsl[*offset], "\t_%" PRIu64 " = _%" PRIu64 ";\n", o->op_store_var.to.index, o->op_store_var.from.index);
+				*offset += sprintf(&glsl[*offset], "\t_%" PRIu64 " = _%" PRIu64 ";\n", o->op_store_var.to.index, o->op_store_var.from.index);
 				break;
 			case OPCODE_STORE_MEMBER:
-				*offset += sprintf(&hlsl[*offset], "\t_%" PRIu64, o->op_store_member.to.index);
+				*offset += sprintf(&glsl[*offset], "\t_%" PRIu64, o->op_store_member.to.index);
 				type *s = get_type(o->op_store_member.member_parent_type);
 				bool is_array = o->op_store_member.member_parent_array;
 				for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
 					if (is_array) {
-						*offset += sprintf(&hlsl[*offset], "[%i]", o->op_store_member.member_indices[i]);
+						*offset += sprintf(&glsl[*offset], "[%i]", o->op_store_member.member_indices[i]);
 						is_array = false;
 					}
 					else {
 						assert(o->op_store_member.member_indices[i] < s->members.size);
-						*offset += sprintf(&hlsl[*offset], ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
+						*offset += sprintf(&glsl[*offset], ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
 						is_array = s->members.m[o->op_store_member.member_indices[i]].type.array_size > 0;
 						s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
 					}
 				}
-				*offset += sprintf(&hlsl[*offset], " = _%" PRIu64 ";\n", o->op_store_member.from.index);
+				*offset += sprintf(&glsl[*offset], " = _%" PRIu64 ";\n", o->op_store_member.from.index);
 				break;
 			case OPCODE_LOAD_CONSTANT:
-				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = %f;\n", type_string(o->op_load_constant.to.type.type), o->op_load_constant.to.index,
+				*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 " = %f;\n", type_string(o->op_load_constant.to.type.type), o->op_load_constant.to.index,
 				                   o->op_load_constant.number);
 				break;
 			case OPCODE_LOAD_MEMBER: {
@@ -441,38 +441,38 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					}
 				}
 
-				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
+				*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
 				                   o->op_load_member.from.index);
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
 					if (global_var_index != 0) {
-						*offset += sprintf(&hlsl[*offset], "_%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+						*offset += sprintf(&glsl[*offset], "_%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
 					}
 					else {
-						*offset += sprintf(&hlsl[*offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+						*offset += sprintf(&glsl[*offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
 					}
 					s = get_type(s->members.m[o->op_load_member.member_indices[i]].type.type);
 				}
-				*offset += sprintf(&hlsl[*offset], ";\n");
+				*offset += sprintf(&glsl[*offset], ";\n");
 				break;
 			}
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
 					if (f == main && stage == SHADER_STAGE_FRAGMENT && f->return_type.array_size > 0) {
-						*offset += sprintf(&hlsl[*offset], "\t{\n");
-						*offset += sprintf(&hlsl[*offset], "\t\t_render_targets rts;\n");
+						*offset += sprintf(&glsl[*offset], "\t{\n");
+						*offset += sprintf(&glsl[*offset], "\t\t_render_targets rts;\n");
 						for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
-							*offset += sprintf(&hlsl[*offset], "\t\trts._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
+							*offset += sprintf(&glsl[*offset], "\t\trts._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
 						}
-						*offset += sprintf(&hlsl[*offset], "\t\treturn rts;\n");
-						*offset += sprintf(&hlsl[*offset], "\t}\n");
+						*offset += sprintf(&glsl[*offset], "\t\treturn rts;\n");
+						*offset += sprintf(&glsl[*offset], "\t}\n");
 					}
 					else {
-						*offset += sprintf(&hlsl[*offset], "\treturn _%" PRIu64 ";\n", o->op_return.var.index);
+						*offset += sprintf(&glsl[*offset], "\treturn _%" PRIu64 ";\n", o->op_return.var.index);
 					}
 				}
 				else {
-					*offset += sprintf(&hlsl[*offset], "\treturn;\n");
+					*offset += sprintf(&glsl[*offset], "\treturn;\n");
 				}
 				break;
 			}
@@ -480,41 +480,41 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				if (o->op_call.func == add_name("sample")) {
 					assert(o->op_call.parameters_size == 3);
 					*offset +=
-					    sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 ".Sample(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
+					    sprintf(&glsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 ".Sample(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
 					            o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index, o->op_call.parameters[2].index);
 				}
 				else if (o->op_call.func == add_name("sample_lod")) {
 					assert(o->op_call.parameters_size == 4);
-					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 ".SampleLevel(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
+					*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 ".SampleLevel(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
 					                   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index,
 					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index, o->op_call.parameters[3].index);
 				}
 				else {
-					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index,
+					*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index,
 					                   function_string(o->op_call.func));
 					if (o->op_call.parameters_size > 0) {
-						*offset += sprintf(&hlsl[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
+						*offset += sprintf(&glsl[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
 						for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
-							*offset += sprintf(&hlsl[*offset], ", _%" PRIu64, o->op_call.parameters[i].index);
+							*offset += sprintf(&glsl[*offset], ", _%" PRIu64, o->op_call.parameters[i].index);
 						}
 					}
-					*offset += sprintf(&hlsl[*offset], ");\n");
+					*offset += sprintf(&glsl[*offset], ");\n");
 				}
 				break;
 			}
 			case OPCODE_MULTIPLY: {
 				if (o->op_multiply.left.type.type == float4x4_id) {
-					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = mul(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_multiply.result.type.type),
+					*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 " = mul(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_multiply.result.type.type),
 					                   o->op_multiply.result.index, o->op_multiply.right.index, o->op_multiply.left.index);
 				}
 				else {
-					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
+					*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
 					                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
 				}
 				break;
 			}
 			case OPCODE_ADD: {
-				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " + _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
+				*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " + _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
 				                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
 				break;
 			}
@@ -526,12 +526,12 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			index += o->size;
 		}
 
-		*offset += sprintf(&hlsl[*offset], "}\n\n");
+		*offset += sprintf(&glsl[*offset], "}\n\n");
 	}
 }
 
-static hlsl_export_vertex(char *directory, function *main) {
-	char *hlsl = (char *)calloc(1024 * 1024, 1);
+static glsl_export_vertex(char *directory, function *main) {
+	char *glsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
 	type_id vertex_input = main->parameter_type.type;
@@ -540,15 +540,15 @@ static hlsl_export_vertex(char *directory, function *main) {
 	assert(vertex_input != NO_TYPE);
 	assert(vertex_output != NO_TYPE);
 
-	write_types(hlsl, &offset, SHADER_STAGE_VERTEX, vertex_input, vertex_output, main);
+	write_types(glsl, &offset, SHADER_STAGE_VERTEX, vertex_input, vertex_output, main);
 
-	write_globals(hlsl, &offset, main);
+	write_globals(glsl, &offset, main);
 
-	write_functions(hlsl, &offset, SHADER_STAGE_VERTEX, main);
+	write_functions(glsl, &offset, SHADER_STAGE_VERTEX, main);
 
 	char *output;
 	size_t output_size;
-	int result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
+	int result = compile_hlsl_to_d3d11(glsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
 	assert(result == 0);
 
 	char *name = get_name(main->name);
@@ -559,26 +559,26 @@ static hlsl_export_vertex(char *directory, function *main) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
+	write_bytecode(glsl, directory, filename, var_name, output, output_size);
 }
 
-static void hlsl_export_fragment(char *directory, function *main) {
-	char *hlsl = (char *)calloc(1024 * 1024, 1);
+static void glsl_export_fragment(char *directory, function *main) {
+	char *glsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
 	type_id pixel_input = main->parameter_type.type;
 
 	assert(pixel_input != NO_TYPE);
 
-	write_types(hlsl, &offset, SHADER_STAGE_FRAGMENT, pixel_input, NO_TYPE, main);
+	write_types(glsl, &offset, SHADER_STAGE_FRAGMENT, pixel_input, NO_TYPE, main);
 
-	write_globals(hlsl, &offset, main);
+	write_globals(glsl, &offset, main);
 
-	write_functions(hlsl, &offset, SHADER_STAGE_FRAGMENT, main);
+	write_functions(glsl, &offset, SHADER_STAGE_FRAGMENT, main);
 
 	uint8_t *output;
 	size_t output_size;
-	int result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
+	int result = compile_hlsl_to_d3d11(glsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
 	assert(result == 0);
 
 	char *name = get_name(main->name);
@@ -589,7 +589,7 @@ static void hlsl_export_fragment(char *directory, function *main) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
+	write_bytecode(glsl, directory, filename, var_name, output, output_size);
 }
 
 void glsl_export(char *directory) {
@@ -654,10 +654,10 @@ void glsl_export(char *directory) {
 	}
 
 	for (size_t i = 0; i < vertex_shaders_size; ++i) {
-		hlsl_export_vertex(directory, vertex_shaders[i]);
+		glsl_export_vertex(directory, vertex_shaders[i]);
 	}
 
 	for (size_t i = 0; i < fragment_shaders_size; ++i) {
-		hlsl_export_fragment(directory, fragment_shaders[i]);
+		glsl_export_fragment(directory, fragment_shaders[i]);
 	}
 }
