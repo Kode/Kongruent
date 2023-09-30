@@ -469,14 +469,8 @@ static void write_functions(char *glsl, size_t *offset, shader_stage stage, func
 				break;
 			}
 			case OPCODE_MULTIPLY: {
-				if (o->op_multiply.left.type.type == float4x4_id) {
-					*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 " = mul(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_multiply.result.type.type),
-					                   o->op_multiply.result.index, o->op_multiply.right.index, o->op_multiply.left.index);
-				}
-				else {
-					*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
-					                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
-				}
+				*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
+				                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
 				break;
 			}
 			case OPCODE_ADD: {
