@@ -331,8 +331,8 @@ static void write_globals(char *hlsl, size_t *offset, function *main) {
 			*offset += sprintf(&hlsl[*offset], "cbuffer _%" PRIu64 " : register(b%i) {\n", g.var_index, register_index);
 			type *t = get_type(g.type);
 			for (size_t i = 0; i < t->members.size; ++i) {
-				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 "_%s;\n", get_name(get_type(t->members.m[i].type.type)->name), g.var_index,
-				                   get_name(t->members.m[i].name));
+				*offset +=
+				    sprintf(&hlsl[*offset], "\t%s _%" PRIu64 "_%s;\n", type_string(t->members.m[i].type.type), g.var_index, get_name(t->members.m[i].name));
 			}
 			*offset += sprintf(&hlsl[*offset], "}\n\n");
 		}

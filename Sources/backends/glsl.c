@@ -55,7 +55,7 @@ static void write_code(char *glsl, char *directory, const char *filename, const 
 		FILE *file = fopen(full_filename, "wb");
 		fprintf(file, "#include \"%s.h\"\n\n", filename);
 
-		fprintf(file, "const char *%s = \"%s\";\n", name, glsl);
+		fprintf(file, "const char *%s = \"%s\";\n\n", name, glsl);
 
 		fprintf(file, "size_t %s_size = %" PRIu64 ";\n\n", name, strlen(glsl));
 
@@ -230,22 +230,21 @@ static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id 
 		type *t = get_type(types[i]);
 
 		if (!t->built_in && t->attribute != add_name("pipe")) {
-			*offset += sprintf(&glsl[*offset], "struct %s {\n", get_name(t->name));
+			if (types[i] != input && types[i] != output) {
+				*offset += sprintf(&glsl[*offset], "struct %s {\n", get_name(t->name));
+			}
 
 			if (stage == SHADER_STAGE_VERTEX && types[i] == input) {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					*offset +=
-					    sprintf(&glsl[*offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name), j);
+					*offset += sprintf(&glsl[*offset], "layout(location = %" PRIu64 ") in %s %s;\n", j, type_string(t->members.m[j].type.type),
+					                   get_name(t->members.m[j].name));
 				}
 			}
 			else if (stage == SHADER_STAGE_VERTEX && types[i] == output) {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					if (j == 0) {
-						*offset += sprintf(&glsl[*offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
-					}
-					else {
-						*offset += sprintf(&glsl[*offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type),
-						                   get_name(t->members.m[j].name), j - 1);
+					if (j != 0) {
+						*offset += sprintf(&glsl[*offset], "layout(location = %" PRIu64 ") out %s %s;\n", j - 1, type_string(t->members.m[j].type.type),
+						                   get_name(t->members.m[j].name));
 					}
 				}
 			}
@@ -265,7 +264,10 @@ static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id 
 					*offset += sprintf(&glsl[*offset], "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 				}
 			}
-			*offset += sprintf(&glsl[*offset], "};\n\n");
+
+			if (types[i] != input && types[i] != output) {
+				*offset += sprintf(&glsl[*offset], "};\n\n");
+			}
 		}
 	}
 }
@@ -291,11 +293,11 @@ static void write_globals(char *glsl, size_t *offset, function *main) {
 			*offset += sprintf(&glsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
 		}
 		else {
-			*offset += sprintf(&glsl[*offset], "cbuffer _%" PRIu64 " : register(b%i) {\n", g.var_index, register_index);
+			*offset += sprintf(&glsl[*offset], "layout(binding = %i) uniform _%" PRIu64 " {\n", register_index, g.var_index);
 			type *t = get_type(g.type);
 			for (size_t i = 0; i < t->members.size; ++i) {
-				*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 "_%s;\n", get_name(get_type(t->members.m[i].type.type)->name), g.var_index,
-				                   get_name(t->members.m[i].name));
+				*offset +=
+				    sprintf(&glsl[*offset], "\t%s _%" PRIu64 "_%s;\n", type_string(t->members.m[i].type.type), g.var_index, get_name(t->members.m[i].name));
 			}
 			*offset += sprintf(&glsl[*offset], "}\n\n");
 		}
@@ -330,8 +332,7 @@ static void write_functions(char *glsl, size_t *offset, shader_stage stage, func
 		assert(parameter_id != 0);
 		if (f == main) {
 			if (stage == SHADER_STAGE_VERTEX) {
-				*offset += sprintf(&glsl[*offset], "%s main(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), type_string(f->parameter_type.type),
-				                   parameter_id);
+				*offset += sprintf(&glsl[*offset], "void main() {\n");
 			}
 			else if (stage == SHADER_STAGE_FRAGMENT) {
 				if (f->return_type.array_size > 0) {
@@ -343,8 +344,7 @@ static void write_functions(char *glsl, size_t *offset, shader_stage stage, func
 					*offset += sprintf(&glsl[*offset], "_render_targets main(%s _%" PRIu64 ") {\n", type_string(f->parameter_type.type), parameter_id);
 				}
 				else {
-					*offset += sprintf(&glsl[*offset], "%s main(%s _%" PRIu64 ") : SV_Target0 {\n", type_string(f->return_type.type),
-					                   type_string(f->parameter_type.type), parameter_id);
+					*offset += sprintf(&glsl[*offset], "void main() {\n");
 				}
 			}
 			else {
@@ -492,6 +492,8 @@ static void write_functions(char *glsl, size_t *offset, shader_stage stage, func
 
 static glsl_export_vertex(char *directory, function *main) {
 	char *glsl = (char *)calloc(1024 * 1024, 1);
+	assert(glsl != NULL);
+
 	size_t offset = 0;
 
 	type_id vertex_input = main->parameter_type.type;
@@ -499,6 +501,8 @@ static glsl_export_vertex(char *directory, function *main) {
 
 	assert(vertex_input != NO_TYPE);
 	assert(vertex_output != NO_TYPE);
+
+	offset += sprintf(&glsl[offset], "#version 330\n\n");
 
 	write_types(glsl, &offset, SHADER_STAGE_VERTEX, vertex_input, vertex_output, main);
 
@@ -519,11 +523,15 @@ static glsl_export_vertex(char *directory, function *main) {
 
 static void glsl_export_fragment(char *directory, function *main) {
 	char *glsl = (char *)calloc(1024 * 1024, 1);
+	assert(glsl != NULL);
+
 	size_t offset = 0;
 
 	type_id pixel_input = main->parameter_type.type;
 
 	assert(pixel_input != NO_TYPE);
+
+	offset += sprintf(&glsl[offset], "#version 330\n\n");
 
 	write_types(glsl, &offset, SHADER_STAGE_FRAGMENT, pixel_input, NO_TYPE, main);
 
