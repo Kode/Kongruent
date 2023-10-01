@@ -246,16 +246,17 @@ static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id 
 			}
 			else if (stage == SHADER_STAGE_FRAGMENT && types[i] == input) {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					if (j == 0) {
-						*offset += sprintf(&glsl[*offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
-					}
-					else {
-						*offset += sprintf(&glsl[*offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type),
-						                   get_name(t->members.m[j].name), j - 1);
+					if (j != 0) {
+						*offset += sprintf(&glsl[*offset], "layout(location = %" PRIu64 ") in %s %s;\n", j - 1, type_string(t->members.m[j].type.type),
+						                   get_name(t->members.m[j].name));
 					}
 				}
 			}
 		}
+	}
+
+	if (stage == SHADER_STAGE_FRAGMENT) {
+		*offset += sprintf(&glsl[*offset], "out vec4 FragColor;\n");
 	}
 
 	*offset += sprintf(&glsl[*offset], "\n");
@@ -453,6 +454,7 @@ static void write_functions(char *glsl, size_t *offset, shader_stage stage, type
 							                   o->op_return.var.index, get_name(t->members.m[j].name));
 						}
 
+						*offset += sprintf(&glsl[*offset], "\t\treturn;\n");
 						*offset += sprintf(&glsl[*offset], "\t}\n");
 					}
 					else if (f == main && stage == SHADER_STAGE_FRAGMENT && f->return_type.array_size > 0) {
@@ -462,6 +464,12 @@ static void write_functions(char *glsl, size_t *offset, shader_stage stage, type
 							*offset += sprintf(&glsl[*offset], "\t\trts._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
 						}
 						*offset += sprintf(&glsl[*offset], "\t\treturn rts;\n");
+						*offset += sprintf(&glsl[*offset], "\t}\n");
+					}
+					else if (f == main && stage == SHADER_STAGE_FRAGMENT) {
+						*offset += sprintf(&glsl[*offset], "\t{\n");
+						*offset += sprintf(&glsl[*offset], "\t\tFragColor = _%" PRIu64 ";\n", o->op_return.var.index);
+						*offset += sprintf(&glsl[*offset], "\t\treturn;\n");
 						*offset += sprintf(&glsl[*offset], "\t}\n");
 					}
 					else {
