@@ -466,7 +466,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 	}
 }
 
-static hlsl_export_vertex(char *directory, function *main) {
+static void hlsl_export_vertex(char *directory, function *main) {
 	char *hlsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 

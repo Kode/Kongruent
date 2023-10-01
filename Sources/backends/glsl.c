@@ -457,7 +457,7 @@ static void write_functions(char *glsl, size_t *offset, shader_stage stage, type
 	}
 }
 
-static glsl_export_vertex(char *directory, function *main) {
+static void glsl_export_vertex(char *directory, function *main) {
 	char *glsl = (char *)calloc(1024 * 1024, 1);
 	assert(glsl != NULL);
 
