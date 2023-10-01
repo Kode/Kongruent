@@ -10,6 +10,7 @@
 
 #include "backends/glsl.h"
 #include "backends/hlsl.h"
+#include "backends/metal.h"
 
 #include "integrations/c.h"
 
@@ -513,6 +514,9 @@ int main(int argc, char **argv) {
 	}
 	else if (strcmp(api, "opengl") == 0) {
 		glsl_export(output);
+	}
+	else if (strcmp(api, "metal") == 0) {
+		metal_export(output);
 	}
 	else {
 		error("Unknown API", 0, 0);
