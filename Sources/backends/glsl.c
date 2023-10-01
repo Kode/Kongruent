@@ -307,7 +307,7 @@ static void write_globals(char *glsl, size_t *offset, function *main) {
 	}
 }
 
-static void write_functions(char *glsl, size_t *offset, shader_stage stage, function *main) {
+static void write_functions(char *glsl, size_t *offset, shader_stage stage, type_id input, type_id output, function *main) {
 	function *functions[256];
 	size_t functions_size = 0;
 
@@ -410,11 +410,21 @@ static void write_functions(char *glsl, size_t *offset, shader_stage stage, func
 					}
 				}
 
-				*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
-				                   o->op_load_member.from.index);
+				if (f == main && o->op_load_member.member_parent_type == input) {
+					*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 " = %s", type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
+					                   type_string(o->op_load_member.member_parent_type));
+				}
+				else {
+					*offset += sprintf(&glsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
+					                   o->op_load_member.from.index);
+				}
+
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
-					if (global_var_index != 0) {
+					if (f == main && o->op_load_member.member_parent_type == input) {
+						*offset += sprintf(&glsl[*offset], "_%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+					}
+					else if (global_var_index != 0) {
 						*offset += sprintf(&glsl[*offset], "_%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
 					}
 					else {
@@ -529,7 +539,7 @@ static glsl_export_vertex(char *directory, function *main) {
 
 	write_globals(glsl, &offset, main);
 
-	write_functions(glsl, &offset, SHADER_STAGE_VERTEX, main);
+	write_functions(glsl, &offset, SHADER_STAGE_VERTEX, vertex_input, vertex_output, main);
 
 	char *name = get_name(main->name);
 
@@ -558,7 +568,7 @@ static void glsl_export_fragment(char *directory, function *main) {
 
 	write_globals(glsl, &offset, main);
 
-	write_functions(glsl, &offset, SHADER_STAGE_FRAGMENT, main);
+	write_functions(glsl, &offset, SHADER_STAGE_FRAGMENT, pixel_input, NO_TYPE, main);
 
 	char *name = get_name(main->name);
 
