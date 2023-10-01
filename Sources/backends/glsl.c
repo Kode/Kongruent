@@ -230,21 +230,17 @@ static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id 
 		type *t = get_type(types[i]);
 
 		if (!t->built_in && t->attribute != add_name("pipe")) {
-			if (types[i] != input && types[i] != output) {
-				*offset += sprintf(&glsl[*offset], "struct %s {\n", get_name(t->name));
-			}
-
 			if (stage == SHADER_STAGE_VERTEX && types[i] == input) {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					*offset += sprintf(&glsl[*offset], "layout(location = %" PRIu64 ") in %s %s;\n", j, type_string(t->members.m[j].type.type),
-					                   get_name(t->members.m[j].name));
+					*offset += sprintf(&glsl[*offset], "layout(location = %" PRIu64 ") in %s %s_%s;\n", j, type_string(t->members.m[j].type.type),
+					                   get_name(t->name), get_name(t->members.m[j].name));
 				}
 			}
 			else if (stage == SHADER_STAGE_VERTEX && types[i] == output) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (j != 0) {
-						*offset += sprintf(&glsl[*offset], "layout(location = %" PRIu64 ") out %s %s;\n", j - 1, type_string(t->members.m[j].type.type),
-						                   get_name(t->members.m[j].name));
+						*offset += sprintf(&glsl[*offset], "layout(location = %" PRIu64 ") out %s %s_%s;\n", j - 1, type_string(t->members.m[j].type.type),
+						                   get_name(t->name), get_name(t->members.m[j].name));
 					}
 				}
 			}
@@ -259,15 +255,22 @@ static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id 
 					}
 				}
 			}
-			else {
-				for (size_t j = 0; j < t->members.size; ++j) {
-					*offset += sprintf(&glsl[*offset], "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
-				}
+		}
+	}
+
+	*offset += sprintf(&glsl[*offset], "\n");
+
+	for (size_t i = 0; i < types_size; ++i) {
+		type *t = get_type(types[i]);
+
+		if (!t->built_in && t->attribute != add_name("pipe")) {
+			*offset += sprintf(&glsl[*offset], "struct %s {\n", get_name(t->name));
+
+			for (size_t j = 0; j < t->members.size; ++j) {
+				*offset += sprintf(&glsl[*offset], "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 			}
 
-			if (types[i] != input && types[i] != output) {
-				*offset += sprintf(&glsl[*offset], "};\n\n");
-			}
+			*offset += sprintf(&glsl[*offset], "};\n\n");
 		}
 	}
 }
@@ -424,7 +427,25 @@ static void write_functions(char *glsl, size_t *offset, shader_stage stage, func
 			}
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
-					if (f == main && stage == SHADER_STAGE_FRAGMENT && f->return_type.array_size > 0) {
+					if (f == main && stage == SHADER_STAGE_VERTEX) {
+						*offset += sprintf(&glsl[*offset], "\t{\n");
+
+						type *t = get_type(f->return_type.type);
+
+						*offset += sprintf(&glsl[*offset], "\t\tgl_Position.x = _%" PRIu64 ".%s.x;\n", o->op_return.var.index, get_name(t->members.m[0].name));
+						*offset += sprintf(&glsl[*offset], "\t\tgl_Position.y = _%" PRIu64 ".%s.y;\n", o->op_return.var.index, get_name(t->members.m[0].name));
+						*offset += sprintf(&glsl[*offset], "\t\tgl_Position.z = (_%" PRIu64 ".%s.z * 2.0) - _%" PRIu64 ".%s.w;\n", o->op_return.var.index,
+						                   get_name(t->members.m[0].name), o->op_return.var.index, get_name(t->members.m[0].name));
+						*offset += sprintf(&glsl[*offset], "\t\tgl_Position.w = _%" PRIu64 ".%s.w;\n", o->op_return.var.index, get_name(t->members.m[0].name));
+
+						for (size_t j = 1; j < t->members.size; ++j) {
+							*offset += sprintf(&glsl[*offset], "\t\t%s_%s = _%" PRIu64 ".%s;\n", get_name(t->name), get_name(t->members.m[j].name),
+							                   o->op_return.var.index, get_name(t->members.m[j].name));
+						}
+
+						*offset += sprintf(&glsl[*offset], "\t}\n");
+					}
+					else if (f == main && stage == SHADER_STAGE_FRAGMENT && f->return_type.array_size > 0) {
 						*offset += sprintf(&glsl[*offset], "\t{\n");
 						*offset += sprintf(&glsl[*offset], "\t\t_render_targets rts;\n");
 						for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
