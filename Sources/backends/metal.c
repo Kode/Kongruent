@@ -365,6 +365,8 @@ static void write_functions(char *metal, size_t *offset) {
 				}
 				else if (g.type == texcube_type_id) {
 				}
+				else if (g.type == float_id) {
+				}
 				else {
 					buffers_offset += sprintf(&buffers[buffers_offset], ", constant _%" PRIu64 "_type& _%" PRIu64 " [[buffer(%i)]]", g.var_index, g.var_index,
 					                          register_index);
@@ -491,6 +493,8 @@ void metal_export(char *directory) {
 		else if (g.type == tex2d_type_id || g.type == texcube_type_id) {
 			global_register_indices[i] = texture_index;
 			texture_index += 1;
+		}
+		else if (g.type == float_id) {
 		}
 		else {
 			global_register_indices[i] = cbuffer_index;

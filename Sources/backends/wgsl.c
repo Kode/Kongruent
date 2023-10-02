@@ -515,6 +515,8 @@ void wgsl_export(char *directory) {
 			global_register_indices[i] = texture_index;
 			texture_index += 1;
 		}
+		else if (g.type == float_id) {
+		}
 		else {
 			global_register_indices[i] = cbuffer_index;
 			cbuffer_index += 1;

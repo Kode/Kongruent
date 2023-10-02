@@ -328,6 +328,8 @@ static void write_globals(char *hlsl, size_t *offset, function *main) {
 		else if (g.type == texcube_type_id) {
 			*offset += sprintf(&hlsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
 		}
+		else if (g.type == float_id) {
+		}
 		else {
 			*offset += sprintf(&hlsl[*offset], "cbuffer _%" PRIu64 " : register(b%i) {\n", g.var_index, register_index);
 			type *t = get_type(g.type);
@@ -544,6 +546,8 @@ void hlsl_export(char *directory) {
 		else if (g.type == tex2d_type_id || g.type == texcube_type_id) {
 			global_register_indices[i] = texture_index;
 			texture_index += 1;
+		}
+		else if (g.type == float_id) {
 		}
 		else {
 			global_register_indices[i] = cbuffer_index;
