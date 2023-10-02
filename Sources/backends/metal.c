@@ -462,7 +462,12 @@ static void write_functions(char *metal, size_t *offset) {
 
 static void metal_export_everything(char *directory) {
 	char *metal = (char *)calloc(1024 * 1024, 1);
+	assert(metal != NULL);
 	size_t offset = 0;
+
+	offset += sprintf(&metal[offset], "#include <metal_stdlib>\n");
+	offset += sprintf(&metal[offset], "#include <simd/simd.h>\n\n");
+	offset += sprintf(&metal[offset], "using namespace metal;\n\n");
 
 	write_types(metal, &offset);
 
