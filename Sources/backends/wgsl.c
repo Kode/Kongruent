@@ -17,19 +17,19 @@
 
 static char *type_string(type_id type) {
 	if (type == float_id) {
-		return "float";
+		return "f32";
 	}
 	if (type == float2_id) {
-		return "float2";
+		return "vec2<f32>";
 	}
 	if (type == float3_id) {
-		return "float3";
+		return "vec3<f32>";
 	}
 	if (type == float4_id) {
-		return "float4";
+		return "vec4<f32>";
 	}
 	if (type == float4x4_id) {
-		return "float4x4";
+		return "mat4x4<f32>";
 	}
 	return get_name(get_type(type)->name);
 }
@@ -258,24 +258,25 @@ static void write_types(char *wgsl, size_t *offset) {
 
 			if (is_vertex_input(i)) {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					*offset += sprintf(&wgsl[*offset], "\t%s %s [[attribute(%" PRIu64 ")]];\n", type_string(t->members.m[j].type.type),
-					                   get_name(t->members.m[j].name), j);
+					*offset += sprintf(&wgsl[*offset], "\t@location(%" PRIu64 ") %s: %s;\n", j, get_name(t->members.m[j].name),
+					                   type_string(t->members.m[j].type.type));
 				}
 			}
 			else if (is_fragment_input(i)) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (j == 0) {
-						*offset += sprintf(&wgsl[*offset], "\t%s %s [[position]];\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+						*offset +=
+						    sprintf(&wgsl[*offset], "\t@builtin(position) %s: %s;\n", get_name(t->members.m[j].name), type_string(t->members.m[j].type.type));
 					}
 					else {
-						*offset += sprintf(&wgsl[*offset], "\t%s %s [[user(locn%" PRIu64 ")]];\n", type_string(t->members.m[j].type.type),
-						                   get_name(t->members.m[j].name), j - 1);
+						*offset += sprintf(&wgsl[*offset], "\t@location(%" PRIu64 ") %s: %s;\n", j - 1, get_name(t->members.m[j].name),
+						                   type_string(t->members.m[j].type.type));
 					}
 				}
 			}
 			else {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					*offset += sprintf(&wgsl[*offset], "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+					*offset += sprintf(&wgsl[*offset], "\t%s: %s;\n", get_name(t->members.m[j].name), type_string(t->members.m[j].type.type));
 				}
 			}
 			*offset += sprintf(&wgsl[*offset], "};\n\n");
@@ -373,8 +374,8 @@ static void write_functions(char *wgsl, size_t *offset) {
 		}
 
 		if (is_vertex_function(i)) {
-			*offset += sprintf(&wgsl[*offset], "vertex %s %s(%s _%" PRIu64 "%s) {\n", type_string(f->return_type.type), get_name(f->name),
-			                   type_string(f->parameter_type.type), parameter_id, buffers);
+			*offset += sprintf(&wgsl[*offset], "@vertex fn %s(_%" PRIu64 ": %s%s) -> %s {\n", get_name(f->name), parameter_id,
+			                   type_string(f->parameter_type.type), buffers, type_string(f->return_type.type));
 		}
 		else if (is_fragment_function(i)) {
 			if (f->return_type.array_size > 0) {
@@ -386,8 +387,8 @@ static void write_functions(char *wgsl, size_t *offset) {
 				*offset += sprintf(&wgsl[*offset], "_render_targets main(%s _%" PRIu64 ") {\n", type_string(f->parameter_type.type), parameter_id);
 			}
 			else {
-				*offset += sprintf(&wgsl[*offset], "fragment %s %s(%s _%" PRIu64 "%s) [[color(0)]] {\n", type_string(f->return_type.type), get_name(f->name),
-				                   type_string(f->parameter_type.type), parameter_id, buffers);
+				*offset += sprintf(&wgsl[*offset], "@fragment fn %s(_%" PRIu64 ": %s%s) -> @location(0) %s {\n", get_name(f->name), parameter_id,
+				                   type_string(f->parameter_type.type), buffers, type_string(f->return_type.type));
 			}
 		}
 
@@ -400,6 +401,15 @@ static void write_functions(char *wgsl, size_t *offset) {
 		while (index < size) {
 			opcode *o = (opcode *)&data[index];
 			switch (o->type) {
+			case OPCODE_VAR:
+				if (o->op_var.var.type.array_size > 0) {
+					*offset += sprintf(&wgsl[*offset], "\t%s _%" PRIu64 "[%i];\n", type_string(o->op_var.var.type.type), o->op_var.var.index,
+					                   o->op_var.var.type.array_size);
+				}
+				else {
+					*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s;\n", o->op_var.var.index, type_string(o->op_var.var.type.type));
+				}
+				break;
 			case OPCODE_LOAD_MEMBER: {
 				uint64_t global_var_index = 0;
 				for (global_id j = 0; get_global(j).type != NO_TYPE; ++j) {
@@ -468,7 +478,7 @@ static void wgsl_export_everything(char *directory) {
 
 	write_functions(wgsl, &offset);
 
-	write_code(wgsl, directory, "kong");
+	write_code(wgsl, directory, "wgsl");
 }
 
 void wgsl_export(char *directory) {
