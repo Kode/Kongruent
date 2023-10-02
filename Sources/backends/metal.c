@@ -236,7 +236,28 @@ static void write_types(char *metal, size_t *offset) {
 		type *t = get_type(i);
 
 		if (!t->built_in && t->attribute != add_name("pipe")) {
-			*offset += sprintf(&metal[*offset], "struct %s {\n", get_name(t->name));
+			if (t->name == NO_NAME) {
+				char name[256];
+
+				bool found = false;
+				for (global_id j = 0; get_global(j).type != NO_TYPE; ++j) {
+					global g = get_global(j);
+					if (g.type == i) {
+						sprintf(name, "_%" PRIu64, g.var_index);
+						found = true;
+						break;
+					}
+				}
+
+				if (!found) {
+					strcpy(name, "Unknown");
+				}
+
+				*offset += sprintf(&metal[*offset], "struct %s_type {\n", name);
+			}
+			else {
+				*offset += sprintf(&metal[*offset], "struct %s {\n", get_name(t->name));
+			}
 
 			if (is_vertex_input(i)) {
 				for (size_t j = 0; j < t->members.size; ++j) {
@@ -280,15 +301,6 @@ static void write_globals(char *metal, size_t *offset) {
 		}
 		else if (g.type == texcube_type_id) {
 			*offset += sprintf(&metal[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
-		}
-		else {
-			*offset += sprintf(&metal[*offset], "cbuffer _%" PRIu64 " : register(b%i) {\n", g.var_index, register_index);
-			type *t = get_type(g.type);
-			for (size_t i = 0; i < t->members.size; ++i) {
-				*offset +=
-				    sprintf(&metal[*offset], "\t%s _%" PRIu64 "_%s;\n", type_string(t->members.m[i].type.type), g.var_index, get_name(t->members.m[i].name));
-			}
-			*offset += sprintf(&metal[*offset], "}\n\n");
 		}
 	}
 }
@@ -337,9 +349,35 @@ static void write_functions(char *metal, size_t *offset) {
 
 		assert(parameter_id != 0);
 
+		char buffers[1024];
+		strcpy(buffers, "");
+		if (is_vertex_function(i) || is_fragment_function(i)) {
+			global_id globals[256];
+			size_t globals_size = 0;
+			find_referenced_globals(f, globals, &globals_size);
+
+			size_t buffers_offset = 0;
+
+			for (size_t i = 0; i < globals_size; ++i) {
+				global g = get_global(globals[i]);
+				int register_index = global_register_indices[globals[i]];
+
+				if (g.type == sampler_type_id) {
+				}
+				else if (g.type == tex2d_type_id) {
+				}
+				else if (g.type == texcube_type_id) {
+				}
+				else {
+					buffers_offset += sprintf(&buffers[buffers_offset], ", constant _%" PRIu64 "_type& _%" PRIu64 " [[buffer(%i)]]", g.var_index, g.var_index,
+					                          register_index);
+				}
+			}
+		}
+
 		if (is_vertex_function(i)) {
-			*offset +=
-			    sprintf(&metal[*offset], "%s main(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), type_string(f->parameter_type.type), parameter_id);
+			*offset += sprintf(&metal[*offset], "vertex %s %s(%s _%" PRIu64 "%s) {\n", type_string(f->return_type.type), get_name(f->name),
+			                   type_string(f->parameter_type.type), parameter_id, buffers);
 		}
 		else if (is_fragment_function(i)) {
 			if (f->return_type.array_size > 0) {
@@ -351,8 +389,8 @@ static void write_functions(char *metal, size_t *offset) {
 				*offset += sprintf(&metal[*offset], "_render_targets main(%s _%" PRIu64 ") {\n", type_string(f->parameter_type.type), parameter_id);
 			}
 			else {
-				*offset += sprintf(&metal[*offset], "%s main(%s _%" PRIu64 ") : SV_Target0 {\n", type_string(f->return_type.type),
-				                   type_string(f->parameter_type.type), parameter_id);
+				*offset += sprintf(&metal[*offset], "fragment %s %s(%s _%" PRIu64 "%s) [[color(0)]] {\n", type_string(f->return_type.type), get_name(f->name),
+				                   type_string(f->parameter_type.type), parameter_id, buffers);
 			}
 		}
 
@@ -379,12 +417,7 @@ static void write_functions(char *metal, size_t *offset) {
 				                   o->op_load_member.from.index);
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
-					if (global_var_index != 0) {
-						*offset += sprintf(&metal[*offset], "_%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
-					}
-					else {
-						*offset += sprintf(&metal[*offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
-					}
+					*offset += sprintf(&metal[*offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
 					s = get_type(s->members.m[o->op_load_member.member_indices[i]].type.type);
 				}
 				*offset += sprintf(&metal[*offset], ";\n");
@@ -411,14 +444,8 @@ static void write_functions(char *metal, size_t *offset) {
 				break;
 			}
 			case OPCODE_MULTIPLY: {
-				if (o->op_multiply.left.type.type == float4x4_id) {
-					*offset += sprintf(&metal[*offset], "\t%s _%" PRIu64 " = mul(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_multiply.result.type.type),
-					                   o->op_multiply.result.index, o->op_multiply.right.index, o->op_multiply.left.index);
-				}
-				else {
-					*offset += sprintf(&metal[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
-					                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
-				}
+				*offset += sprintf(&metal[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
+				                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
 				break;
 			}
 			default:
