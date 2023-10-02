@@ -11,6 +11,7 @@
 #include "backends/glsl.h"
 #include "backends/hlsl.h"
 #include "backends/metal.h"
+#include "backends/wgsl.h"
 
 #include "integrations/c.h"
 
@@ -517,6 +518,9 @@ int main(int argc, char **argv) {
 	}
 	else if (strcmp(api, "metal") == 0) {
 		metal_export(output);
+	}
+	else if (strcmp(api, "webgpu") == 0) {
+		wgsl_export(output);
 	}
 	else {
 		error("Unknown API", 0, 0);
