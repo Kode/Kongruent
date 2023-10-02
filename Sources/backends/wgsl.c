@@ -1,4 +1,4 @@
-#include "metal.h"
+#include "wgsl.h"
 
 #include "../compiler.h"
 #include "../functions.h"
@@ -38,12 +38,12 @@ static char *function_string(name_id func) {
 	return get_name(func);
 }
 
-static void write_code(char *metal, char *directory, const char *filename) {
+static void write_code(char *wgsl, char *directory, const char *filename) {
 	char full_filename[512];
-	sprintf(full_filename, "%s/%s.metal", directory, filename);
+	sprintf(full_filename, "%s/%s.c", directory, filename);
 
 	FILE *file = fopen(full_filename, "wb");
-	fprintf(file, "%s", metal);
+	fprintf(file, "%s", wgsl);
 	fclose(file);
 }
 
@@ -228,7 +228,7 @@ static bool is_fragment_input(type_id t) {
 	return false;
 }
 
-static void write_types(char *metal, size_t *offset) {
+static void write_types(char *wgsl, size_t *offset) {
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 
@@ -250,54 +250,54 @@ static void write_types(char *metal, size_t *offset) {
 					strcpy(name, "Unknown");
 				}
 
-				*offset += sprintf(&metal[*offset], "struct %s_type {\n", name);
+				*offset += sprintf(&wgsl[*offset], "struct %s_type {\n", name);
 			}
 			else {
-				*offset += sprintf(&metal[*offset], "struct %s {\n", get_name(t->name));
+				*offset += sprintf(&wgsl[*offset], "struct %s {\n", get_name(t->name));
 			}
 
 			if (is_vertex_input(i)) {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					*offset += sprintf(&metal[*offset], "\t%s %s [[attribute(%" PRIu64 ")]];\n", type_string(t->members.m[j].type.type),
+					*offset += sprintf(&wgsl[*offset], "\t%s %s [[attribute(%" PRIu64 ")]];\n", type_string(t->members.m[j].type.type),
 					                   get_name(t->members.m[j].name), j);
 				}
 			}
 			else if (is_fragment_input(i)) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (j == 0) {
-						*offset += sprintf(&metal[*offset], "\t%s %s [[position]];\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+						*offset += sprintf(&wgsl[*offset], "\t%s %s [[position]];\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 					}
 					else {
-						*offset += sprintf(&metal[*offset], "\t%s %s [[user(locn%" PRIu64 ")]];\n", type_string(t->members.m[j].type.type),
+						*offset += sprintf(&wgsl[*offset], "\t%s %s [[user(locn%" PRIu64 ")]];\n", type_string(t->members.m[j].type.type),
 						                   get_name(t->members.m[j].name), j - 1);
 					}
 				}
 			}
 			else {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					*offset += sprintf(&metal[*offset], "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+					*offset += sprintf(&wgsl[*offset], "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 				}
 			}
-			*offset += sprintf(&metal[*offset], "};\n\n");
+			*offset += sprintf(&wgsl[*offset], "};\n\n");
 		}
 	}
 }
 
 static int global_register_indices[512];
 
-static void write_globals(char *metal, size_t *offset) {
+static void write_globals(char *wgsl, size_t *offset) {
 	for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
 		global g = get_global(i);
 		int register_index = global_register_indices[i];
 
 		if (g.type == sampler_type_id) {
-			*offset += sprintf(&metal[*offset], "SamplerState _%" PRIu64 " : register(s%i);\n\n", g.var_index, register_index);
+			*offset += sprintf(&wgsl[*offset], "SamplerState _%" PRIu64 " : register(s%i);\n\n", g.var_index, register_index);
 		}
 		else if (g.type == tex2d_type_id) {
-			*offset += sprintf(&metal[*offset], "Texture2D<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
+			*offset += sprintf(&wgsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
 		}
 		else if (g.type == texcube_type_id) {
-			*offset += sprintf(&metal[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
+			*offset += sprintf(&wgsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
 		}
 	}
 }
@@ -325,7 +325,7 @@ static bool is_fragment_function(function_id f) {
 	return false;
 }
 
-static void write_functions(char *metal, size_t *offset) {
+static void write_functions(char *wgsl, size_t *offset) {
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
 
@@ -373,26 +373,26 @@ static void write_functions(char *metal, size_t *offset) {
 		}
 
 		if (is_vertex_function(i)) {
-			*offset += sprintf(&metal[*offset], "vertex %s %s(%s _%" PRIu64 "%s) {\n", type_string(f->return_type.type), get_name(f->name),
+			*offset += sprintf(&wgsl[*offset], "vertex %s %s(%s _%" PRIu64 "%s) {\n", type_string(f->return_type.type), get_name(f->name),
 			                   type_string(f->parameter_type.type), parameter_id, buffers);
 		}
 		else if (is_fragment_function(i)) {
 			if (f->return_type.array_size > 0) {
-				*offset += sprintf(&metal[*offset], "struct _render_targets {\n");
+				*offset += sprintf(&wgsl[*offset], "struct _render_targets {\n");
 				for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
-					*offset += sprintf(&metal[*offset], "\t%s _%i : SV_Target%i;\n", type_string(f->return_type.type), j, j);
+					*offset += sprintf(&wgsl[*offset], "\t%s _%i : SV_Target%i;\n", type_string(f->return_type.type), j, j);
 				}
-				*offset += sprintf(&metal[*offset], "};\n\n");
-				*offset += sprintf(&metal[*offset], "_render_targets main(%s _%" PRIu64 ") {\n", type_string(f->parameter_type.type), parameter_id);
+				*offset += sprintf(&wgsl[*offset], "};\n\n");
+				*offset += sprintf(&wgsl[*offset], "_render_targets main(%s _%" PRIu64 ") {\n", type_string(f->parameter_type.type), parameter_id);
 			}
 			else {
-				*offset += sprintf(&metal[*offset], "fragment %s %s(%s _%" PRIu64 "%s) [[color(0)]] {\n", type_string(f->return_type.type), get_name(f->name),
+				*offset += sprintf(&wgsl[*offset], "fragment %s %s(%s _%" PRIu64 "%s) [[color(0)]] {\n", type_string(f->return_type.type), get_name(f->name),
 				                   type_string(f->parameter_type.type), parameter_id, buffers);
 			}
 		}
 
 		else {
-			*offset += sprintf(&metal[*offset], "%s %s(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), get_name(f->name),
+			*offset += sprintf(&wgsl[*offset], "%s %s(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), get_name(f->name),
 			                   type_string(f->parameter_type.type), parameter_id);
 		}
 
@@ -410,69 +410,65 @@ static void write_functions(char *metal, size_t *offset) {
 					}
 				}
 
-				*offset += sprintf(&metal[*offset], "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
+				*offset += sprintf(&wgsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
 				                   o->op_load_member.from.index);
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
-					*offset += sprintf(&metal[*offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+					*offset += sprintf(&wgsl[*offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
 					s = get_type(s->members.m[o->op_load_member.member_indices[i]].type.type);
 				}
-				*offset += sprintf(&metal[*offset], ";\n");
+				*offset += sprintf(&wgsl[*offset], ";\n");
 				break;
 			}
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
 					if (is_fragment_function(i) && f->return_type.array_size > 0) {
-						*offset += sprintf(&metal[*offset], "\t{\n");
-						*offset += sprintf(&metal[*offset], "\t\t_render_targets rts;\n");
+						*offset += sprintf(&wgsl[*offset], "\t{\n");
+						*offset += sprintf(&wgsl[*offset], "\t\t_render_targets rts;\n");
 						for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
-							*offset += sprintf(&metal[*offset], "\t\trts._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
+							*offset += sprintf(&wgsl[*offset], "\t\trts._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
 						}
-						*offset += sprintf(&metal[*offset], "\t\treturn rts;\n");
-						*offset += sprintf(&metal[*offset], "\t}\n");
+						*offset += sprintf(&wgsl[*offset], "\t\treturn rts;\n");
+						*offset += sprintf(&wgsl[*offset], "\t}\n");
 					}
 					else {
-						*offset += sprintf(&metal[*offset], "\treturn _%" PRIu64 ";\n", o->op_return.var.index);
+						*offset += sprintf(&wgsl[*offset], "\treturn _%" PRIu64 ";\n", o->op_return.var.index);
 					}
 				}
 				else {
-					*offset += sprintf(&metal[*offset], "\treturn;\n");
+					*offset += sprintf(&wgsl[*offset], "\treturn;\n");
 				}
 				break;
 			}
 			case OPCODE_MULTIPLY: {
-				*offset += sprintf(&metal[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
+				*offset += sprintf(&wgsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
 				                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
 				break;
 			}
 			default:
-				cstyle_write_opcode(metal, offset, o, type_string);
+				cstyle_write_opcode(wgsl, offset, o, type_string);
 				break;
 			}
 
 			index += o->size;
 		}
 
-		*offset += sprintf(&metal[*offset], "}\n\n");
+		*offset += sprintf(&wgsl[*offset], "}\n\n");
 	}
 }
 
-static void metal_export_everything(char *directory) {
-	char *metal = (char *)calloc(1024 * 1024, 1);
-	assert(metal != NULL);
+static void wgsl_export_everything(char *directory) {
+	char *wgsl = (char *)calloc(1024 * 1024, 1);
+	assert(wgsl != NULL);
 	size_t offset = 0;
 
-	offset += sprintf(&metal[offset], "#include <metal_stdlib>\n");
-	offset += sprintf(&metal[offset], "#include <simd/simd.h>\n\n");
-	offset += sprintf(&metal[offset], "using namespace metal;\n\n");
+	write_types(wgsl, &offset);
 
-	write_types(metal, &offset);
+	write_globals(wgsl, &offset);
 
-	write_globals(metal, &offset);
+	write_functions(wgsl, &offset);
 
-	write_functions(metal, &offset);
-
-	write_code(metal, directory, "kong");
+	write_code(wgsl, directory, "kong");
 }
 
 void wgsl_export(char *directory) {
@@ -536,5 +532,5 @@ void wgsl_export(char *directory) {
 		}
 	}
 
-	metal_export_everything(directory);
+	wgsl_export_everything(directory);
 }
