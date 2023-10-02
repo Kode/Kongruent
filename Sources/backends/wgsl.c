@@ -292,13 +292,26 @@ static void write_globals(char *wgsl, size_t *offset) {
 		int register_index = global_register_indices[i];
 
 		if (g.type == sampler_type_id) {
-			*offset += sprintf(&wgsl[*offset], "SamplerState _%" PRIu64 " : register(s%i);\n\n", g.var_index, register_index);
+			*offset += sprintf(&wgsl[*offset], "@group(0) binding(%i) _%" PRIu64 ": sampler;\n\n", register_index, g.var_index);
 		}
 		else if (g.type == tex2d_type_id) {
-			*offset += sprintf(&wgsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
+			*offset += sprintf(&wgsl[*offset], "@group(0) binding(%i) _%" PRIu64 ": texture_2d<f32>;\n\n", register_index, g.var_index);
 		}
 		else if (g.type == texcube_type_id) {
 			*offset += sprintf(&wgsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
+		}
+		else if (g.type == float_id) {
+		}
+		else {
+			type *t = get_type(g.type);
+			char type_name[256];
+			if (t->name != NO_NAME) {
+				strcpy(type_name, get_name(t->name));
+			}
+			else {
+				sprintf(type_name, "_%" PRIu64 "_type", g.var_index);
+			}
+			*offset += sprintf(&wgsl[*offset], "@group(0) binding(%i) var<uniform> _%" PRIu64 ": %s;\n\n", register_index, g.var_index, type_name);
 		}
 	}
 }
@@ -347,35 +360,9 @@ static void write_functions(char *wgsl, size_t *offset) {
 
 		assert(parameter_id != 0);
 
-		char buffers[1024];
-		strcpy(buffers, "");
-		if (is_vertex_function(i) || is_fragment_function(i)) {
-			global_id globals[256];
-			size_t globals_size = 0;
-			find_referenced_globals(f, globals, &globals_size);
-
-			size_t buffers_offset = 0;
-
-			for (size_t i = 0; i < globals_size; ++i) {
-				global g = get_global(globals[i]);
-				int register_index = global_register_indices[globals[i]];
-
-				if (g.type == sampler_type_id) {
-				}
-				else if (g.type == tex2d_type_id) {
-				}
-				else if (g.type == texcube_type_id) {
-				}
-				else {
-					buffers_offset += sprintf(&buffers[buffers_offset], ", constant _%" PRIu64 "_type& _%" PRIu64 " [[buffer(%i)]]", g.var_index, g.var_index,
-					                          register_index);
-				}
-			}
-		}
-
 		if (is_vertex_function(i)) {
-			*offset += sprintf(&wgsl[*offset], "@vertex fn %s(_%" PRIu64 ": %s%s) -> %s {\n", get_name(f->name), parameter_id,
-			                   type_string(f->parameter_type.type), buffers, type_string(f->return_type.type));
+			*offset += sprintf(&wgsl[*offset], "@vertex fn %s(_%" PRIu64 ": %s) -> %s {\n", get_name(f->name), parameter_id,
+			                   type_string(f->parameter_type.type), type_string(f->return_type.type));
 		}
 		else if (is_fragment_function(i)) {
 			if (f->return_type.array_size > 0) {
@@ -387,8 +374,8 @@ static void write_functions(char *wgsl, size_t *offset) {
 				*offset += sprintf(&wgsl[*offset], "_render_targets main(%s _%" PRIu64 ") {\n", type_string(f->parameter_type.type), parameter_id);
 			}
 			else {
-				*offset += sprintf(&wgsl[*offset], "@fragment fn %s(_%" PRIu64 ": %s%s) -> @location(0) %s {\n", get_name(f->name), parameter_id,
-				                   type_string(f->parameter_type.type), buffers, type_string(f->return_type.type));
+				*offset += sprintf(&wgsl[*offset], "@fragment fn %s(_%" PRIu64 ": %s) -> @location(0) %s {\n", get_name(f->name), parameter_id,
+				                   type_string(f->parameter_type.type), type_string(f->return_type.type));
 			}
 		}
 
@@ -420,8 +407,8 @@ static void write_functions(char *wgsl, size_t *offset) {
 					}
 				}
 
-				*offset += sprintf(&wgsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
-				                   o->op_load_member.from.index);
+				*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64, o->op_load_member.to.index,
+				                   type_string(o->op_load_member.to.type.type), o->op_load_member.from.index);
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
 					*offset += sprintf(&wgsl[*offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
@@ -451,8 +438,38 @@ static void write_functions(char *wgsl, size_t *offset) {
 				break;
 			}
 			case OPCODE_MULTIPLY: {
-				*offset += sprintf(&wgsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
-				                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
+				*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64 " * _%" PRIu64 ";\n", o->op_multiply.result.index,
+				                   type_string(o->op_multiply.result.type.type), o->op_multiply.left.index, o->op_multiply.right.index);
+				break;
+			}
+			case OPCODE_LOAD_CONSTANT:
+				*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = %f;\n", o->op_load_constant.to.index,
+				                   type_string(o->op_load_constant.to.type.type), o->op_load_constant.number);
+				break;
+			case OPCODE_CALL: {
+				if (o->op_call.func == add_name("sample")) {
+					assert(o->op_call.parameters_size == 3);
+					*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = textureSample(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
+					                   o->op_call.var.index, type_string(o->op_call.var.type.type), o->op_call.parameters[0].index,
+					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index);
+				}
+				else if (o->op_call.func == add_name("sample_lod")) {
+					assert(o->op_call.parameters_size == 4);
+					*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = textureSample(_%" PRIu64 ",_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
+					                   o->op_call.var.index, type_string(o->op_call.var.type.type), o->op_call.parameters[0].index,
+					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index, o->op_call.parameters[3].index);
+				}
+				else {
+					*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = %s(", o->op_call.var.index, type_string(o->op_call.var.type.type),
+					                   function_string(o->op_call.func));
+					if (o->op_call.parameters_size > 0) {
+						*offset += sprintf(&wgsl[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
+						for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
+							*offset += sprintf(&wgsl[*offset], ", _%" PRIu64, o->op_call.parameters[i].index);
+						}
+					}
+					*offset += sprintf(&wgsl[*offset], ");\n");
+				}
 				break;
 			}
 			default:
