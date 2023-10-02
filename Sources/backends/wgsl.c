@@ -298,7 +298,7 @@ static void write_globals(char *wgsl, size_t *offset) {
 			*offset += sprintf(&wgsl[*offset], "@group(0) binding(%i) _%" PRIu64 ": texture_2d<f32>;\n\n", register_index, g.var_index);
 		}
 		else if (g.type == texcube_type_id) {
-			*offset += sprintf(&wgsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
+			*offset += sprintf(&wgsl[*offset], "@group(0) binding(%i) _%" PRIu64 ": texture_cube<f32>;\n\n", register_index, g.var_index);
 		}
 		else if (g.type == float_id) {
 		}
