@@ -38,16 +38,13 @@ static char *function_string(name_id func) {
 	return get_name(func);
 }
 
-static void write_code(char *metal, char *directory, const char *filename, const char *name) {
+static void write_code(char *metal, char *directory, const char *filename) {
 	char full_filename[512];
+	sprintf(full_filename, "%s/%s.metal", directory, filename);
 
-	{
-		sprintf(full_filename, "%s/%s.metal", directory, filename);
-
-		FILE *file = fopen(full_filename, "wb");
-		fprintf(file, "%s", metal);
-		fclose(file);
-	}
+	FILE *file = fopen(full_filename, "wb");
+	fprintf(file, "%s", metal);
+	fclose(file);
 }
 
 static void find_referenced_functions(function *f, function **functions, size_t *functions_size) {
@@ -475,13 +472,7 @@ static void metal_export_everything(char *directory) {
 
 	write_functions(metal, &offset);
 
-	char filename[512];
-	sprintf(filename, "kong_metal");
-
-	char var_name[256];
-	sprintf(var_name, "metal_code");
-
-	write_code(metal, directory, filename, var_name);
+	write_code(metal, directory, "kong");
 }
 
 void metal_export(char *directory) {
