@@ -1,4 +1,5 @@
 let project = new Project('Kongruent');
+project.setExecutableName('kongruent');
 
 let library = false;
 
