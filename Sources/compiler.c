@@ -80,19 +80,19 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 		switch (e->binary.op) {
 		case OPERATOR_EQUALS:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_NOT_EQUALS:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_GREATER:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_GREATER_EQUAL:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_LESS:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_LESS_EQUAL:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_MINUS:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_PLUS: {
 			variable right_var = emit_expression(code, parent, right);
 			variable left_var = emit_expression(code, parent, left);
@@ -109,7 +109,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			return result_var;
 		}
 		case OPERATOR_DIVIDE:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented", 0, 0);
 		case OPERATOR_MULTIPLY: {
 			variable right_var = emit_expression(code, parent, right);
 			variable left_var = emit_expression(code, parent, left);
@@ -126,13 +126,13 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			return result_var;
 		}
 		case OPERATOR_NOT:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_OR:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_AND:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_MOD:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_ASSIGN: {
 			variable v = emit_expression(code, parent, right);
 
@@ -218,7 +218,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				break;
 			}
 			default:
-				error("Expected a variable or a member", 0, 0);
+				error(0, 0, "Expected a variable or a member");
 			}
 
 			return v;
@@ -229,25 +229,25 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	case EXPRESSION_UNARY:
 		switch (e->unary.op) {
 		case OPERATOR_EQUALS:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_NOT_EQUALS:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_GREATER:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_GREATER_EQUAL:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_LESS:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_LESS_EQUAL:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_MINUS:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_PLUS:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_DIVIDE:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_MULTIPLY:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_NOT: {
 			variable v = emit_expression(code, parent, e->unary.right);
 			opcode o;
@@ -259,16 +259,16 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			return o.op_not.to;
 		}
 		case OPERATOR_OR:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_AND:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_MOD:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		case OPERATOR_ASSIGN:
-			error("not implemented", 0, 0);
+			error(0, 0, "not implemented");
 		}
 	case EXPRESSION_BOOLEAN:
-		error("not implemented", 0, 0);
+		error(0, 0, "not implemented");
 	case EXPRESSION_NUMBER: {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
@@ -304,7 +304,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		}
 	}
 	case EXPRESSION_GROUPING:
-		error("not implemented", 0, 0);
+		error(0, 0, "not implemented");
 	case EXPRESSION_CALL: {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
@@ -395,7 +395,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		return v;
 	}
 	case EXPRESSION_CONSTRUCTOR:
-		error("not implemented", 0, 0);
+		error(0, 0, "not implemented");
 	}
 
 	assert(false);
@@ -424,10 +424,10 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		break;
 	}
 	case STATEMENT_IF:
-		error("not implemented", 0, 0);
+		error(0, 0, "not implemented");
 		break;
 	case STATEMENT_BLOCK:
-		error("not implemented", 0, 0);
+		error(0, 0, "not implemented");
 		break;
 	case STATEMENT_LOCAL_VARIABLE: {
 		opcode o;
@@ -485,7 +485,7 @@ void convert_function_block(opcodes *code, struct statement *block) {
 	}
 
 	if (block->kind != STATEMENT_BLOCK) {
-		error("Expected a block", 0, 0);
+		error(0, 0, "Expected a block");
 	}
 	for (size_t i = 0; i < block->block.vars.size; ++i) {
 		variable var = allocate_variable(block->block.vars.v[i].type);

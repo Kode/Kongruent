@@ -54,13 +54,13 @@ static void advance_state(state_t *state) {
 
 static void match_token(state_t *state, int token, const char *error_message) {
 	if (current(state).kind != token) {
-		error(error_message, current(state).column, current(state).line);
+		error(current(state).column, current(state).line, error_message);
 	}
 }
 
 static void match_token_identifier(state_t *state) {
 	if (current(state).kind != TOKEN_IDENTIFIER) {
-		error("Expected an identifier", current(state).column, current(state).line);
+		error(current(state).column, current(state).line, "Expected an identifier");
 	}
 }
 
@@ -103,7 +103,7 @@ static statement *parse_block(state_t *state) {
 			return statement;
 		}
 		case TOKEN_NONE:
-			error("File ended before a block ended", current(state).column, current(state).line);
+			error(current(state).column, current(state).line, "File ended before a block ended");
 			return NULL;
 		default:
 			statements_add(&statements, parse_statement(state));
@@ -246,7 +246,7 @@ static definition parse_definition(state_t *state) {
 		return d;
 	}
 	default: {
-		error("Expected a struct, a function or a const", current(state).column, current(state).line);
+		error(current(state).column, current(state).line, "Expected a struct, a function or a const");
 
 		definition d = {0};
 		return d;
@@ -622,7 +622,7 @@ static expression *parse_member(state_t *state, bool number) {
 		}
 	}
 	else {
-		error("Unexpected token", current(state).column, current(state).line);
+		error(current(state).column, current(state).line, "Unexpected token");
 		return NULL;
 	}
 }
@@ -680,7 +680,7 @@ static expression *parse_primary(state_t *state) {
 		break;
 	}
 	default:
-		error("Unexpected token", current(state).column, current(state).line);
+		error(current(state).column, current(state).line, "Unexpected token");
 		return NULL;
 	}
 
@@ -697,7 +697,7 @@ static expression *parse_primary(state_t *state) {
 
 		if (current(state).kind == TOKEN_LEFT_PAREN) {
 			// return parse_call(state, member);
-			error("Function members not currently supported", current(state).column, current(state).line);
+			error(current(state).column, current(state).line, "Function members not currently supported");
 			return NULL;
 		}
 		else {
@@ -753,7 +753,7 @@ static expression *parse_call(state_t *state, name_id func_name) {
 
 		if (current(state).kind == TOKEN_LEFT_PAREN) {
 			// return parse_call(state, member);
-			error("Function members not currently supported", current(state).column, current(state).line);
+			error(current(state).column, current(state).line, "Function members not currently supported");
 			return NULL;
 		}
 		else {

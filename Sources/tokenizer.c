@@ -223,9 +223,9 @@ tokens tokenize(const char *source) {
 			// case MODE_STRING:
 			//	error("Unclosed string", state.column, state.line);
 			case MODE_OPERATOR:
-				error("File ends with an operator", state.column, state.line);
+				error(state.column, state.line, "File ends with an operator");
 			case MODE_COMMENT:
-				error("Unclosed comment", state.column, state.line);
+				error(state.column, state.line, "Unclosed comment");
 			}
 
 			tokens_add(&tokens, token_create(TOKEN_NONE, &state));
@@ -257,11 +257,11 @@ tokens tokenize(const char *source) {
 					if (state.next >= 0) {
 						char ch = state.next;
 						if (ch != '[') {
-							error("Expected [", state.column, state.line);
+							error(state.column, state.line, "Expected [");
 						}
 					}
 					else {
-						error("Expected [", state.column, state.line);
+						error(state.column, state.line, "Expected [");
 					}
 
 					mode = MODE_ATTRIBUTE;
@@ -312,7 +312,7 @@ tokens tokenize(const char *source) {
 				else if (ch == '"' || ch == '\'') {
 					// mode = MODE_STRING;
 					// tokenizer_buffer_reset(&buffer, &state);
-					error("Strings are not supported", state.column, state.line);
+					error(state.column, state.line, "Strings are not supported");
 				}
 				else {
 					mode = MODE_IDENTIFIER;
@@ -446,7 +446,7 @@ tokens tokenize(const char *source) {
 					tokens_add(&tokens, token);
 				}
 				else {
-					error("Weird operator", state.column, state.line);
+					error(state.column, state.line, "Weird operator");
 				}
 
 				mode = MODE_SELECT;

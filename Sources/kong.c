@@ -118,9 +118,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 				e->type = e->binary.right->type;
 			}
 			else {
-				char output[256];
-				sprintf(output, "Type mismatch %s vs %s", get_name(get_type(left_type)->name), get_name(get_type(right_type)->name));
-				error(output, 0, 0);
+				error(0, 0, "Type mismatch %s vs %s", get_name(get_type(left_type)->name), get_name(get_type(right_type)->name));
 			}
 			break;
 		}
@@ -132,15 +130,13 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 			type_id left_type = e->binary.left->type.type;
 			type_id right_type = e->binary.right->type.type;
 			if (left_type != right_type) {
-				char output[256];
-				sprintf(output, "Type mismatch %s vs %s", get_name(get_type(left_type)->name), get_name(get_type(right_type)->name));
-				error(output, 0, 0);
+				error(0, 0, "Type mismatch %s vs %s", get_name(get_type(left_type)->name), get_name(get_type(right_type)->name));
 			}
 			e->type = e->binary.left->type;
 			break;
 		}
 		case OPERATOR_NOT: {
-			error("Weird binary operator", 0, 0);
+			error(0, 0, "Weird binary operator");
 			break;
 		}
 		}
@@ -171,7 +167,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		case OPERATOR_MOD:
 		case OPERATOR_ASSIGN:
 		default:
-			error("Weird unary operator", 0, 0);
+			error(0, 0, "Weird unary operator");
 			break;
 		}
 	}
@@ -191,9 +187,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		else {
 			type_ref type = find_local_var_type(&parent->block, e->variable);
 			if (type.type == NO_TYPE) {
-				char output[256];
-				sprintf(output, "Variable %s not found", get_name(e->variable));
-				error(output, 0, 0);
+				error(0, 0, "Variable %s not found", get_name(e->variable));
 			}
 			e->type = type;
 		}
@@ -224,13 +218,13 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		break;
 	}
 	case EXPRESSION_CONSTRUCTOR: {
-		error("not implemented", 0, 0);
+		error(0, 0, "not implemented");
 		break;
 	}
 	}
 
 	if (e->type.type == NO_TYPE) {
-		error("Could not resolve type", 0, 0);
+		error(0, 0, "Could not resolve type");
 	}
 }
 
@@ -264,9 +258,7 @@ void resolve_types_in_block(statement *parent, statement *block) {
 				s->local_variable.var.type.type = find_type_by_name(var_type_name);
 			}
 			if (s->local_variable.var.type.type == NO_TYPE) {
-				char output[256];
-				sprintf(output, "Could not find type %s for %s", get_name(var_type_name), get_name(var_name));
-				error(output, 0, 0);
+				error(0, 0, "Could not find type %s for %s", get_name(var_type_name), get_name(var_name));
 			}
 
 			if (s->local_variable.init != NULL) {
@@ -290,11 +282,7 @@ void resolve_types(void) {
 				name_id name = s->members.m[j].type.name;
 				s->members.m[j].type.type = find_type_by_name(name);
 				if (s->members.m[j].type.type == NO_TYPE) {
-					char output[256];
-					char *struct_name = get_name(s->name);
-					char *member_type_name = get_name(name);
-					sprintf(output, "Could not find type %s in %s", member_type_name, struct_name);
-					error(output, 0, 0);
+					error(0, 0, "Could not find type %s in %s", get_name(name), get_name(s->name));
 				}
 			}
 		}
@@ -307,11 +295,7 @@ void resolve_types(void) {
 			name_id parameter_type_name = f->parameter_type.name;
 			f->parameter_type.type = find_type_by_name(parameter_type_name);
 			if (f->parameter_type.type == NO_TYPE) {
-				char output[256];
-				char *function_name = get_name(f->name);
-				char *parameter_type_name_name = get_name(parameter_type_name);
-				sprintf(output, "Could not find type %s for %s", parameter_type_name_name, function_name);
-				error(output, 0, 0);
+				error(0, 0, "Could not find type %s for %s", get_name(parameter_type_name), get_name(f->name));
 			}
 		}
 
@@ -319,11 +303,7 @@ void resolve_types(void) {
 			name_id return_type_name = f->return_type.name;
 			f->return_type.type = find_type_by_name(return_type_name);
 			if (f->return_type.type == NO_TYPE) {
-				char output[256];
-				char *function_name = get_name(f->name);
-				char *return_type_name_name = get_name(return_type_name);
-				sprintf(output, "Could not find type %s for %s", return_type_name_name, function_name);
-				error(output, 0, 0);
+				error(0, 0, "Could not find type %s for %s", get_name(return_type_name), get_name(f->name));
 			}
 		}
 	}
@@ -523,7 +503,7 @@ int main(int argc, char **argv) {
 		wgsl_export(output);
 	}
 	else {
-		error("Unknown API", 0, 0);
+		error(0, 0, "Unknown API");
 	}
 
 	c_export(output);
