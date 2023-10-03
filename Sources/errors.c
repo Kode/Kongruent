@@ -23,13 +23,13 @@ void error(int column, int line, const char *message, ...) {
 }
 
 void check_args(bool check, int column, int line, const char *message, va_list args) {
-	if (check) {
+	if (!check) {
 		error_args(column, line, message, args);
 	}
 }
 
 void check(bool check, int column, int line, const char *message, ...) {
-	if (check) {
+	if (!check) {
 		va_list args;
 		va_start(args, message);
 		error_args(column, line, message, args);
