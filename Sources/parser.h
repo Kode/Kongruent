@@ -7,6 +7,7 @@
 #include "types.h"
 
 #include <stdbool.h>
+#include <stddef.h>
 
 struct expression;
 

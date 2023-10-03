@@ -1,8 +1,9 @@
 #include "d3d11.h"
 
+#include "../errors.h"
+
 #ifdef _WIN32
 
-#include "../errors.h"
 #include "../log.h"
 
 #define INITGUID

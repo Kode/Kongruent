@@ -1,9 +1,10 @@
 #pragma once
 
-#include <stdint.h>
-
 #include "names.h"
 #include "types.h"
+
+#include <stddef.h>
+#include <stdint.h>
 
 typedef struct variable {
 	uint64_t index;
@@ -84,5 +85,7 @@ typedef struct opcodes {
 } opcodes;
 
 void convert_globals(void);
+
+struct statement;
 
 void convert_function_block(opcodes *code, struct statement *block);

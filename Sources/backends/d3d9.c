@@ -1,7 +1,8 @@
+#include "../shader_stage.h"
+
 #ifdef _WIN32
 
 #include "../log.h"
-#include "../shader_stage.h"
 
 #include <Windows.h>
 #include <d3d9.h>

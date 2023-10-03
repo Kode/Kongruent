@@ -44,16 +44,29 @@ void close_dir(directory *dir) {
 
 #else
 
+#include <string.h>
+
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 directory open_dir(const char *dirname) {
 	directory dir;
-	dir.handle = NULL;
+	dir.handle = opendir(dirname);
 	return dir;
 }
 
 file read_next_file(directory *dir) {
-	File file;
-	file.valid = false;
-	return file;
+	struct dirent *entry = readdir(dir->handle);
+
+	file f;
+	f.valid = entry != NULL;
+
+	if (f.valid) {
+		strcpy(f.name, entry->d_name);
+	}
+
+	return f;
 }
 
 void close_dir(directory *dir) {

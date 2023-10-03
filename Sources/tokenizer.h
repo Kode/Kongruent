@@ -3,6 +3,7 @@
 #include "names.h"
 
 #include <stdbool.h>
+#include <stddef.h>
 
 typedef enum operatorr {
 	OPERATOR_EQUALS,
