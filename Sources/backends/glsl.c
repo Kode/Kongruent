@@ -1,6 +1,7 @@
 #include "glsl.h"
 
 #include "../compiler.h"
+#include "../errors.h"
 #include "../functions.h"
 #include "../parser.h"
 #include "../shader_stage.h"
@@ -131,9 +132,9 @@ static void find_referenced_types(function *f, type_id *types, size_t *types_siz
 
 	for (size_t l = 0; l < functions_size; ++l) {
 		function *func = functions[l];
-		assert(func->parameter_type.type != NO_TYPE);
+		check(func->parameter_type.type != NO_TYPE, 0, 0, "Function parameter type not found");
 		add_found_type(func->parameter_type.type, types, types_size);
-		assert(func->return_type.type != NO_TYPE);
+		check(func->return_type.type != NO_TYPE, 0, 0, "Function return type missing");
 		add_found_type(func->return_type.type, types, types_size);
 
 		uint8_t *data = functions[l]->code.o;
@@ -318,7 +319,7 @@ static void write_functions(char *glsl, size_t *offset, shader_stage stage, type
 	for (size_t i = 0; i < functions_size; ++i) {
 		function *f = functions[i];
 
-		assert(f->block != NULL);
+		check(f->block != NULL, 0, 0, "Function has no block");
 
 		uint8_t *data = f->code.o;
 		size_t size = f->code.size;
@@ -331,7 +332,7 @@ static void write_functions(char *glsl, size_t *offset, shader_stage stage, type
 			}
 		}
 
-		assert(parameter_id != 0);
+		check(parameter_id != 0, 0, 0, "Parameter not found");
 		if (f == main) {
 			if (stage == SHADER_STAGE_VERTEX) {
 				*offset += sprintf(&glsl[*offset], "void main() {\n");
@@ -350,7 +351,7 @@ static void write_functions(char *glsl, size_t *offset, shader_stage stage, type
 				}
 			}
 			else {
-				assert(false);
+				error(0, 0, "Unsupported shader stage");
 			}
 		}
 		else {
@@ -461,15 +462,15 @@ static void write_functions(char *glsl, size_t *offset, shader_stage stage, type
 
 static void glsl_export_vertex(char *directory, function *main) {
 	char *glsl = (char *)calloc(1024 * 1024, 1);
-	assert(glsl != NULL);
+	check(glsl != NULL, 0, 0, "Could not allocate glsl string");
 
 	size_t offset = 0;
 
 	type_id vertex_input = main->parameter_type.type;
 	type_id vertex_output = main->return_type.type;
 
-	assert(vertex_input != NO_TYPE);
-	assert(vertex_output != NO_TYPE);
+	check(vertex_input != NO_TYPE, 0, 0, "vertex input missing");
+	check(vertex_output != NO_TYPE, 0, 0, "vertex output missing");
 
 	offset += sprintf(&glsl[offset], "#version 330\n\n");
 
@@ -492,13 +493,13 @@ static void glsl_export_vertex(char *directory, function *main) {
 
 static void glsl_export_fragment(char *directory, function *main) {
 	char *glsl = (char *)calloc(1024 * 1024, 1);
-	assert(glsl != NULL);
+	check(glsl != NULL, 0, 0, "Could not allocate glsl string");
 
 	size_t offset = 0;
 
 	type_id pixel_input = main->parameter_type.type;
 
-	assert(pixel_input != NO_TYPE);
+	check(pixel_input != NO_TYPE, 0, 0, "fragment input missing");
 
 	offset += sprintf(&glsl[offset], "#version 330\n\n");
 
@@ -565,8 +566,8 @@ void glsl_export(char *directory) {
 				}
 			}
 
-			assert(vertex_shader_name != NO_NAME);
-			assert(fragment_shader_name != NO_NAME);
+			check(vertex_shader_name != NO_NAME, 0, 0, "vertex shader missing");
+			check(fragment_shader_name != NO_NAME, 0, 0, "fragment shader missing");
 
 			for (function_id i = 0; get_function(i) != NULL; ++i) {
 				function *f = get_function(i);

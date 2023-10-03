@@ -1,5 +1,7 @@
 #include "cstyle.h"
 
+#include "../errors.h"
+
 #include <assert.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -36,7 +38,7 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 				is_array = false;
 			}
 			else {
-				assert(o->op_store_member.member_indices[i] < s->members.size);
+				check(o->op_store_member.member_indices[i] < s->members.size, 0, 0, "Member index out of bounds");
 				*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
 				is_array = s->members.m[o->op_store_member.member_indices[i]].type.array_size > 0;
 				s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
@@ -50,12 +52,12 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		break;
 	case OPCODE_CALL: {
 		if (o->op_call.func == add_name("sample")) {
-			assert(o->op_call.parameters_size == 3);
+			check(o->op_call.parameters_size == 3, 0, 0, "sample requires three parameters");
 			*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 ".Sample(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
 			                   o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index, o->op_call.parameters[2].index);
 		}
 		else if (o->op_call.func == add_name("sample_lod")) {
-			assert(o->op_call.parameters_size == 4);
+			check(o->op_call.parameters_size == 4, 0, 0, "sample_lod requires four parameters");
 			*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 ".SampleLevel(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
 			                   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index,
 			                   o->op_call.parameters[2].index, o->op_call.parameters[3].index);
@@ -79,7 +81,7 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		break;
 	}
 	default:
-		assert(false);
+		error(0, 0, "Unknown opcode");
 		break;
 	}
 }

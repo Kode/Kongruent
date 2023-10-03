@@ -31,7 +31,7 @@ type_ref find_local_var_type(block *b, name_id name) {
 
 	for (size_t i = 0; i < b->vars.size; ++i) {
 		if (b->vars.v[i].name == name) {
-			assert(b->vars.v[i].type.type != NO_TYPE);
+			check(b->vars.v[i].type.type != NO_TYPE, 0, 0, "Local var has not type");
 			return b->vars.v[i].type;
 		}
 	}
@@ -54,7 +54,7 @@ type_ref resolve_member_var_type(statement *parent_block, type_ref parent_type, 
 				}
 			}
 
-			assert(false);
+			error(0, 0, "Member not found");
 			type_ref t;
 			init_type_ref(&t, NO_NAME);
 			return t;
@@ -73,7 +73,7 @@ type_ref resolve_member_var_type(statement *parent_block, type_ref parent_type, 
 		}
 	}
 
-	assert(false);
+	error(0, 0, "Member not found");
 	type_ref t;
 	init_type_ref(&t, NO_NAME);
 	return t;
@@ -85,7 +85,7 @@ void resolve_member_type(statement *parent_block, type_ref parent_type, expressi
 		return;
 	}
 
-	assert(e->kind == EXPRESSION_MEMBER);
+	check(e->kind == EXPRESSION_MEMBER, 0, 0, "Malformed member");
 
 	type_ref t = resolve_member_var_type(parent_block, parent_type, e->member.left);
 
@@ -229,7 +229,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 }
 
 void resolve_types_in_block(statement *parent, statement *block) {
-	assert(block->kind == STATEMENT_BLOCK);
+	check(block->kind == STATEMENT_BLOCK, 0, 0, "Malformed block");
 
 	for (size_t i = 0; i < block->block.statements.size; ++i) {
 		statement *s = block->block.statements.s[i];
@@ -344,7 +344,7 @@ static void read_file(char *filename) {
 	fseek(file, 0, SEEK_SET);
 
 	char *data = (char *)malloc(size + 1);
-	assert(data != NULL);
+	check(data != NULL, 0, 0, "Could not allocate memory to read file");
 
 	fread(data, 1, size, file);
 	data[size] = 0;
@@ -389,12 +389,12 @@ int main(int argc, char **argv) {
 						return 0;
 					}
 					else {
-						assert(false);
+						error(0, 0, "Unknown parameter %s", &argv[i][2]);
 					}
 				}
 				else {
-					assert(argv[i][1] != 0);
-					assert(argv[i][2] == 0);
+					check(argv[i][1] != 0, 0, 0, "Borked parameter");
+					check(argv[i][2] == 0, 0, 0, "Borked parameter");
 					switch (argv[i][1]) {
 					case 'i':
 						mode = MODE_INPUT;
@@ -411,11 +411,13 @@ int main(int argc, char **argv) {
 					case 'h':
 						help();
 						return 0;
+					default:
+						error(0, 0, "Unknown parameter %s", argv[i][1]);
 					}
 				}
 			}
 			else {
-				assert(false);
+				error(0, 0, "Wrong parameter syntax");
 			}
 			break;
 		}
@@ -443,11 +445,11 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	assert(mode == MODE_MODECHECK);
-	assert(inputs_size > 0);
-	assert(output != NULL);
-	assert(platform != NULL);
-	assert(api != NULL);
+	check(mode == MODE_MODECHECK, 0, 0, "Wrong parameter syntax");
+	check(inputs_size > 0, 0, 0, "no input parameters found");
+	check(output != NULL, 0, 0, "output parameter not found");
+	check(platform != NULL, 0, 0, "platform parameter not found");
+	check(api != NULL, 0, 0, "api parameter not found");
 
 	names_init();
 	types_init();

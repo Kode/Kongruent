@@ -10,7 +10,7 @@
 
 static statement *statement_allocate(void) {
 	statement *s = (statement *)malloc(sizeof(statement));
-	assert(s != NULL);
+	check(s != NULL, 0, 0, "Could not allocate statement");
 	return s;
 }
 
@@ -29,7 +29,7 @@ static void statements_add(statements *statements, statement *statement) {
 
 static expression *expression_allocate(void) {
 	expression *e = (expression *)malloc(sizeof(expression));
-	assert(e != NULL);
+	check(e != NULL, 0, 0, "Could not allocate expression");
 	init_type_ref(&e->type, NO_NAME);
 	return e;
 }
@@ -311,7 +311,7 @@ static statement *parse_statement(state_t *state) {
 		expression *init = NULL;
 
 		if (current(state).kind == TOKEN_OPERATOR) {
-			assert(current(state).op == OPERATOR_ASSIGN);
+			match_token(state, OPERATOR_ASSIGN, "Expected an assign");
 			advance_state(state);
 			init = parse_expression(state);
 		}
@@ -774,7 +774,7 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 	size_t count = 0;
 
 	while (current(state).kind != TOKEN_RIGHT_CURLY) {
-		assert(count < MAX_MEMBERS);
+		check(count < MAX_MEMBERS, 0, 0, "Out of members");
 
 		match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 		member_names[count] = current(state);
@@ -801,7 +801,7 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 				advance_state(state);
 			}
 			else {
-				assert(false);
+				error(0, 0, "Unsupported assign in struct");
 			}
 		}
 		else {
@@ -846,7 +846,7 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 				}
 			}
 			else {
-				assert(false);
+				error(0, 0, "Unsupported value in struct");
 			}
 		}
 		else {
@@ -932,7 +932,7 @@ static definition parse_const(state_t *state) {
 	definition d;
 
 	if (type_name == NO_NAME) {
-		assert(type != NO_TYPE);
+		check(type != NO_TYPE, 0, 0, "Const has not type");
 		d.kind = DEFINITION_CONST_CUSTOM;
 		d.global = add_global(type, name.identifier);
 	}
@@ -949,7 +949,7 @@ static definition parse_const(state_t *state) {
 		d.global = add_global(sampler_type_id, name.identifier);
 	}
 	else {
-		assert(false);
+		error(0, 0, "Unsupported global");
 	}
 
 	return d;

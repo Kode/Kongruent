@@ -1,6 +1,7 @@
 #include "metal.h"
 
 #include "../compiler.h"
+#include "../errors.h"
 #include "../functions.h"
 #include "../parser.h"
 #include "../shader_stage.h"
@@ -119,9 +120,9 @@ static void find_referenced_types(function *f, type_id *types, size_t *types_siz
 
 	for (size_t l = 0; l < functions_size; ++l) {
 		function *func = functions[l];
-		assert(func->parameter_type.type != NO_TYPE);
+		check(func->parameter_type.type != NO_TYPE, 0, 0, "Function parameter type missing");
 		add_found_type(func->parameter_type.type, types, types_size);
-		assert(func->return_type.type != NO_TYPE);
+		check(func->return_type.type != NO_TYPE, 0, 0, "Function return type missing");
 		add_found_type(func->return_type.type, types, types_size);
 
 		uint8_t *data = functions[l]->code.o;
@@ -344,7 +345,7 @@ static void write_functions(char *metal, size_t *offset) {
 			}
 		}
 
-		assert(parameter_id != 0);
+		check(parameter_id != 0, 0, 0, "Parameter not found");
 
 		char buffers[1024];
 		strcpy(buffers, "");
@@ -461,7 +462,7 @@ static void write_functions(char *metal, size_t *offset) {
 
 static void metal_export_everything(char *directory) {
 	char *metal = (char *)calloc(1024 * 1024, 1);
-	assert(metal != NULL);
+	check(metal != NULL, 0, 0, "Could not allocate Metal string");
 	size_t offset = 0;
 
 	offset += sprintf(&metal[offset], "#include <metal_stdlib>\n");
@@ -517,8 +518,8 @@ void metal_export(char *directory) {
 				}
 			}
 
-			assert(vertex_shader_name != NO_NAME);
-			assert(fragment_shader_name != NO_NAME);
+			check(vertex_shader_name != NO_NAME, 0, 0, "vertex shader missing");
+			check(fragment_shader_name != NO_NAME, 0, 0, "fragment shader missing");
 
 			for (function_id i = 0; get_function(i) != NULL; ++i) {
 				function *f = get_function(i);

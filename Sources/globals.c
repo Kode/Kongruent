@@ -1,5 +1,7 @@
 #include "globals.h"
 
+#include "errors.h"
+
 #include <assert.h>
 
 static global globals[1024];
@@ -61,6 +63,6 @@ global get_global(global_id id) {
 }
 
 void assign_global_var(global_id id, uint64_t var_index) {
-	assert(id < globals_size);
+	check(id < globals_size, 0, 0, "Encountered a global with a weird id");
 	globals[id].var_index = var_index;
 }

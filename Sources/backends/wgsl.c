@@ -1,6 +1,7 @@
 #include "wgsl.h"
 
 #include "../compiler.h"
+#include "../errors.h"
 #include "../functions.h"
 #include "../parser.h"
 #include "../shader_stage.h"
@@ -119,9 +120,9 @@ static void find_referenced_types(function *f, type_id *types, size_t *types_siz
 
 	for (size_t l = 0; l < functions_size; ++l) {
 		function *func = functions[l];
-		assert(func->parameter_type.type != NO_TYPE);
+		check(func->parameter_type.type != NO_TYPE, 0, 0, "Function parameter has no type");
 		add_found_type(func->parameter_type.type, types, types_size);
-		assert(func->return_type.type != NO_TYPE);
+		check(func->return_type.type != NO_TYPE, 0, 0, "Function return type missing");
 		add_found_type(func->return_type.type, types, types_size);
 
 		uint8_t *data = functions[l]->code.o;
@@ -358,7 +359,7 @@ static void write_functions(char *wgsl, size_t *offset) {
 			}
 		}
 
-		assert(parameter_id != 0);
+		check(parameter_id != 0, 0, 0, "Parameter not found");
 
 		if (is_vertex_function(i)) {
 			*offset += sprintf(&wgsl[*offset], "@vertex fn %s(_%" PRIu64 ": %s) -> %s {\n", get_name(f->name), parameter_id,
@@ -448,13 +449,13 @@ static void write_functions(char *wgsl, size_t *offset) {
 				break;
 			case OPCODE_CALL: {
 				if (o->op_call.func == add_name("sample")) {
-					assert(o->op_call.parameters_size == 3);
+					check(o->op_call.parameters_size == 3, 0, 0, "sample requires three arguments");
 					*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = textureSample(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
 					                   o->op_call.var.index, type_string(o->op_call.var.type.type), o->op_call.parameters[0].index,
 					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index);
 				}
 				else if (o->op_call.func == add_name("sample_lod")) {
-					assert(o->op_call.parameters_size == 4);
+					check(o->op_call.parameters_size == 4, 0, 0, "sample_lod requires four arguments");
 					*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = textureSample(_%" PRIu64 ",_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
 					                   o->op_call.var.index, type_string(o->op_call.var.type.type), o->op_call.parameters[0].index,
 					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index, o->op_call.parameters[3].index);
@@ -486,7 +487,7 @@ static void write_functions(char *wgsl, size_t *offset) {
 
 static void wgsl_export_everything(char *directory) {
 	char *wgsl = (char *)calloc(1024 * 1024, 1);
-	assert(wgsl != NULL);
+	check(wgsl != NULL, 0, 0, "Could not allocate the wgsl string");
 	size_t offset = 0;
 
 	write_types(wgsl, &offset);
@@ -538,8 +539,8 @@ void wgsl_export(char *directory) {
 				}
 			}
 
-			assert(vertex_shader_name != NO_NAME);
-			assert(fragment_shader_name != NO_NAME);
+			check(vertex_shader_name != NO_NAME, 0, 0, "vertex shader not found");
+			check(fragment_shader_name != NO_NAME, 0, 0, "fragment shader not found");
 
 			for (function_id i = 0; get_function(i) != NULL; ++i) {
 				function *f = get_function(i);

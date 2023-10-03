@@ -39,7 +39,7 @@ variable find_local_var(block *b, name_id name) {
 
 	for (size_t i = 0; i < b->vars.size; ++i) {
 		if (b->vars.v[i].name == name) {
-			assert(b->vars.v[i].type.type != NO_TYPE);
+			check(b->vars.v[i].type.type != NO_TYPE, 0, 0, "Local variable does not have a type");
 			variable var;
 			var.index = b->vars.v[i].variable_id;
 			var.type = b->vars.v[i].type;
@@ -164,7 +164,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				o.op_store_member.member_parent_array = left->member.left->type.array_size > 0;
 
 				while (right->kind == EXPRESSION_MEMBER) {
-					assert(right->type.type != NO_TYPE);
+					check(right->type.type != NO_TYPE, 0, 0, "Part of the member does not have a type");
 
 					if (right->member.left->kind == EXPRESSION_VARIABLE) {
 						bool found = false;
@@ -176,14 +176,14 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 								break;
 							}
 						}
-						assert(found);
+						check(found, 0, 0, "Variable for a member not found");
 					}
 					else if (right->member.left->kind == EXPRESSION_INDEX) {
 						o.op_store_member.member_indices[o.op_store_member.member_indices_size] = (uint16_t)right->member.left->index;
 						++o.op_store_member.member_indices_size;
 					}
 					else {
-						assert(false);
+						error(0, 0, "Malformed member construct");
 					}
 
 					prev_struct = right->member.left->type.type;
@@ -192,7 +192,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				}
 
 				{
-					assert(right->type.type != NO_TYPE);
+					check(right->type.type != NO_TYPE, 0, 0, "Part of the member does not have a type");
 					if (right->kind == EXPRESSION_VARIABLE) {
 						bool found = false;
 						for (size_t i = 0; i < prev_s->members.size; ++i) {
@@ -203,14 +203,14 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 								break;
 							}
 						}
-						assert(found);
+						check(found, 0, 0, "Member not found");
 					}
 					else if (right->kind == EXPRESSION_INDEX) {
 						o.op_store_member.member_indices[o.op_store_member.member_indices_size] = (uint16_t)right->index;
 						++o.op_store_member.member_indices_size;
 					}
 					else {
-						assert(false);
+						error(0, 0, "Malformed member construct");
 					}
 				}
 
@@ -289,7 +289,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	case EXPRESSION_VARIABLE: {
 		allocated_global g = find_allocated_global(e->variable);
 		if (g.g.type != NO_TYPE) {
-			assert(g.variable_id != 0);
+			check(g.variable_id != 0, 0, 0, "Global was not allocated");
 
 			variable var;
 			init_type_ref(&var.type, NO_NAME);
@@ -299,7 +299,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		}
 		else {
 			variable var = find_local_var(parent, e->variable);
-			assert(var.index != 0);
+			check(var.index != 0, 0, 0, "Local var was not allocated");
 			return var;
 		}
 	}
@@ -317,7 +317,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		o.op_call.func = e->call.func_name;
 		o.op_call.var = v;
 
-		assert(e->call.parameters.size <= sizeof(o.op_call.parameters) / sizeof(variable));
+		check(e->call.parameters.size <= sizeof(o.op_call.parameters) / sizeof(variable), 0, 0, "Call parameters missized");
 		for (size_t i = 0; i < e->call.parameters.size; ++i) {
 			o.op_call.parameters[i] = emit_expression(code, parent, e->call.parameters.e[i]);
 		}
@@ -333,7 +333,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		opcode o;
 		o.type = OPCODE_LOAD_MEMBER;
 		o.size = OP_SIZE(o, op_load_member);
-		assert(e->member.left->kind == EXPRESSION_VARIABLE);
+		check(e->member.left->kind == EXPRESSION_VARIABLE, 0, 0, "Misformed member construct");
 		o.op_load_member.from = find_local_var(parent, e->member.left->variable);
 		if (o.op_load_member.from.index == 0) {
 			allocated_global global = find_allocated_global(e->member.left->variable);
@@ -345,7 +345,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				o.op_load_member.from = v;
 			}
 		}
-		assert(o.op_load_member.from.index != 0);
+		check(o.op_load_member.from.index != 0, 0, 0, "Load var is broken");
 		o.op_load_member.to = v;
 
 		o.op_load_member.member_indices_size = 0;
@@ -355,8 +355,8 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		o.op_load_member.member_parent_type = prev_struct;
 
 		while (right->kind == EXPRESSION_MEMBER) {
-			assert(right->type.type != NO_TYPE);
-			assert(right->member.left->kind == EXPRESSION_VARIABLE);
+			check(right->type.type != NO_TYPE, 0, 0, "Malformed member construct");
+			check(right->member.left->kind == EXPRESSION_VARIABLE, 0, 0, "Malformed member construct");
 
 			bool found = false;
 			for (size_t i = 0; i < prev_s->members.size; ++i) {
@@ -367,7 +367,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 					break;
 				}
 			}
-			assert(found);
+			check(found, 0, 0, "Member not found");
 
 			prev_struct = right->member.left->type.type;
 			prev_s = get_type(prev_struct);
@@ -375,8 +375,8 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		}
 
 		{
-			assert(right->type.type != NO_TYPE);
-			assert(right->kind == EXPRESSION_VARIABLE);
+			check(right->type.type != NO_TYPE, 0, 0, "Malformed member construct");
+			check(right->kind == EXPRESSION_VARIABLE, 0, 0, "Malformed member construct");
 
 			bool found = false;
 			for (size_t i = 0; i < prev_s->members.size; ++i) {
@@ -387,7 +387,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 					break;
 				}
 			}
-			assert(found);
+			check(found, 0, 0, "Member not found");
 		}
 
 		emit_op(code, &o);
@@ -398,7 +398,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		error(0, 0, "not implemented");
 	}
 
-	assert(false);
+	error(0, 0, "Supposedly unreachable code reached");
 	variable v;
 	v.index = 0;
 	return v;
@@ -442,7 +442,7 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		variable local_var = find_local_var(parent, statement->local_variable.var.name);
 		statement->local_variable.var.variable_id = local_var.index;
 		o.op_var.var.index = statement->local_variable.var.variable_id;
-		assert(statement->local_variable.var.type.type != NO_TYPE);
+		check(statement->local_variable.var.type.type != NO_TYPE, 0, 0, "Local var has not type");
 		o.op_var.var.type = statement->local_variable.var.type;
 		emit_op(code, &o);
 

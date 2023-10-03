@@ -735,7 +735,7 @@ template<class T> static T * stbds_shmode_func_wrapper(T *, size_t elemsize, int
 
 #ifndef STBDS_ASSERT
 #define STBDS_ASSERT_WAS_UNDEFINED
-#define STBDS_ASSERT(x)   ((void) 0)
+#define STBDS_assert__(x)   ((void) 0)
 #endif
 
 #ifdef STBDS_STATISTICS
@@ -932,7 +932,7 @@ static stbds_hash_index *stbds_make_hash_index(size_t slot_count, stbds_hash_ind
   if (slot_count <= STBDS_BUCKET_LENGTH)
     t->used_count_shrink_threshold = 0;
   // to avoid infinite loop, we need to guarantee that at least one slot is empty and will terminate probes
-  STBDS_ASSERT(t->used_count_threshold + t->tombstone_count_threshold < t->slot_count);
+  STBDS_assert__(t->used_count_threshold + t->tombstone_count_threshold < t->slot_count);
   STBDS_STATS(++stbds_hash_alloc);
   if (ot) {
     t->string = ot->string;
@@ -1440,7 +1440,7 @@ void *stbds_hmput_key(void *a, size_t elemsize, void *key, size_t keysize, int m
         *(void **) &a = stbds_arrgrowf(a, elemsize, 1, 0);
       raw_a = STBDS_ARR_TO_HASH(a,elemsize);
 
-      STBDS_ASSERT((size_t) i+1 <= stbds_arrcap(a));
+      STBDS_assert__((size_t) i+1 <= stbds_arrcap(a));
       stbds_header(a)->length = i+1;
       bucket = &table->storage[pos >> STBDS_BUCKET_SHIFT];
       bucket->hash[pos & STBDS_BUCKET_MASK] = hash;
@@ -1490,12 +1490,12 @@ void * stbds_hmdel_key(void *a, size_t elemsize, void *key, size_t keysize, size
         int i = slot & STBDS_BUCKET_MASK;
         ptrdiff_t old_index = b->index[i];
         ptrdiff_t final_index = (ptrdiff_t) stbds_arrlen(raw_a)-1-1; // minus one for the raw_a vs a, and minus one for 'last'
-        STBDS_ASSERT(slot < (ptrdiff_t) table->slot_count);
+        STBDS_assert__(slot < (ptrdiff_t) table->slot_count);
         --table->used_count;
         ++table->tombstone_count;
         stbds_temp(raw_a) = 1;
-        STBDS_ASSERT(table->used_count >= 0);
-        //STBDS_ASSERT(table->tombstone_count < table->slot_count/4);
+        STBDS_assert__(table->used_count >= 0);
+        //STBDS_assert__(table->tombstone_count < table->slot_count/4);
         b->hash[i] = STBDS_HASH_DELETED;
         b->index[i] = STBDS_INDEX_DELETED;
 
@@ -1512,10 +1512,10 @@ void * stbds_hmdel_key(void *a, size_t elemsize, void *key, size_t keysize, size
             slot = stbds_hm_find_slot(a, elemsize, *(char**) ((char *) a+elemsize*old_index + keyoffset), keysize, keyoffset, mode);
           else
             slot = stbds_hm_find_slot(a, elemsize,  (char* ) a+elemsize*old_index + keyoffset, keysize, keyoffset, mode);
-          STBDS_ASSERT(slot >= 0);
+          STBDS_assert__(slot >= 0);
           b = &table->storage[slot >> STBDS_BUCKET_SHIFT];
           i = slot & STBDS_BUCKET_MASK;
-          STBDS_ASSERT(b->index[i] == final_index);
+          STBDS_assert__(b->index[i] == final_index);
           b->index[i] = old_index;
         }
         stbds_header(raw_a)->length -= 1;
@@ -1595,7 +1595,7 @@ char *stbds_stralloc(stbds_string_arena *a, char *str)
     }
   }
 
-  STBDS_ASSERT(len <= a->remaining);
+  STBDS_assert__(len <= a->remaining);
   p = a->storage->storage + a->remaining - len;
   a->remaining -= len;
   memmove(p, str, len);
@@ -1649,7 +1649,7 @@ void stbds_unit_tests(void)
 {
 #if defined(_MSC_VER) && _MSC_VER <= 1200 && defined(__cplusplus)
   // VC6 C++ doesn't like the template<> trick on unnamed structures, so do nothing!
-  STBDS_ASSERT(0);
+  STBDS_assert__(0);
 #else
   const int testsize = 100000;
   const int testsize2 = testsize/20;
@@ -1665,7 +1665,7 @@ void stbds_unit_tests(void)
 
   int i,j;
 
-  STBDS_ASSERT(arrlen(arr)==0);
+  STBDS_assert__(arrlen(arr)==0);
   for (i=0; i < 20000; i += 50) {
     for (j=0; j < i; ++j)
       arrpush(arr,j);
@@ -1684,39 +1684,39 @@ void stbds_unit_tests(void)
   for (i=0; i < 5; ++i) {
     arrpush(arr,1); arrpush(arr,2); arrpush(arr,3); arrpush(arr,4);
     stbds_arrins(arr,i,5);
-    STBDS_ASSERT(arr[i] == 5);
+    STBDS_assert__(arr[i] == 5);
     if (i < 4)
-      STBDS_ASSERT(arr[4] == 4);
+      STBDS_assert__(arr[4] == 4);
     arrfree(arr);
   }
 
   i = 1;
-  STBDS_ASSERT(hmgeti(intmap,i) == -1);
+  STBDS_assert__(hmgeti(intmap,i) == -1);
   hmdefault(intmap, -2);
-  STBDS_ASSERT(hmgeti(intmap, i) == -1);
-  STBDS_ASSERT(hmget (intmap, i) == -2);
+  STBDS_assert__(hmgeti(intmap, i) == -1);
+  STBDS_assert__(hmget (intmap, i) == -2);
   for (i=0; i < testsize; i+=2)
     hmput(intmap, i, i*5);
   for (i=0; i < testsize; i+=1) {
-    if (i & 1) STBDS_ASSERT(hmget(intmap, i) == -2 );
-    else       STBDS_ASSERT(hmget(intmap, i) == i*5);
-    if (i & 1) STBDS_ASSERT(hmget_ts(intmap, i, temp) == -2 );
-    else       STBDS_ASSERT(hmget_ts(intmap, i, temp) == i*5);
+    if (i & 1) STBDS_assert__(hmget(intmap, i) == -2 );
+    else       STBDS_assert__(hmget(intmap, i) == i*5);
+    if (i & 1) STBDS_assert__(hmget_ts(intmap, i, temp) == -2 );
+    else       STBDS_assert__(hmget_ts(intmap, i, temp) == i*5);
   }
   for (i=0; i < testsize; i+=2)
     hmput(intmap, i, i*3);
   for (i=0; i < testsize; i+=1)
-    if (i & 1) STBDS_ASSERT(hmget(intmap, i) == -2 );
-    else       STBDS_ASSERT(hmget(intmap, i) == i*3);
+    if (i & 1) STBDS_assert__(hmget(intmap, i) == -2 );
+    else       STBDS_assert__(hmget(intmap, i) == i*3);
   for (i=2; i < testsize; i+=4)
     hmdel(intmap, i); // delete half the entries
   for (i=0; i < testsize; i+=1)
-    if (i & 3) STBDS_ASSERT(hmget(intmap, i) == -2 );
-    else       STBDS_ASSERT(hmget(intmap, i) == i*3);
+    if (i & 3) STBDS_assert__(hmget(intmap, i) == -2 );
+    else       STBDS_assert__(hmget(intmap, i) == i*3);
   for (i=0; i < testsize; i+=1)
     hmdel(intmap, i); // delete the rest of the entries
   for (i=0; i < testsize; i+=1)
-    STBDS_ASSERT(hmget(intmap, i) == -2 );
+    STBDS_assert__(hmget(intmap, i) == -2 );
   hmfree(intmap);
   for (i=0; i < testsize; i+=2)
     hmput(intmap, i, i*3);
@@ -1728,9 +1728,9 @@ void stbds_unit_tests(void)
   hmput(intmap, 15, 7);
   hmput(intmap, 11, 3);
   hmput(intmap,  9, 5);
-  STBDS_ASSERT(hmget(intmap, 9) == 5);
-  STBDS_ASSERT(hmget(intmap, 11) == 3);
-  STBDS_ASSERT(hmget(intmap, 15) == 7);
+  STBDS_assert__(hmget(intmap, 9) == 5);
+  STBDS_assert__(hmget(intmap, 11) == 3);
+  STBDS_assert__(hmget(intmap, 15) == 7);
   #endif
   #endif
 
@@ -1741,9 +1741,9 @@ void stbds_unit_tests(void)
   {
     s.key = "a", s.value = 1;
     shputs(strmap, s);
-    STBDS_ASSERT(*strmap[0].key == 'a');
-    STBDS_ASSERT(strmap[0].key == s.key);
-    STBDS_ASSERT(strmap[0].value == s.value);
+    STBDS_assert__(*strmap[0].key == 'a');
+    STBDS_assert__(strmap[0].key == s.key);
+    STBDS_assert__(strmap[0].value == s.value);
     shfree(strmap);
   }
 
@@ -1751,9 +1751,9 @@ void stbds_unit_tests(void)
     s.key = "a", s.value = 1;
     sh_new_strdup(strmap);
     shputs(strmap, s);
-    STBDS_ASSERT(*strmap[0].key == 'a');
-    STBDS_ASSERT(strmap[0].key != s.key);
-    STBDS_ASSERT(strmap[0].value == s.value);
+    STBDS_assert__(*strmap[0].key == 'a');
+    STBDS_assert__(strmap[0].key != s.key);
+    STBDS_assert__(strmap[0].value == s.value);
     shfree(strmap);
   }
 
@@ -1761,35 +1761,35 @@ void stbds_unit_tests(void)
     s.key = "a", s.value = 1;
     sh_new_arena(strmap);
     shputs(strmap, s);
-    STBDS_ASSERT(*strmap[0].key == 'a');
-    STBDS_ASSERT(strmap[0].key != s.key);
-    STBDS_ASSERT(strmap[0].value == s.value);
+    STBDS_assert__(*strmap[0].key == 'a');
+    STBDS_assert__(strmap[0].key != s.key);
+    STBDS_assert__(strmap[0].value == s.value);
     shfree(strmap);
   }
 
   for (j=0; j < 2; ++j) {
-    STBDS_ASSERT(shgeti(strmap,"foo") == -1);
+    STBDS_assert__(shgeti(strmap,"foo") == -1);
     if (j == 0)
       sh_new_strdup(strmap);
     else
       sh_new_arena(strmap);
-    STBDS_ASSERT(shgeti(strmap,"foo") == -1);
+    STBDS_assert__(shgeti(strmap,"foo") == -1);
     shdefault(strmap, -2);
-    STBDS_ASSERT(shgeti(strmap,"foo") == -1);
+    STBDS_assert__(shgeti(strmap,"foo") == -1);
     for (i=0; i < testsize; i+=2)
       shput(strmap, strkey(i), i*3);
     for (i=0; i < testsize; i+=1)
-      if (i & 1) STBDS_ASSERT(shget(strmap, strkey(i)) == -2 );
-      else       STBDS_ASSERT(shget(strmap, strkey(i)) == i*3);
+      if (i & 1) STBDS_assert__(shget(strmap, strkey(i)) == -2 );
+      else       STBDS_assert__(shget(strmap, strkey(i)) == i*3);
     for (i=2; i < testsize; i+=4)
       shdel(strmap, strkey(i)); // delete half the entries
     for (i=0; i < testsize; i+=1)
-      if (i & 3) STBDS_ASSERT(shget(strmap, strkey(i)) == -2 );
-      else       STBDS_ASSERT(shget(strmap, strkey(i)) == i*3);
+      if (i & 3) STBDS_assert__(shget(strmap, strkey(i)) == -2 );
+      else       STBDS_assert__(shget(strmap, strkey(i)) == i*3);
     for (i=0; i < testsize; i+=1)
       shdel(strmap, strkey(i)); // delete the rest of the entries
     for (i=0; i < testsize; i+=1)
-      STBDS_ASSERT(shget(strmap, strkey(i)) == -2 );
+      STBDS_assert__(shget(strmap, strkey(i)) == -2 );
     shfree(strmap);
   }
 
@@ -1814,11 +1814,11 @@ void stbds_unit_tests(void)
   for (i=0; i < testsize; i += 1) {
     stbds_struct s = { i,i*2,i*3  ,i*4 };
     stbds_struct t = { i,i*2,i*3+1,i*4 };
-    if (i & 1) STBDS_ASSERT(hmget(map, s) == 0);
-    else       STBDS_ASSERT(hmget(map, s) == i*5);
-    if (i & 1) STBDS_ASSERT(hmget_ts(map, s, temp) == 0);
-    else       STBDS_ASSERT(hmget_ts(map, s, temp) == i*5);
-    //STBDS_ASSERT(hmget(map, t.key) == 0);
+    if (i & 1) STBDS_assert__(hmget(map, s) == 0);
+    else       STBDS_assert__(hmget(map, s) == i*5);
+    if (i & 1) STBDS_assert__(hmget_ts(map, s, temp) == 0);
+    else       STBDS_assert__(hmget_ts(map, s, temp) == i*5);
+    //STBDS_assert__(hmget(map, t.key) == 0);
   }
 
   for (i=0; i < testsize; i += 2) {
@@ -1830,9 +1830,9 @@ void stbds_unit_tests(void)
   for (i=0; i < testsize; i += 1) {
     stbds_struct s = { i,i*2,i*3,i*4 };
     stbds_struct t = { i,i*2,i*3+1,i*4 };
-    if (i & 1) STBDS_ASSERT(hmgets(map2, s.key).d == 0);
-    else       STBDS_ASSERT(hmgets(map2, s.key).d == i*4);
-    //STBDS_ASSERT(hmgetp(map2, t.key) == 0);
+    if (i & 1) STBDS_assert__(hmgets(map2, s.key).d == 0);
+    else       STBDS_assert__(hmgets(map2, s.key).d == i*4);
+    //STBDS_assert__(hmgetp(map2, t.key) == 0);
   }
   hmfree(map2);
 
@@ -1843,9 +1843,9 @@ void stbds_unit_tests(void)
   for (i=0; i < testsize; i += 1) {
     stbds_struct2 s = { { i,i*2}, i*3, i*4, i*5 };
     stbds_struct2 t = { { i,i*2}, i*3+1, i*4, i*5 };
-    if (i & 1) STBDS_ASSERT(hmgets(map3, s.key).d == 0);
-    else       STBDS_ASSERT(hmgets(map3, s.key).d == i*5);
-    //STBDS_ASSERT(hmgetp(map3, t.key) == 0);
+    if (i & 1) STBDS_assert__(hmgets(map3, s.key).d == 0);
+    else       STBDS_assert__(hmgets(map3, s.key).d == i*5);
+    //STBDS_assert__(hmgetp(map3, t.key) == 0);
   }
 #endif
 }
