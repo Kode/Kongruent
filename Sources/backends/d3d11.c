@@ -51,7 +51,8 @@ static const char *shaderString(shader_stage stage, int version) {
 		}
 	}
 
-	error(0, 0, "Unsupported shader stage/version combination");
+	debug_context context = {0};
+	error(context, "Unsupported shader stage/version combination");
 	return "unsupported";
 }
 
@@ -167,10 +168,11 @@ int compile_hlsl_to_d3d11(const char *source, uint8_t **output, size_t *outputle
 		return 0;
 	}
 	else {
-		check(errorMessage != NULL, 0, 0, "Error message missing");
+		debug_context context = {0};
+		check(errorMessage != NULL, context, "Error message missing");
 		SIZE_T size = errorMessage->lpVtbl->GetBufferSize(errorMessage);
 		char *error = malloc(size + 1);
-		check(error != NULL, 0, 0, "Could not allocate error string");
+		check(error != NULL, context, "Could not allocate error string");
 		memcpy(error, errorMessage->lpVtbl->GetBufferPointer(errorMessage), size);
 		error[size] = 0;
 		kong_log(LOG_LEVEL_ERROR, error);

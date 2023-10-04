@@ -17,7 +17,8 @@ function_id float4_constructor_id;
 
 void functions_init(void) {
 	function *new_functions = realloc(functions, functions_size * sizeof(function));
-	check(new_functions != NULL, 0, 0, "Could not allocate functions");
+	debug_context context = {0};
+	check(new_functions != NULL, context, "Could not allocate functions");
 	functions = new_functions;
 	next_function_index = 0;
 
@@ -81,7 +82,8 @@ static void grow_if_needed(uint64_t size) {
 	while (size >= functions_size) {
 		functions_size *= 2;
 		function *new_functions = realloc(functions, functions_size * sizeof(function));
-		check(new_functions != NULL, 0, 0, "Could not allocate functions");
+		debug_context context = {0};
+		check(new_functions != NULL, context, "Could not allocate functions");
 		functions = new_functions;
 	}
 }

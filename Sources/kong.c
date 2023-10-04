@@ -31,7 +31,8 @@ type_ref find_local_var_type(block *b, name_id name) {
 
 	for (size_t i = 0; i < b->vars.size; ++i) {
 		if (b->vars.v[i].name == name) {
-			check(b->vars.v[i].type.type != NO_TYPE, 0, 0, "Local var has not type");
+			debug_context context = {0};
+			check(b->vars.v[i].type.type != NO_TYPE, context, "Local var has not type");
 			return b->vars.v[i].type;
 		}
 	}
@@ -54,7 +55,8 @@ type_ref resolve_member_var_type(statement *parent_block, type_ref parent_type, 
 				}
 			}
 
-			error(0, 0, "Member not found");
+			debug_context context = {0};
+			error(context, "Member not found");
 			type_ref t;
 			init_type_ref(&t, NO_NAME);
 			return t;
@@ -73,10 +75,13 @@ type_ref resolve_member_var_type(statement *parent_block, type_ref parent_type, 
 		}
 	}
 
-	error(0, 0, "Member not found");
-	type_ref t;
-	init_type_ref(&t, NO_NAME);
-	return t;
+	{
+		debug_context context = {0};
+		error(context, "Member not found");
+		type_ref t;
+		init_type_ref(&t, NO_NAME);
+		return t;
+	}
 }
 
 void resolve_member_type(statement *parent_block, type_ref parent_type, expression *e) {
@@ -85,7 +90,8 @@ void resolve_member_type(statement *parent_block, type_ref parent_type, expressi
 		return;
 	}
 
-	check(e->kind == EXPRESSION_MEMBER, 0, 0, "Malformed member");
+	debug_context context = {0};
+	check(e->kind == EXPRESSION_MEMBER, context, "Malformed member");
 
 	type_ref t = resolve_member_var_type(parent_block, parent_type, e->member.left);
 
@@ -118,7 +124,8 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 				e->type = e->binary.right->type;
 			}
 			else {
-				error(0, 0, "Type mismatch %s vs %s", get_name(get_type(left_type)->name), get_name(get_type(right_type)->name));
+				debug_context context = {0};
+				error(context, "Type mismatch %s vs %s", get_name(get_type(left_type)->name), get_name(get_type(right_type)->name));
 			}
 			break;
 		}
@@ -130,13 +137,15 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 			type_id left_type = e->binary.left->type.type;
 			type_id right_type = e->binary.right->type.type;
 			if (left_type != right_type) {
-				error(0, 0, "Type mismatch %s vs %s", get_name(get_type(left_type)->name), get_name(get_type(right_type)->name));
+				debug_context context = {0};
+				error(context, "Type mismatch %s vs %s", get_name(get_type(left_type)->name), get_name(get_type(right_type)->name));
 			}
 			e->type = e->binary.left->type;
 			break;
 		}
 		case OPERATOR_NOT: {
-			error(0, 0, "Weird binary operator");
+			debug_context context = {0};
+			error(context, "Weird binary operator");
 			break;
 		}
 		}
@@ -166,9 +175,11 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		case OPERATOR_AND:
 		case OPERATOR_MOD:
 		case OPERATOR_ASSIGN:
-		default:
-			error(0, 0, "Weird unary operator");
+		default: {
+			debug_context context = {0};
+			error(context, "Weird unary operator");
 			break;
+		}
 		}
 	}
 	case EXPRESSION_BOOLEAN: {
@@ -187,7 +198,8 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		else {
 			type_ref type = find_local_var_type(&parent->block, e->variable);
 			if (type.type == NO_TYPE) {
-				error(0, 0, "Variable %s not found", get_name(e->variable));
+				debug_context context = {0};
+				error(context, "Variable %s not found", get_name(e->variable));
 			}
 			e->type = type;
 		}
@@ -218,18 +230,21 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		break;
 	}
 	case EXPRESSION_CONSTRUCTOR: {
-		error(0, 0, "not implemented");
+		debug_context context = {0};
+		error(context, "not implemented");
 		break;
 	}
 	}
 
 	if (e->type.type == NO_TYPE) {
-		error(0, 0, "Could not resolve type");
+		debug_context context = {0};
+		error(context, "Could not resolve type");
 	}
 }
 
 void resolve_types_in_block(statement *parent, statement *block) {
-	check(block->kind == STATEMENT_BLOCK, 0, 0, "Malformed block");
+	debug_context context = {0};
+	check(block->kind == STATEMENT_BLOCK, context, "Malformed block");
 
 	for (size_t i = 0; i < block->block.statements.size; ++i) {
 		statement *s = block->block.statements.s[i];
@@ -258,7 +273,8 @@ void resolve_types_in_block(statement *parent, statement *block) {
 				s->local_variable.var.type.type = find_type_by_name(var_type_name);
 			}
 			if (s->local_variable.var.type.type == NO_TYPE) {
-				error(0, 0, "Could not find type %s for %s", get_name(var_type_name), get_name(var_name));
+				debug_context context = {0};
+				error(context, "Could not find type %s for %s", get_name(var_type_name), get_name(var_name));
 			}
 
 			if (s->local_variable.init != NULL) {
@@ -282,7 +298,8 @@ void resolve_types(void) {
 				name_id name = s->members.m[j].type.name;
 				s->members.m[j].type.type = find_type_by_name(name);
 				if (s->members.m[j].type.type == NO_TYPE) {
-					error(0, 0, "Could not find type %s in %s", get_name(name), get_name(s->name));
+					debug_context context = {0};
+					error(context, "Could not find type %s in %s", get_name(name), get_name(s->name));
 				}
 			}
 		}
@@ -295,7 +312,8 @@ void resolve_types(void) {
 			name_id parameter_type_name = f->parameter_type.name;
 			f->parameter_type.type = find_type_by_name(parameter_type_name);
 			if (f->parameter_type.type == NO_TYPE) {
-				error(0, 0, "Could not find type %s for %s", get_name(parameter_type_name), get_name(f->name));
+				debug_context context = {0};
+				error(context, "Could not find type %s for %s", get_name(parameter_type_name), get_name(f->name));
 			}
 		}
 
@@ -303,7 +321,8 @@ void resolve_types(void) {
 			name_id return_type_name = f->return_type.name;
 			f->return_type.type = find_type_by_name(return_type_name);
 			if (f->return_type.type == NO_TYPE) {
-				error(0, 0, "Could not find type %s for %s", get_name(return_type_name), get_name(f->name));
+				debug_context context = {0};
+				error(context, "Could not find type %s for %s", get_name(return_type_name), get_name(f->name));
 			}
 		}
 	}
@@ -344,18 +363,21 @@ static void read_file(char *filename) {
 	fseek(file, 0, SEEK_SET);
 
 	char *data = (char *)malloc(size + 1);
-	check(data != NULL, 0, 0, "Could not allocate memory to read file");
+
+	debug_context context = {0};
+	context.filename = filename;
+	check(data != NULL, context, "Could not allocate memory to read file %s", filename);
 
 	fread(data, 1, size, file);
 	data[size] = 0;
 
 	fclose(file);
 
-	tokens tokens = tokenize(data);
+	tokens tokens = tokenize(filename, data);
 
 	free(data);
 
-	parse(&tokens);
+	parse(filename, &tokens);
 }
 
 int main(int argc, char **argv) {
@@ -389,12 +411,14 @@ int main(int argc, char **argv) {
 						return 0;
 					}
 					else {
-						error(0, 0, "Unknown parameter %s", &argv[i][2]);
+						debug_context context = {0};
+						error(context, "Unknown parameter %s", &argv[i][2]);
 					}
 				}
 				else {
-					check(argv[i][1] != 0, 0, 0, "Borked parameter");
-					check(argv[i][2] == 0, 0, 0, "Borked parameter");
+					debug_context context = {0};
+					check(argv[i][1] != 0, context, "Borked parameter");
+					check(argv[i][2] == 0, context, "Borked parameter");
 					switch (argv[i][1]) {
 					case 'i':
 						mode = MODE_INPUT;
@@ -411,13 +435,16 @@ int main(int argc, char **argv) {
 					case 'h':
 						help();
 						return 0;
-					default:
-						error(0, 0, "Unknown parameter %s", argv[i][1]);
+					default: {
+						debug_context context = {0};
+						error(context, "Unknown parameter %s", argv[i][1]);
+					}
 					}
 				}
 			}
 			else {
-				error(0, 0, "Wrong parameter syntax");
+				debug_context context = {0};
+				error(context, "Wrong parameter syntax");
 			}
 			break;
 		}
@@ -445,11 +472,12 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	check(mode == MODE_MODECHECK, 0, 0, "Wrong parameter syntax");
-	check(inputs_size > 0, 0, 0, "no input parameters found");
-	check(output != NULL, 0, 0, "output parameter not found");
-	check(platform != NULL, 0, 0, "platform parameter not found");
-	check(api != NULL, 0, 0, "api parameter not found");
+	debug_context context = {0};
+	check(mode == MODE_MODECHECK, context, "Wrong parameter syntax");
+	check(inputs_size > 0, context, "no input parameters found");
+	check(output != NULL, context, "output parameter not found");
+	check(platform != NULL, context, "platform parameter not found");
+	check(api != NULL, context, "api parameter not found");
 
 	names_init();
 	types_init();
@@ -507,7 +535,8 @@ int main(int argc, char **argv) {
 		wgsl_export(output);
 	}
 	else {
-		error(0, 0, "Unknown API");
+		debug_context context = {0};
+		error(context, "Unknown API");
 	}
 
 	c_export(output);

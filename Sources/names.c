@@ -19,7 +19,8 @@ void names_init(void) {
 	free(names);
 
 	char *new_names = realloc(names, names_size);
-	check(new_names != NULL, 0, 0, "Could not allocate names");
+	debug_context context = {0};
+	check(new_names != NULL, context, "Could not allocate names");
 	names = new_names;
 	names[0] = 0; // make NO_NAME a proper string
 
@@ -30,7 +31,8 @@ static void grow_if_needed(uint64_t size) {
 	while (size >= names_size) {
 		names_size *= 2;
 		char *new_names = realloc(names, names_size);
-		check(new_names != NULL, 0, 0, "Could not allocate names");
+		debug_context context = {0};
+		check(new_names != NULL, context, "Could not allocate names");
 		names = new_names;
 	}
 }
@@ -59,6 +61,7 @@ name_id add_name(char *name) {
 }
 
 char *get_name(name_id id) {
-	check(id < names_index, 0, 0, "Encountered a weird name id");
+	debug_context context = {0};
+	check(id < names_index, context, "Encountered a weird name id");
 	return &names[id];
 }

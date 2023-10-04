@@ -49,7 +49,8 @@ static void permute(const char *set, int n, int k, void (*found)(char *)) {
 
 static void vec2_found_f32(char *permutation) {
 	type *t = get_type(float2_id);
-	check(t->members.size < MAX_MEMBERS, 0, 0, "Out of members");
+	debug_context context = {0};
+	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float_id;
 	t->members.m[t->members.size].type.array_size = 0;
@@ -58,7 +59,8 @@ static void vec2_found_f32(char *permutation) {
 
 static void vec2_found_vec2(char *permutation) {
 	type *t = get_type(float2_id);
-	check(t->members.size < MAX_MEMBERS, 0, 0, "Out of members");
+	debug_context context = {0};
+	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float2_id;
 	t->members.m[t->members.size].type.array_size = 0;
@@ -67,7 +69,8 @@ static void vec2_found_vec2(char *permutation) {
 
 static void vec3_found_f32(char *permutation) {
 	type *t = get_type(float3_id);
-	check(t->members.size < MAX_MEMBERS, 0, 0, "Out of members");
+	debug_context context = {0};
+	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float_id;
 	t->members.m[t->members.size].type.array_size = 0;
@@ -76,7 +79,8 @@ static void vec3_found_f32(char *permutation) {
 
 static void vec3_found_vec2(char *permutation) {
 	type *t = get_type(float3_id);
-	check(t->members.size < MAX_MEMBERS, 0, 0, "Out of members");
+	debug_context context = {0};
+	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float2_id;
 	t->members.m[t->members.size].type.array_size = 0;
@@ -85,7 +89,8 @@ static void vec3_found_vec2(char *permutation) {
 
 static void vec3_found_vec3(char *permutation) {
 	type *t = get_type(float3_id);
-	check(t->members.size < MAX_MEMBERS, 0, 0, "Out of members");
+	debug_context context = {0};
+	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float3_id;
 	t->members.m[t->members.size].type.array_size = 0;
@@ -94,7 +99,8 @@ static void vec3_found_vec3(char *permutation) {
 
 static void vec4_found_f32(char *permutation) {
 	type *t = get_type(float4_id);
-	check(t->members.size < MAX_MEMBERS, 0, 0, "Out of members");
+	debug_context context = {0};
+	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float_id;
 	t->members.m[t->members.size].type.array_size = 0;
@@ -103,7 +109,8 @@ static void vec4_found_f32(char *permutation) {
 
 static void vec4_found_vec2(char *permutation) {
 	type *t = get_type(float4_id);
-	check(t->members.size < MAX_MEMBERS, 0, 0, "Out of members");
+	debug_context context = {0};
+	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float2_id;
 	t->members.m[t->members.size].type.array_size = 0;
@@ -112,7 +119,8 @@ static void vec4_found_vec2(char *permutation) {
 
 static void vec4_found_vec3(char *permutation) {
 	type *t = get_type(float4_id);
-	check(t->members.size < MAX_MEMBERS, 0, 0, "Out of members");
+	debug_context context = {0};
+	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float3_id;
 	t->members.m[t->members.size].type.array_size = 0;
@@ -121,7 +129,8 @@ static void vec4_found_vec3(char *permutation) {
 
 static void vec4_found_vec4(char *permutation) {
 	type *t = get_type(float4_id);
-	check(t->members.size < MAX_MEMBERS, 0, 0, "Out of members");
+	debug_context context = {0};
+	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float4_id;
 	t->members.m[t->members.size].type.array_size = 0;
@@ -136,7 +145,8 @@ void init_type_ref(type_ref *t, name_id name) {
 
 void types_init(void) {
 	type *new_types = realloc(types, types_size * sizeof(type));
-	check(new_types != NULL, 0, 0, "Could not allocate types");
+	debug_context context = {0};
+	check(new_types != NULL, context, "Could not allocate types");
 	types = new_types;
 	next_type_index = 0;
 
@@ -206,7 +216,8 @@ static void grow_if_needed(uint64_t size) {
 	while (size >= types_size) {
 		types_size *= 2;
 		type *new_types = realloc(types, types_size * sizeof(type));
-		check(new_types != NULL, 0, 0, "Could not allocate types");
+		debug_context context = {0};
+		check(new_types != NULL, context, "Could not allocate types");
 		types = new_types;
 	}
 }
@@ -226,7 +237,8 @@ type_id add_type(name_id name) {
 }
 
 type_id find_type_by_name(name_id name) {
-	check(name != NO_NAME, 0, 0, "Attempted to find a no-name");
+	debug_context context = {0};
+	check(name != NO_NAME, context, "Attempted to find a no-name");
 	for (type_id i = 0; i < next_type_index; ++i) {
 		if (types[i].name == name) {
 			return i;
@@ -237,7 +249,8 @@ type_id find_type_by_name(name_id name) {
 }
 
 type_id find_type_by_ref(type_ref *t) {
-	check(t->name != NO_NAME, 0, 0, "Attempted to find a no-name");
+	debug_context context = {0};
+	check(t->name != NO_NAME, context, "Attempted to find a no-name");
 	for (type_id i = 0; i < next_type_index; ++i) {
 		if (types[i].name == t->name) {
 			return i;

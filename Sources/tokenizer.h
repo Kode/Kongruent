@@ -72,4 +72,4 @@ typedef struct tokens {
 
 token tokens_get(tokens *arr, size_t index);
 
-tokens tokenize(const char *source);
+tokens tokenize(const char *filename, const char *source);

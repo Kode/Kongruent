@@ -10,7 +10,8 @@
 
 static statement *statement_allocate(void) {
 	statement *s = (statement *)malloc(sizeof(statement));
-	check(s != NULL, 0, 0, "Could not allocate statement");
+	debug_context context = {0};
+	check(s != NULL, context, "Could not allocate statement");
 	return s;
 }
 
@@ -29,7 +30,8 @@ static void statements_add(statements *statements, statement *statement) {
 
 static expression *expression_allocate(void) {
 	expression *e = (expression *)malloc(sizeof(expression));
-	check(e != NULL, 0, 0, "Could not allocate expression");
+	debug_context context = {0};
+	check(e != NULL, context, "Could not allocate expression");
 	init_type_ref(&e->type, NO_NAME);
 	return e;
 }
@@ -41,6 +43,7 @@ static void expression_free(expression *expression) {
 typedef struct state {
 	tokens *tokens;
 	size_t index;
+	debug_context context;
 } state_t;
 
 static token current(state_t *state) {
@@ -48,19 +51,25 @@ static token current(state_t *state) {
 	return token;
 }
 
+static void update_debug_context(state_t *state) {
+	state->context.column = current(state).column;
+	state->context.line = current(state).line;
+}
+
 static void advance_state(state_t *state) {
 	state->index += 1;
+	update_debug_context(state);
 }
 
 static void match_token(state_t *state, int token, const char *error_message) {
 	if (current(state).kind != token) {
-		error(current(state).column, current(state).line, error_message);
+		error(state->context, error_message);
 	}
 }
 
 static void match_token_identifier(state_t *state) {
 	if (current(state).kind != TOKEN_IDENTIFIER) {
-		error(current(state).column, current(state).line, "Expected an identifier");
+		error(state->context, "Expected an identifier");
 	}
 }
 
@@ -68,8 +77,9 @@ static definition parse_definition(state_t *state);
 static statement *parse_statement(state_t *state);
 static expression *parse_expression(state_t *state);
 
-void parse(tokens *tokens) {
-	state_t state;
+void parse(const char *filename, tokens *tokens) {
+	state_t state = {0};
+	state.context.filename = filename;
 	state.tokens = tokens;
 	state.index = 0;
 
@@ -102,9 +112,11 @@ static statement *parse_block(state_t *state) {
 			statement->block.statements = statements;
 			return statement;
 		}
-		case TOKEN_NONE:
-			error(current(state).column, current(state).line, "File ended before a block ended");
+		case TOKEN_NONE: {
+			update_debug_context(state);
+			error(state->context, "File ended before a block ended");
 			return NULL;
+		}
 		default:
 			statements_add(&statements, parse_statement(state));
 			break;
@@ -246,7 +258,8 @@ static definition parse_definition(state_t *state) {
 		return d;
 	}
 	default: {
-		error(current(state).column, current(state).line, "Expected a struct, a function or a const");
+		update_debug_context(state);
+		error(state->context, "Expected a struct, a function or a const");
 
 		definition d = {0};
 		return d;
@@ -311,7 +324,7 @@ static statement *parse_statement(state_t *state) {
 		expression *init = NULL;
 
 		if (current(state).kind == TOKEN_OPERATOR) {
-			check(current(state).op == OPERATOR_ASSIGN, current(state).column, current(state).line, "Expected an assign");
+			check(current(state).op == OPERATOR_ASSIGN, state->context, "Expected an assign");
 			advance_state(state);
 			init = parse_expression(state);
 		}
@@ -622,7 +635,7 @@ static expression *parse_member(state_t *state, bool number) {
 		}
 	}
 	else {
-		error(current(state).column, current(state).line, "Unexpected token");
+		error(state->context, "Unexpected token");
 		return NULL;
 	}
 }
@@ -680,7 +693,7 @@ static expression *parse_primary(state_t *state) {
 		break;
 	}
 	default:
-		error(current(state).column, current(state).line, "Unexpected token");
+		error(state->context, "Unexpected token");
 		return NULL;
 	}
 
@@ -697,7 +710,7 @@ static expression *parse_primary(state_t *state) {
 
 		if (current(state).kind == TOKEN_LEFT_PAREN) {
 			// return parse_call(state, member);
-			error(current(state).column, current(state).line, "Function members not currently supported");
+			error(state->context, "Function members not currently supported");
 			return NULL;
 		}
 		else {
@@ -753,7 +766,7 @@ static expression *parse_call(state_t *state, name_id func_name) {
 
 		if (current(state).kind == TOKEN_LEFT_PAREN) {
 			// return parse_call(state, member);
-			error(current(state).column, current(state).line, "Function members not currently supported");
+			error(state->context, "Function members not currently supported");
 			return NULL;
 		}
 		else {
@@ -774,7 +787,8 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 	size_t count = 0;
 
 	while (current(state).kind != TOKEN_RIGHT_CURLY) {
-		check(count < MAX_MEMBERS, 0, 0, "Out of members");
+		debug_context context = {0};
+		check(count < MAX_MEMBERS, context, "Out of members");
 
 		match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 		member_names[count] = current(state);
@@ -801,7 +815,8 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 				advance_state(state);
 			}
 			else {
-				error(0, 0, "Unsupported assign in struct");
+				debug_context context = {0};
+				error(context, "Unsupported assign in struct");
 			}
 		}
 		else {
@@ -846,7 +861,8 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 				}
 			}
 			else {
-				error(0, 0, "Unsupported value in struct");
+				debug_context context = {0};
+				error(context, "Unsupported value in struct");
 			}
 		}
 		else {
@@ -932,7 +948,8 @@ static definition parse_const(state_t *state) {
 	definition d;
 
 	if (type_name == NO_NAME) {
-		check(type != NO_TYPE, 0, 0, "Const has not type");
+		debug_context context = {0};
+		check(type != NO_TYPE, context, "Const has not type");
 		d.kind = DEFINITION_CONST_CUSTOM;
 		d.global = add_global(type, name.identifier);
 	}
@@ -949,7 +966,8 @@ static definition parse_const(state_t *state) {
 		d.global = add_global(sampler_type_id, name.identifier);
 	}
 	else {
-		error(0, 0, "Unsupported global");
+		debug_context context = {0};
+		error(context, "Unsupported global");
 	}
 
 	return d;

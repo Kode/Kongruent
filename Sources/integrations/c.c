@@ -44,7 +44,8 @@ static const char *structure_type(type_id type) {
 	if (type == float4_id) {
 		return "KINC_G4_VERTEX_DATA_F32_4X";
 	}
-	error(0, 0, "Unknown type for vertex structure");
+	debug_context context = {0};
+	error(context, "Unknown type for vertex structure");
 	return "UNKNOWN";
 }
 
@@ -83,12 +84,14 @@ void c_export(char *directory) {
 
 			for (size_t j = 0; j < t->members.size; ++j) {
 				if (t->members.m[j].name == add_name("vertex")) {
-					check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, 0, 0, "vertex expects an identifier");
+					debug_context context = {0};
+					check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "vertex expects an identifier");
 					vertex_shader_name = t->members.m[j].value.identifier;
 				}
 			}
 
-			check(vertex_shader_name != NO_NAME, 0, 0, "No vertex shader name found");
+			debug_context context = {0};
+			check(vertex_shader_name != NO_NAME, context, "No vertex shader name found");
 
 			type_id vertex_input = NO_TYPE;
 
@@ -100,7 +103,7 @@ void c_export(char *directory) {
 				}
 			}
 
-			check(vertex_input != NO_TYPE, 0, 0, "No vertex input found");
+			check(vertex_input != NO_TYPE, context, "No vertex input found");
 
 			vertex_inputs[vertex_inputs_size] = vertex_input;
 			vertex_inputs_size += 1;
@@ -193,12 +196,13 @@ void c_export(char *directory) {
 			type *t = get_type(i);
 			if (!t->built_in && t->attribute == add_name("pipe")) {
 				for (size_t j = 0; j < t->members.size; ++j) {
+					debug_context context = {0};
 					if (t->members.m[j].name == add_name("vertex")) {
-						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, 0, 0, "vertex expects an identifier");
+						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "vertex expects an identifier");
 						fprintf(output, "#include \"kong_%s.h\"\n", get_name(t->members.m[j].value.identifier));
 					}
 					else if (t->members.m[j].name == add_name("fragment")) {
-						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, 0, 0, "fragment expects an identifier");
+						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "fragment expects an identifier");
 						fprintf(output, "#include \"kong_%s.h\"\n", get_name(t->members.m[j].value.identifier));
 					}
 				}
@@ -281,7 +285,8 @@ void c_export(char *directory) {
 			if (!t->built_in && t->attribute == add_name("pipe")) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("vertex") || t->members.m[j].name == add_name("fragment")) {
-						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, 0, 0, "vertex or fragment expects an identifier");
+						debug_context context = {0};
+						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "vertex or fragment expects an identifier");
 						fprintf(output, "static kinc_g4_shader_t %s;\n", get_name(t->members.m[j].value.identifier));
 					}
 				}
@@ -311,20 +316,26 @@ void c_export(char *directory) {
 						fprintf(output, "\t%s.fragment_shader = &%s;\n\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
 					}
 					else if (t->members.m[j].name == add_name("depth_write")) {
-						check(t->members.m[j].value.kind == TOKEN_BOOLEAN, 0, 0, "depth_write expects a bool");
+						debug_context context = {0};
+						check(t->members.m[j].value.kind == TOKEN_BOOLEAN, context, "depth_write expects a bool");
 						fprintf(output, "\t%s.depth_write = %s;\n\n", get_name(t->name), t->members.m[j].value.boolean ? "true" : "false");
 					}
 					else if (t->members.m[j].name == add_name("depth_mode")) {
-						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, 0, 0, "depth_mode expects an identifier");
+						debug_context context = {0};
+						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "depth_mode expects an identifier");
 						global g = find_global(t->members.m[j].value.identifier);
 						fprintf(output, "\t%s.depth_mode = %i;\n\n", get_name(t->name), (int)g.value);
 					}
 					else {
-						error(0, 0, "Unsupported pipe member %s", get_name(t->members.m[j].name));
+						debug_context context = {0};
+						error(context, "Unsupported pipe member %s", get_name(t->members.m[j].name));
 					}
 				}
 
-				check(vertex_shader_name != NO_NAME, 0, 0, "No vertex shader name found");
+				{
+					debug_context context = {0};
+					check(vertex_shader_name != NO_NAME, context, "No vertex shader name found");
+				}
 
 				type_id vertex_input = NO_TYPE;
 
@@ -336,7 +347,10 @@ void c_export(char *directory) {
 					}
 				}
 
-				check(vertex_input != NO_TYPE, 0, 0, "No vertex input found");
+				{
+					debug_context context = {0};
+					check(vertex_input != NO_TYPE, context, "No vertex input found");
+				}
 
 				for (type_id i = 0; get_type(i) != NULL; ++i) {
 					if (i == vertex_input) {

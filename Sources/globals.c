@@ -63,6 +63,7 @@ global get_global(global_id id) {
 }
 
 void assign_global_var(global_id id, uint64_t var_index) {
-	check(id < globals_size, 0, 0, "Encountered a global with a weird id");
+	debug_context context = {0};
+	check(id < globals_size, context, "Encountered a global with a weird id");
 	globals[id].var_index = var_index;
 }

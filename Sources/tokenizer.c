@@ -7,7 +7,8 @@
 #include <string.h>
 
 token tokens_get(tokens *tokens, size_t index) {
-	check(tokens->current_size > index, 0, 0, "Token index out of bounds");
+	debug_context context = {0};
+	check(tokens->current_size > index, context, "Token index out of bounds");
 	return tokens->t[index];
 }
 
@@ -42,7 +43,7 @@ typedef struct tokenizer_state {
 	bool line_end;
 } tokenizer_state;
 
-static void tokenizer_state_init(tokenizer_state *state, const char *source) {
+static void tokenizer_state_init(debug_context *context, tokenizer_state *state, const char *source) {
 	state->line = state->column = 0;
 	state->iterator = source;
 	state->next = *state->iterator;
@@ -51,9 +52,12 @@ static void tokenizer_state_init(tokenizer_state *state, const char *source) {
 	}
 	state->next_next = *state->iterator;
 	state->line_end = false;
+
+	context->column = 0;
+	context->line = 0;
 }
 
-static void tokenizer_state_advance(tokenizer_state *state) {
+static void tokenizer_state_advance(debug_context *context, tokenizer_state *state) {
 	state->next = state->next_next;
 	if (*state->iterator != 0) {
 		state->iterator += 1;
@@ -72,6 +76,9 @@ static void tokenizer_state_advance(tokenizer_state *state) {
 	if (state->next == '\n') {
 		state->line_end = true;
 	}
+
+	context->column = state->column;
+	context->line = state->line;
 }
 
 typedef struct tokenizer_buffer {
@@ -95,7 +102,8 @@ static void tokenizer_buffer_reset(tokenizer_buffer *buffer, tokenizer_state *st
 }
 
 static void tokenizer_buffer_add(tokenizer_buffer *buffer, char ch) {
-	check(buffer->current_size < buffer->max_size, 0, 0, "Token buffer is too small");
+	debug_context context = {0};
+	check(buffer->current_size < buffer->max_size, context, "Token buffer is too small");
 	buffer->buf[buffer->current_size] = ch;
 	buffer->current_size += 1;
 }
@@ -106,7 +114,8 @@ static bool tokenizer_buffer_equals(tokenizer_buffer *buffer, const char *str) {
 }
 
 static name_id tokenizer_buffer_to_name(tokenizer_buffer *buffer) {
-	check(buffer->current_size < buffer->max_size, 0, 0, "Token buffer is too small");
+	debug_context context = {0};
+	check(buffer->current_size < buffer->max_size, context, "Token buffer is too small");
 	buffer->buf[buffer->current_size] = 0;
 	buffer->current_size += 1;
 	return add_name(buffer->buf);
@@ -134,7 +143,8 @@ static void tokens_init(tokens *tokens) {
 static void tokens_add(tokens *tokens, token token) {
 	tokens->t[tokens->current_size] = token;
 	tokens->current_size += 1;
-	check(tokens->current_size <= tokens->max_size, 0, 0, "Out of tokens");
+	debug_context context = {0};
+	check(tokens->current_size <= tokens->max_size, context, "Out of tokens");
 }
 
 static void tokens_add_identifier(tokenizer_state *state, tokens *tokens, tokenizer_buffer *buffer) {
@@ -190,14 +200,17 @@ static void tokens_add_attribute(tokenizer_state *state, tokens *tokens, tokeniz
 	tokens_add(tokens, token);
 }
 
-tokens tokenize(const char *source) {
+tokens tokenize(const char *filename, const char *source) {
 	mode mode = MODE_SELECT;
 
 	tokens tokens;
 	tokens_init(&tokens);
 
+	debug_context context = {0};
+	context.filename = filename;
+
 	tokenizer_state state;
-	tokenizer_state_init(&state, source);
+	tokenizer_state_init(&context, &state, source);
 
 	tokenizer_buffer buffer;
 	tokenizer_buffer_init(&buffer);
@@ -223,9 +236,9 @@ tokens tokenize(const char *source) {
 			// case MODE_STRING:
 			//	error("Unclosed string", state.column, state.line);
 			case MODE_OPERATOR:
-				error(state.column, state.line, "File ends with an operator");
+				error(context, "File ends with an operator");
 			case MODE_COMMENT:
-				error(state.column, state.line, "Unclosed comment");
+				error(context, "Unclosed comment");
 			}
 
 			tokens_add(&tokens, token_create(TOKEN_NONE, &state));
@@ -253,15 +266,15 @@ tokens tokenize(const char *source) {
 					}
 				}
 				else if (ch == '#') {
-					tokenizer_state_advance(&state);
+					tokenizer_state_advance(&context, &state);
 					if (state.next >= 0) {
 						char ch = state.next;
 						if (ch != '[') {
-							error(state.column, state.line, "Expected [");
+							error(context, "Expected [");
 						}
 					}
 					else {
-						error(state.column, state.line, "Expected [");
+						error(context, "Expected [");
 					}
 
 					mode = MODE_ATTRIBUTE;
@@ -312,21 +325,21 @@ tokens tokenize(const char *source) {
 				else if (ch == '"' || ch == '\'') {
 					// mode = MODE_STRING;
 					// tokenizer_buffer_reset(&buffer, &state);
-					error(state.column, state.line, "Strings are not supported");
+					error(context, "Strings are not supported");
 				}
 				else {
 					mode = MODE_IDENTIFIER;
 					tokenizer_buffer_reset(&buffer, &state);
 					tokenizer_buffer_add(&buffer, ch);
 				}
-				tokenizer_state_advance(&state);
+				tokenizer_state_advance(&context, &state);
 				break;
 			}
 			case MODE_LINE_COMMENT: {
 				if (ch == '\n') {
 					mode = MODE_SELECT;
 				}
-				tokenizer_state_advance(&state);
+				tokenizer_state_advance(&context, &state);
 				break;
 			}
 			case MODE_COMMENT: {
@@ -335,17 +348,17 @@ tokens tokenize(const char *source) {
 						char chch = (char)state.next_next;
 						if (chch == '/') {
 							mode = MODE_SELECT;
-							tokenizer_state_advance(&state);
+							tokenizer_state_advance(&context, &state);
 						}
 					}
 				}
-				tokenizer_state_advance(&state);
+				tokenizer_state_advance(&context, &state);
 				break;
 			}
 			case MODE_NUMBER: {
 				if (is_num(ch) || ch == '.') {
 					tokenizer_buffer_add(&buffer, ch);
-					tokenizer_state_advance(&state);
+					tokenizer_state_advance(&context, &state);
 				}
 				else {
 					token token = token_create(TOKEN_NUMBER, &state);
@@ -367,7 +380,7 @@ tokens tokenize(const char *source) {
 				if (strcmp(long_op, "==") == 0 || strcmp(long_op, "!=") == 0 || strcmp(long_op, "<=") == 0 || strcmp(long_op, ">=") == 0 ||
 				    strcmp(long_op, "||") == 0 || strcmp(long_op, "&&") == 0 || strcmp(long_op, "->") == 0) {
 					tokenizer_buffer_add(&buffer, ch);
-					tokenizer_state_advance(&state);
+					tokenizer_state_advance(&context, &state);
 				}
 
 				if (tokenizer_buffer_equals(&buffer, "==")) {
@@ -446,7 +459,7 @@ tokens tokenize(const char *source) {
 					tokens_add(&tokens, token);
 				}
 				else {
-					error(state.column, state.line, "Weird operator");
+					error(context, "Weird operator");
 				}
 
 				mode = MODE_SELECT;
@@ -477,19 +490,19 @@ tokens tokenize(const char *source) {
 				}
 				else {
 					tokenizer_buffer_add(&buffer, ch);
-					tokenizer_state_advance(&state);
+					tokenizer_state_advance(&context, &state);
 				}
 				break;
 			}
 			case MODE_ATTRIBUTE: {
 				if (ch == ']') {
 					tokens_add_attribute(&state, &tokens, &buffer);
-					tokenizer_state_advance(&state);
+					tokenizer_state_advance(&context, &state);
 					mode = MODE_SELECT;
 				}
 				else {
 					tokenizer_buffer_add(&buffer, ch);
-					tokenizer_state_advance(&state);
+					tokenizer_state_advance(&context, &state);
 				}
 				break;
 			}

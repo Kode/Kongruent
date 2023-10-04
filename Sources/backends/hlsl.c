@@ -174,9 +174,10 @@ static void find_referenced_types(function *f, type_id *types, size_t *types_siz
 
 	for (size_t l = 0; l < functions_size; ++l) {
 		function *func = functions[l];
-		check(func->parameter_type.type != NO_TYPE, 0, 0, "Parameter type missing");
+		debug_context context = {0};
+		check(func->parameter_type.type != NO_TYPE, context, "Parameter type missing");
 		add_found_type(func->parameter_type.type, types, types_size);
-		check(func->return_type.type != NO_TYPE, 0, 0, "Return type missing");
+		check(func->return_type.type != NO_TYPE, context, "Return type missing");
 		add_found_type(func->return_type.type, types, types_size);
 
 		uint8_t *data = functions[l]->code.o;
@@ -355,7 +356,8 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 	for (size_t i = 0; i < functions_size; ++i) {
 		function *f = functions[i];
 
-		check(f->block != NULL, 0, 0, "Function block missing");
+		debug_context context = {0};
+		check(f->block != NULL, context, "Function block missing");
 
 		uint8_t *data = f->code.o;
 		size_t size = f->code.size;
@@ -368,7 +370,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			}
 		}
 
-		check(parameter_id != 0, 0, 0, "Parameter not found");
+		check(parameter_id != 0, context, "Parameter not found");
 		if (f == main) {
 			if (stage == SHADER_STAGE_VERTEX) {
 				*offset += sprintf(&hlsl[*offset], "%s main(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), type_string(f->parameter_type.type),
@@ -389,7 +391,8 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				}
 			}
 			else {
-				error(0, 0, "Unsupported shader stage");
+				debug_context context = {0};
+				error(context, "Unsupported shader stage");
 			}
 		}
 		else {
@@ -476,8 +479,9 @@ static void hlsl_export_vertex(char *directory, function *main) {
 	type_id vertex_input = main->parameter_type.type;
 	type_id vertex_output = main->return_type.type;
 
-	check(vertex_input != NO_TYPE, 0, 0, "vertex input missing");
-	check(vertex_output != NO_TYPE, 0, 0, "vertex output missing");
+	debug_context context = {0};
+	check(vertex_input != NO_TYPE, context, "vertex input missing");
+	check(vertex_output != NO_TYPE, context, "vertex output missing");
 
 	write_types(hlsl, &offset, SHADER_STAGE_VERTEX, vertex_input, vertex_output, main);
 
@@ -488,7 +492,7 @@ static void hlsl_export_vertex(char *directory, function *main) {
 	char *output;
 	size_t output_size;
 	int result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
-	check(result == 0, 0, 0, "HLSL compilation failed");
+	check(result == 0, context, "HLSL compilation failed");
 
 	char *name = get_name(main->name);
 
@@ -507,7 +511,8 @@ static void hlsl_export_fragment(char *directory, function *main) {
 
 	type_id pixel_input = main->parameter_type.type;
 
-	check(pixel_input != NO_TYPE, 0, 0, "fragment input missing");
+	debug_context context = {0};
+	check(pixel_input != NO_TYPE, context, "fragment input missing");
 
 	write_types(hlsl, &offset, SHADER_STAGE_FRAGMENT, pixel_input, NO_TYPE, main);
 
@@ -518,7 +523,7 @@ static void hlsl_export_fragment(char *directory, function *main) {
 	uint8_t *output;
 	size_t output_size;
 	int result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
-	check(result == 0, 0, 0, "HLSL compilation failed");
+	check(result == 0, context, "HLSL compilation failed");
 
 	char *name = get_name(main->name);
 
@@ -577,8 +582,9 @@ void hlsl_export(char *directory) {
 				}
 			}
 
-			check(vertex_shader_name != NO_NAME, 0, 0, "vertex shader missing");
-			check(fragment_shader_name != NO_NAME, 0, 0, "fragment shader missing");
+			debug_context context = {0};
+			check(vertex_shader_name != NO_NAME, context, "vertex shader missing");
+			check(fragment_shader_name != NO_NAME, context, "fragment shader missing");
 
 			for (function_id i = 0; get_function(i) != NULL; ++i) {
 				function *f = get_function(i);

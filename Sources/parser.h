@@ -114,4 +114,4 @@ typedef struct definition {
 	};
 } definition;
 
-void parse(tokens *tokens);
+void parse(const char *filename, tokens *tokens);
