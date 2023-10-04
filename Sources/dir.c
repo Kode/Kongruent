@@ -2,8 +2,8 @@
 
 #include "log.h"
 
-#include <stdio.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #ifdef _WIN32
 
@@ -59,6 +59,10 @@ directory open_dir(const char *dirname) {
 file read_next_file(directory *dir) {
 	struct dirent *entry = readdir(dir->handle);
 
+	while (entry->d_name != NULL && (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, ".") == 0)) {
+		entry = readdir(dir->handle);
+	}
+
 	file f;
 	f.valid = entry != NULL;
 
@@ -69,8 +73,6 @@ file read_next_file(directory *dir) {
 	return f;
 }
 
-void close_dir(directory *dir) {
-
-}
+void close_dir(directory *dir) {}
 
 #endif
