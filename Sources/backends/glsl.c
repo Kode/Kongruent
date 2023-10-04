@@ -52,9 +52,33 @@ static void write_code(char *glsl, char *directory, const char *filename, const 
 		FILE *file = fopen(full_filename, "wb");
 		fprintf(file, "#include \"%s.h\"\n\n", filename);
 
-		fprintf(file, "const char *%s = \"%s\";\n\n", name, glsl);
+		fprintf(file, "const char *%s = \"", name);
 
-		fprintf(file, "size_t %s_size = %" PRIu64 ";\n\n", name, strlen(glsl));
+		size_t length = strlen(glsl);
+
+		for (size_t i = 0; i < length; ++i) {
+			if (glsl[i] == '\n') {
+				fprintf(file, "\\n");
+			}
+			else if (glsl[i] == '\r') {
+				fprintf(file, "\\r");
+			}
+			else if (glsl[i] == '\t') {
+				fprintf(file, "\\t");
+			}
+			else if (glsl[i] == '"') {
+				fprintf(file, "\\\"");
+			}
+			else {
+				fprintf(file, "%c", glsl[i]);
+			}
+		}
+
+		fprintf(file, "\";\n\n");
+
+		fprintf(file, "size_t %s_size = %" PRIu64 ";\n\n", name, length);
+
+		fprintf(file, "/*\n%s*/\n", glsl);
 
 		fclose(file);
 	}
