@@ -45,8 +45,6 @@ jobs:
       run: git config --global user.name "Robbot"
     - name: Set email
       run: git config --global user.email "robbot2019@robdangero.us"
-    - name: Add binary
-      run: git -C KincTools_linux_x64 add .
     - name: Commit binary
       id: commit
       continue-on-error: true
@@ -108,8 +106,6 @@ jobs:
       run: git config --global user.name "Robbot"
     - name: Set email
       run: git config --global user.email "robbot2019@robdangero.us"
-    - name: Add binary
-      run: git -C KincTools_linux_arm64 add .
     - name: Commit binary
       id: commit
       continue-on-error: true
@@ -173,8 +169,6 @@ jobs:
       run: git config --global user.name "Robbot"
     - name: Set email
       run: git config --global user.email "robbot2019@robdangero.us"
-    - name: Add binary
-      run: git -C KincTools_linux_arm add .
     - name: Commit binary
       id: commit
       continue-on-error: true
