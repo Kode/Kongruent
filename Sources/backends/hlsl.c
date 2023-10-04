@@ -45,7 +45,8 @@ static void write_bytecode(char *hlsl, char *directory, const char *filename, co
 	{
 		sprintf(full_filename, "%s/%s.h", directory, filename);
 		FILE *file = fopen(full_filename, "wb");
-		fprintf(file, "#include <stddef.h>\n\n");
+		fprintf(file, "#include <stddef.h>\n");
+		fprintf(file, "#include <stdint.h>\n\n");
 		fprintf(file, "extern uint8_t *%s;\n", name);
 		fprintf(file, "extern size_t %s_size;\n", name);
 		fclose(file);
