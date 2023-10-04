@@ -474,6 +474,7 @@ int main(int argc, char **argv) {
 		close_dir(&dir);
 	}
 
+#ifndef NDEBUG
 	kong_log(LOG_LEVEL_INFO, "Functions:");
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		kong_log(LOG_LEVEL_INFO, "%s", get_name(get_function(i)->name));
@@ -484,6 +485,7 @@ int main(int argc, char **argv) {
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		kong_log(LOG_LEVEL_INFO, "%s", get_name(get_type(i)->name));
 	}
+#endif
 
 	resolve_types();
 
