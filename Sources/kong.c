@@ -492,7 +492,7 @@ int main(int argc, char **argv) {
 		convert_function_block(&get_function(i)->code, get_function(i)->block);
 	}
 
-	if (strcmp(api, "direct3d11") == 0) {
+	if (strcmp(api, "direct3d9") == 0 || strcmp(api, "direct3d11") == 0 || strcmp(api, "direct3d12") == 0) {
 		hlsl_export(output);
 	}
 	else if (strcmp(api, "opengl") == 0) {
