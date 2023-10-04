@@ -45,6 +45,7 @@ jobs:
           git config --global --add safe.directory /Users/runner/work/Kongruent/Kongruent/KincTools_freebsd_x64
           git config --global user.name "Robbot"
           git config --global user.email "robbot2019@robdangero.us"
+          git -C KincTools_freebsd_x64 add .
           # Commit binary
           git -C KincTools_freebsd_x64 commit -a -m "Update kong binary to $GITHUB_SHA." && set _commit=0 || set _commit=1
           # Tag binary
