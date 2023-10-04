@@ -59,7 +59,7 @@ directory open_dir(const char *dirname) {
 file read_next_file(directory *dir) {
 	struct dirent *entry = readdir(dir->handle);
 
-	while (entry->d_name != NULL && (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, ".") == 0)) {
+	while (entry->d_name != NULL && (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)) {
 		entry = readdir(dir->handle);
 	}
 
