@@ -20,19 +20,20 @@ void kong_log(log_level_t level, const char *format, ...) {
 
 void kong_log_args(log_level_t level, const char *format, va_list args) {
 #ifdef WIN32
-	char buffer[4096];
-	vsnprintf(buffer, 4090, format, args);
-	strcat(buffer, "\r\n");
-	OutputDebugStringA(buffer);
-
-	DWORD written;
-	WriteConsoleA(GetStdHandle(level == LOG_LEVEL_INFO ? STD_OUTPUT_HANDLE : STD_ERROR_HANDLE), buffer, (DWORD)strlen(buffer), &written, NULL);
-#else
-	char buffer[4096];
-	vsnprintf(buffer, 4090, format, args);
-	strcat(buffer, "\n");
-	fprintf(level == LOG_LEVEL_INFO ? stdout : stderr, "%s", buffer);
+	{
+		char buffer[4096];
+		vsnprintf(buffer, 4090, format, args);
+		strcat(buffer, "\r\n");
+		OutputDebugStringA(buffer);
+	}
 #endif
+
+	{
+		char buffer[4096];
+		vsnprintf(buffer, 4090, format, args);
+		strcat(buffer, "\n");
+		fprintf(level == LOG_LEVEL_INFO ? stdout : stderr, "%s", buffer);
+	}
 
 #ifdef __android__
 	switch (level) {
