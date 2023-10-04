@@ -40,7 +40,7 @@ static void write_code(char *glsl, char *directory, const char *filename, const 
 	{
 		sprintf(full_filename, "%s/%s.h", directory, filename);
 		FILE *file = fopen(full_filename, "wb");
-		fprintf(file, "#include <stdint.h>\n\n");
+		fprintf(file, "#include <stddef.h>\n\n");
 		fprintf(file, "extern const char *%s;\n", name);
 		fprintf(file, "extern size_t %s_size;\n", name);
 		fclose(file);
