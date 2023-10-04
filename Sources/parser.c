@@ -311,7 +311,7 @@ static statement *parse_statement(state_t *state) {
 		expression *init = NULL;
 
 		if (current(state).kind == TOKEN_OPERATOR) {
-			match_token(state, OPERATOR_ASSIGN, "Expected an assign");
+			check(current(state).op == OPERATOR_ASSIGN, current(state).column, current(state).line, "Expected an assign");
 			advance_state(state);
 			init = parse_expression(state);
 		}
