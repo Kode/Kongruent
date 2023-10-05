@@ -51,7 +51,7 @@ static const char *structure_type(type_id type) {
 
 static int global_register_indices[512];
 
-void c_export(char *directory) {
+void c_export(char *directory, api_kind api) {
 	int cbuffer_index = 0;
 	int texture_index = 0;
 	int sampler_index = 0;
@@ -192,18 +192,23 @@ void c_export(char *directory) {
 
 		fprintf(output, "#include \"kong.h\"\n\n");
 
-		for (type_id i = 0; get_type(i) != NULL; ++i) {
-			type *t = get_type(i);
-			if (!t->built_in && t->attribute == add_name("pipe")) {
-				for (size_t j = 0; j < t->members.size; ++j) {
-					debug_context context = {0};
-					if (t->members.m[j].name == add_name("vertex")) {
-						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "vertex expects an identifier");
-						fprintf(output, "#include \"kong_%s.h\"\n", get_name(t->members.m[j].value.identifier));
-					}
-					else if (t->members.m[j].name == add_name("fragment")) {
-						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "fragment expects an identifier");
-						fprintf(output, "#include \"kong_%s.h\"\n", get_name(t->members.m[j].value.identifier));
+		if (api == API_WEBGPU) {
+			fprintf(output, "#include \"wgsl.h\"\n");
+		}
+		else {
+			for (type_id i = 0; get_type(i) != NULL; ++i) {
+				type *t = get_type(i);
+				if (!t->built_in && t->attribute == add_name("pipe")) {
+					for (size_t j = 0; j < t->members.size; ++j) {
+						debug_context context = {0};
+						if (t->members.m[j].name == add_name("vertex")) {
+							check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "vertex expects an identifier");
+							fprintf(output, "#include \"kong_%s.h\"\n", get_name(t->members.m[j].value.identifier));
+						}
+						else if (t->members.m[j].name == add_name("fragment")) {
+							check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "fragment expects an identifier");
+							fprintf(output, "#include \"kong_%s.h\"\n", get_name(t->members.m[j].value.identifier));
+						}
 					}
 				}
 			}
@@ -293,7 +298,16 @@ void c_export(char *directory) {
 			}
 		}
 
+		if (api == API_WEBGPU) {
+			fprintf(output, "\nvoid kinc_g5_internal_webgpu_create_shader_module(const void *source, size_t length);\n");
+		}
+
 		fprintf(output, "\nvoid kong_init(void) {\n");
+
+		if (api == API_WEBGPU) {
+			fprintf(output, "\tkinc_g5_internal_webgpu_create_shader_module(wgsl, wgsl_size);\n\n");
+		}
+
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && t->attribute == add_name("pipe")) {
@@ -303,16 +317,28 @@ void c_export(char *directory) {
 
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("vertex")) {
-						fprintf(output, "\tkinc_g4_shader_init(&%s, %s_code, %s_code_size, KINC_G4_SHADER_TYPE_VERTEX);\n",
-						        get_name(t->members.m[j].value.identifier), get_name(t->members.m[j].value.identifier),
-						        get_name(t->members.m[j].value.identifier));
+						if (api == API_WEBGPU) {
+							fprintf(output, "\tkinc_g4_shader_init(&%s, \"%s\", 0, KINC_G4_SHADER_TYPE_VERTEX);\n", get_name(t->members.m[j].value.identifier),
+							        get_name(t->members.m[j].value.identifier));
+						}
+						else {
+							fprintf(output, "\tkinc_g4_shader_init(&%s, %s_code, %s_code_size, KINC_G4_SHADER_TYPE_VERTEX);\n",
+							        get_name(t->members.m[j].value.identifier), get_name(t->members.m[j].value.identifier),
+							        get_name(t->members.m[j].value.identifier));
+						}
 						fprintf(output, "\t%s.vertex_shader = &%s;\n\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
 						vertex_shader_name = t->members.m[j].value.identifier;
 					}
 					else if (t->members.m[j].name == add_name("fragment")) {
-						fprintf(output, "\tkinc_g4_shader_init(&%s, %s_code, %s_code_size, KINC_G4_SHADER_TYPE_FRAGMENT);\n",
-						        get_name(t->members.m[j].value.identifier), get_name(t->members.m[j].value.identifier),
-						        get_name(t->members.m[j].value.identifier));
+						if (api == API_WEBGPU) {
+							fprintf(output, "\tkinc_g4_shader_init(&%s, \"%s\", 0, KINC_G4_SHADER_TYPE_FRAGMENT);\n",
+							        get_name(t->members.m[j].value.identifier), get_name(t->members.m[j].value.identifier));
+						}
+						else {
+							fprintf(output, "\tkinc_g4_shader_init(&%s, %s_code, %s_code_size, KINC_G4_SHADER_TYPE_FRAGMENT);\n",
+							        get_name(t->members.m[j].value.identifier), get_name(t->members.m[j].value.identifier),
+							        get_name(t->members.m[j].value.identifier));
+						}
 						fprintf(output, "\t%s.fragment_shader = &%s;\n\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
 					}
 					else if (t->members.m[j].name == add_name("depth_write")) {

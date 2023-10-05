@@ -474,7 +474,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 	}
 }
 
-static void hlsl_export_vertex(char *directory, Direct3D d3d, function *main) {
+static void hlsl_export_vertex(char *directory, api_kind d3d, function *main) {
 	char *hlsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
@@ -495,14 +495,15 @@ static void hlsl_export_vertex(char *directory, Direct3D d3d, function *main) {
 	size_t output_size;
 	int result = 1;
 	switch (d3d) {
-	case DIRECT3D_9:
+	case API_DIRECT3D9:
 		result = compile_hlsl_to_d3d9(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
 		break;
-	case DIRECT3D_11:
+	case API_DIRECT3D11:
+	case API_DIRECT3D12:
 		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
 		break;
 	default:
-		error(context, "Unknown Direct3D version");
+		error(context, "Unsupported API for HLSL");
 	}
 	check(result == 0, context, "HLSL compilation failed");
 
@@ -517,7 +518,7 @@ static void hlsl_export_vertex(char *directory, Direct3D d3d, function *main) {
 	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
 }
 
-static void hlsl_export_fragment(char *directory, Direct3D d3d, function *main) {
+static void hlsl_export_fragment(char *directory, api_kind d3d, function *main) {
 	char *hlsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
@@ -536,14 +537,15 @@ static void hlsl_export_fragment(char *directory, Direct3D d3d, function *main) 
 	size_t output_size;
 	int result = 1;
 	switch (d3d) {
-	case DIRECT3D_9:
+	case API_DIRECT3D9:
 		result = compile_hlsl_to_d3d9(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
 		break;
-	case DIRECT3D_11:
+	case API_DIRECT3D11:
+	case API_DIRECT3D12:
 		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
 		break;
 	default:
-		error(context, "Unknown Direct3D version");
+		error(context, "Unsupported API for HLSL");
 	}
 	check(result == 0, context, "HLSL compilation failed");
 
@@ -558,7 +560,7 @@ static void hlsl_export_fragment(char *directory, Direct3D d3d, function *main) 
 	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
 }
 
-void hlsl_export(char *directory, Direct3D d3d) {
+void hlsl_export(char *directory, api_kind d3d) {
 	int cbuffer_index = 0;
 	int texture_index = 0;
 	int sampler_index = 0;

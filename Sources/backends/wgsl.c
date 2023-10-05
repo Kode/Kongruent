@@ -41,11 +41,52 @@ static char *function_string(name_id func) {
 
 static void write_code(char *wgsl, char *directory, const char *filename) {
 	char full_filename[512];
-	sprintf(full_filename, "%s/%s.c", directory, filename);
 
-	FILE *file = fopen(full_filename, "wb");
-	fprintf(file, "%s", wgsl);
-	fclose(file);
+	{
+		sprintf(full_filename, "%s/%s.h", directory, filename);
+		FILE *file = fopen(full_filename, "wb");
+		fprintf(file, "#include <stddef.h>\n\n");
+		fprintf(file, "extern const char *wgsl;\n");
+		fprintf(file, "extern size_t wgsl_size;\n");
+		fclose(file);
+	}
+
+	{
+		sprintf(full_filename, "%s/%s.c", directory, filename);
+		FILE *file = fopen(full_filename, "wb");
+
+		fprintf(file, "#include \"%s.h\"\n\n", filename);
+
+		fprintf(file, "const char *wgsl = \"");
+
+		size_t length = strlen(wgsl);
+
+		for (size_t i = 0; i < length; ++i) {
+			if (wgsl[i] == '\n') {
+				fprintf(file, "\\n");
+			}
+			else if (wgsl[i] == '\r') {
+				fprintf(file, "\\r");
+			}
+			else if (wgsl[i] == '\t') {
+				fprintf(file, "\\t");
+			}
+			else if (wgsl[i] == '"') {
+				fprintf(file, "\\\"");
+			}
+			else {
+				fprintf(file, "%c", wgsl[i]);
+			}
+		}
+
+		fprintf(file, "\";\n\n");
+
+		fprintf(file, "size_t wgsl_size = %" PRIu64 ";\n\n", length);
+
+		fprintf(file, "/*\n%s*/\n", wgsl);
+
+		fclose(file);
+	}
 }
 
 static void find_referenced_functions(function *f, function **functions, size_t *functions_size) {

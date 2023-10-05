@@ -386,7 +386,7 @@ int main(int argc, char **argv) {
 	char *inputs[256] = {0};
 	size_t inputs_size = 0;
 	char *platform = NULL;
-	char *api = NULL;
+	api_kind api = API_UNKNOWN;
 	char *output = NULL;
 
 	for (int i = 1; i < argc; ++i) {
@@ -465,7 +465,31 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case MODE_API: {
-			api = argv[i];
+			if (strcmp(argv[i], "direct3d9") == 0) {
+				api = API_DIRECT3D9;
+			}
+			else if (strcmp(argv[i], "direct3d11") == 0) {
+				api = API_DIRECT3D11;
+			}
+			else if (strcmp(argv[i], "direct3d12") == 0) {
+				api = API_DIRECT3D12;
+			}
+			else if (strcmp(argv[i], "opengl") == 0) {
+				api = API_OPENGL;
+			}
+			else if (strcmp(argv[i], "metal") == 0) {
+				api = API_METAL;
+			}
+			else if (strcmp(argv[i], "webgpu") == 0) {
+				api = API_WEBGPU;
+			}
+			else if (strcmp(argv[i], "vulkan") == 0) {
+				api = API_VULKAN;
+			}
+			else {
+				debug_context context = {0};
+				error(context, "Unknown API %s", argv[i]);
+			}
 			mode = MODE_MODECHECK;
 			break;
 		}
@@ -477,7 +501,7 @@ int main(int argc, char **argv) {
 	check(inputs_size > 0, context, "no input parameters found");
 	check(output != NULL, context, "output parameter not found");
 	check(platform != NULL, context, "platform parameter not found");
-	check(api != NULL, context, "api parameter not found");
+	check(api != API_UNKNOWN, context, "api parameter not found");
 
 	names_init();
 	types_init();
@@ -522,27 +546,32 @@ int main(int argc, char **argv) {
 		convert_function_block(&get_function(i)->code, get_function(i)->block);
 	}
 
-	if (strcmp(api, "direct3d9") == 0) {
-		hlsl_export(output, DIRECT3D_9);
-	}
-	else if (strcmp(api, "direct3d11") == 0 || strcmp(api, "direct3d12") == 0) {
-		hlsl_export(output, DIRECT3D_11);
-	}
-	else if (strcmp(api, "opengl") == 0) {
+	switch (api) {
+	case API_DIRECT3D9:
+	case API_DIRECT3D11:
+	case API_DIRECT3D12:
+		hlsl_export(output, api);
+		break;
+	case API_OPENGL:
 		glsl_export(output);
-	}
-	else if (strcmp(api, "metal") == 0) {
+		break;
+	case API_METAL:
 		metal_export(output);
-	}
-	else if (strcmp(api, "webgpu") == 0) {
+		break;
+	case API_WEBGPU:
 		wgsl_export(output);
+		break;
+	case API_VULKAN: {
+		debug_context context = {0};
+		error(context, "SPIRV not yet supported");
 	}
-	else {
+	default: {
 		debug_context context = {0};
 		error(context, "Unknown API");
 	}
+	}
 
-	c_export(output);
+	c_export(output, api);
 
 	return 0;
 }
