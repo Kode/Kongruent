@@ -1,4 +1,4 @@
-#include "../shader_stage.h"
+#include "d3d9.h"
 
 #ifdef _WIN32
 
@@ -9,20 +9,22 @@
 
 #include "d3dx9_mini.h"
 
-typedef HRESULT(WINAPI *D3DXCompileShaderFromFileAType)(LPCSTR pSrcFile, CONST D3DXMACRO *pDefines, LPD3DXINCLUDE pInclude, LPCSTR pFunctionName,
-                                                        LPCSTR pProfile, DWORD Flags, LPD3DXBUFFER *ppShader, LPD3DXBUFFER *ppErrorMsgs,
-                                                        LPD3DXCONSTANTTABLE *ppConstantTable);
+typedef HRESULT(WINAPI *D3DXCompileShaderType)(_In_ LPCSTR pSrcData, _In_ UINT srcDataLen, _In_ const D3DXMACRO *pDefines, _In_ LPD3DXINCLUDE pInclude,
+                                               _In_ LPCSTR pFunctionName, _In_ LPCSTR pProfile, _In_ DWORD Flags, _Out_ LPD3DXBUFFER *ppShader,
+                                               _Out_ LPD3DXBUFFER *ppErrorMsgs, _Out_ LPD3DXCONSTANTTABLE *ppConstantTable);
 
-static D3DXCompileShaderFromFileAType CompileShaderFromFileA = NULL;
+static D3DXCompileShaderType CompileShader = NULL;
 
 #endif
 
-int compileHLSLToD3D9(const char *from, const char *to, const char *source, char *output, int *outputlength, void *attributes, shader_stage stage) {
+int compile_hlsl_to_d3d9(const char *source, uint8_t **output, size_t *outputlength, shader_stage stage, bool debug) {
 #ifdef _WIN32
 	HMODULE lib = LoadLibraryA("d3dx9_43.dll");
-	if (lib != NULL) CompileShaderFromFileA = (D3DXCompileShaderFromFileAType)GetProcAddress(lib, "D3DXCompileShaderFromFileA");
+	if (lib != NULL) {
+		CompileShader = (D3DXCompileShaderType)GetProcAddress(lib, "D3DXCompileShader");
+	}
 
-	if (CompileShaderFromFileA == NULL) {
+	if (CompileShader == NULL) {
 		kong_log(LOG_LEVEL_ERROR, "d3dx9_43.dll could not be loaded, please install dxwebsetup.");
 		return 1;
 	}
@@ -30,8 +32,11 @@ int compileHLSLToD3D9(const char *from, const char *to, const char *source, char
 	LPD3DXBUFFER errors;
 	LPD3DXBUFFER shader;
 	LPD3DXCONSTANTTABLE table;
-	HRESULT hr = CompileShaderFromFileA(from, NULL, NULL, "main", stage == SHADER_STAGE_VERTEX ? "vs_2_0" : "ps_2_0", 0, &shader, &errors, &table);
-	if (FAILED(hr)) hr = CompileShaderFromFileA(from, NULL, NULL, "main", stage == SHADER_STAGE_VERTEX ? "vs_3_0" : "ps_3_0", 0, &shader, &errors, &table);
+	HRESULT hr =
+	    CompileShader(source, (UINT)strlen(source), NULL, NULL, "main", stage == SHADER_STAGE_VERTEX ? "vs_2_0" : "ps_2_0", 0, &shader, &errors, &table);
+	if (FAILED(hr)) {
+		hr = CompileShader(source, (UINT)strlen(source), NULL, NULL, "main", stage == SHADER_STAGE_VERTEX ? "vs_3_0" : "ps_3_0", 0, &shader, &errors, &table);
+	}
 	if (errors != NULL) {
 		kong_log(LOG_LEVEL_ERROR, "%s", (char *)errors->lpVtbl->GetBufferPointer((IDirect3DCryptoSession9 *)errors));
 	}
@@ -90,6 +95,12 @@ int compileHLSLToD3D9(const char *from, const char *to, const char *source, char
 		        file.write((char *)&data[i], 4);
 		}*/
 		// file.write((char*)shader->GetBufferPointer(), shader->GetBufferSize());
+
+		SIZE_T size = shader->lpVtbl->GetBufferSize((IDirect3DCryptoSession9 *)shader);
+		*outputlength = size;
+		*output = (uint8_t *)malloc(size);
+		memcpy(*output, shader->lpVtbl->GetBufferPointer((IDirect3DCryptoSession9 *)shader), size);
+
 		return 0;
 	}
 	else {

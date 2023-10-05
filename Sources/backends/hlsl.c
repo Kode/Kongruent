@@ -8,6 +8,7 @@
 #include "../types.h"
 #include "cstyle.h"
 #include "d3d11.h"
+#include "d3d9.h"
 
 #include <assert.h>
 #include <inttypes.h>
@@ -473,7 +474,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 	}
 }
 
-static void hlsl_export_vertex(char *directory, function *main) {
+static void hlsl_export_vertex(char *directory, Direct3D d3d, function *main) {
 	char *hlsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
@@ -492,7 +493,17 @@ static void hlsl_export_vertex(char *directory, function *main) {
 
 	char *output;
 	size_t output_size;
-	int result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
+	int result = 1;
+	switch (d3d) {
+	case DIRECT3D_9:
+		result = compile_hlsl_to_d3d9(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
+		break;
+	case DIRECT3D_11:
+		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
+		break;
+	default:
+		error(context, "Unknown Direct3D version");
+	}
 	check(result == 0, context, "HLSL compilation failed");
 
 	char *name = get_name(main->name);
@@ -506,7 +517,7 @@ static void hlsl_export_vertex(char *directory, function *main) {
 	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
 }
 
-static void hlsl_export_fragment(char *directory, function *main) {
+static void hlsl_export_fragment(char *directory, Direct3D d3d, function *main) {
 	char *hlsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
@@ -523,7 +534,17 @@ static void hlsl_export_fragment(char *directory, function *main) {
 
 	uint8_t *output;
 	size_t output_size;
-	int result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
+	int result = 1;
+	switch (d3d) {
+	case DIRECT3D_9:
+		result = compile_hlsl_to_d3d9(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
+		break;
+	case DIRECT3D_11:
+		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
+		break;
+	default:
+		error(context, "Unknown Direct3D version");
+	}
 	check(result == 0, context, "HLSL compilation failed");
 
 	char *name = get_name(main->name);
@@ -537,7 +558,7 @@ static void hlsl_export_fragment(char *directory, function *main) {
 	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
 }
 
-void hlsl_export(char *directory) {
+void hlsl_export(char *directory, Direct3D d3d) {
 	int cbuffer_index = 0;
 	int texture_index = 0;
 	int sampler_index = 0;
@@ -602,10 +623,10 @@ void hlsl_export(char *directory) {
 	}
 
 	for (size_t i = 0; i < vertex_shaders_size; ++i) {
-		hlsl_export_vertex(directory, vertex_shaders[i]);
+		hlsl_export_vertex(directory, d3d, vertex_shaders[i]);
 	}
 
 	for (size_t i = 0; i < fragment_shaders_size; ++i) {
-		hlsl_export_fragment(directory, fragment_shaders[i]);
+		hlsl_export_fragment(directory, d3d, fragment_shaders[i]);
 	}
 }
