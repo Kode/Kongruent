@@ -310,18 +310,17 @@ static void write_globals(char *glsl, size_t *offset, function *main) {
 		int register_index = global_register_indices[globals[i]];
 
 		if (g.type == sampler_type_id) {
-			*offset += sprintf(&glsl[*offset], "SamplerState _%" PRIu64 " : register(s%i);\n\n", g.var_index, register_index);
 		}
 		else if (g.type == tex2d_type_id) {
-			*offset += sprintf(&glsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
+			*offset += sprintf(&glsl[*offset], "uniform sampler2D _%" PRIu64 ";\n\n", g.var_index);
 		}
 		else if (g.type == texcube_type_id) {
-			*offset += sprintf(&glsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
+			*offset += sprintf(&glsl[*offset], "uniform samplerCube _%" PRIu64 ";\n\n", g.var_index);
 		}
 		else if (g.type == float_id) {
 		}
 		else {
-			*offset += sprintf(&glsl[*offset], "layout(binding = %i) uniform _%" PRIu64 " {\n", register_index, g.var_index);
+			*offset += sprintf(&glsl[*offset], "layout(std140) uniform _%" PRIu64 " {\n", g.var_index);
 			type *t = get_type(g.type);
 			for (size_t i = 0; i < t->members.size; ++i) {
 				*offset +=
