@@ -410,12 +410,12 @@ static void write_functions(char *wgsl, size_t *offset) {
 		}
 		else if (is_fragment_function(i)) {
 			if (f->return_type.array_size > 0) {
-				*offset += sprintf(&wgsl[*offset], "struct _render_targets {\n");
+				*offset += sprintf(&wgsl[*offset], "struct _kong_colors_out {\n");
 				for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
 					*offset += sprintf(&wgsl[*offset], "\t%s _%i : SV_Target%i;\n", type_string(f->return_type.type), j, j);
 				}
 				*offset += sprintf(&wgsl[*offset], "};\n\n");
-				*offset += sprintf(&wgsl[*offset], "_render_targets main(%s _%" PRIu64 ") {\n", type_string(f->parameter_type.type), parameter_id);
+				*offset += sprintf(&wgsl[*offset], "_kong_colors_out main(%s _%" PRIu64 ") {\n", type_string(f->parameter_type.type), parameter_id);
 			}
 			else {
 				*offset += sprintf(&wgsl[*offset], "@fragment fn %s(_%" PRIu64 ": %s) -> @location(0) %s {\n", get_name(f->name), parameter_id,
@@ -465,11 +465,11 @@ static void write_functions(char *wgsl, size_t *offset) {
 				if (o->size > offsetof(opcode, op_return)) {
 					if (is_fragment_function(i) && f->return_type.array_size > 0) {
 						*offset += sprintf(&wgsl[*offset], "\t{\n");
-						*offset += sprintf(&wgsl[*offset], "\t\t_render_targets rts;\n");
+						*offset += sprintf(&wgsl[*offset], "\t\t_kong_colors_out _kong_colors;\n");
 						for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
-							*offset += sprintf(&wgsl[*offset], "\t\trts._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
+							*offset += sprintf(&wgsl[*offset], "\t\t_kong_colors._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
 						}
-						*offset += sprintf(&wgsl[*offset], "\t\treturn rts;\n");
+						*offset += sprintf(&wgsl[*offset], "\t\treturn _kong_colors;\n");
 						*offset += sprintf(&wgsl[*offset], "\t}\n");
 					}
 					else {

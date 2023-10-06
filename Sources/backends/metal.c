@@ -369,16 +369,16 @@ static void write_functions(char *code, size_t *offset) {
 		}
 		else if (is_fragment_function(i)) {
 			if (f->return_type.array_size > 0) {
-				*offset += sprintf(&code[*offset], "struct _render_targets {\n");
+				*offset += sprintf(&code[*offset], "struct _kong_colors_out {\n");
 				for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
 					*offset += sprintf(&code[*offset], "\t%s _%i [[color(%i)]];\n", type_string(f->return_type.type), j, j);
 				}
 				*offset += sprintf(&code[*offset], "};\n\n");
-				*offset += sprintf(&code[*offset], "fragment _render_targets %s(%s _%" PRIu64 " [[stage_in]]%s) {\n", get_name(f->name),
+				*offset += sprintf(&code[*offset], "fragment _kong_colors_out %s(%s _%" PRIu64 " [[stage_in]]%s) {\n", get_name(f->name),
 				                   type_string(f->parameter_type.type), parameter_id, buffers);
 			}
 			else {
-				*offset += sprintf(&code[*offset], "fragment ColorOut %s(%s _%" PRIu64 " [[stage_in]]%s) {\n", get_name(f->name),
+				*offset += sprintf(&code[*offset], "fragment _kong_color_out %s(%s _%" PRIu64 " [[stage_in]]%s) {\n", get_name(f->name),
 				                   type_string(f->parameter_type.type), parameter_id, buffers);
 			}
 		}
@@ -416,18 +416,18 @@ static void write_functions(char *code, size_t *offset) {
 				if (o->size > offsetof(opcode, op_return)) {
 					if (is_fragment_function(i) && f->return_type.array_size > 0) {
 						*offset += sprintf(&code[*offset], "\t{\n");
-						*offset += sprintf(&code[*offset], "\t\t_render_targets rts;\n");
+						*offset += sprintf(&code[*offset], "\t\t_kong_colors_out _kong_colors;\n");
 						for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
-							*offset += sprintf(&code[*offset], "\t\trts._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
+							*offset += sprintf(&code[*offset], "\t\t_kong_colors._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
 						}
-						*offset += sprintf(&code[*offset], "\t\treturn rts;\n");
+						*offset += sprintf(&code[*offset], "\t\treturn _kong_colors;\n");
 						*offset += sprintf(&code[*offset], "\t}\n");
 					}
 					else if (is_fragment_function(i)) {
 						*offset += sprintf(&code[*offset], "\t{\n");
-						*offset += sprintf(&code[*offset], "\t\tColorOut out;\n");
-						*offset += sprintf(&code[*offset], "\t\tout.out = _%" PRIu64 ";\n", o->op_return.var.index);
-						*offset += sprintf(&code[*offset], "\t\treturn out;\n");
+						*offset += sprintf(&code[*offset], "\t\t_kong_color_out _kong_color;\n");
+						*offset += sprintf(&code[*offset], "\t\t_kong_color._0 = _%" PRIu64 ";\n", o->op_return.var.index);
+						*offset += sprintf(&code[*offset], "\t\treturn _kong_color;\n");
 						*offset += sprintf(&code[*offset], "\t}\n");
 					}
 					else {
@@ -493,8 +493,8 @@ static void metal_export_everything(char *directory) {
 	offset += sprintf(&metal[offset], "#include <simd/simd.h>\n\n");
 	offset += sprintf(&metal[offset], "using namespace metal;\n\n");
 
-	offset += sprintf(&metal[offset], "struct ColorOut {\n");
-	offset += sprintf(&metal[offset], "\tfloat4 out [[color(0)]];\n");
+	offset += sprintf(&metal[offset], "struct _kong_color_out {\n");
+	offset += sprintf(&metal[offset], "\tfloat4 _0 [[color(0)]];\n");
 	offset += sprintf(&metal[offset], "};\n\n");
 
 	write_types(metal, &offset);
