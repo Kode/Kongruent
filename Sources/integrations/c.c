@@ -518,8 +518,14 @@ void c_export(char *directory, api_kind api) {
 						type *t = get_type(i);
 						fprintf(output, "\tkinc_g4_vertex_structure_init(&%s_structure);\n", get_name(t->name));
 						for (size_t j = 0; j < t->members.size; ++j) {
-							fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s\", %s);\n", get_name(t->name), get_name(t->members.m[j].name),
-							        structure_type(t->members.m[j].type.type));
+							if (api == API_OPENGL) {
+								fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s_%s\", %s);\n", get_name(t->name), get_name(t->name),
+								        get_name(t->members.m[j].name), structure_type(t->members.m[j].type.type));
+							}
+							else {
+								fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s\", %s);\n", get_name(t->name),
+								        get_name(t->members.m[j].name), structure_type(t->members.m[j].type.type));
+							}
 						}
 						fprintf(output, "\n");
 					}
