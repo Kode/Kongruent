@@ -192,7 +192,10 @@ void c_export(char *directory, api_kind api) {
 
 		fprintf(output, "#include \"kong.h\"\n\n");
 
-		if (api == API_WEBGPU) {
+		if (api == API_METAL) {
+			// Code is added directly to the Xcode project instead
+		}
+		else if (api == API_WEBGPU) {
 			fprintf(output, "#include \"wgsl.h\"\n");
 		}
 		else {
@@ -317,7 +320,7 @@ void c_export(char *directory, api_kind api) {
 
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("vertex")) {
-						if (api == API_WEBGPU) {
+						if (api == API_METAL || api == API_WEBGPU) {
 							fprintf(output, "\tkinc_g4_shader_init(&%s, \"%s\", 0, KINC_G4_SHADER_TYPE_VERTEX);\n", get_name(t->members.m[j].value.identifier),
 							        get_name(t->members.m[j].value.identifier));
 						}
@@ -330,7 +333,7 @@ void c_export(char *directory, api_kind api) {
 						vertex_shader_name = t->members.m[j].value.identifier;
 					}
 					else if (t->members.m[j].name == add_name("fragment")) {
-						if (api == API_WEBGPU) {
+						if (api == API_METAL || api == API_WEBGPU) {
 							fprintf(output, "\tkinc_g4_shader_init(&%s, \"%s\", 0, KINC_G4_SHADER_TYPE_FRAGMENT);\n",
 							        get_name(t->members.m[j].value.identifier), get_name(t->members.m[j].value.identifier));
 						}
