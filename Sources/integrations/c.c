@@ -12,6 +12,115 @@
 #include <stdio.h>
 #include <string.h>
 
+static void find_referenced_functions(function *f, function **functions, size_t *functions_size) {
+	if (f->block == NULL) {
+		// built-in
+		return;
+	}
+
+	uint8_t *data = f->code.o;
+	size_t size = f->code.size;
+
+	size_t index = 0;
+	while (index < size) {
+		opcode *o = (opcode *)&data[index];
+		switch (o->type) {
+		case OPCODE_CALL: {
+			for (function_id i = 0; get_function(i) != NULL; ++i) {
+				function *f = get_function(i);
+				if (f->name == o->op_call.func) {
+					if (f->block == NULL) {
+						// built-in
+						break;
+					}
+
+					bool found = false;
+					for (size_t j = 0; j < *functions_size; ++j) {
+						if (functions[j]->name == o->op_call.func) {
+							found = true;
+							break;
+						}
+					}
+					if (!found) {
+						functions[*functions_size] = f;
+						*functions_size += 1;
+						find_referenced_functions(f, functions, functions_size);
+					}
+					break;
+				}
+			}
+			break;
+		}
+		}
+
+		index += o->size;
+	}
+}
+
+static void find_referenced_global_for_var(variable v, global_id *globals, size_t *globals_size) {
+	for (global_id j = 0; get_global(j).type != NO_TYPE; ++j) {
+		global g = get_global(j);
+		if (v.index == g.var_index) {
+			bool found = false;
+			for (size_t k = 0; k < *globals_size; ++k) {
+				if (globals[k] == j) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				globals[*globals_size] = j;
+				*globals_size += 1;
+			}
+			return;
+		}
+	}
+}
+
+static void find_referenced_globals(function *f, global_id *globals, size_t *globals_size) {
+	if (f->block == NULL) {
+		// built-in
+		return;
+	}
+
+	function *functions[256];
+	size_t functions_size = 0;
+
+	functions[functions_size] = f;
+	functions_size += 1;
+
+	find_referenced_functions(f, functions, &functions_size);
+
+	for (size_t l = 0; l < functions_size; ++l) {
+		uint8_t *data = functions[l]->code.o;
+		size_t size = functions[l]->code.size;
+
+		size_t index = 0;
+		while (index < size) {
+			opcode *o = (opcode *)&data[index];
+			switch (o->type) {
+			case OPCODE_MULTIPLY: {
+				find_referenced_global_for_var(o->op_multiply.left, globals, globals_size);
+				find_referenced_global_for_var(o->op_multiply.right, globals, globals_size);
+				break;
+			}
+			case OPCODE_LOAD_MEMBER: {
+				find_referenced_global_for_var(o->op_load_member.from, globals, globals_size);
+				break;
+			}
+			case OPCODE_CALL: {
+				for (uint8_t i = 0; i < o->op_call.parameters_size; ++i) {
+					find_referenced_global_for_var(o->op_call.parameters[i], globals, globals_size);
+				}
+				break;
+			}
+			}
+
+			index += o->size;
+		}
+	}
+}
+
 static char *type_string(type_id type) {
 	if (type == float_id) {
 		return "float";
@@ -67,6 +176,8 @@ void c_export(char *directory, api_kind api) {
 		else if (g.type == tex2d_type_id || g.type == texcube_type_id) {
 			global_register_indices[i] = texture_index;
 			texture_index += 1;
+		}
+		else if (g.type == float_id) {
 		}
 		else {
 			global_register_indices[i] = cbuffer_index;
@@ -270,8 +381,8 @@ void c_export(char *directory, api_kind api) {
 				fprintf(output, "}\n\n");
 
 				fprintf(output, "void %s_buffer_unlock(%s_buffer *buffer) {\n", type_name, type_name);
-				if (true) {
-					// transpose
+				if (api != API_OPENGL) {
+					// transpose matrices
 					for (size_t j = 0; j < t->members.size; ++j) {
 						if (t->members.m[j].type.type == float4x4_id) {
 							fprintf(output, "\tkinc_matrix4x4_transpose(&buffer->data->%s);\n", get_name(t->members.m[j].name));
@@ -305,6 +416,10 @@ void c_export(char *directory, api_kind api) {
 			fprintf(output, "\nvoid kinc_g5_internal_webgpu_create_shader_module(const void *source, size_t length);\n");
 		}
 
+		if (api == API_OPENGL) {
+			fprintf(output, "\nvoid kinc_g4_internal_opengl_setup_uniform_block(unsigned program, const char *name, unsigned binding);\n");
+		}
+
 		fprintf(output, "\nvoid kong_init(void) {\n");
 
 		if (api == API_WEBGPU) {
@@ -317,6 +432,7 @@ void c_export(char *directory, api_kind api) {
 				fprintf(output, "\tkinc_g4_pipeline_init(&%s);\n\n", get_name(t->name));
 
 				name_id vertex_shader_name = NO_NAME;
+				name_id fragment_shader_name = NO_NAME;
 
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("vertex")) {
@@ -343,6 +459,7 @@ void c_export(char *directory, api_kind api) {
 							        get_name(t->members.m[j].value.identifier));
 						}
 						fprintf(output, "\t%s.fragment_shader = &%s;\n\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
+						fragment_shader_name = t->members.m[j].value.identifier;
 					}
 					else if (t->members.m[j].name == add_name("depth_write")) {
 						debug_context context = {0};
@@ -364,20 +481,35 @@ void c_export(char *directory, api_kind api) {
 				{
 					debug_context context = {0};
 					check(vertex_shader_name != NO_NAME, context, "No vertex shader name found");
+					check(fragment_shader_name != NO_NAME, context, "No fragment shader name found");
 				}
+
+				function *vertex_function = NULL;
+				function *fragment_function = NULL;
 
 				type_id vertex_input = NO_TYPE;
 
 				for (function_id i = 0; get_function(i) != NULL; ++i) {
 					function *f = get_function(i);
 					if (f->name == vertex_shader_name) {
+						vertex_function = f;
 						vertex_input = f->parameter_type.type;
+						break;
+					}
+				}
+
+				for (function_id i = 0; get_function(i) != NULL; ++i) {
+					function *f = get_function(i);
+					if (f->name == fragment_shader_name) {
+						fragment_function = f;
 						break;
 					}
 				}
 
 				{
 					debug_context context = {0};
+					check(vertex_function != NULL, context, "Vertex function not found");
+					check(fragment_function != NULL, context, "Fragment function not found");
 					check(vertex_input != NO_TYPE, context, "No vertex input found");
 				}
 
@@ -397,6 +529,27 @@ void c_export(char *directory, api_kind api) {
 				fprintf(output, "\t%s.input_layout[1] = NULL;\n\n", get_name(t->name));
 
 				fprintf(output, "\tkinc_g4_pipeline_compile(&%s);\n\n", get_name(t->name));
+
+				if (api == API_OPENGL) {
+					global_id globals[256];
+					size_t globals_size = 0;
+					find_referenced_globals(vertex_function, globals, &globals_size);
+					find_referenced_globals(fragment_function, globals, &globals_size);
+
+					for (global_id i = 0; i < globals_size; ++i) {
+						global g = get_global(globals[i]);
+						if (g.type == sampler_type_id) {
+						}
+						else if (g.type == tex2d_type_id || g.type == texcube_type_id) {
+						}
+						else if (g.type == float_id) {
+						}
+						else {
+							fprintf(output, "\tkinc_g4_internal_opengl_setup_uniform_block(%s.impl.programId, \"_%" PRIu64 "\", %i);\n\n", get_name(t->name),
+							        g.var_index, global_register_indices[i]);
+						}
+					}
+				}
 			}
 		}
 		fprintf(output, "}\n");
