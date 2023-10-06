@@ -534,6 +534,14 @@ void c_export(char *directory, api_kind api) {
 				fprintf(output, "\t%s.input_layout[0] = &%s_structure;\n", get_name(t->name), get_name(get_type(vertex_input)->name));
 				fprintf(output, "\t%s.input_layout[1] = NULL;\n\n", get_name(t->name));
 
+				if (fragment_function->return_type.array_size > 0) {
+					fprintf(output, "\t%s.color_attachment_count = %i;\n", get_name(t->name), fragment_function->return_type.array_size);
+					for (uint32_t i = 0; i < fragment_function->return_type.array_size; ++i) {
+						fprintf(output, "\t%s.color_attachment[%i] = KINC_G4_RENDER_TARGET_FORMAT_32BIT;\n", get_name(t->name), i);
+					}
+					fprintf(output, "\n");
+				}
+
 				fprintf(output, "\tkinc_g4_pipeline_compile(&%s);\n\n", get_name(t->name));
 
 				if (api == API_OPENGL) {
