@@ -449,7 +449,7 @@ static void write_functions(char *code, size_t *offset) {
 				}
 				else if (o->op_call.func == add_name("sample_lod")) {
 					check(o->op_call.parameters_size == 4, context, "sample_lod requires four parameters");
-					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 ".sampleLevel(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
+					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 ".sample(_%" PRIu64 ", _%" PRIu64 ", level(_%" PRIu64 "));\n",
 					                   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index,
 					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index, o->op_call.parameters[3].index);
 				}
