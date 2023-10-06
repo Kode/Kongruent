@@ -261,15 +261,15 @@ static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id 
 			else if (stage == SHADER_STAGE_VERTEX && types[i] == output) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (j != 0) {
-						*offset += sprintf(&glsl[*offset], "layout(location = %" PRIu64 ") out %s %s_%s;\n", j - 1, type_string(t->members.m[j].type.type),
-						                   get_name(t->name), get_name(t->members.m[j].name));
+						*offset += sprintf(&glsl[*offset], "out %s %s_%s;\n", type_string(t->members.m[j].type.type), get_name(t->name),
+						                   get_name(t->members.m[j].name));
 					}
 				}
 			}
 			else if (stage == SHADER_STAGE_FRAGMENT && types[i] == input) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (j != 0) {
-						*offset += sprintf(&glsl[*offset], "layout(location = %" PRIu64 ") in %s %s;\n", j - 1, type_string(t->members.m[j].type.type),
+						*offset += sprintf(&glsl[*offset], "in %s %s_%s;\n", type_string(t->members.m[j].type.type), get_name(t->name),
 						                   get_name(t->members.m[j].name));
 					}
 				}
