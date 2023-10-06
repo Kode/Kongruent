@@ -352,6 +352,7 @@ static void write_functions(char *code, size_t *offset) {
 					buffers_offset += sprintf(&buffers[buffers_offset], ", texture2d<float> _%" PRIu64 " [[texture(%i)]]", g.var_index, register_index);
 				}
 				else if (g.type == texcube_type_id) {
+					buffers_offset += sprintf(&buffers[buffers_offset], ", texturecube<float> _%" PRIu64 " [[texture(%i)]]", g.var_index, register_index);
 				}
 				else if (g.type == float_id) {
 				}
