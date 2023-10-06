@@ -326,7 +326,7 @@ static void write_globals(char *glsl, size_t *offset, function *main) {
 				*offset +=
 				    sprintf(&glsl[*offset], "\t%s _%" PRIu64 "_%s;\n", type_string(t->members.m[i].type.type), g.var_index, get_name(t->members.m[i].name));
 			}
-			*offset += sprintf(&glsl[*offset], "}\n\n");
+			*offset += sprintf(&glsl[*offset], "};\n\n");
 		}
 	}
 }
