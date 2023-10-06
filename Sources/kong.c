@@ -394,19 +394,19 @@ int main(int argc, char **argv) {
 		case MODE_MODECHECK: {
 			if (argv[i][0] == '-') {
 				if (argv[i][1] == '-') {
-					if (strcmp(&argv[i][2], "in")) {
+					if (strcmp(&argv[i][2], "in") == 0) {
 						mode = MODE_INPUT;
 					}
-					else if (strcmp(&argv[i][2], "out")) {
+					else if (strcmp(&argv[i][2], "out") == 0) {
 						mode = MODE_OUTPUT;
 					}
-					else if (strcmp(&argv[i][2], "platform")) {
+					else if (strcmp(&argv[i][2], "platform") == 0) {
 						mode = MODE_PLATFORM;
 					}
-					else if (strcmp(&argv[i][2], "api")) {
+					else if (strcmp(&argv[i][2], "api") == 0) {
 						mode = MODE_API;
 					}
-					else if (strcmp(&argv[i][2], "help")) {
+					else if (strcmp(&argv[i][2], "help") == 0) {
 						help();
 						return 0;
 					}
