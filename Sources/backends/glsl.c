@@ -277,10 +277,6 @@ static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id 
 		}
 	}
 
-	if (stage == SHADER_STAGE_FRAGMENT) {
-		*offset += sprintf(&glsl[*offset], "out vec4 FragColor;\n");
-	}
-
 	*offset += sprintf(&glsl[*offset], "\n");
 
 	for (size_t i = 0; i < types_size; ++i) {
@@ -364,14 +360,11 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 			}
 			else if (stage == SHADER_STAGE_FRAGMENT) {
 				if (f->return_type.array_size > 0) {
-					*offset += sprintf(&code[*offset], "struct _kong_colors_out {\n");
-					for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
-						*offset += sprintf(&code[*offset], "\t%s _%i : SV_Target%i;\n", type_string(f->return_type.type), j, j);
-					}
-					*offset += sprintf(&code[*offset], "};\n\n");
-					*offset += sprintf(&code[*offset], "_kong_colors_out main(%s _%" PRIu64 ") {\n", type_string(f->parameter_type.type), parameter_id);
+					*offset += sprintf(&code[*offset], "out vec4 _kong_colors[%i];\n\n", f->return_type.array_size);
+					*offset += sprintf(&code[*offset], "void main() {\n");
 				}
 				else {
+					*offset += sprintf(&code[*offset], "out vec4 _kong_color;\n\n");
 					*offset += sprintf(&code[*offset], "void main() {\n");
 				}
 			}
@@ -484,16 +477,15 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 					}
 					else if (f == main && stage == SHADER_STAGE_FRAGMENT && f->return_type.array_size > 0) {
 						*offset += sprintf(&code[*offset], "\t{\n");
-						*offset += sprintf(&code[*offset], "\t\t_kong_colors_out _kong_colors;\n");
 						for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
-							*offset += sprintf(&code[*offset], "\t\t_kong_colors._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
+							*offset += sprintf(&code[*offset], "\t\t_kong_colors[%i] = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
 						}
-						*offset += sprintf(&code[*offset], "\t\treturn _kong_colors;\n");
+						*offset += sprintf(&code[*offset], "\t\treturn;\n");
 						*offset += sprintf(&code[*offset], "\t}\n");
 					}
 					else if (f == main && stage == SHADER_STAGE_FRAGMENT) {
 						*offset += sprintf(&code[*offset], "\t{\n");
-						*offset += sprintf(&code[*offset], "\t\tFragColor = _%" PRIu64 ";\n", o->op_return.var.index);
+						*offset += sprintf(&code[*offset], "\t\t_kong_color = _%" PRIu64 ";\n", o->op_return.var.index);
 						*offset += sprintf(&code[*offset], "\t\treturn;\n");
 						*offset += sprintf(&code[*offset], "\t}\n");
 					}
