@@ -99,7 +99,7 @@ jobs:
       shell: alpine.sh --root {0}
 
     - name: Get KincTools_linux_arm64
-      run: git clone https://github.com/Kode/KincTools_linux_arm64.git
+      run: git clone https://github.com/Kode/KincTools_linux_arm64.git --depth 1
     - name: Copy binary
       run: cp /home/runner/work/Kongruent/Kongruent/build/Release/kongruent KincTools_linux_arm64/kongruent
     - name: Set name
@@ -162,7 +162,7 @@ jobs:
       shell: alpine.sh --root {0}
 
     - name: Get KincTools_linux_arm
-      run: git clone https://github.com/Kode/KincTools_linux_arm.git
+      run: git clone https://github.com/Kode/KincTools_linux_arm.git --depth 1
     - name: Copy binary
       run: cp /home/runner/work/Kongruent/Kongruent/build/Release/kongruent KincTools_linux_arm/kongruent
     - name: Set name

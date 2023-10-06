@@ -22,7 +22,7 @@ jobs:
     - name: Get Submodules
       run: git submodule update --init --recursive
     - name: Get KincTools_macos
-      run: git clone https://github.com/Kode/KincTools_macos.git
+      run: git clone https://github.com/Kode/KincTools_macos.git --depth 1
     - name: Compile
       run: ./KincTools_macos/kmake --compile
     - name: Copy binary

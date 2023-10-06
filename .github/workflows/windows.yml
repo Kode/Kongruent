@@ -22,7 +22,7 @@ jobs:
     - name: Get Submodules
       run: git submodule update --init --recursive
     - name: Get KincTools_windows_x64
-      run: git clone https://github.com/Kode/KincTools_windows_x64.git
+      run: git clone https://github.com/Kode/KincTools_windows_x64.git --depth 1
     - name: Compile
       run: KincTools_windows_x64\kmake --compile
     - name: Copy binary
