@@ -346,7 +346,7 @@ static void write_functions(char *code, size_t *offset) {
 				int register_index = global_register_indices[globals[i]];
 
 				if (g.type == sampler_type_id) {
-					buffers_offset += sprintf(&buffers[buffers_offset], ", sampler<float> _%" PRIu64 " [[sampler(%i)]]", g.var_index, register_index);
+					buffers_offset += sprintf(&buffers[buffers_offset], ", sampler _%" PRIu64 " [[sampler(%i)]]", g.var_index, register_index);
 				}
 				else if (g.type == tex2d_type_id) {
 					buffers_offset += sprintf(&buffers[buffers_offset], ", texture2d<float> _%" PRIu64 " [[texture(%i)]]", g.var_index, register_index);
