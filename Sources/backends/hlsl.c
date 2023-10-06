@@ -96,7 +96,7 @@ static void write_bytecode(char *hlsl, char *directory, const char *filename, co
 		}
 		fprintf(file, "\";\n");
 
-		fprintf(file, "size_t %s_size = %" PRIu64 ";\n\n", name, output_size);
+		fprintf(file, "size_t %s_size = %zu;\n\n", name, output_size);
 
 		fprintf(file, "/*\n%s*/\n", hlsl);
 

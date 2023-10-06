@@ -76,7 +76,7 @@ static void write_code(char *glsl, char *directory, const char *filename, const 
 
 		fprintf(file, "\";\n\n");
 
-		fprintf(file, "size_t %s_size = %" PRIu64 ";\n\n", name, length);
+		fprintf(file, "size_t %s_size = %zu;\n\n", name, length);
 
 		fprintf(file, "/*\n%s*/\n", glsl);
 

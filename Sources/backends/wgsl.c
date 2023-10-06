@@ -81,7 +81,7 @@ static void write_code(char *wgsl, char *directory, const char *filename) {
 
 		fprintf(file, "\";\n\n");
 
-		fprintf(file, "size_t wgsl_size = %" PRIu64 ";\n\n", length);
+		fprintf(file, "size_t wgsl_size = %zu;\n\n", length);
 
 		fprintf(file, "/*\n%s*/\n", wgsl);
 
