@@ -371,7 +371,7 @@ static void write_functions(char *code, size_t *offset) {
 			if (f->return_type.array_size > 0) {
 				*offset += sprintf(&code[*offset], "struct _render_targets {\n");
 				for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
-					*offset += sprintf(&code[*offset], "\t%s _%i : [[color(%i)]];\n", type_string(f->return_type.type), j, j);
+					*offset += sprintf(&code[*offset], "\t%s _%i [[color(%i)]];\n", type_string(f->return_type.type), j, j);
 				}
 				*offset += sprintf(&code[*offset], "};\n\n");
 				*offset += sprintf(&code[*offset], "fragment _render_targets %s(%s _%" PRIu64 " [[stage_in]]%s) {\n", get_name(f->name),
