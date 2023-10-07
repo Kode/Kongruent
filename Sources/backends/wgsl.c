@@ -381,7 +381,7 @@ static bool is_fragment_function(function_id f) {
 	return false;
 }
 
-static void write_functions(char *wgsl, size_t *offset) {
+static void write_functions(char *code, size_t *offset) {
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
 
@@ -404,26 +404,26 @@ static void write_functions(char *wgsl, size_t *offset) {
 		check(parameter_id != 0, context, "Parameter not found");
 
 		if (is_vertex_function(i)) {
-			*offset += sprintf(&wgsl[*offset], "@vertex fn %s(_%" PRIu64 ": %s) -> %s {\n", get_name(f->name), parameter_id,
+			*offset += sprintf(&code[*offset], "@vertex fn %s(_%" PRIu64 ": %s) -> %s {\n", get_name(f->name), parameter_id,
 			                   type_string(f->parameter_type.type), type_string(f->return_type.type));
 		}
 		else if (is_fragment_function(i)) {
 			if (f->return_type.array_size > 0) {
-				*offset += sprintf(&wgsl[*offset], "struct _kong_colors_out {\n");
+				*offset += sprintf(&code[*offset], "struct _kong_colors_out {\n");
 				for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
-					*offset += sprintf(&wgsl[*offset], "\t%s _%i : SV_Target%i;\n", type_string(f->return_type.type), j, j);
+					*offset += sprintf(&code[*offset], "\t%s _%i : SV_Target%i;\n", type_string(f->return_type.type), j, j);
 				}
-				*offset += sprintf(&wgsl[*offset], "};\n\n");
-				*offset += sprintf(&wgsl[*offset], "_kong_colors_out main(%s _%" PRIu64 ") {\n", type_string(f->parameter_type.type), parameter_id);
+				*offset += sprintf(&code[*offset], "};\n\n");
+				*offset += sprintf(&code[*offset], "_kong_colors_out main(%s _%" PRIu64 ") {\n", type_string(f->parameter_type.type), parameter_id);
 			}
 			else {
-				*offset += sprintf(&wgsl[*offset], "@fragment fn %s(_%" PRIu64 ": %s) -> @location(0) %s {\n", get_name(f->name), parameter_id,
+				*offset += sprintf(&code[*offset], "@fragment fn %s(_%" PRIu64 ": %s) -> @location(0) %s {\n", get_name(f->name), parameter_id,
 				                   type_string(f->parameter_type.type), type_string(f->return_type.type));
 			}
 		}
 
 		else {
-			*offset += sprintf(&wgsl[*offset], "%s %s(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), get_name(f->name),
+			*offset += sprintf(&code[*offset], "%s %s(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), get_name(f->name),
 			                   type_string(f->parameter_type.type), parameter_id);
 		}
 
@@ -433,11 +433,11 @@ static void write_functions(char *wgsl, size_t *offset) {
 			switch (o->type) {
 			case OPCODE_VAR:
 				if (o->op_var.var.type.array_size > 0) {
-					*offset += sprintf(&wgsl[*offset], "\t%s _%" PRIu64 "[%i];\n", type_string(o->op_var.var.type.type), o->op_var.var.index,
+					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 "[%i];\n", type_string(o->op_var.var.type.type), o->op_var.var.index,
 					                   o->op_var.var.type.array_size);
 				}
 				else {
-					*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s;\n", o->op_var.var.index, type_string(o->op_var.var.type.type));
+					*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s;\n", o->op_var.var.index, type_string(o->op_var.var.type.type));
 				}
 				break;
 			case OPCODE_LOAD_MEMBER: {
@@ -450,56 +450,147 @@ static void write_functions(char *wgsl, size_t *offset) {
 					}
 				}
 
-				*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64, o->op_load_member.to.index,
+				*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64, o->op_load_member.to.index,
 				                   type_string(o->op_load_member.to.type.type), o->op_load_member.from.index);
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
-					*offset += sprintf(&wgsl[*offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+					*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
 					s = get_type(s->members.m[o->op_load_member.member_indices[i]].type.type);
 				}
-				*offset += sprintf(&wgsl[*offset], ";\n");
+				*offset += sprintf(&code[*offset], ";\n");
+				break;
+			}
+			case OPCODE_STORE_MEMBER: {
+				type *s = get_type(o->op_store_member.member_parent_type);
+
+				if (o->op_store_member.member_indices_size > 1) {
+					type_id last_type = NO_TYPE;
+					type_id last_last_type = NO_TYPE;
+					char *last_member_name = NULL;
+					for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
+						if (i == o->op_store_member.member_indices_size - 1) {
+							last_member_name = get_name(s->members.m[o->op_store_member.member_indices[i]].name);
+						}
+
+						type_id t = s->members.m[o->op_store_member.member_indices[i]].type.type;
+						s = get_type(t);
+
+						if (i == o->op_store_member.member_indices_size - 2) {
+							last_last_type = t;
+						}
+						else if (i == o->op_store_member.member_indices_size - 1) {
+							last_type = t;
+						}
+					}
+
+					debug_context context = {0};
+					check(last_last_type != NO_TYPE, context, "last_last_type not found");
+					check(last_type != NO_TYPE, context, "last_type not found");
+					check(last_member_name != NULL, context, "last_member_name not found");
+
+					if ((last_last_type == float2_id || last_last_type == float3_id || last_last_type == float4_id) &&
+					    (last_type == float2_id || last_type == float3_id || last_type == float4_id)) {
+						{
+							int count = 1;
+							if (last_type == float2_id) {
+								count = 2;
+							}
+							else if (last_type == float3_id) {
+								count = 3;
+							}
+							else if (last_type == float4_id) {
+								count = 4;
+							}
+
+							for (int element = 0; element < count; ++element) {
+								s = get_type(o->op_store_member.member_parent_type);
+								*offset += sprintf(&code[*offset], "\t_%" PRIu64, o->op_store_member.to.index);
+								bool is_array = o->op_store_member.member_parent_array;
+								for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
+									if (is_array) {
+										*offset += sprintf(&code[*offset], "[%i]", o->op_store_member.member_indices[i]);
+										is_array = false;
+									}
+									else {
+										debug_context context = {0};
+										check(o->op_store_member.member_indices[i] < s->members.size, context, "Member index out of bounds");
+										if (i == o->op_store_member.member_indices_size - 1) {
+											*offset += sprintf(&code[*offset], ".%c", last_member_name[element]);
+										}
+										else {
+											*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
+										}
+										is_array = s->members.m[o->op_store_member.member_indices[i]].type.array_size > 0;
+										s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
+									}
+								}
+								*offset += sprintf(&code[*offset], " = _%" PRIu64 ".%c;\n", o->op_store_member.from.index, last_member_name[element]);
+							}
+						}
+
+						break;
+					}
+				}
+
+				s = get_type(o->op_store_member.member_parent_type);
+				*offset += sprintf(&code[*offset], "\t_%" PRIu64, o->op_store_member.to.index);
+				bool is_array = o->op_store_member.member_parent_array;
+				for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
+					if (is_array) {
+						*offset += sprintf(&code[*offset], "[%i]", o->op_store_member.member_indices[i]);
+						is_array = false;
+					}
+					else {
+						debug_context context = {0};
+						check(o->op_store_member.member_indices[i] < s->members.size, context, "Member index out of bounds");
+						*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
+						is_array = s->members.m[o->op_store_member.member_indices[i]].type.array_size > 0;
+						s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
+					}
+				}
+				*offset += sprintf(&code[*offset], " = _%" PRIu64 ";\n", o->op_store_member.from.index);
 				break;
 			}
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
 					if (is_fragment_function(i) && f->return_type.array_size > 0) {
-						*offset += sprintf(&wgsl[*offset], "\t{\n");
-						*offset += sprintf(&wgsl[*offset], "\t\t_kong_colors_out _kong_colors;\n");
+						*offset += sprintf(&code[*offset], "\t{\n");
+						*offset += sprintf(&code[*offset], "\t\t_kong_colors_out _kong_colors;\n");
 						for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
-							*offset += sprintf(&wgsl[*offset], "\t\t_kong_colors._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
+							*offset += sprintf(&code[*offset], "\t\t_kong_colors._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
 						}
-						*offset += sprintf(&wgsl[*offset], "\t\treturn _kong_colors;\n");
-						*offset += sprintf(&wgsl[*offset], "\t}\n");
+						*offset += sprintf(&code[*offset], "\t\treturn _kong_colors;\n");
+						*offset += sprintf(&code[*offset], "\t}\n");
 					}
 					else {
-						*offset += sprintf(&wgsl[*offset], "\treturn _%" PRIu64 ";\n", o->op_return.var.index);
+						*offset += sprintf(&code[*offset], "\treturn _%" PRIu64 ";\n", o->op_return.var.index);
 					}
 				}
 				else {
-					*offset += sprintf(&wgsl[*offset], "\treturn;\n");
+					*offset += sprintf(&code[*offset], "\treturn;\n");
 				}
 				break;
 			}
 			case OPCODE_MULTIPLY: {
-				*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64 " * _%" PRIu64 ";\n", o->op_multiply.result.index,
+				*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64 " * _%" PRIu64 ";\n", o->op_multiply.result.index,
 				                   type_string(o->op_multiply.result.type.type), o->op_multiply.left.index, o->op_multiply.right.index);
 				break;
 			}
 			case OPCODE_LOAD_CONSTANT:
-				*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = %f;\n", o->op_load_constant.to.index,
+				*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = %f;\n", o->op_load_constant.to.index,
 				                   type_string(o->op_load_constant.to.type.type), o->op_load_constant.number);
 				break;
 			case OPCODE_CALL: {
 				debug_context context = {0};
 				if (o->op_call.func == add_name("sample")) {
 					check(o->op_call.parameters_size == 3, context, "sample requires three arguments");
-					*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = textureSample(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
+					*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = textureSample(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
 					                   o->op_call.var.index, type_string(o->op_call.var.type.type), o->op_call.parameters[0].index,
 					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index);
 				}
 				else if (o->op_call.func == add_name("sample_lod")) {
 					check(o->op_call.parameters_size == 4, context, "sample_lod requires four arguments");
-					*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = textureSample(_%" PRIu64 ",_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
+					*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = textureSample(_%" PRIu64 ",_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
 					                   o->op_call.var.index, type_string(o->op_call.var.type.type), o->op_call.parameters[0].index,
 					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index, o->op_call.parameters[3].index);
 				}
@@ -516,26 +607,26 @@ static void write_functions(char *wgsl, size_t *offset) {
 					}
 
 					*offset +=
-					    sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = %s(", o->op_call.var.index, type_string(o->op_call.var.type.type), function_name);
+					    sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = %s(", o->op_call.var.index, type_string(o->op_call.var.type.type), function_name);
 					if (o->op_call.parameters_size > 0) {
-						*offset += sprintf(&wgsl[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
+						*offset += sprintf(&code[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
 						for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
-							*offset += sprintf(&wgsl[*offset], ", _%" PRIu64, o->op_call.parameters[i].index);
+							*offset += sprintf(&code[*offset], ", _%" PRIu64, o->op_call.parameters[i].index);
 						}
 					}
-					*offset += sprintf(&wgsl[*offset], ");\n");
+					*offset += sprintf(&code[*offset], ");\n");
 				}
 				break;
 			}
 			default:
-				cstyle_write_opcode(wgsl, offset, o, type_string);
+				cstyle_write_opcode(code, offset, o, type_string);
 				break;
 			}
 
 			index += o->size;
 		}
 
-		*offset += sprintf(&wgsl[*offset], "}\n\n");
+		*offset += sprintf(&code[*offset], "}\n\n");
 	}
 }
 
