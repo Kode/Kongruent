@@ -161,27 +161,50 @@ static const char *structure_type(type_id type) {
 static int global_register_indices[512];
 
 void c_export(char *directory, api_kind api) {
-	int cbuffer_index = 0;
-	int texture_index = 0;
-	int sampler_index = 0;
-
 	memset(global_register_indices, 0, sizeof(global_register_indices));
 
-	for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
-		global g = get_global(i);
-		if (g.type == sampler_type_id) {
-			global_register_indices[i] = sampler_index;
-			sampler_index += 1;
+	if (api == API_WEBGPU) {
+		int binding_index = 0;
+
+		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
+			global g = get_global(i);
+			if (g.type == sampler_type_id) {
+				global_register_indices[i] = binding_index;
+				binding_index += 1;
+			}
+			else if (g.type == tex2d_type_id || g.type == texcube_type_id) {
+				global_register_indices[i] = binding_index;
+				binding_index += 1;
+			}
+			else if (g.type == float_id) {
+			}
+			else {
+				global_register_indices[i] = binding_index;
+				binding_index += 1;
+			}
 		}
-		else if (g.type == tex2d_type_id || g.type == texcube_type_id) {
-			global_register_indices[i] = texture_index;
-			texture_index += 1;
-		}
-		else if (g.type == float_id) {
-		}
-		else {
-			global_register_indices[i] = cbuffer_index;
-			cbuffer_index += 1;
+	}
+	else {
+		int cbuffer_index = 0;
+		int texture_index = 0;
+		int sampler_index = 0;
+
+		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
+			global g = get_global(i);
+			if (g.type == sampler_type_id) {
+				global_register_indices[i] = sampler_index;
+				sampler_index += 1;
+			}
+			else if (g.type == tex2d_type_id || g.type == texcube_type_id) {
+				global_register_indices[i] = texture_index;
+				texture_index += 1;
+			}
+			else if (g.type == float_id) {
+			}
+			else {
+				global_register_indices[i] = cbuffer_index;
+				cbuffer_index += 1;
+			}
 		}
 	}
 
