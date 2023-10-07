@@ -504,8 +504,19 @@ static void write_functions(char *wgsl, size_t *offset) {
 					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index, o->op_call.parameters[3].index);
 				}
 				else {
-					*offset += sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = %s(", o->op_call.var.index, type_string(o->op_call.var.type.type),
-					                   function_string(o->op_call.func));
+					const char *function_name = get_name(o->op_call.func);
+					if (o->op_call.func == add_name("float2")) {
+						function_name = "vec2<f32>";
+					}
+					else if (o->op_call.func == add_name("float3")) {
+						function_name = "vec3<f32>";
+					}
+					else if (o->op_call.func == add_name("float4")) {
+						function_name = "vec4<f32>";
+					}
+
+					*offset +=
+					    sprintf(&wgsl[*offset], "\tvar _%" PRIu64 ": %s = %s(", o->op_call.var.index, type_string(o->op_call.var.type.type), function_name);
 					if (o->op_call.parameters_size > 0) {
 						*offset += sprintf(&wgsl[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
 						for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
