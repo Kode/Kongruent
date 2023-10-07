@@ -1,4 +1,4 @@
-#include "c.h"
+#include "kinc.h"
 
 #include "../compiler.h"
 #include "../errors.h"
@@ -160,7 +160,7 @@ static const char *structure_type(type_id type) {
 
 static int global_register_indices[512];
 
-void c_export(char *directory, api_kind api) {
+void kinc_export(char *directory, api_kind api) {
 	memset(global_register_indices, 0, sizeof(global_register_indices));
 
 	if (api == API_WEBGPU) {

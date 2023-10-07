@@ -4,4 +4,4 @@
 
 #include <stdint.h>
 
-void c_export(char *directory, api_kind api);
+void kinc_export(char *directory, api_kind api);

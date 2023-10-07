@@ -13,7 +13,7 @@
 #include "backends/metal.h"
 #include "backends/wgsl.h"
 
-#include "integrations/c.h"
+#include "integrations/kinc.h"
 
 #include "dir.h"
 
@@ -571,7 +571,7 @@ int main(int argc, char **argv) {
 	}
 	}
 
-	c_export(output, api);
+	kinc_export(output, api);
 
 	return 0;
 }
