@@ -334,13 +334,13 @@ static void write_globals(char *wgsl, size_t *offset) {
 		int register_index = global_register_indices[i];
 
 		if (g.type == sampler_type_id) {
-			*offset += sprintf(&wgsl[*offset], "@group(0) binding(%i) _%" PRIu64 ": sampler;\n\n", register_index, g.var_index);
+			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%i) _%" PRIu64 ": sampler;\n\n", register_index, g.var_index);
 		}
 		else if (g.type == tex2d_type_id) {
-			*offset += sprintf(&wgsl[*offset], "@group(0) binding(%i) _%" PRIu64 ": texture_2d<f32>;\n\n", register_index, g.var_index);
+			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%i) _%" PRIu64 ": texture_2d<f32>;\n\n", register_index, g.var_index);
 		}
 		else if (g.type == texcube_type_id) {
-			*offset += sprintf(&wgsl[*offset], "@group(0) binding(%i) _%" PRIu64 ": texture_cube<f32>;\n\n", register_index, g.var_index);
+			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%i) _%" PRIu64 ": texture_cube<f32>;\n\n", register_index, g.var_index);
 		}
 		else if (g.type == float_id) {
 		}
@@ -353,7 +353,7 @@ static void write_globals(char *wgsl, size_t *offset) {
 			else {
 				sprintf(type_name, "_%" PRIu64 "_type", g.var_index);
 			}
-			*offset += sprintf(&wgsl[*offset], "@group(0) binding(%i) var<uniform> _%" PRIu64 ": %s;\n\n", register_index, g.var_index, type_name);
+			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%i) var<uniform> _%" PRIu64 ": %s;\n\n", register_index, g.var_index, type_name);
 		}
 	}
 }
