@@ -301,8 +301,7 @@ static void write_types(char *wgsl, size_t *offset) {
 
 			if (is_vertex_input(i)) {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					*offset += sprintf(&wgsl[*offset], "\t@location(%" PRIu64 ") %s: %s;\n", j, get_name(t->members.m[j].name),
-					                   type_string(t->members.m[j].type.type));
+					*offset += sprintf(&wgsl[*offset], "\t@location(%zu) %s: %s;\n", j, get_name(t->members.m[j].name), type_string(t->members.m[j].type.type));
 				}
 			}
 			else if (is_fragment_input(i)) {
@@ -312,7 +311,7 @@ static void write_types(char *wgsl, size_t *offset) {
 						    sprintf(&wgsl[*offset], "\t@builtin(position) %s: %s;\n", get_name(t->members.m[j].name), type_string(t->members.m[j].type.type));
 					}
 					else {
-						*offset += sprintf(&wgsl[*offset], "\t@location(%" PRIu64 ") %s: %s;\n", j - 1, get_name(t->members.m[j].name),
+						*offset += sprintf(&wgsl[*offset], "\t@location(%zu) %s: %s;\n", j - 1, get_name(t->members.m[j].name),
 						                   type_string(t->members.m[j].type.type));
 					}
 				}

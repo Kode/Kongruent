@@ -276,8 +276,7 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 
 			if (stage == SHADER_STAGE_VERTEX && types[i] == input) {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					*offset +=
-					    sprintf(&hlsl[*offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name), j);
+					*offset += sprintf(&hlsl[*offset], "\t%s %s : TEXCOORD%zu;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name), j);
 				}
 			}
 			else if (stage == SHADER_STAGE_VERTEX && types[i] == output) {
@@ -286,8 +285,8 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 						*offset += sprintf(&hlsl[*offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 					}
 					else {
-						*offset += sprintf(&hlsl[*offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type),
-						                   get_name(t->members.m[j].name), j - 1);
+						*offset +=
+						    sprintf(&hlsl[*offset], "\t%s %s : TEXCOORD%zu;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name), j - 1);
 					}
 				}
 			}
@@ -297,8 +296,8 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 						*offset += sprintf(&hlsl[*offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 					}
 					else {
-						*offset += sprintf(&hlsl[*offset], "\t%s %s : TEXCOORD%" PRIu64 ";\n", type_string(t->members.m[j].type.type),
-						                   get_name(t->members.m[j].name), j - 1);
+						*offset +=
+						    sprintf(&hlsl[*offset], "\t%s %s : TEXCOORD%zu;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name), j - 1);
 					}
 				}
 			}

@@ -260,8 +260,8 @@ static void write_types(char *metal, size_t *offset) {
 
 			if (is_vertex_input(i)) {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					*offset += sprintf(&metal[*offset], "\t%s %s [[attribute(%" PRIu64 ")]];\n", type_string(t->members.m[j].type.type),
-					                   get_name(t->members.m[j].name), j);
+					*offset +=
+					    sprintf(&metal[*offset], "\t%s %s [[attribute(%zu)]];\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name), j);
 				}
 			}
 			else if (is_fragment_input(i)) {
@@ -270,7 +270,7 @@ static void write_types(char *metal, size_t *offset) {
 						*offset += sprintf(&metal[*offset], "\t%s %s [[position]];\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 					}
 					else {
-						*offset += sprintf(&metal[*offset], "\t%s %s [[user(locn%" PRIu64 ")]];\n", type_string(t->members.m[j].type.type),
+						*offset += sprintf(&metal[*offset], "\t%s %s [[user(locn%zu)]];\n", type_string(t->members.m[j].type.type),
 						                   get_name(t->members.m[j].name), j - 1);
 					}
 				}

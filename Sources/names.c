@@ -7,7 +7,7 @@
 #include <assert.h>
 
 static char *names = NULL;
-static uint64_t names_size = 1024 * 1024;
+static size_t names_size = 1024 * 1024;
 static name_id names_index = 1;
 
 static struct {
@@ -27,7 +27,7 @@ void names_init(void) {
 	sh_new_arena(hash); // TODO: Get rid of this by using indices internally in the hash-map so it can survive grow_if_needed
 }
 
-static void grow_if_needed(uint64_t size) {
+static void grow_if_needed(size_t size) {
 	while (size >= names_size) {
 		names_size *= 2;
 		char *new_names = realloc(names, names_size);
