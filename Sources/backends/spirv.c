@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 static void write_bytecode(char *directory, const char *filename, const char *name, uint32_t *spirv, size_t spirv_size) {
 	uint8_t *output = (uint8_t *)spirv;
@@ -72,9 +73,15 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 	}
 }
 
-typedef enum spirv_opcode { OPCODE_CAPABILITY = 17 } spirv_opcode;
+typedef enum spirv_opcode { OPCODE_EXT_INST_IMPORT = 11, OPCODE_MEMORY_MODEL = 14, OPCODE_ENTRY_POINT = 15, OPCODE_CAPABILITY = 17 } spirv_opcode;
+
+typedef enum addressing_model { ADDRESSING_MODEL_LOGICAL = 0 } addressing_model;
+
+typedef enum memory_model { MEMORY_MODEL_SIMPLE = 0, MEMORY_MODEL_GLSL450 = 1 } memory_model;
 
 typedef enum capability { CAPABILITY_SHADER = 1 } capability;
+
+typedef enum execution_model { EXECUTION_MODEL_VERTEX = 0, EXECUTION_MODEL_FRAGMENT = 4 } execution_model;
 
 static void write_instruction(uint32_t *instructions, size_t *offset, uint16_t word_count, spirv_opcode o, uint32_t *operands) {
 	instructions[(*offset)++] = (word_count << 16) | (uint16_t)o;
@@ -86,6 +93,48 @@ static void write_instruction(uint32_t *instructions, size_t *offset, uint16_t w
 static void write_capability(uint32_t *instructions, size_t *offset, capability c) {
 	uint32_t operand = (uint32_t)c;
 	write_instruction(instructions, offset, 2, OPCODE_CAPABILITY, &operand);
+}
+
+static uint32_t next_index = 1;
+
+static uint16_t write_string(uint32_t *operands, const char *string) {
+	uint16_t length = (uint16_t)strlen(string);
+	memcpy(&operands[0], string, length + 1);
+	return (length + 1) / 4 + 1;
+}
+
+static uint32_t write_op_ext_inst_import(uint32_t *instructions, size_t *offset, const char *name) {
+	uint32_t result = next_index;
+	++next_index;
+
+	uint32_t operands[256] = {0};
+	operands[0] = result;
+
+	uint32_t name_length = write_string(&operands[1], name);
+
+	write_instruction(instructions, offset, 2 + name_length, OPCODE_EXT_INST_IMPORT, operands);
+
+	return result;
+}
+
+static void write_op_memory_model(uint32_t *instructions, size_t *offset, uint32_t addressing_model, uint32_t memory_model) {
+	uint32_t args[2] = {addressing_model, memory_model};
+	write_instruction(instructions, offset, 3, OPCODE_MEMORY_MODEL, args);
+}
+
+static void write_op_entry_point(uint32_t *instructions, size_t *offset, execution_model em, uint32_t entry_point, const char *name, uint32_t *interfaces,
+                                 uint16_t interfaces_size) {
+	uint32_t operands[256] = {0};
+	operands[0] = (uint32_t)em;
+	operands[1] = entry_point;
+
+	uint32_t name_length = write_string(&operands[2], name);
+
+	for (uint16_t i = 0; i < interfaces_size; ++i) {
+		operands[2 + name_length + i] = interfaces[i];
+	}
+
+	write_instruction(instructions, offset, 3 + name_length + interfaces_size, OPCODE_ENTRY_POINT, operands);
 }
 
 static void write_capabilities(uint32_t *instructions, size_t *offset) {
@@ -104,6 +153,11 @@ static void spirv_export_vertex(char *directory, function *main) {
 	check(vertex_output != NO_TYPE, context, "vertex output missing");
 
 	write_capabilities(instructions, &offset);
+	write_op_ext_inst_import(instructions, &offset, "GLSL.std.450");
+	write_op_memory_model(instructions, &offset, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
+	uint32_t entry_point = 2;
+	uint32_t interfaces[] = {3, 4};
+	write_op_entry_point(instructions, &offset, EXECUTION_MODEL_VERTEX, entry_point, "main", interfaces, sizeof(interfaces) / 4);
 
 	char *name = get_name(main->name);
 
