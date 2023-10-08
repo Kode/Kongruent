@@ -82,6 +82,21 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
 		break;
 	}
+	case OPCODE_SUB: {
+		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " - _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
+		                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
+		break;
+	}
+	case OPCODE_MULTIPLY: {
+		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
+		                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
+		break;
+	}
+	case OPCODE_DIVIDE: {
+		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " / _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
+		                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
+		break;
+	}
 	default: {
 		debug_context context = {0};
 		error(context, "Unknown opcode");

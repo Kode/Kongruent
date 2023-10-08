@@ -94,8 +94,21 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			error(context, "not implemented");
 		case OPERATOR_LESS_EQUAL:
 			error(context, "not implemented");
-		case OPERATOR_MINUS:
-			error(context, "not implemented");
+		case OPERATOR_MINUS: {
+			variable right_var = emit_expression(code, parent, right);
+			variable left_var = emit_expression(code, parent, left);
+			variable result_var = allocate_variable(right_var.type);
+
+			opcode o;
+			o.type = OPCODE_SUB;
+			o.size = OP_SIZE(o, op_add);
+			o.op_sub.right = right_var;
+			o.op_sub.left = left_var;
+			o.op_sub.result = result_var;
+			emit_op(code, &o);
+
+			return result_var;
+		}
 		case OPERATOR_PLUS: {
 			variable right_var = emit_expression(code, parent, right);
 			variable left_var = emit_expression(code, parent, left);
@@ -112,8 +125,19 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			return result_var;
 		}
 		case OPERATOR_DIVIDE: {
-			debug_context context = {0};
-			error(context, "not implemented", 0, 0);
+			variable right_var = emit_expression(code, parent, right);
+			variable left_var = emit_expression(code, parent, left);
+			variable result_var = allocate_variable(right_var.type);
+
+			opcode o;
+			o.type = OPCODE_DIVIDE;
+			o.size = OP_SIZE(o, op_multiply);
+			o.op_divide.right = right_var;
+			o.op_divide.left = left_var;
+			o.op_divide.result = result_var;
+			emit_op(code, &o);
+
+			return result_var;
 		}
 		case OPERATOR_MULTIPLY: {
 			variable right_var = emit_expression(code, parent, right);

@@ -576,6 +576,21 @@ static void write_functions(char *code, size_t *offset) {
 				                   type_string(o->op_multiply.result.type.type), o->op_multiply.left.index, o->op_multiply.right.index);
 				break;
 			}
+			case OPCODE_DIVIDE: {
+				*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64 " / _%" PRIu64 ";\n", o->op_multiply.result.index,
+				                   type_string(o->op_multiply.result.type.type), o->op_multiply.left.index, o->op_multiply.right.index);
+				break;
+			}
+			case OPCODE_ADD: {
+				*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64 " + _%" PRIu64 ";\n", o->op_multiply.result.index,
+				                   type_string(o->op_multiply.result.type.type), o->op_multiply.left.index, o->op_multiply.right.index);
+				break;
+			}
+			case OPCODE_SUB: {
+				*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64 " - _%" PRIu64 ";\n", o->op_multiply.result.index,
+				                   type_string(o->op_multiply.result.type.type), o->op_multiply.left.index, o->op_multiply.right.index);
+				break;
+			}
 			case OPCODE_LOAD_CONSTANT:
 				*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = %f;\n", o->op_load_constant.to.index,
 				                   type_string(o->op_load_constant.to.type.type), o->op_load_constant.number);

@@ -498,11 +498,6 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 				}
 				break;
 			}
-			case OPCODE_MULTIPLY: {
-				*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
-				                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
-				break;
-			}
 			default:
 				cstyle_write_opcode(code, offset, o, type_string);
 				break;
