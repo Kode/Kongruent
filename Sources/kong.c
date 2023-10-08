@@ -11,6 +11,7 @@
 #include "backends/glsl.h"
 #include "backends/hlsl.h"
 #include "backends/metal.h"
+#include "backends/spirv.h"
 #include "backends/wgsl.h"
 
 #include "integrations/kinc.h"
@@ -562,8 +563,9 @@ int main(int argc, char **argv) {
 		wgsl_export(output);
 		break;
 	case API_VULKAN: {
-		debug_context context = {0};
-		error(context, "SPIRV not yet supported");
+		kong_log(LOG_LEVEL_WARNING, "Beware, SPIR-V export is not yet working");
+		spirv_export(output);
+		break;
 	}
 	default: {
 		debug_context context = {0};
