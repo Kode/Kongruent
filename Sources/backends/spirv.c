@@ -9,9 +9,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void write_bytecode(char *directory, const char *filename, const char *name, uint32_t *spirv, size_t spirv_size) {
-	uint8_t *output = (uint8_t *)spirv;
-	size_t output_size = spirv_size * 4;
+typedef struct instructions_buffer {
+	uint32_t *instructions;
+	size_t offset;
+} instructions_buffer;
+
+static void write_bytecode(char *directory, const char *filename, const char *name, instructions_buffer *instructions) {
+	uint8_t *output = (uint8_t *)instructions->instructions;
+	size_t output_size = instructions->offset * 4;
 
 	char full_filename[512];
 
@@ -97,19 +102,25 @@ typedef enum execution_model { EXECUTION_MODEL_VERTEX = 0, EXECUTION_MODEL_FRAGM
 
 static uint32_t operands_buffer[4096];
 
-static void write_instruction(uint32_t *instructions, size_t *offset, uint16_t word_count, spirv_opcode o, uint32_t *operands) {
-	instructions[(*offset)++] = (word_count << 16) | (uint16_t)o;
+static void write_instruction(instructions_buffer *instructions, uint16_t word_count, spirv_opcode o, uint32_t *operands) {
+	instructions->instructions[instructions->offset++] = (word_count << 16) | (uint16_t)o;
 	for (uint16_t i = 0; i < word_count - 1; ++i) {
-		instructions[(*offset)++] = operands[i];
+		instructions->instructions[instructions->offset++] = operands[i];
 	}
 }
 
-static void write_capability(uint32_t *instructions, size_t *offset, capability c) {
+static void write_capability(instructions_buffer *instructions, capability c) {
 	uint32_t operand = (uint32_t)c;
-	write_instruction(instructions, offset, 2, OPCODE_CAPABILITY, &operand);
+	write_instruction(instructions, 2, OPCODE_CAPABILITY, &operand);
 }
 
 static uint32_t next_index = 1;
+
+static uint32_t allocate_index(void) {
+	uint32_t result = next_index;
+	++next_index;
+	return result;
+}
 
 static uint16_t write_string(uint32_t *operands, const char *string) {
 	uint16_t length = (uint16_t)strlen(string);
@@ -117,25 +128,24 @@ static uint16_t write_string(uint32_t *operands, const char *string) {
 	return (length + 1) / 4 + 1;
 }
 
-static uint32_t write_op_ext_inst_import(uint32_t *instructions, size_t *offset, const char *name) {
-	uint32_t result = next_index;
-	++next_index;
+static uint32_t write_op_ext_inst_import(instructions_buffer *instructions, const char *name) {
+	uint32_t result = allocate_index();
 
 	operands_buffer[0] = result;
 
 	uint32_t name_length = write_string(&operands_buffer[1], name);
 
-	write_instruction(instructions, offset, 2 + name_length, OPCODE_EXT_INST_IMPORT, operands_buffer);
+	write_instruction(instructions, 2 + name_length, OPCODE_EXT_INST_IMPORT, operands_buffer);
 
 	return result;
 }
 
-static void write_op_memory_model(uint32_t *instructions, size_t *offset, uint32_t addressing_model, uint32_t memory_model) {
+static void write_op_memory_model(instructions_buffer *instructions, uint32_t addressing_model, uint32_t memory_model) {
 	uint32_t args[2] = {addressing_model, memory_model};
-	write_instruction(instructions, offset, 3, OPCODE_MEMORY_MODEL, args);
+	write_instruction(instructions, 3, OPCODE_MEMORY_MODEL, args);
 }
 
-static void write_op_entry_point(uint32_t *instructions, size_t *offset, execution_model em, uint32_t entry_point, const char *name, uint32_t *interfaces,
+static void write_op_entry_point(instructions_buffer *instructions, execution_model em, uint32_t entry_point, const char *name, uint32_t *interfaces,
                                  uint16_t interfaces_size) {
 	operands_buffer[0] = (uint32_t)em;
 	operands_buffer[1] = entry_point;
@@ -146,106 +156,102 @@ static void write_op_entry_point(uint32_t *instructions, size_t *offset, executi
 		operands_buffer[2 + name_length + i] = interfaces[i];
 	}
 
-	write_instruction(instructions, offset, 3 + name_length + interfaces_size, OPCODE_ENTRY_POINT, operands_buffer);
+	write_instruction(instructions, 3 + name_length + interfaces_size, OPCODE_ENTRY_POINT, operands_buffer);
 }
 
-static void write_capabilities(uint32_t *instructions, size_t *offset) {
-	write_capability(instructions, offset, CAPABILITY_SHADER);
+static void write_capabilities(instructions_buffer *instructions) {
+	write_capability(instructions, CAPABILITY_SHADER);
 }
 
-static uint32_t write_type_void(uint32_t *instructions, size_t *offset) {
-	uint32_t void_type = next_index;
-	++next_index;
-	write_instruction(instructions, offset, 2, OPCODE_TYPE_VOID, &void_type);
+static uint32_t write_type_void(instructions_buffer *instructions) {
+	uint32_t void_type = allocate_index();
+	write_instruction(instructions, 2, OPCODE_TYPE_VOID, &void_type);
 	return void_type;
 }
 
 #define WORD_COUNT(operands) (1 + sizeof(operands) / 4)
 
-static uint32_t write_type_function(uint32_t *instructions, size_t *offset, uint32_t return_type, uint32_t *parameter_types, uint16_t parameter_types_size) {
-	uint32_t function_type = next_index;
-	++next_index;
+static uint32_t write_type_function(instructions_buffer *instructions, uint32_t return_type, uint32_t *parameter_types, uint16_t parameter_types_size) {
+	uint32_t function_type = allocate_index();
 
 	operands_buffer[0] = function_type;
 	operands_buffer[1] = return_type;
 	for (uint16_t i = 0; i < parameter_types_size; ++i) {
 		operands_buffer[i + 2] = parameter_types[0];
 	}
-	write_instruction(instructions, offset, 3 + parameter_types_size, OPCODE_TYPE_FUNCTION, operands_buffer);
+	write_instruction(instructions, 3 + parameter_types_size, OPCODE_TYPE_FUNCTION, operands_buffer);
 	return function_type;
 }
 
-static uint32_t write_type_float(uint32_t *instructions, size_t *offset, uint32_t width) {
-	uint32_t float_type = next_index;
-	++next_index;
+static uint32_t write_type_float(instructions_buffer *instructions, uint32_t width) {
+	uint32_t float_type = allocate_index();
 
 	uint32_t operands[2];
 	operands[0] = float_type;
 	operands[1] = width;
-	write_instruction(instructions, offset, WORD_COUNT(operands), OPCODE_TYPE_FLOAT, operands);
+	write_instruction(instructions, WORD_COUNT(operands), OPCODE_TYPE_FLOAT, operands);
 	return float_type;
 }
 
-static uint32_t write_type_vector(uint32_t *instructions, size_t *offset, uint32_t component_type, uint32_t component_count) {
-	uint32_t vector_type = next_index;
-	++next_index;
+static uint32_t write_type_vector(instructions_buffer *instructions, uint32_t component_type, uint32_t component_count) {
+	uint32_t vector_type = allocate_index();
 
 	uint32_t operands[3];
 	operands[0] = vector_type;
 	operands[1] = component_type;
 	operands[2] = component_count;
-	write_instruction(instructions, offset, WORD_COUNT(operands), OPCODE_TYPE_VECTOR, operands);
+	write_instruction(instructions, WORD_COUNT(operands), OPCODE_TYPE_VECTOR, operands);
 	return vector_type;
 }
 
-static uint32_t write_type_int(uint32_t *instructions, size_t *offset, uint32_t width, bool signedness) {
-	uint32_t int_type = next_index;
-	++next_index;
+static uint32_t write_type_int(instructions_buffer *instructions, uint32_t width, bool signedness) {
+	uint32_t int_type = allocate_index();
 
 	uint32_t operands[3];
 	operands[0] = int_type;
 	operands[1] = width;
 	operands[2] = signedness ? 1 : 0;
-	write_instruction(instructions, offset, WORD_COUNT(operands), OPCODE_TYPE_INT, operands);
+	write_instruction(instructions, WORD_COUNT(operands), OPCODE_TYPE_INT, operands);
 	return int_type;
 }
 
 static uint32_t spirv_float_type;
 
-static void write_types(uint32_t *instructions, size_t *offset) {
-	uint32_t void_type = write_type_void(instructions, offset);
+static void write_types(instructions_buffer *instructions) {
+	uint32_t void_type = write_type_void(instructions);
 
-	uint32_t void_function_type = write_type_function(instructions, offset, void_type, NULL, 0);
+	uint32_t void_function_type = write_type_function(instructions, void_type, NULL, 0);
 
-	spirv_float_type = write_type_float(instructions, offset, 32);
+	spirv_float_type = write_type_float(instructions, 32);
 
-	uint32_t float4_type = write_type_vector(instructions, offset, spirv_float_type, 4);
+	uint32_t float4_type = write_type_vector(instructions, spirv_float_type, 4);
 
-	uint32_t uint_type = write_type_int(instructions, offset, 32, false);
+	uint32_t uint_type = write_type_int(instructions, 32, false);
 
-	uint32_t int_type = write_type_int(instructions, offset, 32, true);
+	uint32_t int_type = write_type_int(instructions, 32, true);
 }
 
-static uint32_t write_constant(uint32_t *instructions, size_t *offset, uint32_t type, uint32_t value) {
-	uint32_t value_id = next_index;
-	++next_index;
+static uint32_t write_constant(instructions_buffer *instructions, uint32_t type, uint32_t value) {
+	uint32_t value_id = allocate_index();
 
 	uint32_t operands[3];
 	operands[0] = type;
 	operands[1] = value_id;
 	operands[2] = value;
-	write_instruction(instructions, offset, WORD_COUNT(operands), OPCODE_CONSTANT, operands);
+	write_instruction(instructions, WORD_COUNT(operands), OPCODE_CONSTANT, operands);
 	return value_id;
 }
 
-static uint32_t write_constant_float(uint32_t *instructions, size_t *offset, float value) {
+static uint32_t write_constant_float(instructions_buffer *instructions, float value) {
 	uint32_t uint32_value = *(uint32_t *)&value;
-	return write_constant(instructions, offset, spirv_float_type, uint32_value);
+	return write_constant(instructions, spirv_float_type, uint32_value);
 }
 
+void write_vertex_output_decorations(instructions_buffer *instructions) {}
+
 static void spirv_export_vertex(char *directory, function *main) {
-	uint32_t *instructions = (uint32_t *)calloc(1024 * 1024, 1);
-	size_t offset = 0;
+	instructions_buffer instructions = {0};
+	instructions.instructions = (uint32_t *)calloc(1024 * 1024, 1);
 
 	type_id vertex_input = main->parameter_type.type;
 	type_id vertex_output = main->return_type.type;
@@ -254,14 +260,16 @@ static void spirv_export_vertex(char *directory, function *main) {
 	check(vertex_input != NO_TYPE, context, "vertex input missing");
 	check(vertex_output != NO_TYPE, context, "vertex output missing");
 
-	write_capabilities(instructions, &offset);
-	write_op_ext_inst_import(instructions, &offset, "GLSL.std.450");
-	write_op_memory_model(instructions, &offset, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
+	write_capabilities(&instructions);
+	write_op_ext_inst_import(&instructions, "GLSL.std.450");
+	write_op_memory_model(&instructions, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
 	uint32_t entry_point = 2;
 	uint32_t interfaces[] = {3, 4};
-	write_op_entry_point(instructions, &offset, EXECUTION_MODEL_VERTEX, entry_point, "main", interfaces, sizeof(interfaces) / 4);
+	write_op_entry_point(&instructions, EXECUTION_MODEL_VERTEX, entry_point, "main", interfaces, sizeof(interfaces) / 4);
 
-	write_types(instructions, &offset);
+	write_vertex_output_decorations(&instructions);
+
+	write_types(&instructions);
 
 	char *name = get_name(main->name);
 
@@ -271,19 +279,19 @@ static void spirv_export_vertex(char *directory, function *main) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(directory, filename, var_name, instructions, offset);
+	write_bytecode(directory, filename, var_name, &instructions);
 }
 
 static void spirv_export_fragment(char *directory, function *main) {
-	uint32_t *instructions = (uint32_t *)calloc(1024 * 1024, 1);
-	size_t offset = 0;
+	instructions_buffer instructions = {0};
+	instructions.instructions = (uint32_t *)calloc(1024 * 1024, 1);
 
 	type_id pixel_input = main->parameter_type.type;
 
 	debug_context context = {0};
 	check(pixel_input != NO_TYPE, context, "fragment input missing");
 
-	write_capabilities(instructions, &offset);
+	write_capabilities(&instructions);
 
 	char *name = get_name(main->name);
 
@@ -293,7 +301,7 @@ static void spirv_export_fragment(char *directory, function *main) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(directory, filename, var_name, instructions, offset);
+	write_bytecode(directory, filename, var_name, &instructions);
 }
 
 void spirv_export(char *directory) {
