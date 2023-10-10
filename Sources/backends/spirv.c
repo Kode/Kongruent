@@ -89,7 +89,9 @@ typedef enum spirv_opcode {
 	OPCODE_TYPE_FLOAT = 22,
 	OPCODE_TYPE_VECTOR = 23,
 	OPCODE_TYPE_FUNCTION = 33,
-	OPCODE_CONSTANT = 43
+	OPCODE_CONSTANT = 43,
+	OPCODE_DECORATE = 71,
+	OPCODE_MEMBER_DECORATE = 72
 } spirv_opcode;
 
 typedef enum addressing_model { ADDRESSING_MODEL_LOGICAL = 0 } addressing_model;
@@ -99,6 +101,10 @@ typedef enum memory_model { MEMORY_MODEL_SIMPLE = 0, MEMORY_MODEL_GLSL450 = 1 } 
 typedef enum capability { CAPABILITY_SHADER = 1 } capability;
 
 typedef enum execution_model { EXECUTION_MODEL_VERTEX = 0, EXECUTION_MODEL_FRAGMENT = 4 } execution_model;
+
+typedef enum decoration { DECORATION_BUILTIN = 11, DECORATION_LOCATION = 30 } decoration;
+
+typedef enum builtin { BUILTIN_POSITION = 0 } builtin;
 
 static uint32_t operands_buffer[4096];
 
@@ -247,7 +253,24 @@ static uint32_t write_constant_float(instructions_buffer *instructions, float va
 	return write_constant(instructions, spirv_float_type, uint32_value);
 }
 
-void write_vertex_output_decorations(instructions_buffer *instructions) {}
+void write_vertex_output_decorations(instructions_buffer *instructions, uint32_t output_struct) {
+	uint32_t operands[4];
+	operands[0] = output_struct;
+	operands[1] = 0;
+	operands[2] = (uint32_t)DECORATION_BUILTIN;
+	operands[3] = (uint32_t)BUILTIN_POSITION;
+	write_instruction(instructions, WORD_COUNT(operands), OPCODE_MEMBER_DECORATE, operands);
+}
+
+void write_vertex_input_decorations(instructions_buffer *instructions, uint32_t *inputs, uint32_t inputs_size) {
+	for (uint32_t i = 0; i < inputs_size; ++i) {
+		uint32_t operands[3];
+		operands[0] = inputs[i];
+		operands[1] = (uint32_t)DECORATION_LOCATION;
+		operands[2] = i;
+		write_instruction(instructions, WORD_COUNT(operands), OPCODE_DECORATE, operands);
+	}
+}
 
 static void spirv_export_vertex(char *directory, function *main) {
 	instructions_buffer instructions = {0};
@@ -267,7 +290,12 @@ static void spirv_export_vertex(char *directory, function *main) {
 	uint32_t interfaces[] = {3, 4};
 	write_op_entry_point(&instructions, EXECUTION_MODEL_VERTEX, entry_point, "main", interfaces, sizeof(interfaces) / 4);
 
-	write_vertex_output_decorations(&instructions);
+	uint32_t output_struct = allocate_index();
+	write_vertex_output_decorations(&instructions, output_struct);
+
+	uint32_t inputs[256];
+	inputs[0] = allocate_index();
+	write_vertex_input_decorations(&instructions, inputs, 1);
 
 	write_types(&instructions);
 
