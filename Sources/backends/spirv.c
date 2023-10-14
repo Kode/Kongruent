@@ -77,6 +77,15 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 
 		fclose(file);
 	}
+
+#ifndef NDEBUG
+	{
+		sprintf(full_filename, "%s/%s.spirv", directory, filename);
+		FILE *file = fopen(full_filename, "wb");
+		fwrite(output, 1, output_size, file);
+		fclose(file);
+	}
+#endif
 }
 
 typedef enum spirv_opcode {
@@ -113,6 +122,26 @@ static void write_instruction(instructions_buffer *instructions, uint16_t word_c
 	for (uint16_t i = 0; i < word_count - 1; ++i) {
 		instructions->instructions[instructions->offset++] = operands[i];
 	}
+}
+
+static void write_magic_number(instructions_buffer *instructions) {
+	instructions->instructions[instructions->offset++] = 0x07230203;
+}
+
+static void write_version_number(instructions_buffer *instructions) {
+	instructions->instructions[instructions->offset++] = 0x00010000;
+}
+
+static void write_generator_magic_number(instructions_buffer *instructions) {
+	instructions->instructions[instructions->offset++] = 0; // TODO: Register a number at https://github.com/KhronosGroup/SPIRV-Headers
+}
+
+static void write_bound(instructions_buffer *instructions) {
+	instructions->instructions[instructions->offset++] = 256; // TODO: Exclusive upper bound of used IDs
+}
+
+static void write_instruction_schema(instructions_buffer *instructions) {
+	instructions->instructions[instructions->offset++] = 0; // reserved in SPIR-V for later use, currently always zero
 }
 
 static void write_capability(instructions_buffer *instructions, capability c) {
@@ -283,10 +312,16 @@ static void spirv_export_vertex(char *directory, function *main) {
 	check(vertex_input != NO_TYPE, context, "vertex input missing");
 	check(vertex_output != NO_TYPE, context, "vertex output missing");
 
+	write_magic_number(&instructions);
+	write_version_number(&instructions);
+	write_generator_magic_number(&instructions);
+	write_bound(&instructions);
+	write_instruction_schema(&instructions);
+
 	write_capabilities(&instructions);
 	write_op_ext_inst_import(&instructions, "GLSL.std.450");
 	write_op_memory_model(&instructions, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
-	uint32_t entry_point = 2;
+	uint32_t entry_point = allocate_index();
 	uint32_t interfaces[] = {3, 4};
 	write_op_entry_point(&instructions, EXECUTION_MODEL_VERTEX, entry_point, "main", interfaces, sizeof(interfaces) / 4);
 
@@ -318,6 +353,12 @@ static void spirv_export_fragment(char *directory, function *main) {
 
 	debug_context context = {0};
 	check(pixel_input != NO_TYPE, context, "fragment input missing");
+
+	write_magic_number(&instructions);
+	write_version_number(&instructions);
+	write_generator_magic_number(&instructions);
+	write_bound(&instructions);
+	write_instruction_schema(&instructions);
 
 	write_capabilities(&instructions);
 
