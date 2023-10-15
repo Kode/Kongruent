@@ -177,8 +177,10 @@ static void write_generator_magic_number(instructions_buffer *instructions) {
 	instructions->instructions[instructions->offset++] = 0; // TODO: Register a number at https://github.com/KhronosGroup/SPIRV-Headers
 }
 
+static uint32_t next_index = 1;
+
 static void write_bound(instructions_buffer *instructions) {
-	instructions->instructions[instructions->offset++] = 256; // TODO: Exclusive upper bound of used IDs
+	instructions->instructions[instructions->offset++] = next_index;
 }
 
 static void write_instruction_schema(instructions_buffer *instructions) {
@@ -189,8 +191,6 @@ static void write_capability(instructions_buffer *instructions, capability c) {
 	uint32_t operand = (uint32_t)c;
 	write_instruction(instructions, 2, SPIRV_OPCODE_CAPABILITY, &operand);
 }
-
-static uint32_t next_index = 1;
 
 static uint32_t allocate_index(void) {
 	uint32_t result = next_index;
