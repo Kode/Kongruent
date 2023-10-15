@@ -580,21 +580,24 @@ static void write_function(instructions_buffer *instructions, function *f) {
 					for (int i = 0; i < 2; ++i) {
 						constituents[i] = convert_kong_index_to_spirv_index(o->op_call.parameters[i].index);
 					}
-					write_op_composite_construct(instructions, spirv_float2_type, constituents, 2);
+					uint32_t spirv_id = write_op_composite_construct(instructions, spirv_float2_type, constituents, 2);
+					hmput(index_map, o->op_call.var.index, spirv_id);
 				}
 				else if (o->op_call.func == add_name("float3")) {
 					uint32_t constituents[3];
 					for (int i = 0; i < 3; ++i) {
 						constituents[i] = convert_kong_index_to_spirv_index(o->op_call.parameters[i].index);
 					}
-					write_op_composite_construct(instructions, spirv_float3_type, constituents, 3);
+					uint32_t spirv_id = write_op_composite_construct(instructions, spirv_float3_type, constituents, 3);
+					hmput(index_map, o->op_call.var.index, spirv_id);
 				}
 				else if (o->op_call.func == add_name("float4")) {
 					uint32_t constituents[4];
 					for (int i = 0; i < 4; ++i) {
 						constituents[i] = convert_kong_index_to_spirv_index(o->op_call.parameters[i].index);
 					}
-					write_op_composite_construct(instructions, spirv_float4_type, constituents, 4);
+					uint32_t spirv_id = write_op_composite_construct(instructions, spirv_float4_type, constituents, 4);
+					hmput(index_map, o->op_call.var.index, spirv_id);
 				}
 				else {
 				}
