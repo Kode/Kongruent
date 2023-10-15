@@ -129,6 +129,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_FUNCTION = 54,
 	SPIRV_OPCODE_FUNCTION_END = 56,
 	SPIRV_OPCODE_LOAD = 61,
+	SPIRV_OPCODE_STORE = 62,
 	SPIRV_OPCODE_ACCESS_CHAIN = 65,
 	SPIRV_OPCODE_DECORATE = 71,
 	SPIRV_OPCODE_MEMBER_DECORATE = 72,
@@ -487,6 +488,13 @@ static uint32_t write_op_load(instructions_buffer *instructions, uint32_t result
 	return result;
 }
 
+static void write_op_store(instructions_buffer *instructions, uint32_t pointer, uint32_t object) {
+	uint32_t operands[2];
+	operands[0] = pointer;
+	operands[1] = object;
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_STORE, operands);
+}
+
 static uint32_t write_op_composite_construct(instructions_buffer *instructions, uint32_t type, uint32_t *constituents, uint16_t constituents_size) {
 	uint32_t result = allocate_index();
 
@@ -603,6 +611,14 @@ static void write_function(instructions_buffer *instructions, function *f) {
 			break;
 		}
 		case OPCODE_STORE_MEMBER: {
+			int indices[256];
+			uint16_t indices_size = o->op_store_member.member_indices_size;
+			for (size_t i = 0; i < indices_size; ++i) {
+				indices[i] = (int)o->op_store_member.member_indices[i];
+			}
+			uint32_t pointer = write_op_access_chain(instructions, float_input_pointer_type, convert_kong_index_to_spirv_index(o->op_store_member.to.index),
+			                                         indices, indices_size);
+			write_op_store(instructions, pointer, convert_kong_index_to_spirv_index(o->op_store_member.from.index));
 			break;
 		}
 		case OPCODE_RETURN: {
