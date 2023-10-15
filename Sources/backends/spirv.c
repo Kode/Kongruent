@@ -401,7 +401,7 @@ static void write_vertex_input_decorations(instructions_buffer *instructions, ui
 	}
 }
 
-uint32_t write_op_function(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type) {
+static uint32_t write_op_function(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type) {
 	uint32_t result = allocate_index();
 
 	uint32_t operands[4];
@@ -413,7 +413,7 @@ uint32_t write_op_function(instructions_buffer *instructions, uint32_t result_ty
 	return result;
 }
 
-uint32_t write_label(instructions_buffer *instructions) {
+static uint32_t write_label(instructions_buffer *instructions) {
 	uint32_t result = allocate_index();
 
 	uint32_t operands[1];
@@ -440,6 +440,20 @@ static uint32_t get_int_constant(int value) {
 	if (index == 0) {
 		index = allocate_index();
 		hmput(int_constants, value, index);
+	}
+	return index;
+}
+
+static struct {
+	float key;
+	uint32_t value;
+} *float_constants = NULL;
+
+static uint32_t get_float_constant(float value) {
+	uint32_t index = hmget(float_constants, value);
+	if (index == 0) {
+		index = allocate_index();
+		hmput(float_constants, value, index);
 	}
 	return index;
 }
@@ -525,6 +539,8 @@ static void write_function(instructions_buffer *instructions, function *f) {
 			break;
 		}
 		case OPCODE_LOAD_CONSTANT: {
+			uint32_t spirv_id = get_float_constant(o->op_load_constant.number);
+			hmput(index_map, o->op_load_constant.to.index, spirv_id);
 			break;
 		}
 		case OPCODE_CALL: {
@@ -663,6 +679,7 @@ static void spirv_export_fragment(char *directory, function *main) {
 void spirv_export(char *directory) {
 	hmdefault(index_map, 0);
 	hmdefault(int_constants, 0);
+	hmdefault(float_constants, 0);
 
 	function *vertex_shaders[256];
 	size_t vertex_shaders_size = 0;
