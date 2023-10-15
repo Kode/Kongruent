@@ -19,9 +19,56 @@ typedef struct instructions_buffer {
 	size_t offset;
 } instructions_buffer;
 
-static void write_bytecode(char *directory, const char *filename, const char *name, instructions_buffer *instructions) {
-	uint8_t *output = (uint8_t *)instructions->instructions;
-	size_t output_size = instructions->offset * 4;
+static void write_buffer(FILE *file, uint8_t *output, size_t output_size) {
+	for (size_t i = 0; i < output_size; ++i) {
+		// based on the encoding described in https://github.com/adobe/bin2c
+		if (output[i] == '!' || output[i] == '#' || (output[i] >= '%' && output[i] <= '>') || (output[i] >= 'A' && output[i] <= '[') ||
+		    (output[i] >= ']' && output[i] <= '~')) {
+			fprintf(file, "%c", output[i]);
+		}
+		else if (output[i] == '\a') {
+			fprintf(file, "\\a");
+		}
+		else if (output[i] == '\b') {
+			fprintf(file, "\\b");
+		}
+		else if (output[i] == '\t') {
+			fprintf(file, "\\t");
+		}
+		else if (output[i] == '\v') {
+			fprintf(file, "\\v");
+		}
+		else if (output[i] == '\f') {
+			fprintf(file, "\\f");
+		}
+		else if (output[i] == '\r') {
+			fprintf(file, "\\r");
+		}
+		else if (output[i] == '\"') {
+			fprintf(file, "\\\"");
+		}
+		else if (output[i] == '\\') {
+			fprintf(file, "\\\\");
+		}
+		else {
+			fprintf(file, "\\%03o", output[i]);
+		}
+	}
+}
+
+static void write_bytecode(char *directory, const char *filename, const char *name, instructions_buffer *header, instructions_buffer *decorations,
+                           instructions_buffer *constants, instructions_buffer *instructions) {
+	uint8_t *output_header = (uint8_t *)header->instructions;
+	size_t output_header_size = header->offset * 4;
+
+	uint8_t *output_decorations = (uint8_t *)decorations->instructions;
+	size_t output_decorations_size = decorations->offset * 4;
+
+	uint8_t *output_constants = (uint8_t *)constants->instructions;
+	size_t output_constants_size = constants->offset * 4;
+
+	uint8_t *output_instructions = (uint8_t *)instructions->instructions;
+	size_t output_instructions_size = instructions->offset * 4;
 
 	char full_filename[512];
 
@@ -42,43 +89,13 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 		fprintf(file, "#include \"%s.h\"\n\n", filename);
 
 		fprintf(file, "uint8_t *%s = \"", name);
-		for (size_t i = 0; i < output_size; ++i) {
-			// based on the encoding described in https://github.com/adobe/bin2c
-			if (output[i] == '!' || output[i] == '#' || (output[i] >= '%' && output[i] <= '>') || (output[i] >= 'A' && output[i] <= '[') ||
-			    (output[i] >= ']' && output[i] <= '~')) {
-				fprintf(file, "%c", output[i]);
-			}
-			else if (output[i] == '\a') {
-				fprintf(file, "\\a");
-			}
-			else if (output[i] == '\b') {
-				fprintf(file, "\\b");
-			}
-			else if (output[i] == '\t') {
-				fprintf(file, "\\t");
-			}
-			else if (output[i] == '\v') {
-				fprintf(file, "\\v");
-			}
-			else if (output[i] == '\f') {
-				fprintf(file, "\\f");
-			}
-			else if (output[i] == '\r') {
-				fprintf(file, "\\r");
-			}
-			else if (output[i] == '\"') {
-				fprintf(file, "\\\"");
-			}
-			else if (output[i] == '\\') {
-				fprintf(file, "\\\\");
-			}
-			else {
-				fprintf(file, "\\%03o", output[i]);
-			}
-		}
+		write_buffer(file, output_header, output_header_size);
+		write_buffer(file, output_decorations, output_decorations_size);
+		write_buffer(file, output_constants, output_constants_size);
+		write_buffer(file, output_instructions, output_instructions_size);
 		fprintf(file, "\";\n");
 
-		fprintf(file, "size_t %s_size = %zu;\n\n", name, output_size);
+		fprintf(file, "size_t %s_size = %zu;\n\n", name, output_header_size + output_decorations_size + output_constants_size + output_instructions_size);
 
 		fclose(file);
 	}
@@ -87,7 +104,10 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 	{
 		sprintf(full_filename, "%s/%s.spirv", directory, filename);
 		FILE *file = fopen(full_filename, "wb");
-		fwrite(output, 1, output_size, file);
+		fwrite(output_header, 1, output_header_size, file);
+		fwrite(output_decorations, 1, output_decorations_size, file);
+		fwrite(output_constants, 1, output_constants_size, file);
+		fwrite(output_instructions, 1, output_instructions_size, file);
 		fclose(file);
 	}
 #endif
@@ -297,19 +317,21 @@ static uint32_t void_type;
 static uint32_t void_function_type;
 static uint32_t spirv_float_type;
 static uint32_t float_input_pointer_type;
+static uint32_t spirv_int_type;
+static uint32_t spirv_uint_type;
 
-static void write_types(instructions_buffer *instructions, type_id vertex_input) {
-	void_type = write_type_void(instructions);
+static void write_types(instructions_buffer *constants, instructions_buffer *instructions, type_id vertex_input) {
+	void_type = write_type_void(constants);
 
-	void_function_type = write_type_function(instructions, void_type, NULL, 0);
+	void_function_type = write_type_function(constants, void_type, NULL, 0);
 
-	spirv_float_type = write_type_float(instructions, 32);
+	spirv_float_type = write_type_float(constants, 32);
 
-	uint32_t float2_type = write_type_vector(instructions, spirv_float_type, 2);
-	uint32_t float3_type = write_type_vector(instructions, spirv_float_type, 3);
-	uint32_t float4_type = write_type_vector(instructions, spirv_float_type, 4);
-	uint32_t uint_type = write_type_int(instructions, 32, false);
-	uint32_t int_type = write_type_int(instructions, 32, true);
+	uint32_t float2_type = write_type_vector(constants, spirv_float_type, 2);
+	uint32_t float3_type = write_type_vector(constants, spirv_float_type, 3);
+	uint32_t float4_type = write_type_vector(constants, spirv_float_type, 4);
+	spirv_uint_type = write_type_int(constants, 32, false);
+	spirv_int_type = write_type_int(constants, 32, true);
 
 	uint32_t types[] = {float4_type};
 	uint32_t input_struct_type = write_type_struct(instructions, types, 1);
@@ -341,9 +363,7 @@ static void write_types(instructions_buffer *instructions, type_id vertex_input)
 	float_input_pointer_type = write_type_pointer(instructions, STORAGE_CLASS_INPUT, spirv_float_type);
 }
 
-static uint32_t write_constant(instructions_buffer *instructions, uint32_t type, uint32_t value) {
-	uint32_t value_id = allocate_index();
-
+static uint32_t write_constant(instructions_buffer *instructions, uint32_t type, uint32_t value_id, uint32_t value) {
 	uint32_t operands[3];
 	operands[0] = type;
 	operands[1] = value_id;
@@ -352,12 +372,17 @@ static uint32_t write_constant(instructions_buffer *instructions, uint32_t type,
 	return value_id;
 }
 
-static uint32_t write_constant_float(instructions_buffer *instructions, float value) {
+static uint32_t write_constant_int(instructions_buffer *instructions, uint32_t value_id, int32_t value) {
 	uint32_t uint32_value = *(uint32_t *)&value;
-	return write_constant(instructions, spirv_float_type, uint32_value);
+	return write_constant(instructions, spirv_int_type, value_id, uint32_value);
 }
 
-void write_vertex_output_decorations(instructions_buffer *instructions, uint32_t output_struct) {
+static uint32_t write_constant_float(instructions_buffer *instructions, uint32_t value_id, float value) {
+	uint32_t uint32_value = *(uint32_t *)&value;
+	return write_constant(instructions, spirv_float_type, value_id, uint32_value);
+}
+
+static void write_vertex_output_decorations(instructions_buffer *instructions, uint32_t output_struct) {
 	uint32_t operands[4];
 	operands[0] = output_struct;
 	operands[1] = 0;
@@ -366,7 +391,7 @@ void write_vertex_output_decorations(instructions_buffer *instructions, uint32_t
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_MEMBER_DECORATE, operands);
 }
 
-void write_vertex_input_decorations(instructions_buffer *instructions, uint32_t *inputs, uint32_t inputs_size) {
+static void write_vertex_input_decorations(instructions_buffer *instructions, uint32_t *inputs, uint32_t inputs_size) {
 	for (uint32_t i = 0; i < inputs_size; ++i) {
 		uint32_t operands[3];
 		operands[0] = inputs[i];
@@ -397,29 +422,43 @@ uint32_t write_label(instructions_buffer *instructions) {
 	return result;
 }
 
-void write_return(instructions_buffer *instructions) {
+static void write_return(instructions_buffer *instructions) {
 	write_simple_instruction(instructions, SPIRV_OPCODE_RETURN);
 }
 
-void write_function_end(instructions_buffer *instructions) {
+static void write_function_end(instructions_buffer *instructions) {
 	write_simple_instruction(instructions, SPIRV_OPCODE_FUNCTION_END);
 }
 
-uint32_t write_op_access_chain(instructions_buffer *instructions, uint32_t result_type, uint32_t base, uint32_t *indices, uint16_t indices_size) {
+static struct {
+	int key;
+	uint32_t value;
+} *int_constants = NULL;
+
+static uint32_t get_int_constant(int value) {
+	uint32_t index = hmget(int_constants, value);
+	if (index == 0) {
+		index = allocate_index();
+		hmput(int_constants, value, index);
+	}
+	return index;
+}
+
+static uint32_t write_op_access_chain(instructions_buffer *instructions, uint32_t result_type, uint32_t base, int *indices, uint16_t indices_size) {
 	uint32_t pointer = allocate_index();
 
 	operands_buffer[0] = result_type;
 	operands_buffer[1] = pointer;
 	operands_buffer[2] = base;
 	for (uint16_t i = 0; i < indices_size; ++i) {
-		operands_buffer[i + 3] = indices[i];
+		operands_buffer[i + 3] = get_int_constant(indices[i]);
 	}
 
 	write_instruction(instructions, 4 + indices_size, SPIRV_OPCODE_ACCESS_CHAIN, operands_buffer);
 	return pointer;
 }
 
-uint32_t write_op_load(instructions_buffer *instructions, uint32_t result_type, uint32_t pointer) {
+static uint32_t write_op_load(instructions_buffer *instructions, uint32_t result_type, uint32_t pointer) {
 	uint32_t result = allocate_index();
 
 	uint32_t operands[3];
@@ -433,18 +472,18 @@ uint32_t write_op_load(instructions_buffer *instructions, uint32_t result_type, 
 static struct {
 	uint64_t key;
 	uint32_t value;
-} *hash = NULL;
+} *index_map = NULL;
 
-uint32_t convert_kong_index_to_spirv_index(uint64_t index) {
-	uint32_t spirv_index = hmget(hash, index);
+static uint32_t convert_kong_index_to_spirv_index(uint64_t index) {
+	uint32_t spirv_index = hmget(index_map, index);
 	if (spirv_index == 0) {
 		spirv_index = allocate_index();
-		hmput(hash, index, spirv_index);
+		hmput(index_map, index, spirv_index);
 	}
 	return spirv_index;
 }
 
-void write_function(instructions_buffer *instructions, function *f) {
+static void write_function(instructions_buffer *instructions, function *f) {
 	write_op_function(instructions, void_type, FUNCTION_CONTROL_NONE, void_function_type);
 	write_label(instructions);
 
@@ -475,10 +514,10 @@ void write_function(instructions_buffer *instructions, function *f) {
 			break;
 		}
 		case OPCODE_LOAD_MEMBER: {
-			uint32_t indices[256];
+			int indices[256];
 			uint16_t indices_size = o->op_load_member.member_indices_size;
 			for (size_t i = 0; i < indices_size; ++i) {
-				indices[i] = o->op_load_member.member_indices[i];
+				indices[i] = (int)o->op_load_member.member_indices[i];
 			}
 			uint32_t pointer = write_op_access_chain(instructions, float_input_pointer_type, convert_kong_index_to_spirv_index(o->op_load_member.from.index),
 			                                         indices, indices_size);
@@ -515,13 +554,29 @@ void write_function(instructions_buffer *instructions, function *f) {
 	write_function_end(instructions);
 }
 
-void write_functions(instructions_buffer *instructions, function *main) {
+static void write_functions(instructions_buffer *instructions, function *main) {
 	write_function(instructions, main);
+}
+
+static void write_constants(instructions_buffer *instructions) {
+	for (unsigned i = 0; i < hmlenu(int_constants); ++i) {
+		ptrdiff_t index = hmgeti(int_constants, i);
+		write_constant_int(instructions, int_constants[index].value, int_constants[index].key);
+	}
 }
 
 static void spirv_export_vertex(char *directory, function *main) {
 	instructions_buffer instructions = {0};
 	instructions.instructions = (uint32_t *)calloc(1024 * 1024, 1);
+
+	instructions_buffer header = {0};
+	header.instructions = (uint32_t *)calloc(1024 * 1024, 1);
+
+	instructions_buffer decorations = {0};
+	decorations.instructions = (uint32_t *)calloc(1024 * 1024, 1);
+
+	instructions_buffer constants = {0};
+	constants.instructions = (uint32_t *)calloc(1024 * 1024, 1);
 
 	type_id vertex_input = main->parameter_type.type;
 	type_id vertex_output = main->return_type.type;
@@ -530,29 +585,32 @@ static void spirv_export_vertex(char *directory, function *main) {
 	check(vertex_input != NO_TYPE, context, "vertex input missing");
 	check(vertex_output != NO_TYPE, context, "vertex output missing");
 
-	write_magic_number(&instructions);
-	write_version_number(&instructions);
-	write_generator_magic_number(&instructions);
-	write_bound(&instructions);
-	write_instruction_schema(&instructions);
-
-	write_capabilities(&instructions);
-	write_op_ext_inst_import(&instructions, "GLSL.std.450");
-	write_op_memory_model(&instructions, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
+	write_capabilities(&decorations);
+	write_op_ext_inst_import(&decorations, "GLSL.std.450");
+	write_op_memory_model(&decorations, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
 	uint32_t entry_point = allocate_index();
 	uint32_t interfaces[] = {3, 4};
-	write_op_entry_point(&instructions, EXECUTION_MODEL_VERTEX, entry_point, "main", interfaces, sizeof(interfaces) / 4);
+	write_op_entry_point(&decorations, EXECUTION_MODEL_VERTEX, entry_point, "main", interfaces, sizeof(interfaces) / 4);
 
 	uint32_t output_struct = allocate_index();
-	write_vertex_output_decorations(&instructions, output_struct);
+	write_vertex_output_decorations(&decorations, output_struct);
 
 	uint32_t inputs[256];
 	inputs[0] = allocate_index();
-	write_vertex_input_decorations(&instructions, inputs, 1);
+	write_vertex_input_decorations(&decorations, inputs, 1);
 
-	write_types(&instructions, vertex_input);
+	write_types(&constants, &instructions, vertex_input);
 
 	write_functions(&instructions, main);
+
+	// header
+	write_magic_number(&header);
+	write_version_number(&header);
+	write_generator_magic_number(&header);
+	write_bound(&header);
+	write_instruction_schema(&header);
+
+	write_constants(&constants);
 
 	char *name = get_name(main->name);
 
@@ -562,12 +620,21 @@ static void spirv_export_vertex(char *directory, function *main) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(directory, filename, var_name, &instructions);
+	write_bytecode(directory, filename, var_name, &header, &decorations, &constants, &instructions);
 }
 
 static void spirv_export_fragment(char *directory, function *main) {
 	instructions_buffer instructions = {0};
 	instructions.instructions = (uint32_t *)calloc(1024 * 1024, 1);
+
+	instructions_buffer header = {0};
+	header.instructions = (uint32_t *)calloc(1024 * 1024, 1);
+
+	instructions_buffer decorations = {0};
+	decorations.instructions = (uint32_t *)calloc(1024 * 1024, 1);
+
+	instructions_buffer constants = {0};
+	constants.instructions = (uint32_t *)calloc(1024 * 1024, 1);
 
 	type_id pixel_input = main->parameter_type.type;
 
@@ -590,11 +657,12 @@ static void spirv_export_fragment(char *directory, function *main) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(directory, filename, var_name, &instructions);
+	write_bytecode(directory, filename, var_name, &header, &decorations, &constants, &instructions);
 }
 
 void spirv_export(char *directory) {
-	hmdefault(hash, 0);
+	hmdefault(index_map, 0);
+	hmdefault(int_constants, 0);
 
 	function *vertex_shaders[256];
 	size_t vertex_shaders_size = 0;
