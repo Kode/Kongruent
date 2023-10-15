@@ -132,6 +132,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_ACCESS_CHAIN = 65,
 	SPIRV_OPCODE_DECORATE = 71,
 	SPIRV_OPCODE_MEMBER_DECORATE = 72,
+	SPIRV_OPCODE_COMPOSITE_CONSTRUCT = 80,
 	SPIRV_OPCODE_RETURN = 253,
 	SPIRV_OPCODE_LABEL = 248
 } spirv_opcode;
@@ -319,6 +320,9 @@ static uint32_t spirv_float_type;
 static uint32_t float_input_pointer_type;
 static uint32_t spirv_int_type;
 static uint32_t spirv_uint_type;
+static uint32_t spirv_float2_type;
+static uint32_t spirv_float3_type;
+static uint32_t spirv_float4_type;
 
 static void write_types(instructions_buffer *constants, instructions_buffer *instructions, type_id vertex_input) {
 	void_type = write_type_void(constants);
@@ -327,16 +331,16 @@ static void write_types(instructions_buffer *constants, instructions_buffer *ins
 
 	spirv_float_type = write_type_float(constants, 32);
 
-	uint32_t float2_type = write_type_vector(constants, spirv_float_type, 2);
-	uint32_t float3_type = write_type_vector(constants, spirv_float_type, 3);
-	uint32_t float4_type = write_type_vector(constants, spirv_float_type, 4);
+	spirv_float2_type = write_type_vector(constants, spirv_float_type, 2);
+	spirv_float3_type = write_type_vector(constants, spirv_float_type, 3);
+	spirv_float4_type = write_type_vector(constants, spirv_float_type, 4);
 	spirv_uint_type = write_type_int(constants, 32, false);
 	spirv_int_type = write_type_int(constants, 32, true);
 
-	uint32_t types[] = {float4_type};
+	uint32_t types[] = {spirv_float4_type};
 	uint32_t input_struct_type = write_type_struct(instructions, types, 1);
 	uint32_t input_struct_pointer_type = write_type_pointer(instructions, STORAGE_CLASS_OUTPUT, input_struct_type);
-	uint32_t input_float4_pointer_type = write_type_pointer(instructions, STORAGE_CLASS_OUTPUT, float4_type);
+	uint32_t input_float4_pointer_type = write_type_pointer(instructions, STORAGE_CLASS_OUTPUT, spirv_float4_type);
 
 	uint32_t input_pointer_types[256];
 
@@ -346,13 +350,13 @@ static void write_types(instructions_buffer *constants, instructions_buffer *ins
 	for (size_t i = 0; i < input->members.size; ++i) {
 		member m = input->members.m[i];
 		if (m.type.type == float2_id) {
-			input_pointer_types[i] = write_type_pointer(instructions, STORAGE_CLASS_INPUT, float2_type);
+			input_pointer_types[i] = write_type_pointer(instructions, STORAGE_CLASS_INPUT, spirv_float2_type);
 		}
 		else if (m.type.type == float3_id) {
-			input_pointer_types[i] = write_type_pointer(instructions, STORAGE_CLASS_INPUT, float3_type);
+			input_pointer_types[i] = write_type_pointer(instructions, STORAGE_CLASS_INPUT, spirv_float3_type);
 		}
 		else if (m.type.type == float4_id) {
-			input_pointer_types[i] = write_type_pointer(instructions, STORAGE_CLASS_INPUT, float4_type);
+			input_pointer_types[i] = write_type_pointer(instructions, STORAGE_CLASS_INPUT, spirv_float4_type);
 		}
 		else {
 			debug_context context = {0};
@@ -483,6 +487,18 @@ static uint32_t write_op_load(instructions_buffer *instructions, uint32_t result
 	return result;
 }
 
+static uint32_t write_op_composite_construct(instructions_buffer *instructions, uint32_t type, uint32_t *constituents, uint16_t constituents_size) {
+	uint32_t result = allocate_index();
+
+	operands_buffer[0] = type;
+	operands_buffer[1] = result;
+	for (uint16_t i = 0; i < constituents_size; ++i) {
+		operands_buffer[i + 2] = constituents[i];
+	}
+	write_instruction(instructions, 3 + constituents_size, SPIRV_OPCODE_COMPOSITE_CONSTRUCT, operands_buffer);
+	return result;
+}
+
 static struct {
 	uint64_t key;
 	uint32_t value;
@@ -536,6 +552,7 @@ static void write_function(instructions_buffer *instructions, function *f) {
 			uint32_t pointer = write_op_access_chain(instructions, float_input_pointer_type, convert_kong_index_to_spirv_index(o->op_load_member.from.index),
 			                                         indices, indices_size);
 			uint32_t value = write_op_load(instructions, spirv_float_type, pointer);
+			hmput(index_map, o->op_load_member.to.index, value);
 			break;
 		}
 		case OPCODE_LOAD_CONSTANT: {
@@ -544,6 +561,45 @@ static void write_function(instructions_buffer *instructions, function *f) {
 			break;
 		}
 		case OPCODE_CALL: {
+			debug_context context = {0};
+			if (o->op_call.func == add_name("sample")) {
+			}
+			else if (o->op_call.func == add_name("sample_lod")) {
+			}
+			else {
+				if (o->op_call.func == add_name("float2")) {
+					uint32_t constituents[2];
+					for (int i = 0; i < 2; ++i) {
+						constituents[i] = convert_kong_index_to_spirv_index(o->op_call.parameters[i].index);
+					}
+					write_op_composite_construct(instructions, spirv_float2_type, constituents, 2);
+				}
+				else if (o->op_call.func == add_name("float3")) {
+					uint32_t constituents[3];
+					for (int i = 0; i < 3; ++i) {
+						constituents[i] = convert_kong_index_to_spirv_index(o->op_call.parameters[i].index);
+					}
+					write_op_composite_construct(instructions, spirv_float3_type, constituents, 3);
+				}
+				else if (o->op_call.func == add_name("float4")) {
+					uint32_t constituents[4];
+					for (int i = 0; i < 4; ++i) {
+						constituents[i] = convert_kong_index_to_spirv_index(o->op_call.parameters[i].index);
+					}
+					write_op_composite_construct(instructions, spirv_float4_type, constituents, 4);
+				}
+				else {
+				}
+
+				/**offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index,
+				                   function_string(o->op_call.func));
+				if (o->op_call.parameters_size > 0) {
+				    *offset += sprintf(&code[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
+				    for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
+				        *offset += sprintf(&code[*offset], ", _%" PRIu64, o->op_call.parameters[i].index);
+				    }
+				}*/
+			}
 			break;
 		}
 		case OPCODE_STORE_MEMBER: {
@@ -575,13 +631,53 @@ static void write_functions(instructions_buffer *instructions, function *main) {
 }
 
 static void write_constants(instructions_buffer *instructions) {
-	for (unsigned i = 0; i < hmlenu(int_constants); ++i) {
-		ptrdiff_t index = hmgeti(int_constants, i);
-		write_constant_int(instructions, int_constants[index].value, int_constants[index].key);
+	size_t size = hmlenu(int_constants);
+	for (size_t i = 0; i < size; ++i) {
+		write_constant_int(instructions, int_constants[i].value, int_constants[i].key);
+	}
+
+	size = hmlenu(float_constants);
+	for (size_t i = 0; i < size; ++i) {
+		write_constant_float(instructions, float_constants[i].value, float_constants[i].key);
 	}
 }
 
+static void init_index_map(void) {
+	hmdefault(index_map, 0);
+	size_t size = hmlenu(index_map);
+	for (size_t i = 0; i < size; ++i) {
+		ptrdiff_t index = hmgeti(index_map, i);
+		hmdel(index_map, index_map[index].key);
+	}
+}
+
+static void init_int_constants(void) {
+	hmdefault(int_constants, 0);
+	size_t size = hmlenu(int_constants);
+	for (size_t i = 0; i < size; ++i) {
+		ptrdiff_t index = hmgeti(int_constants, i);
+		hmdel(int_constants, int_constants[index].key);
+	}
+}
+
+static void init_float_constants(void) {
+	hmdefault(float_constants, 0);
+	size_t size = hmlenu(float_constants);
+	for (size_t i = 0; i < size; ++i) {
+		ptrdiff_t index = hmgeti(float_constants, i);
+		hmdel(float_constants, float_constants[index].key);
+	}
+}
+
+void init_maps(void) {
+	init_index_map();
+	init_int_constants();
+	init_float_constants();
+}
+
 static void spirv_export_vertex(char *directory, function *main) {
+	init_maps();
+
 	instructions_buffer instructions = {0};
 	instructions.instructions = (uint32_t *)calloc(1024 * 1024, 1);
 
@@ -640,6 +736,8 @@ static void spirv_export_vertex(char *directory, function *main) {
 }
 
 static void spirv_export_fragment(char *directory, function *main) {
+	init_maps();
+
 	instructions_buffer instructions = {0};
 	instructions.instructions = (uint32_t *)calloc(1024 * 1024, 1);
 
@@ -677,10 +775,6 @@ static void spirv_export_fragment(char *directory, function *main) {
 }
 
 void spirv_export(char *directory) {
-	hmdefault(index_map, 0);
-	hmdefault(int_constants, 0);
-	hmdefault(float_constants, 0);
-
 	function *vertex_shaders[256];
 	size_t vertex_shaders_size = 0;
 
