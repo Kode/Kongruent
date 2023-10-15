@@ -1,8 +1,13 @@
 #include "spirv.h"
 
+#include "../compiler.h"
 #include "../errors.h"
 #include "../functions.h"
+#include "../parser.h"
 #include "../shader_stage.h"
+#include "../types.h"
+
+#include "../libs/stb_ds.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -103,6 +108,8 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_CONSTANT = 43,
 	SPIRV_OPCODE_FUNCTION = 54,
 	SPIRV_OPCODE_FUNCTION_END = 56,
+	SPIRV_OPCODE_LOAD = 61,
+	SPIRV_OPCODE_ACCESS_CHAIN = 65,
 	SPIRV_OPCODE_DECORATE = 71,
 	SPIRV_OPCODE_MEMBER_DECORATE = 72,
 	SPIRV_OPCODE_RETURN = 253,
@@ -289,6 +296,7 @@ static uint32_t write_type_pointer(instructions_buffer *instructions, storage_cl
 static uint32_t void_type;
 static uint32_t void_function_type;
 static uint32_t spirv_float_type;
+static uint32_t float_input_pointer_type;
 
 static void write_types(instructions_buffer *instructions, type_id vertex_input) {
 	void_type = write_type_void(instructions);
@@ -330,7 +338,7 @@ static void write_types(instructions_buffer *instructions, type_id vertex_input)
 		}
 	}
 
-	uint32_t float_input_pointer_type = write_type_pointer(instructions, STORAGE_CLASS_INPUT, spirv_float_type);
+	float_input_pointer_type = write_type_pointer(instructions, STORAGE_CLASS_INPUT, spirv_float_type);
 }
 
 static uint32_t write_constant(instructions_buffer *instructions, uint32_t type, uint32_t value) {
@@ -368,7 +376,7 @@ void write_vertex_input_decorations(instructions_buffer *instructions, uint32_t 
 	}
 }
 
-uint32_t write_function(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type) {
+uint32_t write_op_function(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type) {
 	uint32_t result = allocate_index();
 
 	uint32_t operands[4];
@@ -397,12 +405,118 @@ void write_function_end(instructions_buffer *instructions) {
 	write_simple_instruction(instructions, SPIRV_OPCODE_FUNCTION_END);
 }
 
-void write_functions(instructions_buffer *instructions) {
-	// main
-	write_function(instructions, void_type, FUNCTION_CONTROL_NONE, void_function_type);
+uint32_t write_op_access_chain(instructions_buffer *instructions, uint32_t result_type, uint32_t base, uint32_t *indices, uint16_t indices_size) {
+	uint32_t pointer = allocate_index();
+
+	operands_buffer[0] = result_type;
+	operands_buffer[1] = pointer;
+	operands_buffer[2] = base;
+	for (uint16_t i = 0; i < indices_size; ++i) {
+		operands_buffer[i + 3] = indices[i];
+	}
+
+	write_instruction(instructions, 4 + indices_size, SPIRV_OPCODE_ACCESS_CHAIN, operands_buffer);
+	return pointer;
+}
+
+uint32_t write_op_load(instructions_buffer *instructions, uint32_t result_type, uint32_t pointer) {
+	uint32_t result = allocate_index();
+
+	uint32_t operands[3];
+	operands[0] = result_type;
+	operands[1] = result;
+	operands[2] = pointer;
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_LOAD, operands);
+	return result;
+}
+
+static struct {
+	uint64_t key;
+	uint32_t value;
+} *hash = NULL;
+
+uint32_t convert_kong_index_to_spirv_index(uint64_t index) {
+	uint32_t spirv_index = hmget(hash, index);
+	if (spirv_index == 0) {
+		spirv_index = allocate_index();
+		hmput(hash, index, spirv_index);
+	}
+	return spirv_index;
+}
+
+void write_function(instructions_buffer *instructions, function *f) {
+	write_op_function(instructions, void_type, FUNCTION_CONTROL_NONE, void_function_type);
 	write_label(instructions);
-	write_return(instructions);
+
+	debug_context context = {0};
+	check(f->block != NULL, context, "Function block missing");
+
+	uint8_t *data = f->code.o;
+	size_t size = f->code.size;
+
+	uint64_t parameter_id = 0;
+	for (size_t i = 0; i < f->block->block.vars.size; ++i) {
+		if (f->parameter_name == f->block->block.vars.v[i].name) {
+			parameter_id = f->block->block.vars.v[i].variable_id;
+			break;
+		}
+	}
+
+	check(parameter_id != 0, context, "Parameter not found");
+
+	bool ends_with_return = false;
+
+	size_t index = 0;
+	while (index < size) {
+		ends_with_return = false;
+		opcode *o = (opcode *)&data[index];
+		switch (o->type) {
+		case OPCODE_VAR: {
+			break;
+		}
+		case OPCODE_LOAD_MEMBER: {
+			uint32_t indices[256];
+			uint16_t indices_size = o->op_load_member.member_indices_size;
+			for (size_t i = 0; i < indices_size; ++i) {
+				indices[i] = o->op_load_member.member_indices[i];
+			}
+			uint32_t pointer = write_op_access_chain(instructions, float_input_pointer_type, convert_kong_index_to_spirv_index(o->op_load_member.from.index),
+			                                         indices, indices_size);
+			uint32_t value = write_op_load(instructions, spirv_float_type, pointer);
+			break;
+		}
+		case OPCODE_LOAD_CONSTANT: {
+			break;
+		}
+		case OPCODE_CALL: {
+			break;
+		}
+		case OPCODE_STORE_MEMBER: {
+			break;
+		}
+		case OPCODE_RETURN: {
+			write_return(instructions);
+			ends_with_return = true;
+			break;
+		}
+		default: {
+			debug_context context = {0};
+			error(context, "Opcode not implemented for SPIR-V");
+			break;
+		}
+		}
+
+		index += o->size;
+	}
+
+	if (!ends_with_return) {
+		write_return(instructions);
+	}
 	write_function_end(instructions);
+}
+
+void write_functions(instructions_buffer *instructions, function *main) {
+	write_function(instructions, main);
 }
 
 static void spirv_export_vertex(char *directory, function *main) {
@@ -438,7 +552,7 @@ static void spirv_export_vertex(char *directory, function *main) {
 
 	write_types(&instructions, vertex_input);
 
-	write_functions(&instructions);
+	write_functions(&instructions, main);
 
 	char *name = get_name(main->name);
 
@@ -480,6 +594,8 @@ static void spirv_export_fragment(char *directory, function *main) {
 }
 
 void spirv_export(char *directory) {
+	hmdefault(hash, 0);
+
 	function *vertex_shaders[256];
 	size_t vertex_shaders_size = 0;
 
