@@ -128,6 +128,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_CONSTANT = 43,
 	SPIRV_OPCODE_FUNCTION = 54,
 	SPIRV_OPCODE_FUNCTION_END = 56,
+	SPIRV_OPCODE_VARIABLE = 59,
 	SPIRV_OPCODE_LOAD = 61,
 	SPIRV_OPCODE_STORE = 62,
 	SPIRV_OPCODE_ACCESS_CHAIN = 65,
@@ -150,7 +151,7 @@ typedef enum decoration { DECORATION_BUILTIN = 11, DECORATION_LOCATION = 30 } de
 
 typedef enum builtin { BUILTIN_POSITION = 0 } builtin;
 
-typedef enum storage_class { STORAGE_CLASS_INPUT = 1, STORAGE_CLASS_OUTPUT = 3 } storage_class;
+typedef enum storage_class { STORAGE_CLASS_INPUT = 1, STORAGE_CLASS_OUTPUT = 3, STORAGE_CLASS_FUNCTION = 7 } storage_class;
 
 typedef enum function_control { FUNCTION_CONTROL_NONE } function_control;
 
@@ -325,23 +326,43 @@ static uint32_t spirv_float2_type;
 static uint32_t spirv_float3_type;
 static uint32_t spirv_float4_type;
 
+static struct {
+	type_id key;
+	uint32_t value;
+} *type_map = NULL;
+
+static uint32_t convert_type_to_spirv_index(type_id type) {
+	uint32_t spirv_index = hmget(type_map, type);
+	if (spirv_index == 0) {
+		spirv_index = allocate_index();
+		hmput(type_map, type, spirv_index);
+	}
+	return spirv_index;
+}
+
 static void write_types(instructions_buffer *constants, instructions_buffer *instructions, type_id vertex_input) {
 	void_type = write_type_void(constants);
 
 	void_function_type = write_type_function(constants, void_type, NULL, 0);
 
 	spirv_float_type = write_type_float(constants, 32);
+	hmput(type_map, float_id, spirv_float_type);
 
 	spirv_float2_type = write_type_vector(constants, spirv_float_type, 2);
+	hmput(type_map, float2_id, spirv_float2_type);
 	spirv_float3_type = write_type_vector(constants, spirv_float_type, 3);
+	hmput(type_map, float3_id, spirv_float3_type);
 	spirv_float4_type = write_type_vector(constants, spirv_float_type, 4);
+	hmput(type_map, float4_id, spirv_float4_type);
+
 	spirv_uint_type = write_type_int(constants, 32, false);
 	spirv_int_type = write_type_int(constants, 32, true);
 
-	uint32_t types[] = {spirv_float4_type};
+	uint32_t types[] = {spirv_float3_type};
 	uint32_t input_struct_type = write_type_struct(instructions, types, 1);
+	hmput(type_map, vertex_input, input_struct_type);
 	uint32_t input_struct_pointer_type = write_type_pointer(instructions, STORAGE_CLASS_OUTPUT, input_struct_type);
-	uint32_t input_float4_pointer_type = write_type_pointer(instructions, STORAGE_CLASS_OUTPUT, spirv_float4_type);
+	uint32_t input_float3_pointer_type = write_type_pointer(instructions, STORAGE_CLASS_OUTPUT, spirv_float3_type);
 
 	uint32_t input_pointer_types[256];
 
@@ -507,6 +528,28 @@ static uint32_t write_op_composite_construct(instructions_buffer *instructions, 
 	return result;
 }
 
+static uint32_t write_op_variable(instructions_buffer *instructions, uint32_t result_type, storage_class storage) {
+	uint32_t result = allocate_index();
+
+	uint32_t operands[3];
+	operands[0] = result_type;
+	operands[1] = result;
+	operands[2] = (uint32_t)storage;
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_VARIABLE, operands);
+	return result;
+}
+
+static uint32_t write_op_variable_with_initializer(instructions_buffer *instructions, uint32_t result_type, storage_class storage, uint32_t initializer) {
+	uint32_t result = allocate_index();
+
+	uint32_t operands[4];
+	operands[0] = result_type;
+	operands[1] = result;
+	operands[2] = (uint32_t)storage;
+	operands[3] = initializer;
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_VARIABLE, operands);
+}
+
 static struct {
 	uint64_t key;
 	uint32_t value;
@@ -549,6 +592,8 @@ static void write_function(instructions_buffer *instructions, function *f) {
 		opcode *o = (opcode *)&data[index];
 		switch (o->type) {
 		case OPCODE_VAR: {
+			uint32_t result = write_op_variable(instructions, convert_type_to_spirv_index(o->op_var.var.type.type), STORAGE_CLASS_FUNCTION);
+			hmput(index_map, o->op_var.var.index, result);
 			break;
 		}
 		case OPCODE_LOAD_MEMBER: {
@@ -670,6 +715,15 @@ static void init_index_map(void) {
 	}
 }
 
+static void init_type_map(void) {
+	hmdefault(type_map, 0);
+	size_t size = hmlenu(type_map);
+	for (size_t i = 0; i < size; ++i) {
+		ptrdiff_t index = hmgeti(type_map, i);
+		hmdel(type_map, type_map[index].key);
+	}
+}
+
 static void init_int_constants(void) {
 	hmdefault(int_constants, 0);
 	size_t size = hmlenu(int_constants);
@@ -690,6 +744,7 @@ static void init_float_constants(void) {
 
 void init_maps(void) {
 	init_index_map();
+	init_type_map();
 	init_int_constants();
 	init_float_constants();
 }
