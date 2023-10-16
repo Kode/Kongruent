@@ -548,6 +548,7 @@ static uint32_t write_op_variable_with_initializer(instructions_buffer *instruct
 	operands[2] = (uint32_t)storage;
 	operands[3] = initializer;
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_VARIABLE, operands);
+	return result;
 }
 
 static struct {
