@@ -575,6 +575,9 @@ static uint32_t convert_kong_index_to_spirv_index(uint64_t index) {
 	return spirv_index;
 }
 
+static uint32_t output_var;
+static uint32_t input_var;
+
 static void write_function(instructions_buffer *instructions, function *f, shader_stage stage, bool main, type_id input, uint32_t input_var, type_id output,
                            uint32_t output_var) {
 	write_op_function(instructions, void_type, FUNCTION_CONTROL_NONE, void_function_type);
@@ -695,7 +698,38 @@ static void write_function(instructions_buffer *instructions, function *f, shade
 			break;
 		}
 		case OPCODE_RETURN: {
-			write_return(instructions);
+			if (main) {
+				type *output_type = get_type(output);
+
+				for (size_t i = 0; i < output_type->members.size; ++i) {
+					member m = output_type->members.m[i];
+					if (m.type.type == float2_id) {
+						int indices = (int)i;
+						uint32_t pointer =
+						    write_op_access_chain(instructions, spirv_float2_type, convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
+						write_op_store(instructions, pointer, output_var);
+					}
+					else if (m.type.type == float3_id) {
+						int indices = (int)i;
+						uint32_t pointer =
+						    write_op_access_chain(instructions, spirv_float2_type, convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
+						write_op_store(instructions, pointer, output_var);
+					}
+					else if (m.type.type == float4_id) {
+						int indices = (int)i;
+						uint32_t pointer =
+						    write_op_access_chain(instructions, spirv_float2_type, convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
+						write_op_store(instructions, pointer, output_var);
+					}
+					else {
+						debug_context context = {0};
+						error(context, "Type unsupported for input in SPIR-V");
+					}
+				}
+			}
+			else {
+				write_return(instructions);
+			}
 			ends_with_return = true;
 			break;
 		}
@@ -710,7 +744,12 @@ static void write_function(instructions_buffer *instructions, function *f, shade
 	}
 
 	if (!ends_with_return) {
-		write_return(instructions);
+		if (main) {
+			// TODO
+		}
+		else {
+			write_return(instructions);
+		}
 	}
 	write_function_end(instructions);
 }
@@ -801,8 +840,8 @@ static void spirv_export_vertex(char *directory, function *main) {
 	write_op_ext_inst_import(&decorations, "GLSL.std.450");
 	write_op_memory_model(&decorations, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
 	uint32_t entry_point = allocate_index();
-	uint32_t output_var = allocate_index();
-	uint32_t input_var = allocate_index();
+	output_var = allocate_index();
+	input_var = allocate_index();
 	uint32_t interfaces[] = {output_var, input_var};
 	write_op_entry_point(&decorations, EXECUTION_MODEL_VERTEX, entry_point, "main", interfaces, sizeof(interfaces) / 4);
 
