@@ -726,6 +726,7 @@ static void write_function(instructions_buffer *instructions, function *f, shade
 						error(context, "Type unsupported for input in SPIR-V");
 					}
 				}
+				write_return(instructions);
 			}
 			else {
 				write_return(instructions);
