@@ -692,8 +692,8 @@ static void write_function(instructions_buffer *instructions, function *f, shade
 			for (size_t i = 0; i < indices_size; ++i) {
 				indices[i] = (int)o->op_store_member.member_indices[i];
 			}
-			uint32_t pointer = write_op_access_chain(instructions, float_input_pointer_type, convert_kong_index_to_spirv_index(o->op_store_member.to.index),
-			                                         indices, indices_size);
+			uint32_t pointer = write_op_access_chain(instructions, convert_type_to_spirv_index(o->op_store_member.to.type.type),
+			                                         convert_kong_index_to_spirv_index(o->op_store_member.to.index), indices, indices_size);
 			write_op_store(instructions, pointer, convert_kong_index_to_spirv_index(o->op_store_member.from.index));
 			break;
 		}
