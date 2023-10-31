@@ -705,21 +705,33 @@ static void write_function(instructions_buffer *instructions, function *f, shade
 					member m = output_type->members.m[i];
 					if (m.type.type == float2_id) {
 						int indices = (int)i;
-						uint32_t pointer =
+
+						uint32_t load_pointer =
 						    write_op_access_chain(instructions, spirv_float2_type, convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
-						write_op_store(instructions, pointer, output_var);
+						uint32_t value = write_op_load(instructions, spirv_float2_type, load_pointer);
+
+						uint32_t store_pointer = write_op_access_chain(instructions, spirv_float2_type, output_var, &indices, 1);
+						write_op_store(instructions, store_pointer, value);
 					}
 					else if (m.type.type == float3_id) {
 						int indices = (int)i;
-						uint32_t pointer =
-						    write_op_access_chain(instructions, spirv_float2_type, convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
-						write_op_store(instructions, pointer, output_var);
+
+						uint32_t load_pointer =
+						    write_op_access_chain(instructions, spirv_float3_type, convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
+						uint32_t value = write_op_load(instructions, spirv_float3_type, load_pointer);
+
+						uint32_t store_pointer = write_op_access_chain(instructions, spirv_float3_type, output_var, &indices, 1);
+						write_op_store(instructions, store_pointer, value);
 					}
 					else if (m.type.type == float4_id) {
 						int indices = (int)i;
-						uint32_t pointer =
-						    write_op_access_chain(instructions, spirv_float2_type, convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
-						write_op_store(instructions, pointer, output_var);
+
+						uint32_t load_pointer =
+						    write_op_access_chain(instructions, spirv_float4_type, convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
+						uint32_t value = write_op_load(instructions, spirv_float4_type, load_pointer);
+
+						uint32_t store_pointer = write_op_access_chain(instructions, spirv_float4_type, output_var, &indices, 1);
+						write_op_store(instructions, store_pointer, value);
 					}
 					else {
 						debug_context context = {0};
