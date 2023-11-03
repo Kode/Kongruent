@@ -151,7 +151,7 @@ typedef enum decoration { DECORATION_BUILTIN = 11, DECORATION_LOCATION = 30 } de
 
 typedef enum builtin { BUILTIN_POSITION = 0 } builtin;
 
-typedef enum storage_class { STORAGE_CLASS_INPUT = 1, STORAGE_CLASS_OUTPUT = 3, STORAGE_CLASS_FUNCTION = 7 } storage_class;
+typedef enum storage_class { STORAGE_CLASS_INPUT = 1, STORAGE_CLASS_OUTPUT = 3, STORAGE_CLASS_FUNCTION = 7, STORAGE_CLASS_NONE = 9999 } storage_class;
 
 typedef enum function_control { FUNCTION_CONTROL_NONE } function_control;
 
@@ -326,16 +326,41 @@ static uint32_t spirv_float2_type;
 static uint32_t spirv_float3_type;
 static uint32_t spirv_float4_type;
 
+typedef struct complex_type {
+	type_id type;
+	uint16_t pointer;
+	uint16_t storage;
+} complex_type;
+
 static struct {
-	type_id key;
+	complex_type key;
 	uint32_t value;
 } *type_map = NULL;
 
 static uint32_t convert_type_to_spirv_index(type_id type) {
-	uint32_t spirv_index = hmget(type_map, type);
+	complex_type ct;
+	ct.type = type;
+	ct.pointer = (uint16_t) false;
+	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
+
+	uint32_t spirv_index = hmget(type_map, ct);
 	if (spirv_index == 0) {
 		spirv_index = allocate_index();
-		hmput(type_map, type, spirv_index);
+		hmput(type_map, ct, spirv_index);
+	}
+	return spirv_index;
+}
+
+static uint32_t convert_pointer_type_to_spirv_index(type_id type, storage_class storage) {
+	complex_type ct;
+	ct.type = type;
+	ct.pointer = (uint16_t) true;
+	ct.storage = (uint16_t)storage;
+
+	uint32_t spirv_index = hmget(type_map, ct);
+	if (spirv_index == 0) {
+		spirv_index = allocate_index();
+		hmput(type_map, ct, spirv_index);
 	}
 	return spirv_index;
 }
@@ -347,22 +372,31 @@ static void write_types(instructions_buffer *constants, instructions_buffer *ins
 
 	void_function_type = write_type_function(constants, void_type, NULL, 0);
 
+	complex_type ct;
+	ct.pointer = (uint16_t) false;
+	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
+
 	spirv_float_type = write_type_float(constants, 32);
-	hmput(type_map, float_id, spirv_float_type);
+	ct.type = float_id;
+	hmput(type_map, ct, spirv_float_type);
 
 	spirv_float2_type = write_type_vector(constants, spirv_float_type, 2);
-	hmput(type_map, float2_id, spirv_float2_type);
+	ct.type = float2_id;
+	hmput(type_map, ct, spirv_float2_type);
 	spirv_float3_type = write_type_vector(constants, spirv_float_type, 3);
-	hmput(type_map, float3_id, spirv_float3_type);
+	ct.type = float3_id;
+	hmput(type_map, ct, spirv_float3_type);
 	spirv_float4_type = write_type_vector(constants, spirv_float_type, 4);
-	hmput(type_map, float4_id, spirv_float4_type);
+	ct.type = float4_id;
+	hmput(type_map, ct, spirv_float4_type);
 
 	spirv_uint_type = write_type_int(constants, 32, false);
 	spirv_int_type = write_type_int(constants, 32, true);
 
 	uint32_t types[] = {spirv_float3_type};
 	uint32_t input_struct_type = write_type_struct(instructions, types, 1);
-	hmput(type_map, vertex_input, input_struct_type);
+	ct.type = vertex_input;
+	hmput(type_map, ct, input_struct_type);
 	output_struct_pointer_type = write_type_pointer(instructions, STORAGE_CLASS_OUTPUT, input_struct_type);
 	uint32_t output_float3_pointer_type = write_type_pointer(instructions, STORAGE_CLASS_OUTPUT, spirv_float3_type);
 
@@ -707,30 +741,36 @@ static void write_function(instructions_buffer *instructions, function *f, shade
 						int indices = (int)i;
 
 						uint32_t load_pointer =
-						    write_op_access_chain(instructions, spirv_float2_type, convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
+						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(spirv_float2_type, STORAGE_CLASS_FUNCTION),
+						                          convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
 						uint32_t value = write_op_load(instructions, spirv_float2_type, load_pointer);
 
-						uint32_t store_pointer = write_op_access_chain(instructions, spirv_float2_type, output_var, &indices, 1);
+						uint32_t store_pointer = write_op_access_chain(
+						    instructions, convert_pointer_type_to_spirv_index(spirv_float2_type, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
 						write_op_store(instructions, store_pointer, value);
 					}
 					else if (m.type.type == float3_id) {
 						int indices = (int)i;
 
 						uint32_t load_pointer =
-						    write_op_access_chain(instructions, spirv_float3_type, convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
+						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(spirv_float3_type, STORAGE_CLASS_FUNCTION),
+						                          convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
 						uint32_t value = write_op_load(instructions, spirv_float3_type, load_pointer);
 
-						uint32_t store_pointer = write_op_access_chain(instructions, spirv_float3_type, output_var, &indices, 1);
+						uint32_t store_pointer = write_op_access_chain(
+						    instructions, convert_pointer_type_to_spirv_index(spirv_float3_type, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
 						write_op_store(instructions, store_pointer, value);
 					}
 					else if (m.type.type == float4_id) {
 						int indices = (int)i;
 
 						uint32_t load_pointer =
-						    write_op_access_chain(instructions, spirv_float4_type, convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
+						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(spirv_float4_type, STORAGE_CLASS_FUNCTION),
+						                          convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
 						uint32_t value = write_op_load(instructions, spirv_float4_type, load_pointer);
 
-						uint32_t store_pointer = write_op_access_chain(instructions, spirv_float4_type, output_var, &indices, 1);
+						uint32_t store_pointer = write_op_access_chain(
+						    instructions, convert_pointer_type_to_spirv_index(spirv_float4_type, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
 						write_op_store(instructions, store_pointer, value);
 					}
 					else {
