@@ -422,6 +422,14 @@ static void write_types(instructions_buffer *constants, instructions_buffer *ins
 	}
 
 	float_input_pointer_type = write_type_pointer(instructions, STORAGE_CLASS_INPUT, spirv_float_type);
+
+	size_t size = hmlenu(type_map);
+	for (size_t i = 0; i < size; ++i) {
+		complex_type type = type_map[i].key;
+		if (type.pointer) {
+			write_type_pointer(instructions, type.storage, type_map[i].value);
+		}
+	}
 }
 
 static uint32_t write_constant(instructions_buffer *instructions, uint32_t type, uint32_t value_id, uint32_t value) {
@@ -828,8 +836,7 @@ static void init_index_map(void) {
 	hmdefault(index_map, 0);
 	size_t size = hmlenu(index_map);
 	for (size_t i = 0; i < size; ++i) {
-		ptrdiff_t index = hmgeti(index_map, i);
-		hmdel(index_map, index_map[index].key);
+		hmdel(index_map, index_map[i].key);
 	}
 }
 
@@ -837,8 +844,7 @@ static void init_type_map(void) {
 	hmdefault(type_map, 0);
 	size_t size = hmlenu(type_map);
 	for (size_t i = 0; i < size; ++i) {
-		ptrdiff_t index = hmgeti(type_map, i);
-		hmdel(type_map, type_map[index].key);
+		hmdel(type_map, type_map[i].key);
 	}
 }
 
@@ -846,8 +852,7 @@ static void init_int_constants(void) {
 	hmdefault(int_constants, 0);
 	size_t size = hmlenu(int_constants);
 	for (size_t i = 0; i < size; ++i) {
-		ptrdiff_t index = hmgeti(int_constants, i);
-		hmdel(int_constants, int_constants[index].key);
+		hmdel(int_constants, int_constants[i].key);
 	}
 }
 
@@ -855,8 +860,7 @@ static void init_float_constants(void) {
 	hmdefault(float_constants, 0);
 	size_t size = hmlenu(float_constants);
 	for (size_t i = 0; i < size; ++i) {
-		ptrdiff_t index = hmgeti(float_constants, i);
-		hmdel(float_constants, float_constants[index].key);
+		hmdel(float_constants, float_constants[i].key);
 	}
 }
 
