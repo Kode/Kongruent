@@ -265,9 +265,7 @@ static uint32_t write_type_function(instructions_buffer *instructions, uint32_t 
 static uint32_t write_type_float(instructions_buffer *instructions, uint32_t width) {
 	uint32_t float_type = allocate_index();
 
-	uint32_t operands[2];
-	operands[0] = float_type;
-	operands[1] = width;
+	uint32_t operands[] = {float_type, width};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_FLOAT, operands);
 	return float_type;
 }
@@ -275,10 +273,7 @@ static uint32_t write_type_float(instructions_buffer *instructions, uint32_t wid
 static uint32_t write_type_vector(instructions_buffer *instructions, uint32_t component_type, uint32_t component_count) {
 	uint32_t vector_type = allocate_index();
 
-	uint32_t operands[3];
-	operands[0] = vector_type;
-	operands[1] = component_type;
-	operands[2] = component_count;
+	uint32_t operands[] = {vector_type, component_type, component_count};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_VECTOR, operands);
 	return vector_type;
 }
@@ -286,10 +281,7 @@ static uint32_t write_type_vector(instructions_buffer *instructions, uint32_t co
 static uint32_t write_type_int(instructions_buffer *instructions, uint32_t width, bool signedness) {
 	uint32_t int_type = allocate_index();
 
-	uint32_t operands[3];
-	operands[0] = int_type;
-	operands[1] = width;
-	operands[2] = signedness ? 1 : 0;
+	uint32_t operands[] = {int_type, width, signedness ? 1 : 0};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_INT, operands);
 	return int_type;
 }
@@ -308,10 +300,7 @@ static uint32_t write_type_struct(instructions_buffer *instructions, uint32_t *t
 static uint32_t write_type_pointer(instructions_buffer *instructions, storage_class storage, uint32_t type) {
 	uint32_t pointer_type = allocate_index();
 
-	uint32_t operands[3];
-	operands[0] = pointer_type;
-	operands[1] = (uint32_t)storage;
-	operands[2] = type;
+	uint32_t operands[] = {pointer_type, (uint32_t)storage, type};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_POINTER, operands);
 	return pointer_type;
 }
@@ -433,10 +422,7 @@ static void write_types(instructions_buffer *constants, instructions_buffer *ins
 }
 
 static uint32_t write_constant(instructions_buffer *instructions, uint32_t type, uint32_t value_id, uint32_t value) {
-	uint32_t operands[3];
-	operands[0] = type;
-	operands[1] = value_id;
-	operands[2] = value;
+	uint32_t operands[] = {type, value_id, value};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_CONSTANT, operands);
 	return value_id;
 }
@@ -452,20 +438,13 @@ static uint32_t write_constant_float(instructions_buffer *instructions, uint32_t
 }
 
 static void write_vertex_output_decorations(instructions_buffer *instructions, uint32_t output_struct) {
-	uint32_t operands[4];
-	operands[0] = output_struct;
-	operands[1] = 0;
-	operands[2] = (uint32_t)DECORATION_BUILTIN;
-	operands[3] = (uint32_t)BUILTIN_POSITION;
+	uint32_t operands[] = {output_struct, 0, (uint32_t)DECORATION_BUILTIN, (uint32_t)BUILTIN_POSITION};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_MEMBER_DECORATE, operands);
 }
 
 static void write_vertex_input_decorations(instructions_buffer *instructions, uint32_t *inputs, uint32_t inputs_size) {
 	for (uint32_t i = 0; i < inputs_size; ++i) {
-		uint32_t operands[3];
-		operands[0] = inputs[i];
-		operands[1] = (uint32_t)DECORATION_LOCATION;
-		operands[2] = i;
+		uint32_t operands[] = {inputs[i], (uint32_t)DECORATION_LOCATION, i};
 		write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_DECORATE, operands);
 	}
 }
@@ -473,11 +452,7 @@ static void write_vertex_input_decorations(instructions_buffer *instructions, ui
 static uint32_t write_op_function(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type) {
 	uint32_t result = allocate_index();
 
-	uint32_t operands[4];
-	operands[0] = result_type;
-	operands[1] = result;
-	operands[2] = (uint32_t)control;
-	operands[3] = function_type;
+	uint32_t operands[] = {result_type, result, (uint32_t)control, function_type};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_FUNCTION, operands);
 	return result;
 }
@@ -485,8 +460,7 @@ static uint32_t write_op_function(instructions_buffer *instructions, uint32_t re
 static uint32_t write_label(instructions_buffer *instructions) {
 	uint32_t result = allocate_index();
 
-	uint32_t operands[1];
-	operands[0] = result;
+	uint32_t operands[] = {result};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_LABEL, operands);
 	return result;
 }
@@ -544,18 +518,13 @@ static uint32_t write_op_access_chain(instructions_buffer *instructions, uint32_
 static uint32_t write_op_load(instructions_buffer *instructions, uint32_t result_type, uint32_t pointer) {
 	uint32_t result = allocate_index();
 
-	uint32_t operands[3];
-	operands[0] = result_type;
-	operands[1] = result;
-	operands[2] = pointer;
+	uint32_t operands[] = {result_type, result, pointer};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_LOAD, operands);
 	return result;
 }
 
 static void write_op_store(instructions_buffer *instructions, uint32_t pointer, uint32_t object) {
-	uint32_t operands[2];
-	operands[0] = pointer;
-	operands[1] = object;
+	uint32_t operands[] = {pointer, object};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_STORE, operands);
 }
 
@@ -574,19 +543,13 @@ static uint32_t write_op_composite_construct(instructions_buffer *instructions, 
 static uint32_t write_op_variable(instructions_buffer *instructions, uint32_t result_type, storage_class storage) {
 	uint32_t result = allocate_index();
 
-	uint32_t operands[3];
-	operands[0] = result_type;
-	operands[1] = result;
-	operands[2] = (uint32_t)storage;
+	uint32_t operands[] = {result_type, result, (uint32_t)storage};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_VARIABLE, operands);
 	return result;
 }
 
 static uint32_t write_op_variable_with_result(instructions_buffer *instructions, uint32_t result_type, uint32_t result, storage_class storage) {
-	uint32_t operands[3];
-	operands[0] = result_type;
-	operands[1] = result;
-	operands[2] = (uint32_t)storage;
+	uint32_t operands[] = {result_type, result, (uint32_t)storage};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_VARIABLE, operands);
 	return result;
 }
@@ -594,11 +557,7 @@ static uint32_t write_op_variable_with_result(instructions_buffer *instructions,
 static uint32_t write_op_variable_with_initializer(instructions_buffer *instructions, uint32_t result_type, storage_class storage, uint32_t initializer) {
 	uint32_t result = allocate_index();
 
-	uint32_t operands[4];
-	operands[0] = result_type;
-	operands[1] = result;
-	operands[2] = (uint32_t)storage;
-	operands[3] = initializer;
+	uint32_t operands[] = {result_type, result, (uint32_t)storage, initializer};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_VARIABLE, operands);
 	return result;
 }
