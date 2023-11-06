@@ -278,6 +278,12 @@ static uint32_t write_type_vector(instructions_buffer *instructions, uint32_t co
 	return vector_type;
 }
 
+static uint32_t write_type_vector_preallocated(instructions_buffer *instructions, uint32_t component_type, uint32_t component_count, uint32_t vector_type) {
+	uint32_t operands[] = {vector_type, component_type, component_count};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_VECTOR, operands);
+	return vector_type;
+}
+
 static uint32_t write_type_int(instructions_buffer *instructions, uint32_t width, bool signedness) {
 	uint32_t int_type = allocate_index();
 
@@ -300,6 +306,12 @@ static uint32_t write_type_struct(instructions_buffer *instructions, uint32_t *t
 static uint32_t write_type_pointer(instructions_buffer *instructions, storage_class storage, uint32_t type) {
 	uint32_t pointer_type = allocate_index();
 
+	uint32_t operands[] = {pointer_type, (uint32_t)storage, type};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_POINTER, operands);
+	return pointer_type;
+}
+
+static uint32_t write_type_pointer_preallocated(instructions_buffer *instructions, storage_class storage, uint32_t type, uint32_t pointer_type) {
 	uint32_t operands[] = {pointer_type, (uint32_t)storage, type};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_POINTER, operands);
 	return pointer_type;
@@ -354,9 +366,9 @@ static uint32_t convert_pointer_type_to_spirv_index(type_id type, storage_class 
 	return spirv_index;
 }
 
-static uint32_t output_struct_pointer_type;
+static uint32_t output_struct_pointer_type = 0;
 
-static void write_types(instructions_buffer *constants, instructions_buffer *instructions, type_id vertex_input) {
+static void write_base_types(instructions_buffer *constants, type_id vertex_input) {
 	void_type = write_type_void(constants);
 
 	void_function_type = write_type_function(constants, void_type, NULL, 0);
@@ -369,25 +381,24 @@ static void write_types(instructions_buffer *constants, instructions_buffer *ins
 	ct.type = float_id;
 	hmput(type_map, ct, spirv_float_type);
 
-	spirv_float2_type = write_type_vector(constants, spirv_float_type, 2);
-	ct.type = float2_id;
-	hmput(type_map, ct, spirv_float2_type);
-	spirv_float3_type = write_type_vector(constants, spirv_float_type, 3);
-	ct.type = float3_id;
-	hmput(type_map, ct, spirv_float3_type);
-	spirv_float4_type = write_type_vector(constants, spirv_float_type, 4);
-	ct.type = float4_id;
-	hmput(type_map, ct, spirv_float4_type);
+	spirv_float2_type = convert_type_to_spirv_index(float2_id);
+	write_type_vector_preallocated(constants, spirv_float_type, 2, spirv_float2_type);
+
+	spirv_float3_type = convert_type_to_spirv_index(float3_id);
+	write_type_vector_preallocated(constants, spirv_float_type, 3, spirv_float3_type);
+
+	spirv_float4_type = convert_type_to_spirv_index(float4_id);
+	write_type_vector_preallocated(constants, spirv_float_type, 4, spirv_float4_type);
 
 	spirv_uint_type = write_type_int(constants, 32, false);
 	spirv_int_type = write_type_int(constants, 32, true);
 
 	uint32_t types[] = {spirv_float3_type};
-	uint32_t input_struct_type = write_type_struct(instructions, types, 1);
+	uint32_t input_struct_type = write_type_struct(constants, types, 1);
 	ct.type = vertex_input;
 	hmput(type_map, ct, input_struct_type);
-	output_struct_pointer_type = write_type_pointer(instructions, STORAGE_CLASS_OUTPUT, input_struct_type);
-	uint32_t output_float3_pointer_type = write_type_pointer(instructions, STORAGE_CLASS_OUTPUT, spirv_float3_type);
+	output_struct_pointer_type = write_type_pointer(constants, STORAGE_CLASS_OUTPUT, input_struct_type);
+	uint32_t output_float3_pointer_type = write_type_pointer(constants, STORAGE_CLASS_OUTPUT, spirv_float3_type);
 
 	uint32_t input_pointer_types[256];
 
@@ -396,13 +407,13 @@ static void write_types(instructions_buffer *constants, instructions_buffer *ins
 	for (size_t i = 0; i < input->members.size; ++i) {
 		member m = input->members.m[i];
 		if (m.type.type == float2_id) {
-			input_pointer_types[i] = write_type_pointer(instructions, STORAGE_CLASS_INPUT, spirv_float2_type);
+			input_pointer_types[i] = write_type_pointer(constants, STORAGE_CLASS_INPUT, spirv_float2_type);
 		}
 		else if (m.type.type == float3_id) {
-			input_pointer_types[i] = write_type_pointer(instructions, STORAGE_CLASS_INPUT, spirv_float3_type);
+			input_pointer_types[i] = write_type_pointer(constants, STORAGE_CLASS_INPUT, spirv_float3_type);
 		}
 		else if (m.type.type == float4_id) {
-			input_pointer_types[i] = write_type_pointer(instructions, STORAGE_CLASS_INPUT, spirv_float4_type);
+			input_pointer_types[i] = write_type_pointer(constants, STORAGE_CLASS_INPUT, spirv_float4_type);
 		}
 		else {
 			debug_context context = {0};
@@ -410,13 +421,15 @@ static void write_types(instructions_buffer *constants, instructions_buffer *ins
 		}
 	}
 
-	float_input_pointer_type = write_type_pointer(instructions, STORAGE_CLASS_INPUT, spirv_float_type);
+	float_input_pointer_type = write_type_pointer(constants, STORAGE_CLASS_INPUT, spirv_float_type);
+}
 
+static void write_types(instructions_buffer *constants) {
 	size_t size = hmlenu(type_map);
 	for (size_t i = 0; i < size; ++i) {
 		complex_type type = type_map[i].key;
 		if (type.pointer) {
-			write_type_pointer(instructions, type.storage, type_map[i].value);
+			write_type_pointer_preallocated(constants, type.storage, convert_type_to_spirv_index(type.type), type_map[i].value);
 		}
 	}
 }
@@ -868,7 +881,7 @@ static void spirv_export_vertex(char *directory, function *main) {
 	inputs[0] = allocate_index();
 	write_vertex_input_decorations(&decorations, inputs, 1);
 
-	write_types(&constants, &instructions, vertex_input);
+	write_base_types(&constants, vertex_input);
 
 	write_op_variable_with_result(&instructions, output_struct_pointer_type, output_var, STORAGE_CLASS_OUTPUT);
 
@@ -892,6 +905,8 @@ static void spirv_export_vertex(char *directory, function *main) {
 	}
 
 	write_functions(&instructions, main, SHADER_STAGE_VERTEX, vertex_input, input_var, vertex_output, output_var);
+
+	write_types(&constants);
 
 	// header
 	write_magic_number(&header);
