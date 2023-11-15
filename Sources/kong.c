@@ -28,6 +28,7 @@ type_ref find_local_var_type(block *b, name_id name) {
 	if (b == NULL) {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
+		return t;
 	}
 
 	for (size_t i = 0; i < b->vars.size; ++i) {
