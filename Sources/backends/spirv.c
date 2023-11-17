@@ -948,50 +948,25 @@ static void spirv_export_fragment(char *directory, function *main) {
 	debug_context context = {0};
 	check(pixel_input != NO_TYPE, context, "fragment input missing");
 
-	write_magic_number(&instructions);
-	write_version_number(&instructions);
-	write_generator_magic_number(&instructions);
-	write_bound(&instructions);
-	write_instruction_schema(&instructions);
-
 	write_capabilities(&instructions);
 	write_op_ext_inst_import(&decorations, "GLSL.std.450");
 	write_op_memory_model(&decorations, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
 	uint32_t entry_point = allocate_index();
 	output_var = allocate_index();
-	input_var = allocate_index();
-	uint32_t interfaces[] = {output_var, input_var};
+	// input_var = allocate_index();
+	uint32_t interfaces[] = {output_var /*, input_var*/};
 	write_op_entry_point(&decorations, EXECUTION_MODEL_FRAGMENT, entry_point, "main", interfaces, sizeof(interfaces) / 4);
 
-	uint32_t output_struct = allocate_index();
+	/*uint32_t output_struct = allocate_index();
 	write_vertex_output_decorations(&decorations, output_struct);
 
 	uint32_t inputs[256];
 	inputs[0] = allocate_index();
-	write_vertex_input_decorations(&decorations, inputs, 1);
+	write_vertex_input_decorations(&decorations, inputs, 1);*/
 
 	// write_base_types(&constants, vertex_input);
 
-	write_op_variable_with_result(&instructions, output_struct_pointer_type, output_var, STORAGE_CLASS_OUTPUT);
-
-	type *input = get_type(pixel_input);
-
-	for (size_t i = 0; i < input->members.size; ++i) {
-		member m = input->members.m[i];
-		if (m.type.type == float2_id) {
-			write_op_variable_with_result(&instructions, spirv_float2_type, input_var, STORAGE_CLASS_INPUT);
-		}
-		else if (m.type.type == float3_id) {
-			write_op_variable_with_result(&instructions, spirv_float3_type, input_var, STORAGE_CLASS_INPUT);
-		}
-		else if (m.type.type == float4_id) {
-			write_op_variable_with_result(&instructions, spirv_float4_type, input_var, STORAGE_CLASS_INPUT);
-		}
-		else {
-			debug_context context = {0};
-			error(context, "Type unsupported for input in SPIR-V");
-		}
-	}
+	write_op_variable_with_result(&instructions, spirv_float4_type, output_var, STORAGE_CLASS_OUTPUT);
 
 	// write_functions(&instructions, main, SHADER_STAGE_VERTEX, vertex_input, input_var, vertex_output, output_var);
 
