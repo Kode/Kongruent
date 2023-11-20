@@ -712,7 +712,7 @@ static void write_function(instructions_buffer *instructions, function *f, shade
 			break;
 		}
 		case OPCODE_RETURN: {
-			if (main) {
+			if (stage == SHADER_STAGE_VERTEX && main) {
 				type *output_type = get_type(output);
 
 				for (size_t i = 0; i < output_type->members.size; ++i) {
@@ -968,7 +968,7 @@ static void spirv_export_fragment(char *directory, function *main) {
 
 	write_op_variable_with_result(&instructions, spirv_float4_type, output_var, STORAGE_CLASS_OUTPUT);
 
-	// write_functions(&instructions, main, SHADER_STAGE_VERTEX, vertex_input, input_var, vertex_output, output_var);
+	write_functions(&instructions, main, SHADER_STAGE_VERTEX, pixel_input, input_var, NO_TYPE, output_var);
 
 	write_types(&constants);
 
