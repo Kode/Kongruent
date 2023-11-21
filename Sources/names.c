@@ -16,8 +16,6 @@ static struct {
 } *hash = NULL;
 
 void names_init(void) {
-	free(names);
-
 	char *new_names = realloc(names, names_size);
 	debug_context context = {0};
 	check(new_names != NULL, context, "Could not allocate names");

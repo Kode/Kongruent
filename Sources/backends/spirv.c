@@ -656,7 +656,6 @@ static void write_function(instructions_buffer *instructions, function *f, shade
 			break;
 		}
 		case OPCODE_CALL: {
-			debug_context context = {0};
 			if (o->op_call.func == add_name("sample")) {
 			}
 			else if (o->op_call.func == add_name("sample_lod")) {

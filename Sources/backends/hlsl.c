@@ -490,8 +490,8 @@ static void hlsl_export_vertex(char *directory, api_kind d3d, function *main) {
 
 	write_functions(hlsl, &offset, SHADER_STAGE_VERTEX, main);
 
-	char *output;
-	size_t output_size;
+	char *output = NULL;
+	size_t output_size = 0;
 	int result = 1;
 	switch (d3d) {
 	case API_DIRECT3D9:
@@ -532,8 +532,8 @@ static void hlsl_export_fragment(char *directory, api_kind d3d, function *main) 
 
 	write_functions(hlsl, &offset, SHADER_STAGE_FRAGMENT, main);
 
-	uint8_t *output;
-	size_t output_size;
+	uint8_t *output = NULL;
+	size_t output_size = 0;
 	int result = 1;
 	switch (d3d) {
 	case API_DIRECT3D9:
