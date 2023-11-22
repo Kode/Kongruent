@@ -28,14 +28,14 @@ void error(debug_context context, const char *message, ...) {
 	va_end(args);
 }
 
-void check_args(bool check, debug_context context, const char *message, va_list args) {
-	if (!check) {
+void check_args(bool test, debug_context context, const char *message, va_list args) {
+	if (!test) {
 		error_args(context, message, args);
 	}
 }
 
-void check(bool check, debug_context context, const char *message, ...) {
-	if (!check) {
+void check_function(bool test, debug_context context, const char *message, ...) {
+	if (!test) {
 		va_list args;
 		va_start(args, message);
 		error_args(context, message, args);
