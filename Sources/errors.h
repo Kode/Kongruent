@@ -22,5 +22,7 @@ noreturn void error_args(debug_context context, const char *message, va_list arg
 void check_function(bool test, debug_context context, const char *message, ...);
 #define check(test, context, message, ...)                                                                                                                     \
 	assert(test);                                                                                                                                              \
-	check_function(test, context, message, __VA_ARGS__)
+	check_function(test, context, message, ##__VA_ARGS__)
 void check_args(bool test, debug_context context, const char *message, va_list args);
+
+// V_ASSERT_CONTRACT, assertMacro:check
