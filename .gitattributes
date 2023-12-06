@@ -1,1 +1,3 @@
 * -text
+*.h linguist-language=c
+*.c.h linguist-language=c
