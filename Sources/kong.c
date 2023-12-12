@@ -183,6 +183,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 			break;
 		}
 		}
+		break;
 	}
 	case EXPRESSION_BOOLEAN: {
 		e->type.type = bool_id;
@@ -231,6 +232,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		resolve_member_type(parent, t, e);
 		break;
 	}
+	case EXPRESSION_INDEX:
 	case EXPRESSION_CONSTRUCTOR: {
 		debug_context context = {0};
 		error(context, "not implemented");

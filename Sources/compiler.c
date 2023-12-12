@@ -482,11 +482,7 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		emit_op(code, &o);
 		break;
 	}
-	case STATEMENT_IF: {
-		debug_context context = {0};
-		error(context, "not implemented");
-		break;
-	}
+	case STATEMENT_IF:
 	case STATEMENT_BLOCK: {
 		debug_context context = {0};
 		error(context, "not implemented");
