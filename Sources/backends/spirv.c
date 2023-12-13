@@ -710,6 +710,11 @@ static void write_function(instructions_buffer *instructions, function *f, shade
 			write_op_store(instructions, pointer, convert_kong_index_to_spirv_index(o->op_store_member.from.index));
 			break;
 		}
+		case OPCODE_STORE_VARIABLE: {
+			write_op_store(instructions, convert_kong_index_to_spirv_index(o->op_store_var.to.index),
+			               convert_kong_index_to_spirv_index(o->op_store_var.from.index));
+			break;
+		}
 		case OPCODE_RETURN: {
 			if (stage == SHADER_STAGE_VERTEX && main) {
 				type *output_type = get_type(output);
