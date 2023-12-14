@@ -972,7 +972,7 @@ static void spirv_export_fragment(char *directory, function *main) {
 
 	write_op_variable_with_result(&instructions, spirv_float4_type, output_var, STORAGE_CLASS_OUTPUT);
 
-	write_functions(&instructions, main, SHADER_STAGE_VERTEX, pixel_input, input_var, NO_TYPE, output_var);
+	write_functions(&instructions, main, SHADER_STAGE_FRAGMENT, pixel_input, input_var, NO_TYPE, output_var);
 
 	write_types(&constants);
 
