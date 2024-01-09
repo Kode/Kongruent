@@ -24,8 +24,8 @@ fun pixel(input: FragmentIn): float4 {
 
 #[pipe]
 struct Pipe {
-    vertex_shader = pos;
-    fragment_shader = pixel;
+    vertex = pos;
+    fragment = pixel;
 }
 
 // https://shader-playground.timjones.io/9daab221a76e1fe6fe3fbad510c436c1
