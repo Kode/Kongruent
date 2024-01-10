@@ -393,31 +393,33 @@ static void write_base_types(instructions_buffer *constants, type_id vertex_inpu
 	spirv_uint_type = write_type_int(constants, 32, false);
 	spirv_int_type = write_type_int(constants, 32, true);
 
-	uint32_t types[] = {spirv_float3_type};
-	uint32_t input_struct_type = write_type_struct(constants, types, 1);
-	ct.type = vertex_input;
-	hmput(type_map, ct, input_struct_type);
-	output_struct_pointer_type = write_type_pointer(constants, STORAGE_CLASS_OUTPUT, input_struct_type);
-	uint32_t output_float3_pointer_type = write_type_pointer(constants, STORAGE_CLASS_OUTPUT, spirv_float3_type);
+	if (vertex_input != NO_TYPE) {
+		uint32_t types[] = {spirv_float3_type};
+		uint32_t input_struct_type = write_type_struct(constants, types, 1);
+		ct.type = vertex_input;
+		hmput(type_map, ct, input_struct_type);
+		output_struct_pointer_type = write_type_pointer(constants, STORAGE_CLASS_OUTPUT, input_struct_type);
+		uint32_t output_float3_pointer_type = write_type_pointer(constants, STORAGE_CLASS_OUTPUT, spirv_float3_type);
 
-	uint32_t input_pointer_types[256];
+		uint32_t input_pointer_types[256];
 
-	type *input = get_type(vertex_input);
+		type *input = get_type(vertex_input);
 
-	for (size_t i = 0; i < input->members.size; ++i) {
-		member m = input->members.m[i];
-		if (m.type.type == float2_id) {
-			input_pointer_types[i] = write_type_pointer(constants, STORAGE_CLASS_INPUT, spirv_float2_type);
-		}
-		else if (m.type.type == float3_id) {
-			input_pointer_types[i] = write_type_pointer(constants, STORAGE_CLASS_INPUT, spirv_float3_type);
-		}
-		else if (m.type.type == float4_id) {
-			input_pointer_types[i] = write_type_pointer(constants, STORAGE_CLASS_INPUT, spirv_float4_type);
-		}
-		else {
-			debug_context context = {0};
-			error(context, "Type unsupported for input in SPIR-V");
+		for (size_t i = 0; i < input->members.size; ++i) {
+			member m = input->members.m[i];
+			if (m.type.type == float2_id) {
+				input_pointer_types[i] = write_type_pointer(constants, STORAGE_CLASS_INPUT, spirv_float2_type);
+			}
+			else if (m.type.type == float3_id) {
+				input_pointer_types[i] = write_type_pointer(constants, STORAGE_CLASS_INPUT, spirv_float3_type);
+			}
+			else if (m.type.type == float4_id) {
+				input_pointer_types[i] = write_type_pointer(constants, STORAGE_CLASS_INPUT, spirv_float4_type);
+			}
+			else {
+				debug_context context = {0};
+				error(context, "Type unsupported for input in SPIR-V");
+			}
 		}
 	}
 
@@ -968,7 +970,7 @@ static void spirv_export_fragment(char *directory, function *main) {
 	inputs[0] = allocate_index();
 	write_vertex_input_decorations(&decorations, inputs, 1);*/
 
-	// write_base_types(&constants, vertex_input);
+	write_base_types(&constants, NO_TYPE);
 
 	write_op_variable_with_result(&instructions, spirv_float4_type, output_var, STORAGE_CLASS_OUTPUT);
 
