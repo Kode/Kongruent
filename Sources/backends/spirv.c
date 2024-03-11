@@ -117,6 +117,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_EXT_INST_IMPORT = 11,
 	SPIRV_OPCODE_MEMORY_MODEL = 14,
 	SPIRV_OPCODE_ENTRY_POINT = 15,
+	SPIRV_OPCODE_EXECUTION_MODE = 16,
 	SPIRV_OPCODE_CAPABILITY = 17,
 	SPIRV_OPCODE_TYPE_VOID = 19,
 	SPIRV_OPCODE_TYPE_INT = 21,
@@ -154,6 +155,8 @@ typedef enum builtin { BUILTIN_POSITION = 0 } builtin;
 typedef enum storage_class { STORAGE_CLASS_INPUT = 1, STORAGE_CLASS_OUTPUT = 3, STORAGE_CLASS_FUNCTION = 7, STORAGE_CLASS_NONE = 9999 } storage_class;
 
 typedef enum function_control { FUNCTION_CONTROL_NONE } function_control;
+
+typedef enum execution_mode { EXECUTION_MODE_ORIGIN_UPPER_LEFT = 7 } execution_mode;
 
 static uint32_t operands_buffer[4096];
 
@@ -236,6 +239,13 @@ static void write_op_entry_point(instructions_buffer *instructions, execution_mo
 	}
 
 	write_instruction(instructions, 3 + name_length + interfaces_size, SPIRV_OPCODE_ENTRY_POINT, operands_buffer);
+}
+
+static void write_op_execution_mode(instructions_buffer *instructions, uint32_t entry_point, uint32_t execution_mode) {
+	operands_buffer[0] = entry_point;
+	operands_buffer[1] = execution_mode;
+
+	write_instruction(instructions, 3, SPIRV_OPCODE_EXECUTION_MODE, operands_buffer);
 }
 
 static void write_capabilities(instructions_buffer *instructions) {
@@ -962,6 +972,7 @@ static void spirv_export_fragment(char *directory, function *main) {
 	// input_var = allocate_index();
 	uint32_t interfaces[] = {output_var /*, input_var*/};
 	write_op_entry_point(&decorations, EXECUTION_MODEL_FRAGMENT, entry_point, "main", interfaces, sizeof(interfaces) / 4);
+	write_op_execution_mode(&decorations, entry_point, EXECUTION_MODE_ORIGIN_UPPER_LEFT);
 
 	/*uint32_t output_struct = allocate_index();
 	write_vertex_output_decorations(&decorations, output_struct);
