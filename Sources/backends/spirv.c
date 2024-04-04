@@ -736,37 +736,34 @@ static void write_function(instructions_buffer *instructions, function *f, shade
 					if (m.type.type == float2_id) {
 						int indices = (int)i;
 
-						uint32_t load_pointer =
-						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(spirv_float2_type, STORAGE_CLASS_FUNCTION),
-						                          convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
+						uint32_t load_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(float2_id, STORAGE_CLASS_FUNCTION),
+						                                              convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
 						uint32_t value = write_op_load(instructions, spirv_float2_type, load_pointer);
 
-						uint32_t store_pointer = write_op_access_chain(
-						    instructions, convert_pointer_type_to_spirv_index(spirv_float2_type, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
+						uint32_t store_pointer =
+						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(float2_id, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
 						write_op_store(instructions, store_pointer, value);
 					}
 					else if (m.type.type == float3_id) {
 						int indices = (int)i;
 
-						uint32_t load_pointer =
-						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(spirv_float3_type, STORAGE_CLASS_FUNCTION),
-						                          convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
+						uint32_t load_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(float3_id, STORAGE_CLASS_FUNCTION),
+						                                              convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
 						uint32_t value = write_op_load(instructions, spirv_float3_type, load_pointer);
 
-						uint32_t store_pointer = write_op_access_chain(
-						    instructions, convert_pointer_type_to_spirv_index(spirv_float3_type, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
+						uint32_t store_pointer =
+						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(float3_id, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
 						write_op_store(instructions, store_pointer, value);
 					}
 					else if (m.type.type == float4_id) {
 						int indices = (int)i;
 
-						uint32_t load_pointer =
-						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(spirv_float4_type, STORAGE_CLASS_FUNCTION),
-						                          convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
+						uint32_t load_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(float4_id, STORAGE_CLASS_FUNCTION),
+						                                              convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
 						uint32_t value = write_op_load(instructions, spirv_float4_type, load_pointer);
 
-						uint32_t store_pointer = write_op_access_chain(
-						    instructions, convert_pointer_type_to_spirv_index(spirv_float4_type, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
+						uint32_t store_pointer =
+						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(float4_id, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
 						write_op_store(instructions, store_pointer, value);
 					}
 					else {
