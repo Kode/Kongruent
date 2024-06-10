@@ -250,6 +250,9 @@ void kinc_export(char *directory, api_kind api) {
 
 		FILE *output = fopen(filename, "wb");
 
+		fprintf(output, "#ifndef KONG_INTEGRATION_HEADER\n");
+		fprintf(output, "#define KONG_INTEGRATION_HEADER\n");
+
 		fprintf(output, "#include <kinc/graphics4/constantbuffer.h>\n");
 		fprintf(output, "#include <kinc/graphics4/pipeline.h>\n");
 		fprintf(output, "#include <kinc/graphics4/vertexbuffer.h>\n");
@@ -314,6 +317,8 @@ void kinc_export(char *directory, api_kind api) {
 				fprintf(output, "extern kinc_g4_pipeline_t %s;\n\n", get_name(t->name));
 			}
 		}
+
+		fprintf(output, "#endif\n");
 
 		fclose(output);
 	}
