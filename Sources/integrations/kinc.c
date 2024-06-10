@@ -251,7 +251,7 @@ void kinc_export(char *directory, api_kind api) {
 		FILE *output = fopen(filename, "wb");
 
 		fprintf(output, "#ifndef KONG_INTEGRATION_HEADER\n");
-		fprintf(output, "#define KONG_INTEGRATION_HEADER\n");
+		fprintf(output, "#define KONG_INTEGRATION_HEADER\n\n");
 
 		fprintf(output, "#include <kinc/graphics4/constantbuffer.h>\n");
 		fprintf(output, "#include <kinc/graphics4/pipeline.h>\n");
