@@ -495,6 +495,42 @@ void kinc_export(char *directory, api_kind api) {
 						global g = find_global(t->members.m[j].value.identifier);
 						fprintf(output, "\t%s.depth_mode = %i;\n\n", get_name(t->name), (int)g.value);
 					}
+					else if (t->members.m[j].name == add_name("blend_source")) {
+						debug_context context = {0};
+						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_source expects an identifier");
+						global g = find_global(t->members.m[j].value.identifier);
+						fprintf(output, "\t%s.blend_source = %i;\n\n", get_name(t->name), (int)g.value);
+					}
+					else if (t->members.m[j].name == add_name("blend_destination")) {
+						debug_context context = {0};
+						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_destination expects an identifier");
+						global g = find_global(t->members.m[j].value.identifier);
+						fprintf(output, "\t%s.blend_destination = %i;\n\n", get_name(t->name), (int)g.value);
+					}
+					else if (t->members.m[j].name == add_name("blend_operation")) {
+						debug_context context = {0};
+						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_operation expects an identifier");
+						global g = find_global(t->members.m[j].value.identifier);
+						fprintf(output, "\t%s.blend_operation = %i;\n\n", get_name(t->name), (int)g.value);
+					}
+					else if (t->members.m[j].name == add_name("alpha_blend_source")) {
+						debug_context context = {0};
+						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "alpha_blend_source expects an identifier");
+						global g = find_global(t->members.m[j].value.identifier);
+						fprintf(output, "\t%s.alpha_blend_source = %i;\n\n", get_name(t->name), (int)g.value);
+					}
+					else if (t->members.m[j].name == add_name("alpha_blend_destination")) {
+						debug_context context = {0};
+						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "alpha_blend_destination expects an identifier");
+						global g = find_global(t->members.m[j].value.identifier);
+						fprintf(output, "\t%s.alpha_blend_destination = %i;\n\n", get_name(t->name), (int)g.value);
+					}
+					else if (t->members.m[j].name == add_name("alpha_blend_operation")) {
+						debug_context context = {0};
+						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "alpha_blend_operation expects an identifier");
+						global g = find_global(t->members.m[j].value.identifier);
+						fprintf(output, "\t%s.alpha_blend_operation = %i;\n\n", get_name(t->name), (int)g.value);
+					}
 					else {
 						debug_context context = {0};
 						error(context, "Unsupported pipe member %s", get_name(t->members.m[j].name));
