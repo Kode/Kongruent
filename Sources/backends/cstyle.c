@@ -29,6 +29,10 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		*offset += sprintf(&code[*offset], "\t_%" PRIu64 " = _%" PRIu64 ";\n", o->op_store_var.to.index, o->op_store_var.from.index);
 		break;
 	case OPCODE_STORE_MEMBER:
+	case OPCODE_SUB_AND_STORE_MEMBER:
+	case OPCODE_ADD_AND_STORE_MEMBER:
+	case OPCODE_DIVIDE_AND_STORE_MEMBER:
+	case OPCODE_MULTIPLY_AND_STORE_MEMBER:
 		*offset += sprintf(&code[*offset], "\t_%" PRIu64, o->op_store_member.to.index);
 		type *s = get_type(o->op_store_member.member_parent_type);
 		bool is_array = o->op_store_member.member_parent_array;
@@ -45,7 +49,23 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 				s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
 			}
 		}
-		*offset += sprintf(&code[*offset], " = _%" PRIu64 ";\n", o->op_store_member.from.index);
+		switch (o->type) {
+		case OPCODE_STORE_MEMBER:
+			*offset += sprintf(&code[*offset], " = _%" PRIu64 ";\n", o->op_store_member.from.index);
+			break;
+		case OPCODE_SUB_AND_STORE_MEMBER:
+			*offset += sprintf(&code[*offset], " -= _%" PRIu64 ";\n", o->op_store_member.from.index);
+			break;
+		case OPCODE_ADD_AND_STORE_MEMBER:
+			*offset += sprintf(&code[*offset], " += _%" PRIu64 ";\n", o->op_store_member.from.index);
+			break;
+		case OPCODE_DIVIDE_AND_STORE_MEMBER:
+			*offset += sprintf(&code[*offset], " /= _%" PRIu64 ";\n", o->op_store_member.from.index);
+			break;
+		case OPCODE_MULTIPLY_AND_STORE_MEMBER:
+			*offset += sprintf(&code[*offset], " *= _%" PRIu64 ";\n", o->op_store_member.from.index);
+			break;
+		}
 		break;
 	case OPCODE_LOAD_CONSTANT:
 		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = %f;\n", type_string(o->op_load_constant.to.type.type), o->op_load_constant.to.index,

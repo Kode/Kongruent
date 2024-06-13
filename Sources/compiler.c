@@ -94,62 +94,33 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			error(context, "not implemented");
 		case OPERATOR_LESS_EQUAL:
 			error(context, "not implemented");
-		case OPERATOR_MINUS: {
-			variable right_var = emit_expression(code, parent, right);
-			variable left_var = emit_expression(code, parent, left);
-			variable result_var = allocate_variable(right_var.type);
-
-			opcode o;
-			o.type = OPCODE_SUB;
-			o.size = OP_SIZE(o, op_add);
-			o.op_sub.right = right_var;
-			o.op_sub.left = left_var;
-			o.op_sub.result = result_var;
-			emit_op(code, &o);
-
-			return result_var;
-		}
-		case OPERATOR_PLUS: {
-			variable right_var = emit_expression(code, parent, right);
-			variable left_var = emit_expression(code, parent, left);
-			variable result_var = allocate_variable(right_var.type);
-
-			opcode o;
-			o.type = OPCODE_ADD;
-			o.size = OP_SIZE(o, op_add);
-			o.op_add.right = right_var;
-			o.op_add.left = left_var;
-			o.op_add.result = result_var;
-			emit_op(code, &o);
-
-			return result_var;
-		}
-		case OPERATOR_DIVIDE: {
-			variable right_var = emit_expression(code, parent, right);
-			variable left_var = emit_expression(code, parent, left);
-			variable result_var = allocate_variable(right_var.type);
-
-			opcode o;
-			o.type = OPCODE_DIVIDE;
-			o.size = OP_SIZE(o, op_multiply);
-			o.op_divide.right = right_var;
-			o.op_divide.left = left_var;
-			o.op_divide.result = result_var;
-			emit_op(code, &o);
-
-			return result_var;
-		}
+		case OPERATOR_MINUS:
+		case OPERATOR_PLUS:
+		case OPERATOR_DIVIDE:
 		case OPERATOR_MULTIPLY: {
 			variable right_var = emit_expression(code, parent, right);
 			variable left_var = emit_expression(code, parent, left);
 			variable result_var = allocate_variable(right_var.type);
 
 			opcode o;
-			o.type = OPCODE_MULTIPLY;
-			o.size = OP_SIZE(o, op_multiply);
-			o.op_multiply.right = right_var;
-			o.op_multiply.left = left_var;
-			o.op_multiply.result = result_var;
+			switch (e->kind) {
+			case OPERATOR_MINUS:
+				o.type = OPCODE_SUB;
+				break;
+			case OPERATOR_PLUS:
+				o.type = OPCODE_ADD;
+				break;
+			case OPERATOR_DIVIDE:
+				o.type = OPCODE_DIVIDE;
+				break;
+			case OPERATOR_MULTIPLY:
+				o.type = OPCODE_MULTIPLY;
+				break;
+			}
+			o.size = OP_SIZE(o, op_add);
+			o.op_sub.right = right_var;
+			o.op_sub.left = left_var;
+			o.op_sub.result = result_var;
 			emit_op(code, &o);
 
 			return result_var;
@@ -170,11 +141,20 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			debug_context context = {0};
 			error(context, "not implemented");
 		}
-		case OPERATOR_ASSIGN: {
+		case OPERATOR_ASSIGN:
+		case OPERATOR_MINUS_ASSIGN:
+		case OPERATOR_PLUS_ASSIGN:
+		case OPERATOR_DIVIDE_ASSIGN:
+		case OPERATOR_MULTIPLY_ASSIGN:
+		{
 			variable v = emit_expression(code, parent, right);
 
 			switch (left->kind) {
 			case EXPRESSION_VARIABLE: {
+				if (e->kind != OPERATOR_ASSIGN) {
+					debug_context context = {0};
+					error(context, "operator can not initialize a variable");
+				}
 				opcode o;
 				o.type = OPCODE_STORE_VARIABLE;
 				o.size = OP_SIZE(o, op_store_var);
@@ -187,7 +167,23 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				variable member_var = emit_expression(code, parent, left->member.left);
 
 				opcode o;
-				o.type = OPCODE_STORE_MEMBER;
+				switch (e->kind) {
+				case OPERATOR_ASSIGN:
+					o.type = OPCODE_STORE_MEMBER;
+					break;
+				case OPERATOR_MINUS_ASSIGN:
+					o.type = OPCODE_SUB_AND_STORE_MEMBER;
+					break;
+				case OPERATOR_PLUS_ASSIGN:
+					o.type = OPCODE_ADD_AND_STORE_MEMBER;
+					break;
+				case OPERATOR_DIVIDE_ASSIGN:
+					o.type = OPCODE_DIVIDE_AND_STORE_MEMBER;
+					break;
+				case OPERATOR_MULTIPLY_ASSIGN:
+					o.type = OPCODE_MULTIPLY_AND_STORE_MEMBER;
+					break;
+				}
 				o.size = OP_SIZE(o, op_store_member);
 				o.op_store_member.from = v;
 				o.op_store_member.to = member_var;
