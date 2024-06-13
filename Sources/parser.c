@@ -379,7 +379,7 @@ static expression *parse_assign(state_t *state) {
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
-			if (op == OPERATOR_ASSIGN) {
+			if (op == OPERATOR_ASSIGN || op == OPERATOR_MINUS_ASSIGN || op == OPERATOR_PLUS_ASSIGN || op == OPERATOR_DIVIDE_ASSIGN || op == OPERATOR_MULTIPLY_ASSIGN) {
 				advance_state(state);
 				expression *right = parse_logical(state);
 				expression *expression = expression_allocate();

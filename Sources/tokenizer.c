@@ -453,6 +453,26 @@ tokens tokenize(const char *filename, const char *source) {
 					token.op = OPERATOR_MOD;
 					tokens_add(&tokens, token);
 				}
+				else if (tokenizer_buffer_equals(&buffer, "-=")) {
+					token token = token_create(TOKEN_OPERATOR, &state);
+					token.op = OPERATOR_MINUS_ASSIGN;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "+=")) {
+					token token = token_create(TOKEN_OPERATOR, &state);
+					token.op = OPERATOR_PLUS_ASSIGN;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "/=")) {
+					token token = token_create(TOKEN_OPERATOR, &state);
+					token.op = OPERATOR_DIVIDE_ASSIGN;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "*=")) {
+					token token = token_create(TOKEN_OPERATOR, &state);
+					token.op = OPERATOR_MULTIPLY_ASSIGN;
+					tokens_add(&tokens, token);
+				}
 				else if (tokenizer_buffer_equals(&buffer, "=")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
 					token.op = OPERATOR_ASSIGN;
