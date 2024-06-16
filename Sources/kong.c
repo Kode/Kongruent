@@ -119,11 +119,15 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 			e->type.type = bool_id;
 			break;
 		}
-		case OPERATOR_MULTIPLY: {
+		case OPERATOR_MULTIPLY:
+		case OPERATOR_MULTIPLY_ASSIGN: {
 			type_id left_type = e->binary.left->type.type;
 			type_id right_type = e->binary.right->type.type;
 			if (left_type == right_type || (left_type == float4x4_id && right_type == float4_id)) {
 				e->type = e->binary.right->type;
+			}
+			else if (right_type == float_id && (left_type == float2_id || left_type == float3_id || left_type == float4_id)) {
+				e->type = e->binary.left->type;
 			}
 			else {
 				debug_context context = {0};
@@ -135,7 +139,10 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		case OPERATOR_PLUS:
 		case OPERATOR_DIVIDE:
 		case OPERATOR_MOD:
-		case OPERATOR_ASSIGN: {
+		case OPERATOR_ASSIGN:
+		case OPERATOR_DIVIDE_ASSIGN:
+		case OPERATOR_MINUS_ASSIGN:
+		case OPERATOR_PLUS_ASSIGN: {
 			type_id left_type = e->binary.left->type.type;
 			type_id right_type = e->binary.right->type.type;
 			if (left_type != right_type) {

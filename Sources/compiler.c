@@ -103,7 +103,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			variable result_var = allocate_variable(right_var.type);
 
 			opcode o;
-			switch (e->kind) {
+			switch (e->binary.op) {
 			case OPERATOR_MINUS:
 				o.type = OPCODE_SUB;
 				break;
@@ -116,6 +116,10 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			case OPERATOR_MULTIPLY:
 				o.type = OPCODE_MULTIPLY;
 				break;
+			default: {
+				debug_context context = {0};
+				error(context, "Unexpected operator");
+			}
 			}
 			o.size = OP_SIZE(o, op_add);
 			o.op_sub.right = right_var;
@@ -151,7 +155,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 			switch (left->kind) {
 			case EXPRESSION_VARIABLE: {
-				if (e->kind != OPERATOR_ASSIGN) {
+				if (e->binary.op != OPERATOR_ASSIGN) {
 					debug_context context = {0};
 					error(context, "operator can not initialize a variable");
 				}
@@ -167,7 +171,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				variable member_var = emit_expression(code, parent, left->member.left);
 
 				opcode o;
-				switch (e->kind) {
+				switch (e->binary.op) {
 				case OPERATOR_ASSIGN:
 					o.type = OPCODE_STORE_MEMBER;
 					break;
@@ -183,6 +187,10 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				case OPERATOR_MULTIPLY_ASSIGN:
 					o.type = OPCODE_MULTIPLY_AND_STORE_MEMBER;
 					break;
+				default: {
+					debug_context context = {0};
+					error(context, "Unexpected operator");
+				}
 				}
 				o.size = OP_SIZE(o, op_store_member);
 				o.op_store_member.from = v;

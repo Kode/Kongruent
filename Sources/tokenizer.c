@@ -378,7 +378,8 @@ tokens tokenize(const char *filename, const char *source) {
 				}
 
 				if (strcmp(long_op, "==") == 0 || strcmp(long_op, "!=") == 0 || strcmp(long_op, "<=") == 0 || strcmp(long_op, ">=") == 0 ||
-				    strcmp(long_op, "||") == 0 || strcmp(long_op, "&&") == 0 || strcmp(long_op, "->") == 0) {
+				    strcmp(long_op, "||") == 0 || strcmp(long_op, "&&") == 0 || strcmp(long_op, "->") == 0 || strcmp(long_op, "-=") == 0 ||
+				    strcmp(long_op, "+=") == 0 || strcmp(long_op, "/=") == 0 || strcmp(long_op, "*=") == 0) {
 					tokenizer_buffer_add(&buffer, ch);
 					tokenizer_state_advance(&context, &state);
 				}
@@ -411,6 +412,26 @@ tokens tokenize(const char *filename, const char *source) {
 				else if (tokenizer_buffer_equals(&buffer, "<=")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
 					token.op = OPERATOR_LESS_EQUAL;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "-=")) {
+					token token = token_create(TOKEN_OPERATOR, &state);
+					token.op = OPERATOR_MINUS_ASSIGN;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "+=")) {
+					token token = token_create(TOKEN_OPERATOR, &state);
+					token.op = OPERATOR_PLUS_ASSIGN;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "/=")) {
+					token token = token_create(TOKEN_OPERATOR, &state);
+					token.op = OPERATOR_DIVIDE_ASSIGN;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "*=")) {
+					token token = token_create(TOKEN_OPERATOR, &state);
+					token.op = OPERATOR_MULTIPLY_ASSIGN;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "-")) {
@@ -451,26 +472,6 @@ tokens tokenize(const char *filename, const char *source) {
 				else if (tokenizer_buffer_equals(&buffer, "%")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
 					token.op = OPERATOR_MOD;
-					tokens_add(&tokens, token);
-				}
-				else if (tokenizer_buffer_equals(&buffer, "-=")) {
-					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_MINUS_ASSIGN;
-					tokens_add(&tokens, token);
-				}
-				else if (tokenizer_buffer_equals(&buffer, "+=")) {
-					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_PLUS_ASSIGN;
-					tokens_add(&tokens, token);
-				}
-				else if (tokenizer_buffer_equals(&buffer, "/=")) {
-					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_DIVIDE_ASSIGN;
-					tokens_add(&tokens, token);
-				}
-				else if (tokenizer_buffer_equals(&buffer, "*=")) {
-					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_MULTIPLY_ASSIGN;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "=")) {
