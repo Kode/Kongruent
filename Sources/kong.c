@@ -599,7 +599,7 @@ void execute_sync(const char* command) {
 	memset(&startupInfo, 0, sizeof(startupInfo));
 	memset(&processInfo, 0, sizeof(processInfo));
 	startupInfo.cb = sizeof(startupInfo);
-	CreateProcessA(nullptr, (char*)command, nullptr, nullptr, FALSE, CREATE_DEFAULT_ERROR_MODE, "PATH=%PATH%;.\\cygwin\\bin\0", nullptr, &startupInfo, &processInfo);
+	CreateProcessA(NULL, (char*)command, NULL, NULL, FALSE, CREATE_DEFAULT_ERROR_MODE, "PATH=%PATH%;.\\cygwin\\bin\0", NULL, &startupInfo, &processInfo);
 	WaitForSingleObject(processInfo.hProcess, INFINITE);
 	CloseHandle(processInfo.hProcess);
 	CloseHandle(processInfo.hThread);
