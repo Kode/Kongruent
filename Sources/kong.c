@@ -397,7 +397,7 @@ int main(int argc, char **argv) {
 	char *inputs[256] = {0};
 	size_t inputs_size = 0;
 	char *platform = NULL;
-	api_kind api = API_UNKNOWN;
+	api_kind api = API_DEFAULT;
 	char *output = NULL;
 
 	for (int i = 1; i < argc; ++i) {
@@ -497,6 +497,9 @@ int main(int argc, char **argv) {
 			else if (strcmp(argv[i], "vulkan") == 0) {
 				api = API_VULKAN;
 			}
+			else if (strcmp(argv[i], "default") == 0) {
+				api = API_DEFAULT;
+			}
 			else {
 				debug_context context = {0};
 				error(context, "Unknown API %s", argv[i]);
@@ -508,11 +511,33 @@ int main(int argc, char **argv) {
 	}
 
 	debug_context context = {0};
+	check(platform != NULL, context, "platform parameter not found");
+
+	if (api == API_DEFAULT) {
+		if (strcmp(platform, "windows") == 0) {
+			api = API_DIRECT3D12;
+		}
+		else if (strcmp(platform, "macos") == 0) {
+			api = API_METAL;
+		}
+		else if (strcmp(platform, "linux") == 0) {
+			api = API_VULKAN;
+		}
+		else if (strcmp(platform, "ios") == 0) {
+			api = API_METAL;
+		}
+		else if (strcmp(platform, "android") == 0) {
+			api = API_VULKAN;
+		}
+		else if (strcmp(platform, "wasm") == 0) {
+			api = API_WEBGPU;
+		}
+	}
+
 	check(mode == MODE_MODECHECK, context, "Wrong parameter syntax");
 	check(inputs_size > 0, context, "no input parameters found");
 	check(output != NULL, context, "output parameter not found");
-	check(platform != NULL, context, "platform parameter not found");
-	check(api != API_UNKNOWN, context, "api parameter not found");
+	check(api != API_DEFAULT, context, "api parameter not found");
 
 	names_init();
 	types_init();
