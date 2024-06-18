@@ -34,7 +34,7 @@ type_ref find_local_var_type(block *b, name_id name) {
 	for (size_t i = 0; i < b->vars.size; ++i) {
 		if (b->vars.v[i].name == name) {
 			debug_context context = {0};
-			check(b->vars.v[i].type.type != NO_TYPE, context, "Local var has not type");
+			check(b->vars.v[i].type.type != NO_TYPE, context, "Local var has no type");
 			return b->vars.v[i].type;
 		}
 	}
