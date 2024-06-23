@@ -20,6 +20,9 @@ project.addExclude('Sources/generators/**')
 if (platform === Platform.Windows) {
 	project.addDefine('_CRT_SECURE_NO_WARNINGS');
 	project.addLib('d3dcompiler');
+
+	project.addIncludeDir('Sources/libs/dxc/inc');
+	project.addLib('Sources/libs/dxc/lib/x64/dxcompiler');
 }
 
 resolve(project);

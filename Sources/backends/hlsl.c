@@ -8,6 +8,7 @@
 #include "../types.h"
 #include "cstyle.h"
 #include "d3d11.h"
+#include "d3d12.h"
 #include "d3d9.h"
 
 #include <assert.h>
@@ -498,8 +499,10 @@ static void hlsl_export_vertex(char *directory, api_kind d3d, function *main) {
 		result = compile_hlsl_to_d3d9(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
 		break;
 	case API_DIRECT3D11:
-	case API_DIRECT3D12:
 		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
+		break;
+	case API_DIRECT3D12:
+		result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
 		break;
 	default:
 		error(context, "Unsupported API for HLSL");
@@ -540,8 +543,10 @@ static void hlsl_export_fragment(char *directory, api_kind d3d, function *main) 
 		result = compile_hlsl_to_d3d9(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
 		break;
 	case API_DIRECT3D11:
-	case API_DIRECT3D12:
 		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
+		break;
+	case API_DIRECT3D12:
+		result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
 		break;
 	default:
 		error(context, "Unsupported API for HLSL");

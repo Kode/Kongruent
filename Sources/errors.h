@@ -5,6 +5,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if (__STDC_VERSION__ >= 201112L)
 #define noreturn _Noreturn
 #else
@@ -26,3 +30,7 @@ void check_function(bool test, debug_context context, const char *message, ...);
 void check_args(bool test, debug_context context, const char *message, va_list args);
 
 // V_ASSERT_CONTRACT, assertMacro:check
+
+#ifdef __cplusplus
+}
+#endif
