@@ -474,11 +474,15 @@ static void write_vertex_input_decorations(instructions_buffer *instructions, ui
 	}
 }
 
-static uint32_t write_op_function(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type) {
-	uint32_t result = allocate_index();
-
+static uint32_t write_op_function_with_result(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type, uint32_t result) {
 	uint32_t operands[] = {result_type, result, (uint32_t)control, function_type};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_FUNCTION, operands);
+	return result;
+}
+
+static uint32_t write_op_function(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type) {
+	uint32_t result = allocate_index();
+	write_op_function_with_result(instructions, result_type, control, function_type, result);
 	return result;
 }
 
@@ -604,9 +608,9 @@ static uint32_t convert_kong_index_to_spirv_index(uint64_t index) {
 static uint32_t output_var;
 static uint32_t input_var;
 
-static void write_function(instructions_buffer *instructions, function *f, shader_stage stage, bool main, type_id input, uint32_t input_var, type_id output,
+static void write_function(instructions_buffer *instructions, function *f, uint32_t function_id, shader_stage stage, bool main, type_id input, uint32_t input_var, type_id output,
                            uint32_t output_var) {
-	write_op_function(instructions, void_type, FUNCTION_CONTROL_NONE, void_function_type);
+	write_op_function_with_result(instructions, void_type, FUNCTION_CONTROL_NONE, void_function_type, function_id);
 	write_label(instructions);
 
 	debug_context context = {0};
@@ -800,9 +804,9 @@ static void write_function(instructions_buffer *instructions, function *f, shade
 	write_function_end(instructions);
 }
 
-static void write_functions(instructions_buffer *instructions, function *main, shader_stage stage, type_id input, uint32_t input_var, type_id output,
+static void write_functions(instructions_buffer *instructions, function *main, uint32_t entry_point, shader_stage stage, type_id input, uint32_t input_var, type_id output,
                             uint32_t output_var) {
-	write_function(instructions, main, stage, true, input, input_var, output, output_var);
+	write_function(instructions, main, entry_point, stage, true, input, input_var, output, output_var);
 }
 
 static void write_constants(instructions_buffer *instructions) {
@@ -917,7 +921,7 @@ static void spirv_export_vertex(char *directory, function *main) {
 		}
 	}
 
-	write_functions(&instructions, main, SHADER_STAGE_VERTEX, vertex_input, input_var, vertex_output, output_var);
+	write_functions(&instructions, main, entry_point, SHADER_STAGE_VERTEX, vertex_input, input_var, vertex_output, output_var);
 
 	write_types(&constants);
 
@@ -982,7 +986,7 @@ static void spirv_export_fragment(char *directory, function *main) {
 
 	write_op_variable_with_result(&instructions, spirv_float4_type, output_var, STORAGE_CLASS_OUTPUT);
 
-	write_functions(&instructions, main, SHADER_STAGE_FRAGMENT, pixel_input, input_var, NO_TYPE, output_var);
+	write_functions(&instructions, main, entry_point, SHADER_STAGE_FRAGMENT, pixel_input, input_var, NO_TYPE, output_var);
 
 	write_types(&constants);
 
