@@ -961,7 +961,7 @@ static void spirv_export_fragment(char *directory, function *main) {
 	debug_context context = {0};
 	check(pixel_input != NO_TYPE, context, "fragment input missing");
 
-	write_capabilities(&instructions);
+	write_capabilities(&decorations);
 	write_op_ext_inst_import(&decorations, "GLSL.std.450");
 	write_op_memory_model(&decorations, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
 	uint32_t entry_point = allocate_index();
