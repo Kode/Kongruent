@@ -477,7 +477,7 @@ static void write_vertex_input_decorations(instructions_buffer *instructions, ui
 	}
 }
 
-static uint32_t write_op_function_with_result(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type, uint32_t result) {
+static uint32_t write_op_function_preallocated(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type, uint32_t result) {
 	uint32_t operands[] = {result_type, result, (uint32_t)control, function_type};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_FUNCTION, operands);
 	return result;
@@ -485,7 +485,7 @@ static uint32_t write_op_function_with_result(instructions_buffer *instructions,
 
 static uint32_t write_op_function(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type) {
 	uint32_t result = allocate_index();
-	write_op_function_with_result(instructions, result_type, control, function_type, result);
+	write_op_function_preallocated(instructions, result_type, control, function_type, result);
 	return result;
 }
 
@@ -580,7 +580,7 @@ static uint32_t write_op_variable(instructions_buffer *instructions, uint32_t re
 	return result;
 }
 
-static uint32_t write_op_variable_with_result(instructions_buffer *instructions, uint32_t result_type, uint32_t result, storage_class storage) {
+static uint32_t write_op_variable_preallocated(instructions_buffer *instructions, uint32_t result_type, uint32_t result, storage_class storage) {
 	uint32_t operands[] = {result_type, result, (uint32_t)storage};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_VARIABLE, operands);
 	return result;
@@ -613,7 +613,7 @@ static uint32_t input_var;
 
 static void write_function(instructions_buffer *instructions, function *f, uint32_t function_id, shader_stage stage, bool main, type_id input, uint32_t input_var, type_id output,
                            uint32_t output_var) {
-	write_op_function_with_result(instructions, void_type, FUNCTION_CONTROL_NONE, void_function_type, function_id);
+	write_op_function_preallocated(instructions, void_type, FUNCTION_CONTROL_NONE, void_function_type, function_id);
 	write_label(instructions);
 
 	debug_context context = {0};
@@ -903,20 +903,20 @@ static void spirv_export_vertex(char *directory, function *main) {
 
 	write_base_types(&constants, vertex_input);
 
-	write_op_variable_with_result(&instructions, output_struct_pointer_type, output_var, STORAGE_CLASS_OUTPUT);
+	write_op_variable_preallocated(&instructions, output_struct_pointer_type, output_var, STORAGE_CLASS_OUTPUT);
 
 	type *input = get_type(vertex_input);
 
 	for (size_t i = 0; i < input->members.size; ++i) {
 		member m = input->members.m[i];
 		if (m.type.type == float2_id) {
-			write_op_variable_with_result(&instructions, spirv_float2_type, input_var, STORAGE_CLASS_INPUT);
+			write_op_variable_preallocated(&instructions, spirv_float2_type, input_var, STORAGE_CLASS_INPUT);
 		}
 		else if (m.type.type == float3_id) {
-			write_op_variable_with_result(&instructions, spirv_float3_type, input_var, STORAGE_CLASS_INPUT);
+			write_op_variable_preallocated(&instructions, spirv_float3_type, input_var, STORAGE_CLASS_INPUT);
 		}
 		else if (m.type.type == float4_id) {
-			write_op_variable_with_result(&instructions, spirv_float4_type, input_var, STORAGE_CLASS_INPUT);
+			write_op_variable_preallocated(&instructions, spirv_float4_type, input_var, STORAGE_CLASS_INPUT);
 		}
 		else {
 			debug_context context = {0};
@@ -987,7 +987,7 @@ static void spirv_export_fragment(char *directory, function *main) {
 
 	write_base_types(&constants, NO_TYPE);
 
-	write_op_variable_with_result(&instructions, spirv_float4_pointer_output_type, output_var, STORAGE_CLASS_OUTPUT);
+	write_op_variable_preallocated(&instructions, spirv_float4_pointer_output_type, output_var, STORAGE_CLASS_OUTPUT);
 
 	write_functions(&instructions, main, entry_point, SHADER_STAGE_FRAGMENT, pixel_input, input_var, NO_TYPE, output_var);
 
