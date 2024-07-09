@@ -336,6 +336,7 @@ static uint32_t spirv_uint_type;
 static uint32_t spirv_float2_type;
 static uint32_t spirv_float3_type;
 static uint32_t spirv_float4_type;
+static uint32_t spirv_float4_pointer_output_type;
 
 typedef struct complex_type {
 	type_id type;
@@ -399,6 +400,8 @@ static void write_base_types(instructions_buffer *constants, type_id vertex_inpu
 
 	spirv_float4_type = convert_type_to_spirv_index(float4_id);
 	write_type_vector_preallocated(constants, spirv_float_type, 4, spirv_float4_type);
+
+	spirv_float4_pointer_output_type = write_type_pointer(constants, STORAGE_CLASS_OUTPUT, spirv_float4_type);
 
 	spirv_uint_type = write_type_int(constants, 32, false);
 	spirv_int_type = write_type_int(constants, 32, true);
@@ -984,7 +987,7 @@ static void spirv_export_fragment(char *directory, function *main) {
 
 	write_base_types(&constants, NO_TYPE);
 
-	write_op_variable_with_result(&instructions, spirv_float4_type, output_var, STORAGE_CLASS_OUTPUT);
+	write_op_variable_with_result(&instructions, spirv_float4_pointer_output_type, output_var, STORAGE_CLASS_OUTPUT);
 
 	write_functions(&instructions, main, entry_point, SHADER_STAGE_FRAGMENT, pixel_input, input_var, NO_TYPE, output_var);
 
