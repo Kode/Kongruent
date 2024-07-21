@@ -19,6 +19,9 @@ fun pos(input: VertexIn): FragmentIn {
 fun pixel(input: FragmentIn): float4 {
     var color: float4;
     color.r = 1.0;
+    color.g = 0.0;
+    color.b = 0.0;
+    color.a = 1.0;
     return color;
 }
 

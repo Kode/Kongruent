@@ -6,7 +6,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef enum variable_kind { VARIABLE_GLOBAL, VARIABLE_LOCAL } variable_kind;
+
 typedef struct variable {
+	variable_kind kind;
 	uint64_t index;
 	type_ref type;
 } variable;

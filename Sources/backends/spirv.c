@@ -140,6 +140,56 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_LABEL = 248
 } spirv_opcode;
 
+static type_id find_access_type(int *indices, int indices_size, type_id base_type) {
+	if (indices_size == 1) {
+		if (base_type == float2_id || base_type == float3_id || base_type == float4_id) {
+			return float_id;
+		}
+		else {
+			type *t = get_type(base_type);
+			assert(indices[0] < t->members.size);
+			return t->members.m[indices[0]].type.type;
+		}
+	}
+	else {
+		type *t = get_type(base_type);
+		assert(indices[0] < t->members.size);
+		return find_access_type(&indices[1], indices_size - 1, t->members.m[indices[0]].type.type);
+	}
+}
+
+static void vector_member_indices(int *input_indices, int *output_indices, int indices_size, type_id base_type) {
+	if (base_type == float2_id || base_type == float3_id || base_type == float4_id) {
+		type *t = get_type(base_type);
+
+		if (strcmp(get_name(t->members.m[input_indices[0]].name), "x") == 0 || strcmp(get_name(t->members.m[input_indices[0]].name), "r") == 0) {
+			output_indices[0] = 0;
+		}
+		else if (strcmp(get_name(t->members.m[input_indices[0]].name), "y") == 0 || strcmp(get_name(t->members.m[input_indices[0]].name), "g") == 0) {
+			output_indices[0] = 1;
+		}
+		else if (strcmp(get_name(t->members.m[input_indices[0]].name), "z") == 0 || strcmp(get_name(t->members.m[input_indices[0]].name), "b") == 0) {
+			output_indices[0] = 2;
+		}
+		else if (strcmp(get_name(t->members.m[input_indices[0]].name), "w") == 0 || strcmp(get_name(t->members.m[input_indices[0]].name), "a") == 0) {
+			output_indices[0] = 3;
+		}
+		else {
+			// assert(false);
+			output_indices[0] = 0; // TODO
+		}
+	}
+	else {
+		output_indices[0] = input_indices[0];
+	}
+
+	if (indices_size > 1) {
+		type *t = get_type(base_type);
+		assert(input_indices[0] < t->members.size);
+		vector_member_indices(&input_indices[1], &output_indices[1], indices_size - 1, t->members.m[input_indices[0]].type.type);
+	}
+}
+
 typedef enum addressing_model { ADDRESSING_MODEL_LOGICAL = 0 } addressing_model;
 
 typedef enum memory_model { MEMORY_MODEL_SIMPLE = 0, MEMORY_MODEL_GLSL450 = 1 } memory_model;
@@ -477,7 +527,8 @@ static void write_vertex_input_decorations(instructions_buffer *instructions, ui
 	}
 }
 
-static uint32_t write_op_function_preallocated(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type, uint32_t result) {
+static uint32_t write_op_function_preallocated(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type,
+                                               uint32_t result) {
 	uint32_t operands[] = {result_type, result, (uint32_t)control, function_type};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_FUNCTION, operands);
 	return result;
@@ -611,8 +662,8 @@ static uint32_t convert_kong_index_to_spirv_index(uint64_t index) {
 static uint32_t output_var;
 static uint32_t input_var;
 
-static void write_function(instructions_buffer *instructions, function *f, uint32_t function_id, shader_stage stage, bool main, type_id input, uint32_t input_var, type_id output,
-                           uint32_t output_var) {
+static void write_function(instructions_buffer *instructions, function *f, uint32_t function_id, shader_stage stage, bool main, type_id input,
+                           uint32_t input_var, type_id output, uint32_t output_var) {
 	write_op_function_preallocated(instructions, void_type, FUNCTION_CONTROL_NONE, void_function_type, function_id);
 	write_label(instructions);
 
@@ -644,7 +695,8 @@ static void write_function(instructions_buffer *instructions, function *f, uint3
 		opcode *o = (opcode *)&data[index];
 		switch (o->type) {
 		case OPCODE_VAR: {
-			uint32_t result = write_op_variable(instructions, convert_type_to_spirv_index(o->op_var.var.type.type), STORAGE_CLASS_FUNCTION);
+			uint32_t result =
+			    write_op_variable(instructions, convert_pointer_type_to_spirv_index(o->op_var.var.type.type, STORAGE_CLASS_FUNCTION), STORAGE_CLASS_FUNCTION);
 			hmput(index_map, o->op_var.var.index, result);
 			break;
 		}
@@ -724,8 +776,25 @@ static void write_function(instructions_buffer *instructions, function *f, uint3
 			for (size_t i = 0; i < indices_size; ++i) {
 				indices[i] = (int)o->op_store_member.member_indices[i];
 			}
-			uint32_t pointer = write_op_access_chain(instructions, convert_type_to_spirv_index(o->op_store_member.to.type.type),
-			                                         convert_kong_index_to_spirv_index(o->op_store_member.to.index), indices, indices_size);
+
+			type_id access_kong_type = find_access_type(indices, indices_size, o->op_store_member.to.type.type);
+
+			uint32_t access_type = 0;
+
+			switch (o->op_store_member.to.kind) {
+			case VARIABLE_LOCAL:
+				access_type = convert_pointer_type_to_spirv_index(access_kong_type, STORAGE_CLASS_FUNCTION);
+				break;
+			case VARIABLE_GLOBAL:
+				access_type = convert_pointer_type_to_spirv_index(access_kong_type, STORAGE_CLASS_OUTPUT);
+				break;
+			}
+
+			int spirv_indices[256];
+			vector_member_indices(indices, spirv_indices, indices_size, o->op_store_member.to.type.type);
+
+			uint32_t pointer =
+			    write_op_access_chain(instructions, access_type, convert_kong_index_to_spirv_index(o->op_store_member.to.index), spirv_indices, indices_size);
 			write_op_store(instructions, pointer, convert_kong_index_to_spirv_index(o->op_store_member.from.index));
 			break;
 		}
@@ -807,8 +876,8 @@ static void write_function(instructions_buffer *instructions, function *f, uint3
 	write_function_end(instructions);
 }
 
-static void write_functions(instructions_buffer *instructions, function *main, uint32_t entry_point, shader_stage stage, type_id input, uint32_t input_var, type_id output,
-                            uint32_t output_var) {
+static void write_functions(instructions_buffer *instructions, function *main, uint32_t entry_point, shader_stage stage, type_id input, uint32_t input_var,
+                            type_id output, uint32_t output_var) {
 	write_function(instructions, main, entry_point, stage, true, input, input_var, output, output_var);
 }
 

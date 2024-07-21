@@ -44,6 +44,7 @@ variable find_local_var(block *b, name_id name) {
 			variable var;
 			var.index = b->vars.v[i].variable_id;
 			var.type = b->vars.v[i].type;
+			var.kind = VARIABLE_LOCAL;
 			return var;
 		}
 	}
@@ -57,10 +58,11 @@ static uint64_t next_variable_id = 1;
 
 variable all_variables[1024 * 1024];
 
-variable allocate_variable(type_ref type) {
+variable allocate_variable(type_ref type, variable_kind kind) {
 	variable v;
 	v.index = next_variable_id;
 	v.type = type;
+	v.kind = kind;
 	all_variables[v.index] = v;
 	++next_variable_id;
 	return v;
@@ -100,7 +102,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		case OPERATOR_MULTIPLY: {
 			variable right_var = emit_expression(code, parent, right);
 			variable left_var = emit_expression(code, parent, left);
-			variable result_var = allocate_variable(right_var.type);
+			variable result_var = allocate_variable(right_var.type, VARIABLE_LOCAL);
 
 			opcode o;
 			switch (e->binary.op) {
@@ -149,8 +151,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		case OPERATOR_MINUS_ASSIGN:
 		case OPERATOR_PLUS_ASSIGN:
 		case OPERATOR_DIVIDE_ASSIGN:
-		case OPERATOR_MULTIPLY_ASSIGN:
-		{
+		case OPERATOR_MULTIPLY_ASSIGN: {
 			variable v = emit_expression(code, parent, right);
 
 			switch (left->kind) {
@@ -301,7 +302,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			o.type = OPCODE_NOT;
 			o.size = OP_SIZE(o, op_not);
 			o.op_not.from = v;
-			o.op_not.to = allocate_variable(v.type);
+			o.op_not.to = allocate_variable(v.type, VARIABLE_LOCAL);
 			emit_op(code, &o);
 			return o.op_not.to;
 		}
@@ -323,7 +324,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
 		t.type = float_id;
-		variable v = allocate_variable(t);
+		variable v = allocate_variable(t, VARIABLE_LOCAL);
 
 		opcode o;
 		o.type = OPCODE_LOAD_CONSTANT;
@@ -362,7 +363,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
 		t.type = float4_id;
-		variable v = allocate_variable(t);
+		variable v = allocate_variable(t, VARIABLE_LOCAL);
 
 		opcode o;
 		o.type = OPCODE_CALL;
@@ -382,7 +383,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		return v;
 	}
 	case EXPRESSION_MEMBER: {
-		variable v = allocate_variable(e->type);
+		variable v = allocate_variable(e->type, VARIABLE_LOCAL);
 
 		opcode o;
 		o.type = OPCODE_LOAD_MEMBER;
@@ -533,7 +534,7 @@ void convert_globals(void) {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
 		t.type = g.type;
-		variable v = allocate_variable(t);
+		variable v = allocate_variable(t, VARIABLE_GLOBAL);
 		allocated_globals[allocated_globals_size].g = g;
 		allocated_globals[allocated_globals_size].variable_id = v.index;
 		allocated_globals_size += 1;
@@ -553,7 +554,7 @@ void convert_function_block(opcodes *code, struct statement *block) {
 		error(context, "Expected a block");
 	}
 	for (size_t i = 0; i < block->block.vars.size; ++i) {
-		variable var = allocate_variable(block->block.vars.v[i].type);
+		variable var = allocate_variable(block->block.vars.v[i].type, VARIABLE_LOCAL);
 		block->block.vars.v[i].variable_id = var.index;
 	}
 	for (size_t i = 0; i < block->block.statements.size; ++i) {
