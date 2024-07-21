@@ -527,6 +527,11 @@ static void write_vertex_input_decorations(instructions_buffer *instructions, ui
 	}
 }
 
+static void write_fragment_output_decorations(instructions_buffer *instructions, uint32_t output) {
+	uint32_t operands[] = {output, (uint32_t)DECORATION_LOCATION, 0};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_DECORATE, operands);
+}
+
 static uint32_t write_op_function_preallocated(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type,
                                                uint32_t result) {
 	uint32_t operands[] = {result_type, result, (uint32_t)control, function_type};
@@ -1049,6 +1054,8 @@ static void spirv_export_fragment(char *directory, function *main) {
 	uint32_t interfaces[] = {output_var /*, input_var*/};
 	write_op_entry_point(&decorations, EXECUTION_MODEL_FRAGMENT, entry_point, "main", interfaces, sizeof(interfaces) / 4);
 	write_op_execution_mode(&decorations, entry_point, EXECUTION_MODE_ORIGIN_UPPER_LEFT);
+
+	write_fragment_output_decorations(&decorations, output_var);
 
 	/*uint32_t output_struct = allocate_index();
 	write_vertex_output_decorations(&decorations, output_struct);
