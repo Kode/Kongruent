@@ -850,6 +850,9 @@ static void write_function(instructions_buffer *instructions, function *f, uint3
 				write_return(instructions);
 			}
 			else {
+				uint32_t object = write_op_load(instructions, convert_type_to_spirv_index(o->op_return.var.type.type),
+				                                convert_kong_index_to_spirv_index(o->op_return.var.index));
+				write_op_store(instructions, output_var, object);
 				write_return(instructions);
 			}
 			ends_with_return = true;
