@@ -14,6 +14,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct spirv_id {
+	uint32_t id;
+} spirv_id;
+
 typedef struct instructions_buffer {
 	uint32_t *instructions;
 	size_t offset;
@@ -248,10 +252,13 @@ static void write_capability(instructions_buffer *instructions, capability c) {
 	write_instruction(instructions, 2, SPIRV_OPCODE_CAPABILITY, &operand);
 }
 
-static uint32_t allocate_index(void) {
+static spirv_id allocate_index(void) {
 	uint32_t result = next_index;
 	++next_index;
-	return result;
+
+	spirv_id id;
+	id.id = result;
+	return id;
 }
 
 static uint16_t write_string(uint32_t *operands, const char *string) {
@@ -260,10 +267,10 @@ static uint16_t write_string(uint32_t *operands, const char *string) {
 	return (length + 1) / 4 + 1;
 }
 
-static uint32_t write_op_ext_inst_import(instructions_buffer *instructions, const char *name) {
-	uint32_t result = allocate_index();
+static spirv_id write_op_ext_inst_import(instructions_buffer *instructions, const char *name) {
+	spirv_id result = allocate_index();
 
-	operands_buffer[0] = result;
+	operands_buffer[0] = result.id;
 
 	uint32_t name_length = write_string(&operands_buffer[1], name);
 
@@ -277,23 +284,23 @@ static void write_op_memory_model(instructions_buffer *instructions, uint32_t ad
 	write_instruction(instructions, 3, SPIRV_OPCODE_MEMORY_MODEL, args);
 }
 
-static void write_op_entry_point(instructions_buffer *instructions, execution_model em, uint32_t entry_point, const char *name, uint32_t *interfaces,
+static void write_op_entry_point(instructions_buffer *instructions, execution_model em, spirv_id entry_point, const char *name, spirv_id *interfaces,
                                  uint16_t interfaces_size) {
 	operands_buffer[0] = (uint32_t)em;
-	operands_buffer[1] = entry_point;
+	operands_buffer[1] = entry_point.id;
 
 	uint32_t name_length = write_string(&operands_buffer[2], name);
 
 	for (uint16_t i = 0; i < interfaces_size; ++i) {
-		operands_buffer[2 + name_length + i] = interfaces[i];
+		operands_buffer[2 + name_length + i] = interfaces[i].id;
 	}
 
 	write_instruction(instructions, 3 + name_length + interfaces_size, SPIRV_OPCODE_ENTRY_POINT, operands_buffer);
 }
 
-static void write_op_execution_mode(instructions_buffer *instructions, uint32_t entry_point, uint32_t execution_mode) {
-	operands_buffer[0] = entry_point;
-	operands_buffer[1] = execution_mode;
+static void write_op_execution_mode(instructions_buffer *instructions, spirv_id entry_point, execution_mode mode) {
+	operands_buffer[0] = entry_point.id;
+	operands_buffer[1] = (uint32_t)mode;
 
 	write_instruction(instructions, 3, SPIRV_OPCODE_EXECUTION_MODE, operands_buffer);
 }
@@ -302,91 +309,91 @@ static void write_capabilities(instructions_buffer *instructions) {
 	write_capability(instructions, CAPABILITY_SHADER);
 }
 
-static uint32_t write_type_void(instructions_buffer *instructions) {
-	uint32_t void_type = allocate_index();
-	write_instruction(instructions, 2, SPIRV_OPCODE_TYPE_VOID, &void_type);
+static spirv_id write_type_void(instructions_buffer *instructions) {
+	spirv_id void_type = allocate_index();
+	write_instruction(instructions, 2, SPIRV_OPCODE_TYPE_VOID, &void_type.id);
 	return void_type;
 }
 
 #define WORD_COUNT(operands) (1 + sizeof(operands) / 4)
 
-static uint32_t write_type_function(instructions_buffer *instructions, uint32_t return_type, uint32_t *parameter_types, uint16_t parameter_types_size) {
-	uint32_t function_type = allocate_index();
+static spirv_id write_type_function(instructions_buffer *instructions, spirv_id return_type, spirv_id *parameter_types, uint16_t parameter_types_size) {
+	spirv_id function_type = allocate_index();
 
-	operands_buffer[0] = function_type;
-	operands_buffer[1] = return_type;
+	operands_buffer[0] = function_type.id;
+	operands_buffer[1] = return_type.id;
 	for (uint16_t i = 0; i < parameter_types_size; ++i) {
-		operands_buffer[i + 2] = parameter_types[0];
+		operands_buffer[i + 2] = parameter_types[0].id;
 	}
 	write_instruction(instructions, 3 + parameter_types_size, SPIRV_OPCODE_TYPE_FUNCTION, operands_buffer);
 	return function_type;
 }
 
-static uint32_t write_type_float(instructions_buffer *instructions, uint32_t width) {
-	uint32_t float_type = allocate_index();
+static spirv_id write_type_float(instructions_buffer *instructions, uint32_t width) {
+	spirv_id float_type = allocate_index();
 
-	uint32_t operands[] = {float_type, width};
+	uint32_t operands[] = {float_type.id, width};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_FLOAT, operands);
 	return float_type;
 }
 
-static uint32_t write_type_vector(instructions_buffer *instructions, uint32_t component_type, uint32_t component_count) {
-	uint32_t vector_type = allocate_index();
+static spirv_id write_type_vector(instructions_buffer *instructions, spirv_id component_type, uint32_t component_count) {
+	spirv_id vector_type = allocate_index();
 
-	uint32_t operands[] = {vector_type, component_type, component_count};
+	uint32_t operands[] = {vector_type.id, component_type.id, component_count};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_VECTOR, operands);
 	return vector_type;
 }
 
-static uint32_t write_type_vector_preallocated(instructions_buffer *instructions, uint32_t component_type, uint32_t component_count, uint32_t vector_type) {
-	uint32_t operands[] = {vector_type, component_type, component_count};
+static spirv_id write_type_vector_preallocated(instructions_buffer *instructions, spirv_id component_type, uint32_t component_count, spirv_id vector_type) {
+	uint32_t operands[] = {vector_type.id, component_type.id, component_count};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_VECTOR, operands);
 	return vector_type;
 }
 
-static uint32_t write_type_int(instructions_buffer *instructions, uint32_t width, bool signedness) {
-	uint32_t int_type = allocate_index();
+static spirv_id write_type_int(instructions_buffer *instructions, uint32_t width, bool signedness) {
+	spirv_id int_type = allocate_index();
 
-	uint32_t operands[] = {int_type, width, signedness ? 1 : 0};
+	uint32_t operands[] = {int_type.id, width, signedness ? 1 : 0};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_INT, operands);
 	return int_type;
 }
 
-static uint32_t write_type_struct(instructions_buffer *instructions, uint32_t *types, uint16_t types_size) {
-	uint32_t struct_type = allocate_index();
+static spirv_id write_type_struct(instructions_buffer *instructions, spirv_id *types, uint16_t types_size) {
+	spirv_id struct_type = allocate_index();
 
-	operands_buffer[0] = struct_type;
+	operands_buffer[0] = struct_type.id;
 	for (uint16_t i = 0; i < types_size; ++i) {
-		operands_buffer[i + 1] = types[i];
+		operands_buffer[i + 1] = types[i].id;
 	}
 	write_instruction(instructions, 2 + types_size, SPIRV_OPCODE_TYPE_STRUCT, operands_buffer);
 	return struct_type;
 }
 
-static uint32_t write_type_pointer(instructions_buffer *instructions, storage_class storage, uint32_t type) {
-	uint32_t pointer_type = allocate_index();
+static spirv_id write_type_pointer(instructions_buffer *instructions, storage_class storage, spirv_id type) {
+	spirv_id pointer_type = allocate_index();
 
-	uint32_t operands[] = {pointer_type, (uint32_t)storage, type};
+	uint32_t operands[] = {pointer_type.id, (uint32_t)storage, type.id};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_POINTER, operands);
 	return pointer_type;
 }
 
-static uint32_t write_type_pointer_preallocated(instructions_buffer *instructions, storage_class storage, uint32_t type, uint32_t pointer_type) {
-	uint32_t operands[] = {pointer_type, (uint32_t)storage, type};
+static spirv_id write_type_pointer_preallocated(instructions_buffer *instructions, storage_class storage, spirv_id type, spirv_id pointer_type) {
+	uint32_t operands[] = {pointer_type.id, (uint32_t)storage, type.id};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_POINTER, operands);
 	return pointer_type;
 }
 
-static uint32_t void_type;
-static uint32_t void_function_type;
-static uint32_t spirv_float_type;
-static uint32_t float_input_pointer_type;
-static uint32_t spirv_int_type;
-static uint32_t spirv_uint_type;
-static uint32_t spirv_float2_type;
-static uint32_t spirv_float3_type;
-static uint32_t spirv_float4_type;
-static uint32_t spirv_float4_pointer_output_type;
+static spirv_id void_type;
+static spirv_id void_function_type;
+static spirv_id spirv_float_type;
+static spirv_id float_input_pointer_type;
+static spirv_id spirv_int_type;
+static spirv_id spirv_uint_type;
+static spirv_id spirv_float2_type;
+static spirv_id spirv_float3_type;
+static spirv_id spirv_float4_type;
+static spirv_id spirv_float4_pointer_output_type;
 
 typedef struct complex_type {
 	type_id type;
@@ -396,38 +403,38 @@ typedef struct complex_type {
 
 static struct {
 	complex_type key;
-	uint32_t value;
+	spirv_id value;
 } *type_map = NULL;
 
-static uint32_t convert_type_to_spirv_index(type_id type) {
+static spirv_id convert_type_to_spirv_id(type_id type) {
 	complex_type ct;
 	ct.type = type;
 	ct.pointer = (uint16_t) false;
 	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 
-	uint32_t spirv_index = hmget(type_map, ct);
-	if (spirv_index == 0) {
+	spirv_id spirv_index = hmget(type_map, ct);
+	if (spirv_index.id == 0) {
 		spirv_index = allocate_index();
 		hmput(type_map, ct, spirv_index);
 	}
 	return spirv_index;
 }
 
-static uint32_t convert_pointer_type_to_spirv_index(type_id type, storage_class storage) {
+static spirv_id convert_pointer_type_to_spirv_id(type_id type, storage_class storage) {
 	complex_type ct;
 	ct.type = type;
 	ct.pointer = (uint16_t) true;
 	ct.storage = (uint16_t)storage;
 
-	uint32_t spirv_index = hmget(type_map, ct);
-	if (spirv_index == 0) {
+	spirv_id spirv_index = hmget(type_map, ct);
+	if (spirv_index.id == 0) {
 		spirv_index = allocate_index();
 		hmput(type_map, ct, spirv_index);
 	}
 	return spirv_index;
 }
 
-static uint32_t output_struct_pointer_type = 0;
+static spirv_id output_struct_pointer_type = {0};
 
 static void write_base_types(instructions_buffer *constants, type_id vertex_input) {
 	void_type = write_type_void(constants);
@@ -442,13 +449,13 @@ static void write_base_types(instructions_buffer *constants, type_id vertex_inpu
 	ct.type = float_id;
 	hmput(type_map, ct, spirv_float_type);
 
-	spirv_float2_type = convert_type_to_spirv_index(float2_id);
+	spirv_float2_type = convert_type_to_spirv_id(float2_id);
 	write_type_vector_preallocated(constants, spirv_float_type, 2, spirv_float2_type);
 
-	spirv_float3_type = convert_type_to_spirv_index(float3_id);
+	spirv_float3_type = convert_type_to_spirv_id(float3_id);
 	write_type_vector_preallocated(constants, spirv_float_type, 3, spirv_float3_type);
 
-	spirv_float4_type = convert_type_to_spirv_index(float4_id);
+	spirv_float4_type = convert_type_to_spirv_id(float4_id);
 	write_type_vector_preallocated(constants, spirv_float_type, 4, spirv_float4_type);
 
 	spirv_float4_pointer_output_type = write_type_pointer(constants, STORAGE_CLASS_OUTPUT, spirv_float4_type);
@@ -457,14 +464,14 @@ static void write_base_types(instructions_buffer *constants, type_id vertex_inpu
 	spirv_int_type = write_type_int(constants, 32, true);
 
 	if (vertex_input != NO_TYPE) {
-		uint32_t types[] = {spirv_float3_type};
-		uint32_t input_struct_type = write_type_struct(constants, types, 1);
+		spirv_id types[] = {spirv_float3_type};
+		spirv_id input_struct_type = write_type_struct(constants, types, 1);
 		ct.type = vertex_input;
 		hmput(type_map, ct, input_struct_type);
 		output_struct_pointer_type = write_type_pointer(constants, STORAGE_CLASS_OUTPUT, input_struct_type);
-		uint32_t output_float3_pointer_type = write_type_pointer(constants, STORAGE_CLASS_OUTPUT, spirv_float3_type);
+		write_type_pointer(constants, STORAGE_CLASS_OUTPUT, spirv_float3_type);
 
-		uint32_t input_pointer_types[256];
+		spirv_id input_pointer_types[256];
 
 		type *input = get_type(vertex_input);
 
@@ -494,61 +501,61 @@ static void write_types(instructions_buffer *constants) {
 	for (size_t i = 0; i < size; ++i) {
 		complex_type type = type_map[i].key;
 		if (type.pointer) {
-			write_type_pointer_preallocated(constants, type.storage, convert_type_to_spirv_index(type.type), type_map[i].value);
+			write_type_pointer_preallocated(constants, type.storage, convert_type_to_spirv_id(type.type), type_map[i].value);
 		}
 	}
 }
 
-static uint32_t write_constant(instructions_buffer *instructions, uint32_t type, uint32_t value_id, uint32_t value) {
-	uint32_t operands[] = {type, value_id, value};
+static spirv_id write_constant(instructions_buffer *instructions, spirv_id type, spirv_id value_id, uint32_t value) {
+	uint32_t operands[] = {type.id, value_id.id, value};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_CONSTANT, operands);
 	return value_id;
 }
 
-static uint32_t write_constant_int(instructions_buffer *instructions, uint32_t value_id, int32_t value) {
+static spirv_id write_constant_int(instructions_buffer *instructions, spirv_id value_id, int32_t value) {
 	uint32_t uint32_value = *(uint32_t *)&value;
 	return write_constant(instructions, spirv_int_type, value_id, uint32_value);
 }
 
-static uint32_t write_constant_float(instructions_buffer *instructions, uint32_t value_id, float value) {
+static spirv_id write_constant_float(instructions_buffer *instructions, spirv_id value_id, float value) {
 	uint32_t uint32_value = *(uint32_t *)&value;
 	return write_constant(instructions, spirv_float_type, value_id, uint32_value);
 }
 
-static void write_vertex_output_decorations(instructions_buffer *instructions, uint32_t output_struct) {
-	uint32_t operands[] = {output_struct, 0, (uint32_t)DECORATION_BUILTIN, (uint32_t)BUILTIN_POSITION};
+static void write_vertex_output_decorations(instructions_buffer *instructions, spirv_id output_struct) {
+	uint32_t operands[] = {output_struct.id, 0, (uint32_t)DECORATION_BUILTIN, (uint32_t)BUILTIN_POSITION};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_MEMBER_DECORATE, operands);
 }
 
-static void write_vertex_input_decorations(instructions_buffer *instructions, uint32_t *inputs, uint32_t inputs_size) {
+static void write_vertex_input_decorations(instructions_buffer *instructions, spirv_id *inputs, uint32_t inputs_size) {
 	for (uint32_t i = 0; i < inputs_size; ++i) {
-		uint32_t operands[] = {inputs[i], (uint32_t)DECORATION_LOCATION, i};
+		uint32_t operands[] = {inputs[i].id, (uint32_t)DECORATION_LOCATION, i};
 		write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_DECORATE, operands);
 	}
 }
 
-static void write_fragment_output_decorations(instructions_buffer *instructions, uint32_t output) {
-	uint32_t operands[] = {output, (uint32_t)DECORATION_LOCATION, 0};
+static void write_fragment_output_decorations(instructions_buffer *instructions, spirv_id output) {
+	uint32_t operands[] = {output.id, (uint32_t)DECORATION_LOCATION, 0};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_DECORATE, operands);
 }
 
-static uint32_t write_op_function_preallocated(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type,
-                                               uint32_t result) {
-	uint32_t operands[] = {result_type, result, (uint32_t)control, function_type};
+static spirv_id write_op_function_preallocated(instructions_buffer *instructions, spirv_id result_type, function_control control, spirv_id function_type,
+                                               spirv_id result) {
+	uint32_t operands[] = {result_type.id, result.id, (uint32_t)control, function_type.id};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_FUNCTION, operands);
 	return result;
 }
 
-static uint32_t write_op_function(instructions_buffer *instructions, uint32_t result_type, function_control control, uint32_t function_type) {
-	uint32_t result = allocate_index();
+static spirv_id write_op_function(instructions_buffer *instructions, spirv_id result_type, function_control control, spirv_id function_type) {
+	spirv_id result = allocate_index();
 	write_op_function_preallocated(instructions, result_type, control, function_type, result);
 	return result;
 }
 
-static uint32_t write_label(instructions_buffer *instructions) {
-	uint32_t result = allocate_index();
+static spirv_id write_label(instructions_buffer *instructions) {
+	spirv_id result = allocate_index();
 
-	uint32_t operands[] = {result};
+	uint32_t operands[] = {result.id};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_LABEL, operands);
 	return result;
 }
@@ -563,12 +570,12 @@ static void write_function_end(instructions_buffer *instructions) {
 
 static struct {
 	int key;
-	uint32_t value;
+	spirv_id value;
 } *int_constants = NULL;
 
-static uint32_t get_int_constant(int value) {
-	uint32_t index = hmget(int_constants, value);
-	if (index == 0) {
+static spirv_id get_int_constant(int value) {
+	spirv_id index = hmget(int_constants, value);
+	if (index.id == 0) {
 		index = allocate_index();
 		hmput(int_constants, value, index);
 	}
@@ -577,98 +584,98 @@ static uint32_t get_int_constant(int value) {
 
 static struct {
 	float key;
-	uint32_t value;
+	spirv_id value;
 } *float_constants = NULL;
 
-static uint32_t get_float_constant(float value) {
-	uint32_t index = hmget(float_constants, value);
-	if (index == 0) {
+static spirv_id get_float_constant(float value) {
+	spirv_id index = hmget(float_constants, value);
+	if (index.id == 0) {
 		index = allocate_index();
 		hmput(float_constants, value, index);
 	}
 	return index;
 }
 
-static uint32_t write_op_access_chain(instructions_buffer *instructions, uint32_t result_type, uint32_t base, int *indices, uint16_t indices_size) {
-	uint32_t pointer = allocate_index();
+static spirv_id write_op_access_chain(instructions_buffer *instructions, spirv_id result_type, spirv_id base, int *indices, uint16_t indices_size) {
+	spirv_id pointer = allocate_index();
 
-	operands_buffer[0] = result_type;
-	operands_buffer[1] = pointer;
-	operands_buffer[2] = base;
+	operands_buffer[0] = result_type.id;
+	operands_buffer[1] = pointer.id;
+	operands_buffer[2] = base.id;
 	for (uint16_t i = 0; i < indices_size; ++i) {
-		operands_buffer[i + 3] = get_int_constant(indices[i]);
+		operands_buffer[i + 3] = get_int_constant(indices[i]).id;
 	}
 
 	write_instruction(instructions, 4 + indices_size, SPIRV_OPCODE_ACCESS_CHAIN, operands_buffer);
 	return pointer;
 }
 
-static uint32_t write_op_load(instructions_buffer *instructions, uint32_t result_type, uint32_t pointer) {
-	uint32_t result = allocate_index();
+static spirv_id write_op_load(instructions_buffer *instructions, spirv_id result_type, spirv_id pointer) {
+	spirv_id result = allocate_index();
 
-	uint32_t operands[] = {result_type, result, pointer};
+	uint32_t operands[] = {result_type.id, result.id, pointer.id};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_LOAD, operands);
 	return result;
 }
 
-static void write_op_store(instructions_buffer *instructions, uint32_t pointer, uint32_t object) {
-	uint32_t operands[] = {pointer, object};
+static void write_op_store(instructions_buffer *instructions, spirv_id pointer, spirv_id object) {
+	uint32_t operands[] = {pointer.id, object.id};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_STORE, operands);
 }
 
-static uint32_t write_op_composite_construct(instructions_buffer *instructions, uint32_t type, uint32_t *constituents, uint16_t constituents_size) {
-	uint32_t result = allocate_index();
+static spirv_id write_op_composite_construct(instructions_buffer *instructions, spirv_id type, spirv_id *constituents, uint16_t constituents_size) {
+	spirv_id result = allocate_index();
 
-	operands_buffer[0] = type;
-	operands_buffer[1] = result;
+	operands_buffer[0] = type.id;
+	operands_buffer[1] = result.id;
 	for (uint16_t i = 0; i < constituents_size; ++i) {
-		operands_buffer[i + 2] = constituents[i];
+		operands_buffer[i + 2] = constituents[i].id;
 	}
 	write_instruction(instructions, 3 + constituents_size, SPIRV_OPCODE_COMPOSITE_CONSTRUCT, operands_buffer);
 	return result;
 }
 
-static uint32_t write_op_variable(instructions_buffer *instructions, uint32_t result_type, storage_class storage) {
-	uint32_t result = allocate_index();
+static spirv_id write_op_variable(instructions_buffer *instructions, spirv_id result_type, storage_class storage) {
+	spirv_id result = allocate_index();
 
-	uint32_t operands[] = {result_type, result, (uint32_t)storage};
+	uint32_t operands[] = {result_type.id, result.id, (uint32_t)storage};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_VARIABLE, operands);
 	return result;
 }
 
-static uint32_t write_op_variable_preallocated(instructions_buffer *instructions, uint32_t result_type, uint32_t result, storage_class storage) {
-	uint32_t operands[] = {result_type, result, (uint32_t)storage};
+static spirv_id write_op_variable_preallocated(instructions_buffer *instructions, spirv_id result_type, spirv_id result, storage_class storage) {
+	uint32_t operands[] = {result_type.id, result.id, (uint32_t)storage};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_VARIABLE, operands);
 	return result;
 }
 
-static uint32_t write_op_variable_with_initializer(instructions_buffer *instructions, uint32_t result_type, storage_class storage, uint32_t initializer) {
-	uint32_t result = allocate_index();
+static spirv_id write_op_variable_with_initializer(instructions_buffer *instructions, uint32_t result_type, storage_class storage, uint32_t initializer) {
+	spirv_id result = allocate_index();
 
-	uint32_t operands[] = {result_type, result, (uint32_t)storage, initializer};
+	uint32_t operands[] = {result_type, result.id, (uint32_t)storage, initializer};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_VARIABLE, operands);
 	return result;
 }
 
 static struct {
 	uint64_t key;
-	uint32_t value;
+	spirv_id value;
 } *index_map = NULL;
 
-static uint32_t convert_kong_index_to_spirv_index(uint64_t index) {
-	uint32_t spirv_index = hmget(index_map, index);
-	if (spirv_index == 0) {
-		spirv_index = allocate_index();
-		hmput(index_map, index, spirv_index);
+static spirv_id convert_kong_index_to_spirv_id(uint64_t index) {
+	spirv_id id = hmget(index_map, index);
+	if (id.id == 0) {
+		id = allocate_index();
+		hmput(index_map, index, id);
 	}
-	return spirv_index;
+	return id;
 }
 
-static uint32_t output_var;
-static uint32_t input_var;
+static spirv_id output_var;
+static spirv_id input_var;
 
-static void write_function(instructions_buffer *instructions, function *f, uint32_t function_id, shader_stage stage, bool main, type_id input,
-                           uint32_t input_var, type_id output, uint32_t output_var) {
+static void write_function(instructions_buffer *instructions, function *f, spirv_id function_id, shader_stage stage, bool main, type_id input,
+                           spirv_id input_var, type_id output, spirv_id output_var) {
 	write_op_function_preallocated(instructions, void_type, FUNCTION_CONTROL_NONE, void_function_type, function_id);
 	write_label(instructions);
 
@@ -689,7 +696,7 @@ static void write_function(instructions_buffer *instructions, function *f, uint3
 	check(parameter_id != 0, context, "Parameter not found");
 
 	if (!main) {
-		convert_kong_index_to_spirv_index(parameter_id);
+		convert_kong_index_to_spirv_id(parameter_id);
 	}
 
 	bool ends_with_return = false;
@@ -700,8 +707,8 @@ static void write_function(instructions_buffer *instructions, function *f, uint3
 		opcode *o = (opcode *)&data[index];
 		switch (o->type) {
 		case OPCODE_VAR: {
-			uint32_t result =
-			    write_op_variable(instructions, convert_pointer_type_to_spirv_index(o->op_var.var.type.type, STORAGE_CLASS_FUNCTION), STORAGE_CLASS_FUNCTION);
+			spirv_id result =
+			    write_op_variable(instructions, convert_pointer_type_to_spirv_id(o->op_var.var.type.type, STORAGE_CLASS_FUNCTION), STORAGE_CLASS_FUNCTION);
 			hmput(index_map, o->op_var.var.index, result);
 			break;
 		}
@@ -713,22 +720,22 @@ static void write_function(instructions_buffer *instructions, function *f, uint3
 			}
 
 			if (main && o->op_load_member.member_parent_type == input) {
-				uint32_t pointer = write_op_access_chain(instructions, float_input_pointer_type, input_var, &indices[1], indices_size - 1);
-				uint32_t value = write_op_load(instructions, spirv_float_type, pointer);
+				spirv_id pointer = write_op_access_chain(instructions, float_input_pointer_type, input_var, &indices[1], indices_size - 1);
+				spirv_id value = write_op_load(instructions, spirv_float_type, pointer);
 				hmput(index_map, o->op_load_member.to.index, value);
 			}
 			else {
-				uint32_t pointer = write_op_access_chain(instructions, float_input_pointer_type,
-				                                         convert_kong_index_to_spirv_index(o->op_load_member.from.index), indices, indices_size);
-				uint32_t value = write_op_load(instructions, spirv_float_type, pointer);
+				spirv_id pointer = write_op_access_chain(instructions, float_input_pointer_type,
+				                                         convert_kong_index_to_spirv_id(o->op_load_member.from.index), indices, indices_size);
+				spirv_id value = write_op_load(instructions, spirv_float_type, pointer);
 				hmput(index_map, o->op_load_member.to.index, value);
 			}
 
 			break;
 		}
 		case OPCODE_LOAD_CONSTANT: {
-			uint32_t spirv_id = get_float_constant(o->op_load_constant.number);
-			hmput(index_map, o->op_load_constant.to.index, spirv_id);
+			spirv_id id = get_float_constant(o->op_load_constant.number);
+			hmput(index_map, o->op_load_constant.to.index, id);
 			break;
 		}
 		case OPCODE_CALL: {
@@ -738,28 +745,28 @@ static void write_function(instructions_buffer *instructions, function *f, uint3
 			}
 			else {
 				if (o->op_call.func == add_name("float2")) {
-					uint32_t constituents[2];
+					spirv_id constituents[2];
 					for (int i = 0; i < 2; ++i) {
-						constituents[i] = convert_kong_index_to_spirv_index(o->op_call.parameters[i].index);
+						constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
 					}
-					uint32_t spirv_id = write_op_composite_construct(instructions, spirv_float2_type, constituents, 2);
-					hmput(index_map, o->op_call.var.index, spirv_id);
+					spirv_id id = write_op_composite_construct(instructions, spirv_float2_type, constituents, 2);
+					hmput(index_map, o->op_call.var.index, id);
 				}
 				else if (o->op_call.func == add_name("float3")) {
-					uint32_t constituents[3];
+					spirv_id constituents[3];
 					for (int i = 0; i < 3; ++i) {
-						constituents[i] = convert_kong_index_to_spirv_index(o->op_call.parameters[i].index);
+						constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
 					}
-					uint32_t spirv_id = write_op_composite_construct(instructions, spirv_float3_type, constituents, 3);
-					hmput(index_map, o->op_call.var.index, spirv_id);
+					spirv_id id = write_op_composite_construct(instructions, spirv_float3_type, constituents, 3);
+					hmput(index_map, o->op_call.var.index, id);
 				}
 				else if (o->op_call.func == add_name("float4")) {
-					uint32_t constituents[4];
+					spirv_id constituents[4];
 					for (int i = 0; i < 4; ++i) {
-						constituents[i] = convert_kong_index_to_spirv_index(o->op_call.parameters[i].index);
+						constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
 					}
-					uint32_t spirv_id = write_op_composite_construct(instructions, spirv_float4_type, constituents, 4);
-					hmput(index_map, o->op_call.var.index, spirv_id);
+					spirv_id id = write_op_composite_construct(instructions, spirv_float4_type, constituents, 4);
+					hmput(index_map, o->op_call.var.index, id);
 				}
 				else {
 				}
@@ -784,28 +791,28 @@ static void write_function(instructions_buffer *instructions, function *f, uint3
 
 			type_id access_kong_type = find_access_type(indices, indices_size, o->op_store_member.to.type.type);
 
-			uint32_t access_type = 0;
+			spirv_id access_type = {0};
 
 			switch (o->op_store_member.to.kind) {
 			case VARIABLE_LOCAL:
-				access_type = convert_pointer_type_to_spirv_index(access_kong_type, STORAGE_CLASS_FUNCTION);
+				access_type = convert_pointer_type_to_spirv_id(access_kong_type, STORAGE_CLASS_FUNCTION);
 				break;
 			case VARIABLE_GLOBAL:
-				access_type = convert_pointer_type_to_spirv_index(access_kong_type, STORAGE_CLASS_OUTPUT);
+				access_type = convert_pointer_type_to_spirv_id(access_kong_type, STORAGE_CLASS_OUTPUT);
 				break;
 			}
 
 			int spirv_indices[256];
 			vector_member_indices(indices, spirv_indices, indices_size, o->op_store_member.to.type.type);
 
-			uint32_t pointer =
-			    write_op_access_chain(instructions, access_type, convert_kong_index_to_spirv_index(o->op_store_member.to.index), spirv_indices, indices_size);
-			write_op_store(instructions, pointer, convert_kong_index_to_spirv_index(o->op_store_member.from.index));
+			spirv_id pointer =
+			    write_op_access_chain(instructions, access_type, convert_kong_index_to_spirv_id(o->op_store_member.to.index), spirv_indices, indices_size);
+			write_op_store(instructions, pointer, convert_kong_index_to_spirv_id(o->op_store_member.from.index));
 			break;
 		}
 		case OPCODE_STORE_VARIABLE: {
-			write_op_store(instructions, convert_kong_index_to_spirv_index(o->op_store_var.to.index),
-			               convert_kong_index_to_spirv_index(o->op_store_var.from.index));
+			write_op_store(instructions, convert_kong_index_to_spirv_id(o->op_store_var.to.index),
+			               convert_kong_index_to_spirv_id(o->op_store_var.from.index));
 			break;
 		}
 		case OPCODE_RETURN: {
@@ -817,34 +824,34 @@ static void write_function(instructions_buffer *instructions, function *f, uint3
 					if (m.type.type == float2_id) {
 						int indices = (int)i;
 
-						uint32_t load_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(float2_id, STORAGE_CLASS_FUNCTION),
-						                                              convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
-						uint32_t value = write_op_load(instructions, spirv_float2_type, load_pointer);
+						spirv_id load_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(float2_id, STORAGE_CLASS_FUNCTION),
+						                                              convert_kong_index_to_spirv_id(o->op_return.var.index), &indices, 1);
+						spirv_id value = write_op_load(instructions, spirv_float2_type, load_pointer);
 
-						uint32_t store_pointer =
-						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(float2_id, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
+						spirv_id store_pointer =
+						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(float2_id, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
 						write_op_store(instructions, store_pointer, value);
 					}
 					else if (m.type.type == float3_id) {
 						int indices = (int)i;
 
-						uint32_t load_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(float3_id, STORAGE_CLASS_FUNCTION),
-						                                              convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
-						uint32_t value = write_op_load(instructions, spirv_float3_type, load_pointer);
+						spirv_id load_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(float3_id, STORAGE_CLASS_FUNCTION),
+						                                              convert_kong_index_to_spirv_id(o->op_return.var.index), &indices, 1);
+						spirv_id value = write_op_load(instructions, spirv_float3_type, load_pointer);
 
-						uint32_t store_pointer =
-						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(float3_id, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
+						spirv_id store_pointer =
+						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(float3_id, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
 						write_op_store(instructions, store_pointer, value);
 					}
 					else if (m.type.type == float4_id) {
 						int indices = (int)i;
 
-						uint32_t load_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(float4_id, STORAGE_CLASS_FUNCTION),
-						                                              convert_kong_index_to_spirv_index(o->op_return.var.index), &indices, 1);
-						uint32_t value = write_op_load(instructions, spirv_float4_type, load_pointer);
+						spirv_id load_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_FUNCTION),
+						                                              convert_kong_index_to_spirv_id(o->op_return.var.index), &indices, 1);
+						spirv_id value = write_op_load(instructions, spirv_float4_type, load_pointer);
 
-						uint32_t store_pointer =
-						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_index(float4_id, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
+						spirv_id store_pointer =
+						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
 						write_op_store(instructions, store_pointer, value);
 					}
 					else {
@@ -855,8 +862,8 @@ static void write_function(instructions_buffer *instructions, function *f, uint3
 				write_return(instructions);
 			}
 			else {
-				uint32_t object = write_op_load(instructions, convert_type_to_spirv_index(o->op_return.var.type.type),
-				                                convert_kong_index_to_spirv_index(o->op_return.var.index));
+				spirv_id object = write_op_load(instructions, convert_type_to_spirv_id(o->op_return.var.type.type),
+				                                convert_kong_index_to_spirv_id(o->op_return.var.index));
 				write_op_store(instructions, output_var, object);
 				write_return(instructions);
 			}
@@ -884,8 +891,8 @@ static void write_function(instructions_buffer *instructions, function *f, uint3
 	write_function_end(instructions);
 }
 
-static void write_functions(instructions_buffer *instructions, function *main, uint32_t entry_point, shader_stage stage, type_id input, uint32_t input_var,
-                            type_id output, uint32_t output_var) {
+static void write_functions(instructions_buffer *instructions, function *main, spirv_id entry_point, shader_stage stage, type_id input, spirv_id input_var,
+                            type_id output, spirv_id output_var) {
 	write_function(instructions, main, entry_point, stage, true, input, input_var, output, output_var);
 }
 
@@ -902,7 +909,8 @@ static void write_constants(instructions_buffer *instructions) {
 }
 
 static void init_index_map(void) {
-	hmdefault(index_map, 0);
+	spirv_id default_id = {0};
+	hmdefault(index_map, default_id);
 	size_t size = hmlenu(index_map);
 	for (size_t i = 0; i < size; ++i) {
 		hmdel(index_map, index_map[i].key);
@@ -910,7 +918,8 @@ static void init_index_map(void) {
 }
 
 static void init_type_map(void) {
-	hmdefault(type_map, 0);
+	spirv_id default_id = {0};
+	hmdefault(type_map, default_id);
 	size_t size = hmlenu(type_map);
 	for (size_t i = 0; i < size; ++i) {
 		hmdel(type_map, type_map[i].key);
@@ -918,7 +927,8 @@ static void init_type_map(void) {
 }
 
 static void init_int_constants(void) {
-	hmdefault(int_constants, 0);
+	spirv_id default_id = {0};
+	hmdefault(int_constants, default_id);
 	size_t size = hmlenu(int_constants);
 	for (size_t i = 0; i < size; ++i) {
 		hmdel(int_constants, int_constants[i].key);
@@ -926,7 +936,8 @@ static void init_int_constants(void) {
 }
 
 static void init_float_constants(void) {
-	hmdefault(float_constants, 0);
+	spirv_id default_id = {0};
+	hmdefault(float_constants, default_id);
 	size_t size = hmlenu(float_constants);
 	for (size_t i = 0; i < size; ++i) {
 		hmdel(float_constants, float_constants[i].key);
@@ -965,16 +976,16 @@ static void spirv_export_vertex(char *directory, function *main) {
 	write_capabilities(&decorations);
 	write_op_ext_inst_import(&decorations, "GLSL.std.450");
 	write_op_memory_model(&decorations, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
-	uint32_t entry_point = allocate_index();
+	spirv_id entry_point = allocate_index();
 	output_var = allocate_index();
 	input_var = allocate_index();
-	uint32_t interfaces[] = {output_var, input_var};
+	spirv_id interfaces[] = {output_var, input_var};
 	write_op_entry_point(&decorations, EXECUTION_MODEL_VERTEX, entry_point, "main", interfaces, sizeof(interfaces) / 4);
 
-	uint32_t output_struct = allocate_index();
+	spirv_id output_struct = allocate_index();
 	write_vertex_output_decorations(&decorations, output_struct);
 
-	uint32_t inputs[256];
+	spirv_id inputs[256];
 	inputs[0] = allocate_index();
 	write_vertex_input_decorations(&decorations, inputs, 1);
 
@@ -1048,10 +1059,10 @@ static void spirv_export_fragment(char *directory, function *main) {
 	write_capabilities(&decorations);
 	write_op_ext_inst_import(&decorations, "GLSL.std.450");
 	write_op_memory_model(&decorations, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
-	uint32_t entry_point = allocate_index();
+	spirv_id entry_point = allocate_index();
 	output_var = allocate_index();
 	// input_var = allocate_index();
-	uint32_t interfaces[] = {output_var /*, input_var*/};
+	spirv_id interfaces[] = {output_var /*, input_var*/};
 	write_op_entry_point(&decorations, EXECUTION_MODEL_FRAGMENT, entry_point, "main", interfaces, sizeof(interfaces) / 4);
 	write_op_execution_mode(&decorations, entry_point, EXECUTION_MODE_ORIGIN_UPPER_LEFT);
 
