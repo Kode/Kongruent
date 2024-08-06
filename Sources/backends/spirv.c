@@ -9,6 +9,8 @@
 
 #include "../libs/stb_ds.h"
 
+#include "util.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -496,7 +498,32 @@ static void write_base_types(instructions_buffer *constants, type_id vertex_inpu
 	float_input_pointer_type = write_type_pointer(constants, STORAGE_CLASS_INPUT, spirv_float_type);
 }
 
-static void write_types(instructions_buffer *constants) {
+static void write_types(instructions_buffer *constants, function *main) {
+	type_id types[256];
+	size_t types_size = 0;
+	find_referenced_types(main, types, &types_size);
+
+	for (size_t i = 0; i < types_size; ++i) {
+		type *t = get_type(types[i]);
+
+		if (!t->built_in && t->attribute != add_name("pipe")) {
+			spirv_id member_types[256];
+			uint16_t member_types_size = 0;
+			for (size_t j = 0; j < t->members.size; ++j) {
+				member_types[member_types_size] = convert_type_to_spirv_id(t->members.m[j].type.type);
+				member_types_size += 1;
+				assert(member_types_size < 256);
+			}
+			spirv_id struct_type = write_type_struct(constants, member_types, member_types_size);
+
+			complex_type ct;
+			ct.type = types[i];
+			ct.pointer = (uint16_t) false;
+			ct.storage = (uint16_t)STORAGE_CLASS_NONE;
+			hmput(type_map, ct, struct_type);
+		}
+	}
+
 	size_t size = hmlenu(type_map);
 	for (size_t i = 0; i < size; ++i) {
 		complex_type type = type_map[i].key;
@@ -1014,7 +1041,7 @@ static void spirv_export_vertex(char *directory, function *main) {
 
 	write_functions(&instructions, main, entry_point, SHADER_STAGE_VERTEX, vertex_input, input_var, vertex_output, output_var);
 
-	write_types(&constants);
+	write_types(&constants, main);
 
 	// header
 	write_magic_number(&header);
@@ -1081,7 +1108,7 @@ static void spirv_export_fragment(char *directory, function *main) {
 
 	write_functions(&instructions, main, entry_point, SHADER_STAGE_FRAGMENT, pixel_input, input_var, NO_TYPE, output_var);
 
-	write_types(&constants);
+	write_types(&constants, main);
 
 	// header
 	write_magic_number(&header);
