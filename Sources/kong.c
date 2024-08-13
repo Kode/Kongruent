@@ -598,7 +598,6 @@ int main(int argc, char **argv) {
 		wgsl_export(output);
 		break;
 	case API_VULKAN: {
-		kong_log(LOG_LEVEL_WARNING, "Beware, SPIR-V export is not yet working");
 		spirv_export(output);
 		break;
 	}
