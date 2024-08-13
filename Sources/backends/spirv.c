@@ -685,19 +685,20 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 	size_t size = f->code.size;
 
 	uint64_t parameter_id = 0;
+	type_id parameter_type = 0;
 	for (size_t i = 0; i < f->block->block.vars.size; ++i) {
 		if (f->parameter_name == f->block->block.vars.v[i].name) {
 			parameter_id = f->block->block.vars.v[i].variable_id;
+			parameter_type = f->block->block.vars.v[i].type.type;
 			break;
 		}
 	}
 
 	check(parameter_id != 0, context, "Parameter not found");
 
-	if (!main) {
-		convert_kong_index_to_spirv_id(parameter_id);
-	}
-
+	spirv_id spirv_parameter_id = convert_kong_index_to_spirv_id(parameter_id);
+	write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_type, STORAGE_CLASS_FUNCTION), spirv_parameter_id, STORAGE_CLASS_FUNCTION);
+	
 	bool ends_with_return = false;
 
 	size_t index = 0;
@@ -718,8 +719,16 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				indices[i] = (int)o->op_load_member.member_indices[i];
 			}
 
-			spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(float_id, STORAGE_CLASS_INPUT),
-				                                        convert_kong_index_to_spirv_id(o->op_load_member.from.index), indices, indices_size);
+			storage_class storage;
+			if (o->op_load_member.from.index == parameter_id) {
+				storage = STORAGE_CLASS_FUNCTION;
+			}
+			else {
+				storage = STORAGE_CLASS_INPUT;
+			}
+			spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(float_id, storage),
+			                                         convert_kong_index_to_spirv_id(o->op_load_member.from.index), indices, indices_size);
+
 			spirv_id value = write_op_load(instructions, spirv_float_type, pointer);
 			hmput(index_map, o->op_load_member.to.index, value);
 
@@ -999,13 +1008,13 @@ static void spirv_export_vertex(char *directory, function *main) {
 	for (size_t i = 0; i < input->members.size; ++i) {
 		member m = input->members.m[i];
 		if (m.type.type == float2_id) {
-			write_op_variable_preallocated(&instructions, spirv_float2_type, input_vars[i], STORAGE_CLASS_INPUT);
+			write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float2_id, STORAGE_CLASS_INPUT), input_vars[i], STORAGE_CLASS_INPUT);
 		}
 		else if (m.type.type == float3_id) {
-			write_op_variable_preallocated(&instructions, spirv_float3_type, input_vars[i], STORAGE_CLASS_INPUT);
+			write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float3_id, STORAGE_CLASS_INPUT), input_vars[i], STORAGE_CLASS_INPUT);
 		}
 		else if (m.type.type == float4_id) {
-			write_op_variable_preallocated(&instructions, spirv_float4_type, input_vars[i], STORAGE_CLASS_INPUT);
+			write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_INPUT), input_vars[i], STORAGE_CLASS_INPUT);
 		}
 		else {
 			debug_context context = {0};
