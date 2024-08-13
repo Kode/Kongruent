@@ -696,7 +696,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 	check(parameter_id != 0, context, "Parameter not found");
 
-	// create variable for the input variable
+	// create variable for the input parameter
 	spirv_id spirv_parameter_id = convert_kong_index_to_spirv_id(parameter_id);
 	write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_type, STORAGE_CLASS_FUNCTION), spirv_parameter_id,
 	                               STORAGE_CLASS_FUNCTION);
@@ -887,7 +887,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				}
 				write_return(instructions);
 			}
-			else {
+			else if (stage == SHADER_STAGE_FRAGMENT && main) {
 				spirv_id object =
 				    write_op_load(instructions, convert_type_to_spirv_id(o->op_return.var.type.type), convert_kong_index_to_spirv_id(o->op_return.var.index));
 				write_op_store(instructions, output_var, object);

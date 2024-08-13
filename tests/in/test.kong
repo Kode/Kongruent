@@ -9,8 +9,9 @@ struct FragmentIn {
 #[vertex]
 fun pos(input: VertexIn): FragmentIn {
     var output: FragmentIn;
-    output.position.xyz = input.position.xyz;
-    output.position.z = 1.0;
+    output.position.x = input.position.x;
+    output.position.y = input.position.y;
+    output.position.z = 0.5;
     output.position.w = 1.0;
     return output;
 }
