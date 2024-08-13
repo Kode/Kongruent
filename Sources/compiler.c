@@ -69,6 +69,7 @@ variable allocate_variable(type_ref type, variable_kind kind) {
 }
 
 void emit_op(opcodes *code, opcode *o) {
+	assert(code->size + o->size < OPCODES_SIZE);
 	memcpy(&code->o[code->size], o, o->size);
 	code->size += o->size;
 }
