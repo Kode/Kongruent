@@ -94,7 +94,8 @@ typedef struct statement {
 		expression *expression;
 		struct {
 			expression *test;
-			struct statement *block;
+			struct statement *if_block;
+			struct statement *else_block;
 		} iffy;
 		block block;
 		struct {

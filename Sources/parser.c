@@ -300,12 +300,23 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
 		advance_state(state);
 
-		statement *block = parse_statement(state, parent_block);
-		statement *statement = statement_allocate();
-		statement->kind = STATEMENT_IF;
-		statement->iffy.test = test;
-		statement->iffy.block = block;
-		return statement;
+		statement *if_block = parse_statement(state, parent_block);
+		statement *s = statement_allocate();
+		s->kind = STATEMENT_IF;
+		s->iffy.test = test;
+		s->iffy.if_block = if_block;
+
+		if (current(state).kind == TOKEN_ELSE) {
+			advance_state(state);
+
+			statement *else_block = parse_statement(state, parent_block);
+			s->iffy.else_block = else_block;
+		}
+		else {
+			s->iffy.else_block = NULL;
+		}
+
+		return s;
 	}
 	case TOKEN_LEFT_CURLY: {
 		return parse_block(state, parent_block);

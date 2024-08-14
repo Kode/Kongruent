@@ -41,6 +41,7 @@ typedef struct opcode {
 		OPCODE_AND,
 		OPCODE_OR,
 		OPCODE_IF,
+		OPCODE_ELSE,
 		OPCODE_BLOCK_START,
 		OPCODE_BLOCK_END
 	} type;

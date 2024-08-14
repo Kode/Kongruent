@@ -161,6 +161,9 @@ static void tokens_add_identifier(tokenizer_state *state, tokens *tokens, tokeni
 	else if (tokenizer_buffer_equals(buffer, "if")) {
 		token = token_create(TOKEN_IF, state);
 	}
+	else if (tokenizer_buffer_equals(buffer, "else")) {
+		token = token_create(TOKEN_ELSE, state);
+	}
 	else if (tokenizer_buffer_equals(buffer, "in")) {
 		token = token_create(TOKEN_IN, state);
 	}

@@ -523,17 +523,29 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		break;
 	}
 	case STATEMENT_IF: {
-		opcode o;
-		o.type = OPCODE_IF;
-		o.size = OP_SIZE(o, op_if);
+		{
+			opcode o;
+			o.type = OPCODE_IF;
+			o.size = OP_SIZE(o, op_if);
 
-		variable v = emit_expression(code, parent, statement->iffy.test);
+			variable v = emit_expression(code, parent, statement->iffy.test);
 
-		o.op_if.condition = v;
+			o.op_if.condition = v;
 
-		emit_op(code, &o);
+			emit_op(code, &o);
+		}
 
-		emit_statement(code, parent, statement->iffy.block);
+		emit_statement(code, parent, statement->iffy.if_block);
+
+		if (statement->iffy.else_block != NULL) {
+			opcode o;
+			o.type = OPCODE_ELSE;
+			o.size = OP_SIZE(o, op_nothing);
+
+			emit_op(code, &o);
+
+			emit_statement(code, parent, statement->iffy.else_block);
+		}
 
 		break;
 	}

@@ -161,6 +161,10 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		*offset += sprintf(&code[*offset], "\tif (_%" PRIu64 ")\n", o->op_if.condition.index);
 		break;
 	}
+	case OPCODE_ELSE: {
+		*offset += sprintf(&code[*offset], "\telse\n");
+		break;
+	}
 	case OPCODE_BLOCK_START: {
 		*offset += sprintf(&code[*offset], "\t{\n");
 		break;
