@@ -236,7 +236,7 @@ static void write_version_number(instructions_buffer *instructions) {
 }
 
 static void write_generator_magic_number(instructions_buffer *instructions) {
-	instructions->instructions[instructions->offset++] = 0; // TODO: Register a number at https://github.com/KhronosGroup/SPIRV-Headers
+	instructions->instructions[instructions->offset++] = 44;
 }
 
 static uint32_t next_index = 1;
