@@ -74,7 +74,7 @@ static void match_token_identifier(state_t *state) {
 }
 
 static definition parse_definition(state_t *state);
-static statement *parse_statement(state_t *state);
+static statement *parse_statement(state_t *state, block *parent_block);
 static expression *parse_expression(state_t *state);
 
 void parse(const char *filename, tokens *tokens) {
@@ -94,23 +94,24 @@ void parse(const char *filename, tokens *tokens) {
 	}
 }
 
-static statement *parse_block(state_t *state) {
+static statement *parse_block(state_t *state, block *parent_block) {
 	match_token(state, TOKEN_LEFT_CURLY, "Expected an opening curly bracket");
 	advance_state(state);
 
 	statements statements;
 	statements_init(&statements);
 
+	statement *new_block = statement_allocate();
+	new_block->kind = STATEMENT_BLOCK;
+	new_block->block.parent = parent_block;
+	new_block->block.vars.size = 0;
+
 	for (;;) {
 		switch (current(state).kind) {
 		case TOKEN_RIGHT_CURLY: {
 			advance_state(state);
-			statement *statement = statement_allocate();
-			statement->kind = STATEMENT_BLOCK;
-			statement->block.parent = NULL;
-			statement->block.vars.size = 0;
-			statement->block.statements = statements;
-			return statement;
+			new_block->block.statements = statements;
+			return new_block;
 		}
 		case TOKEN_NONE: {
 			update_debug_context(state);
@@ -118,7 +119,7 @@ static statement *parse_block(state_t *state) {
 			return NULL;
 		}
 		default:
-			statements_add(&statements, parse_statement(state));
+			statements_add(&statements, parse_statement(state, &new_block->block));
 			break;
 		}
 	}
@@ -288,7 +289,7 @@ static type_ref parse_type_ref(state_t *state) {
 	return t;
 }
 
-static statement *parse_statement(state_t *state) {
+static statement *parse_statement(state_t *state, block *parent_block) {
 	switch (current(state).kind) {
 	case TOKEN_IF: {
 		advance_state(state);
@@ -299,7 +300,7 @@ static statement *parse_statement(state_t *state) {
 		match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
 		advance_state(state);
 
-		statement *block = parse_statement(state);
+		statement *block = parse_statement(state, parent_block);
 		statement *statement = statement_allocate();
 		statement->kind = STATEMENT_IF;
 		statement->iffy.test = test;
@@ -307,7 +308,7 @@ static statement *parse_statement(state_t *state) {
 		return statement;
 	}
 	case TOKEN_LEFT_CURLY: {
-		return parse_block(state);
+		return parse_block(state, parent_block);
 	}
 	case TOKEN_VAR: {
 		advance_state(state);
@@ -907,7 +908,7 @@ static definition parse_function(state_t *state) {
 	advance_state(state);
 	type_ref return_type = parse_type_ref(state);
 
-	statement *block = parse_block(state);
+	statement *block = parse_block(state, NULL);
 	definition d;
 
 	d.kind = DEFINITION_FUNCTION;

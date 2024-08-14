@@ -226,9 +226,18 @@ static void find_referenced_globals(function *f, global_id *globals, size_t *glo
 		while (index < size) {
 			opcode *o = (opcode *)&data[index];
 			switch (o->type) {
-			case OPCODE_MULTIPLY: {
-				find_referenced_global_for_var(o->op_multiply.left, globals, globals_size);
-				find_referenced_global_for_var(o->op_multiply.right, globals, globals_size);
+			case OPCODE_MULTIPLY:
+			case OPCODE_DIVIDE:
+			case OPCODE_ADD:
+			case OPCODE_SUB:
+			case OPCODE_EQUALS:
+			case OPCODE_NOT_EQUALS:
+			case OPCODE_GREATER:
+			case OPCODE_GREATER_EQUAL:
+			case OPCODE_LESS:
+			case OPCODE_LESS_EQUAL: {
+				find_referenced_global_for_var(o->op_binary.left, globals, globals_size);
+				find_referenced_global_for_var(o->op_binary.right, globals, globals_size);
 				break;
 			}
 			case OPCODE_LOAD_MEMBER: {
@@ -572,23 +581,23 @@ static void write_functions(char *code, size_t *offset) {
 				break;
 			}
 			case OPCODE_MULTIPLY: {
-				*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64 " * _%" PRIu64 ";\n", o->op_multiply.result.index,
-				                   type_string(o->op_multiply.result.type.type), o->op_multiply.left.index, o->op_multiply.right.index);
+				*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64 " * _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_DIVIDE: {
-				*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64 " / _%" PRIu64 ";\n", o->op_multiply.result.index,
-				                   type_string(o->op_multiply.result.type.type), o->op_multiply.left.index, o->op_multiply.right.index);
+				*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64 " / _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_ADD: {
-				*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64 " + _%" PRIu64 ";\n", o->op_multiply.result.index,
-				                   type_string(o->op_multiply.result.type.type), o->op_multiply.left.index, o->op_multiply.right.index);
+				*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64 " + _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_SUB: {
-				*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64 " - _%" PRIu64 ";\n", o->op_multiply.result.index,
-				                   type_string(o->op_multiply.result.type.type), o->op_multiply.left.index, o->op_multiply.right.index);
+				*offset += sprintf(&code[*offset], "\tvar _%" PRIu64 ": %s = _%" PRIu64 " - _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_LOAD_CONSTANT:

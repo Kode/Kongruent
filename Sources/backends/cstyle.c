@@ -98,23 +98,75 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		break;
 	}
 	case OPCODE_ADD: {
-		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " + _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
-		                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
+		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " + _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+		                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 		break;
 	}
 	case OPCODE_SUB: {
-		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " - _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
-		                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
+		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " - _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+		                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 		break;
 	}
 	case OPCODE_MULTIPLY: {
-		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
-		                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
+		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+		                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 		break;
 	}
 	case OPCODE_DIVIDE: {
-		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " / _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
-		                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
+		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " / _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+		                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
+		break;
+	}
+	case OPCODE_EQUALS: {
+		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " == _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+		                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
+		break;
+	}
+	case OPCODE_NOT_EQUALS: {
+		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " != _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+		                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
+		break;
+	}
+	case OPCODE_GREATER: {
+		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " > _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+		                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
+		break;
+	}
+	case OPCODE_GREATER_EQUAL: {
+		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " >= _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+		                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
+		break;
+	}
+	case OPCODE_LESS: {
+		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " < _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+		                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
+		break;
+	}
+	case OPCODE_LESS_EQUAL: {
+		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " <= _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+		                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
+		break;
+	}
+	case OPCODE_AND: {
+		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " && _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+		                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
+		break;
+	}
+	case OPCODE_OR: {
+		*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " || _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+		                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
+		break;
+	}
+	case OPCODE_IF: {
+		*offset += sprintf(&code[*offset], "\tif (_%" PRIu64 ")\n", o->op_if.condition.index);
+		break;
+	}
+	case OPCODE_BLOCK_START: {
+		*offset += sprintf(&code[*offset], "\t{\n");
+		break;
+	}
+	case OPCODE_BLOCK_END: {
+		*offset += sprintf(&code[*offset], "\t}\n");
 		break;
 	}
 	default: {

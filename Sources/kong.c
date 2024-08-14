@@ -208,6 +208,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		else {
 			type_ref type = find_local_var_type(&parent->block, e->variable);
 			if (type.type == NO_TYPE) {
+				type = find_local_var_type(&parent->block, e->variable);
 				debug_context context = {0};
 				error(context, "Variable %s not found", get_name(e->variable));
 			}

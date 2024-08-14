@@ -99,9 +99,19 @@ static void find_referenced_globals(function *f, global_id *globals, size_t *glo
 		while (index < size) {
 			opcode *o = (opcode *)&data[index];
 			switch (o->type) {
-			case OPCODE_MULTIPLY: {
-				find_referenced_global_for_var(o->op_multiply.left, globals, globals_size);
-				find_referenced_global_for_var(o->op_multiply.right, globals, globals_size);
+			case OPCODE_MULTIPLY:
+			case OPCODE_DIVIDE:
+			case OPCODE_ADD:
+			case OPCODE_SUB:
+			case OPCODE_EQUALS:
+			case OPCODE_NOT_EQUALS:
+			case OPCODE_GREATER:
+			case OPCODE_GREATER_EQUAL:
+			case OPCODE_LESS:
+			case OPCODE_LESS_EQUAL:
+			{
+				find_referenced_global_for_var(o->op_binary.left, globals, globals_size);
+				find_referenced_global_for_var(o->op_binary.right, globals, globals_size);
 				break;
 			}
 			case OPCODE_LOAD_MEMBER: {

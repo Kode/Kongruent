@@ -148,9 +148,18 @@ static void find_referenced_globals(function *f, global_id *globals, size_t *glo
 		while (index < size) {
 			opcode *o = (opcode *)&data[index];
 			switch (o->type) {
-			case OPCODE_MULTIPLY: {
-				find_referenced_global_for_var(o->op_multiply.left, globals, globals_size);
-				find_referenced_global_for_var(o->op_multiply.right, globals, globals_size);
+			case OPCODE_MULTIPLY:
+			case OPCODE_DIVIDE:
+			case OPCODE_ADD:
+			case OPCODE_SUB:
+			case OPCODE_EQUALS:
+			case OPCODE_NOT_EQUALS:
+			case OPCODE_GREATER:
+			case OPCODE_GREATER_EQUAL:
+			case OPCODE_LESS:
+			case OPCODE_LESS_EQUAL: {
+				find_referenced_global_for_var(o->op_binary.left, globals, globals_size);
+				find_referenced_global_for_var(o->op_binary.right, globals, globals_size);
 				break;
 			}
 			case OPCODE_LOAD_MEMBER: {
@@ -358,13 +367,13 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				break;
 			}
 			case OPCODE_MULTIPLY: {
-				if (o->op_multiply.left.type.type == float4x4_id) {
-					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = mul(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_multiply.result.type.type),
-					                   o->op_multiply.result.index, o->op_multiply.right.index, o->op_multiply.left.index);
+				if (o->op_binary.left.type.type == float4x4_id) {
+					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = mul(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_binary.result.type.type),
+					                   o->op_binary.result.index, o->op_binary.right.index, o->op_binary.left.index);
 				}
 				else {
-					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_multiply.result.type.type),
-					                   o->op_multiply.result.index, o->op_multiply.left.index, o->op_multiply.right.index);
+					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+					                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				}
 				break;
 			}

@@ -31,7 +31,18 @@ typedef struct opcode {
 		OPCODE_MULTIPLY,
 		OPCODE_DIVIDE,
 		OPCODE_ADD,
-		OPCODE_SUB
+		OPCODE_SUB,
+		OPCODE_EQUALS,
+		OPCODE_NOT_EQUALS,
+		OPCODE_GREATER,
+		OPCODE_GREATER_EQUAL,
+		OPCODE_LESS,
+		OPCODE_LESS_EQUAL,
+		OPCODE_AND,
+		OPCODE_OR,
+		OPCODE_IF,
+		OPCODE_BLOCK_START,
+		OPCODE_BLOCK_END
 	} type;
 	uint32_t size;
 
@@ -79,22 +90,13 @@ typedef struct opcode {
 			variable right;
 			variable left;
 			variable result;
-		} op_multiply;
+		} op_binary;
 		struct {
-			variable right;
-			variable left;
-			variable result;
-		} op_divide;
+			variable condition;
+		} op_if;
 		struct {
-			variable right;
-			variable left;
-			variable result;
-		} op_add;
-		struct {
-			variable right;
-			variable left;
-			variable result;
-		} op_sub;
+			uint8_t nothing;
+		} op_nothing;
 	};
 } opcode;
 

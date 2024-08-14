@@ -86,17 +86,59 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 		switch (e->binary.op) {
 		case OPERATOR_EQUALS:
-			error(context, "not implemented");
 		case OPERATOR_NOT_EQUALS:
-			error(context, "not implemented");
 		case OPERATOR_GREATER:
-			error(context, "not implemented");
 		case OPERATOR_GREATER_EQUAL:
-			error(context, "not implemented");
 		case OPERATOR_LESS:
-			error(context, "not implemented");
 		case OPERATOR_LESS_EQUAL:
-			error(context, "not implemented");
+		case OPERATOR_AND: 
+		case OPERATOR_OR: {
+			variable right_var = emit_expression(code, parent, right);
+			variable left_var = emit_expression(code, parent, left);
+			type_ref t;
+			init_type_ref(&t, NO_NAME);
+			t.type = bool_id;
+			variable result_var = allocate_variable(t, VARIABLE_LOCAL);
+
+			opcode o;
+			switch (e->binary.op) {
+			case OPERATOR_EQUALS:
+				o.type = OPCODE_EQUALS;
+				break;
+			case OPERATOR_NOT_EQUALS:
+				o.type = OPCODE_NOT_EQUALS;
+				break;
+			case OPERATOR_GREATER:
+				o.type = OPCODE_GREATER;
+				break;
+			case OPERATOR_GREATER_EQUAL:
+				o.type = OPCODE_GREATER_EQUAL;
+				break;
+			case OPERATOR_LESS:
+				o.type = OPCODE_LESS;
+				break;
+			case OPERATOR_LESS_EQUAL:
+				o.type = OPCODE_LESS_EQUAL;
+				break;
+			case OPERATOR_AND:
+				o.type = OPCODE_AND;
+				break;
+			case OPERATOR_OR:
+				o.type = OPCODE_OR;
+				break;
+			default: {
+				debug_context context = {0};
+				error(context, "Unexpected operator");
+			}
+			}
+			o.size = OP_SIZE(o, op_binary);
+			o.op_binary.right = right_var;
+			o.op_binary.left = left_var;
+			o.op_binary.result = result_var;
+			emit_op(code, &o);
+
+			return result_var;
+		}
 		case OPERATOR_MINUS:
 		case OPERATOR_PLUS:
 		case OPERATOR_DIVIDE:
@@ -124,25 +166,17 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				error(context, "Unexpected operator");
 			}
 			}
-			o.size = OP_SIZE(o, op_add);
-			o.op_sub.right = right_var;
-			o.op_sub.left = left_var;
-			o.op_sub.result = result_var;
+			o.size = OP_SIZE(o, op_binary);
+			o.op_binary.right = right_var;
+			o.op_binary.left = left_var;
+			o.op_binary.result = result_var;
 			emit_op(code, &o);
 
 			return result_var;
 		}
 		case OPERATOR_NOT: {
 			debug_context context = {0};
-			error(context, "not implemented");
-		}
-		case OPERATOR_OR: {
-			debug_context context = {0};
-			error(context, "not implemented");
-		}
-		case OPERATOR_AND: {
-			debug_context context = {0};
-			error(context, "not implemented");
+			error(context, "! is not a binary operator");
 		}
 		case OPERATOR_MOD: {
 			debug_context context = {0};
@@ -488,10 +522,40 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		emit_op(code, &o);
 		break;
 	}
-	case STATEMENT_IF:
+	case STATEMENT_IF: {
+		opcode o;
+		o.type = OPCODE_IF;
+		o.size = OP_SIZE(o, op_if);
+
+		variable v = emit_expression(code, parent, statement->iffy.test);
+
+		o.op_if.condition = v;
+
+		emit_op(code, &o);
+
+		emit_statement(code, parent, statement->iffy.block);
+
+		break;
+	}
 	case STATEMENT_BLOCK: {
-		debug_context context = {0};
-		error(context, "not implemented");
+		{
+			opcode o;
+			o.type = OPCODE_BLOCK_START;
+			o.size = OP_SIZE(o, op_nothing);
+			emit_op(code, &o);
+		}
+
+		for (size_t i = 0; i < statement->block.statements.size; ++i) {
+			emit_statement(code, &statement->block, statement->block.statements.s[i]);
+		}
+
+		{
+			opcode o;
+			o.type = OPCODE_BLOCK_END;
+			o.size = OP_SIZE(o, op_nothing);
+			emit_op(code, &o);
+		}
+
 		break;
 	}
 	case STATEMENT_LOCAL_VARIABLE: {
