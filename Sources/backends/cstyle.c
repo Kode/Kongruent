@@ -166,7 +166,7 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		break;
 	}
 	case OPCODE_WHILE: {
-		*offset += sprintf(&code[*offset], "\twhile (_%" PRIu64 ")\n", o->op_if.condition.index);
+		*offset += sprintf(&code[*offset], "\twhile (_%" PRIu64 ")\n", o->op_while.condition.index);
 		break;
 	}
 	case OPCODE_BLOCK_START: {
