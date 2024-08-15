@@ -88,7 +88,7 @@ typedef struct block {
 } block;
 
 typedef struct statement {
-	enum { STATEMENT_EXPRESSION, STATEMENT_RETURN_EXPRESSION, STATEMENT_IF, STATEMENT_BLOCK, STATEMENT_LOCAL_VARIABLE } kind;
+	enum { STATEMENT_EXPRESSION, STATEMENT_RETURN_EXPRESSION, STATEMENT_IF, STATEMENT_WHILE, STATEMENT_BLOCK, STATEMENT_LOCAL_VARIABLE } kind;
 
 	union {
 		expression *expression;
@@ -97,6 +97,10 @@ typedef struct statement {
 			struct statement *if_block;
 			struct statement *else_block;
 		} iffy;
+		struct {
+			expression *test;
+			struct statement *while_block;
+		} willy;
 		block block;
 		struct {
 			local_variable var;

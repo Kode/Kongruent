@@ -318,6 +318,23 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 
 		return s;
 	}
+	case TOKEN_WHILE: {
+		advance_state(state);
+		match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
+		advance_state(state);
+
+		expression *test = parse_expression(state);
+		match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
+		advance_state(state);
+
+		statement *while_block = parse_statement(state, parent_block);
+		statement *s = statement_allocate();
+		s->kind = STATEMENT_WHILE;
+		s->willy.test = test;
+		s->willy.while_block = while_block;
+
+		return s;
+	}
 	case TOKEN_LEFT_CURLY: {
 		return parse_block(state, parent_block);
 	}

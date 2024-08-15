@@ -549,6 +549,23 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 
 		break;
 	}
+	case STATEMENT_WHILE: {
+		{
+			opcode o;
+			o.type = OPCODE_WHILE;
+			o.size = OP_SIZE(o, op_while);
+
+			variable v = emit_expression(code, parent, statement->willy.test);
+
+			o.op_while.condition = v;
+
+			emit_op(code, &o);
+		}
+
+		emit_statement(code, parent, statement->willy.while_block);
+
+		break;
+	}
 	case STATEMENT_BLOCK: {
 		{
 			opcode o;

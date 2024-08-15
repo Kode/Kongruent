@@ -277,6 +277,11 @@ void resolve_types_in_block(statement *parent, statement *block) {
 			}
 			break;
 		}
+		case STATEMENT_WHILE: {
+			resolve_types_in_expression(block, s->willy.test);
+			resolve_types_in_block(block, s->willy.while_block);
+			break;
+		}
 		case STATEMENT_BLOCK: {
 			resolve_types_in_block(block, s);
 			break;

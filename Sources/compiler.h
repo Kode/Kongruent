@@ -42,6 +42,7 @@ typedef struct opcode {
 		OPCODE_OR,
 		OPCODE_IF,
 		OPCODE_ELSE,
+		OPCODE_WHILE,
 		OPCODE_BLOCK_START,
 		OPCODE_BLOCK_END
 	} type;
@@ -95,6 +96,9 @@ typedef struct opcode {
 		struct {
 			variable condition;
 		} op_if;
+		struct {
+			variable condition;
+		} op_while;
 		struct {
 			uint8_t nothing;
 		} op_nothing;
