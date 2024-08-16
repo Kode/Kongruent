@@ -330,8 +330,32 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		statement *while_block = parse_statement(state, parent_block);
 		statement *s = statement_allocate();
 		s->kind = STATEMENT_WHILE;
-		s->willy.test = test;
-		s->willy.while_block = while_block;
+		s->whiley.test = test;
+		s->whiley.while_block = while_block;
+
+		return s;
+	}
+	case TOKEN_DO: {
+		advance_state(state);
+		
+		statement *do_block = parse_statement(state, parent_block);
+		statement *s = statement_allocate();
+		s->kind = STATEMENT_DO_WHILE;
+		s->whiley.while_block = do_block;
+
+		match_token(state, TOKEN_WHILE, "Expected \"while\"");
+		advance_state(state);
+		match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
+		advance_state(state);
+
+		expression *test = parse_expression(state);
+		match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
+		advance_state(state);
+
+		s->whiley.test = test;
+
+		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
+		advance_state(state);
 
 		return s;
 	}

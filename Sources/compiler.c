@@ -562,14 +562,45 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 			o.type = OPCODE_WHILE_CONDITION;
 			o.size = OP_SIZE(o, op_while);
 
-			variable v = emit_expression(code, parent, statement->willy.test);
+			variable v = emit_expression(code, parent, statement->whiley.test);
 
 			o.op_while.condition = v;
 
 			emit_op(code, &o);
 		}
 
-		emit_statement(code, parent, statement->willy.while_block);
+		emit_statement(code, parent, statement->whiley.while_block);
+
+		{
+			opcode o;
+			o.type = OPCODE_WHILE_END;
+			o.size = OP_SIZE(o, op_nothing);
+			emit_op(code, &o);
+		}
+
+		break;
+	}
+	case STATEMENT_DO_WHILE: {
+		{
+			opcode o;
+			o.type = OPCODE_WHILE_START;
+			o.size = OP_SIZE(o, op_nothing);
+			emit_op(code, &o);
+		}
+
+		emit_statement(code, parent, statement->whiley.while_block);
+
+		{
+			opcode o;
+			o.type = OPCODE_WHILE_CONDITION;
+			o.size = OP_SIZE(o, op_while);
+
+			variable v = emit_expression(code, parent, statement->whiley.test);
+
+			o.op_while.condition = v;
+
+			emit_op(code, &o);
+		}
 
 		{
 			opcode o;
