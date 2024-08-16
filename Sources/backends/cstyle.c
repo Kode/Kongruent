@@ -165,8 +165,17 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		*offset += sprintf(&code[*offset], "\telse\n");
 		break;
 	}
-	case OPCODE_WHILE: {
-		*offset += sprintf(&code[*offset], "\twhile (_%" PRIu64 ")\n", o->op_while.condition.index);
+	case OPCODE_WHILE_START: {
+		*offset += sprintf(&code[*offset], "\twhile (true)\n");
+		*offset += sprintf(&code[*offset], "\t{\n");
+		break;
+	}
+	case OPCODE_WHILE_CONDITION: {
+		*offset += sprintf(&code[*offset], "\tif (!_%" PRIu64 ") break;\n", o->op_while.condition.index);
+		break;
+	}
+	case OPCODE_WHILE_END: {
+		*offset += sprintf(&code[*offset], "\t}\n");
 		break;
 	}
 	case OPCODE_BLOCK_START: {
