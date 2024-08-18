@@ -52,6 +52,31 @@ variable find_local_var(block *b, name_id name) {
 	return find_local_var(b->parent, name);
 }
 
+variable find_variable(block *parent, name_id name) {
+	variable local_var = find_local_var(parent, name);
+	if (local_var.index == 0) {
+		allocated_global global = find_allocated_global(name);
+		if (global.g.type != NO_TYPE && global.variable_id != 0) {
+			variable v;
+			init_type_ref(&v.type, NO_NAME);
+			v.type.type = global.g.type;
+			v.index = global.variable_id;
+			return v;
+		}
+		else {
+			debug_context context = {0};
+			error(context, "Variable %s not found", get_name(name));
+
+			variable v;
+			v.index = 0;
+			return v;
+		}
+	}
+	else {
+		return local_var;
+	}
+}
+
 const char all_names[1024 * 1024];
 
 static uint64_t next_variable_id = 1;
@@ -215,7 +240,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				}
 				o.size = OP_SIZE(o, op_store_var);
 				o.op_store_var.from = v;
-				// o.op_store_var.to = left->variable;
+				o.op_store_var.to = find_variable(parent, left->variable);
 				emit_op(code, &o);
 				break;
 			}
@@ -389,22 +414,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	// case EXPRESSION_STRING:
 	//	error("not implemented", 0, 0);
 	case EXPRESSION_VARIABLE: {
-		debug_context context = {0};
-		allocated_global g = find_allocated_global(e->variable);
-		if (g.g.type != NO_TYPE) {
-			check(g.variable_id != 0, context, "Global was not allocated");
-
-			variable var;
-			init_type_ref(&var.type, NO_NAME);
-			var.type.type = g.g.type;
-			var.index = g.variable_id;
-			return var;
-		}
-		else {
-			variable var = find_local_var(parent, e->variable);
-			check(var.index != 0, context, "Local var was not allocated");
-			return var;
-		}
+		return find_variable(parent, e->variable);
 	}
 	case EXPRESSION_GROUPING: {
 		debug_context context = {0};
@@ -443,17 +453,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		debug_context context = {0};
 		check(e->member.left->kind == EXPRESSION_VARIABLE, context, "Misformed member construct");
 
-		o.op_load_member.from = find_local_var(parent, e->member.left->variable);
-		if (o.op_load_member.from.index == 0) {
-			allocated_global global = find_allocated_global(e->member.left->variable);
-			if (global.g.type != NO_TYPE) {
-				variable v;
-				v.index = global.variable_id;
-				init_type_ref(&v.type, NO_NAME);
-				v.type.type = global.g.type;
-				o.op_load_member.from = v;
-			}
-		}
+		o.op_load_member.from = find_variable(parent, e->member.left->variable);
 
 		check(o.op_load_member.from.index != 0, context, "Load var is broken");
 		o.op_load_member.to = v;
