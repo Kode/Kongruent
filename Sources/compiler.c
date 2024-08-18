@@ -191,12 +191,28 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 			switch (left->kind) {
 			case EXPRESSION_VARIABLE: {
-				if (e->binary.op != OPERATOR_ASSIGN) {
-					debug_context context = {0};
-					error(context, "operator can not initialize a variable");
-				}
 				opcode o;
-				o.type = OPCODE_STORE_VARIABLE;
+				switch (e->binary.op) {
+				case OPERATOR_ASSIGN:
+					o.type = OPCODE_STORE_VARIABLE;
+					break;
+				case OPERATOR_MINUS_ASSIGN:
+					o.type = OPCODE_SUB_AND_STORE_VARIABLE;
+					break;
+				case OPERATOR_PLUS_ASSIGN:
+					o.type = OPCODE_ADD_AND_STORE_VARIABLE;
+					break;
+				case OPERATOR_DIVIDE_ASSIGN:
+					o.type = OPCODE_DIVIDE_AND_STORE_VARIABLE;
+					break;
+				case OPERATOR_MULTIPLY_ASSIGN:
+					o.type = OPCODE_MULTIPLY_AND_STORE_VARIABLE;
+					break;
+				default: {
+					debug_context context = {0};
+					error(context, "Unexpected operator");
+				}
+				}
 				o.size = OP_SIZE(o, op_store_var);
 				o.op_store_var.from = v;
 				// o.op_store_var.to = left->variable;
@@ -612,6 +628,11 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		break;
 	}
 	case STATEMENT_BLOCK: {
+		for (size_t i = 0; i < statement->block.vars.size; ++i) {
+			variable var = allocate_variable(statement->block.vars.v[i].type, VARIABLE_LOCAL);
+			statement->block.vars.v[i].variable_id = var.index;
+		}
+
 		{
 			opcode o;
 			o.type = OPCODE_BLOCK_START;
@@ -646,7 +667,7 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		statement->local_variable.var.variable_id = local_var.index;
 		o.op_var.var.index = statement->local_variable.var.variable_id;
 		debug_context context = {0};
-		check(statement->local_variable.var.type.type != NO_TYPE, context, "Local var has not type");
+		check(statement->local_variable.var.type.type != NO_TYPE, context, "Local var has no type");
 		o.op_var.var.type = statement->local_variable.var.type;
 		emit_op(code, &o);
 

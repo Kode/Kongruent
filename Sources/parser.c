@@ -328,6 +328,7 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		advance_state(state);
 
 		statement *while_block = parse_statement(state, parent_block);
+		
 		statement *s = statement_allocate();
 		s->kind = STATEMENT_WHILE;
 		s->whiley.test = test;
@@ -339,6 +340,7 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		advance_state(state);
 		
 		statement *do_block = parse_statement(state, parent_block);
+		
 		statement *s = statement_allocate();
 		s->kind = STATEMENT_DO_WHILE;
 		s->whiley.while_block = do_block;
@@ -358,6 +360,50 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		advance_state(state);
 
 		return s;
+	}
+	case TOKEN_FOR: {
+		statements outer_block_statements;
+		statements_init(&outer_block_statements);
+
+		statement *outer_block = statement_allocate();
+		outer_block->kind = STATEMENT_BLOCK;
+		outer_block->block.parent = parent_block;
+		outer_block->block.vars.size = 0;
+		outer_block->block.statements = outer_block_statements;
+
+		advance_state(state);
+
+		match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
+		advance_state(state);
+
+		statement *pre = parse_statement(state, &outer_block->block);
+		statements_add(&outer_block->block.statements, pre);
+
+		expression *test = parse_expression(state);
+		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
+		advance_state(state);
+
+		expression *post_expression = parse_expression(state);
+
+		match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
+		advance_state(state);
+
+		statement *inner_block = parse_statement(state, &outer_block->block);
+
+		statement *post_statement = statement_allocate();
+		post_statement->kind = STATEMENT_EXPRESSION;
+		post_statement->expression = post_expression;
+
+		statements_add(&inner_block->block.statements, post_statement);
+
+		statement *s = statement_allocate();
+		s->kind = STATEMENT_WHILE;
+		s->whiley.test = test;
+		s->whiley.while_block = inner_block;
+
+		statements_add(&outer_block->block.statements, s);
+
+		return outer_block;
 	}
 	case TOKEN_LEFT_CURLY: {
 		return parse_block(state, parent_block);
