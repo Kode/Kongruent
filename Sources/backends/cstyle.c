@@ -29,7 +29,7 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		*offset += sprintf(&code[*offset], "\t_%" PRIu64 " = _%" PRIu64 ";\n", o->op_store_var.to.index, o->op_store_var.from.index);
 		break;
 	case OPCODE_SUB_AND_STORE_VARIABLE:
-		*offset += sprintf(&code[*offset], "\t_%" PRIu64 " /= _%" PRIu64 ";\n", o->op_store_var.to.index, o->op_store_var.from.index);
+		*offset += sprintf(&code[*offset], "\t_%" PRIu64 " -= _%" PRIu64 ";\n", o->op_store_var.to.index, o->op_store_var.from.index);
 		break;
 	case OPCODE_ADD_AND_STORE_VARIABLE:
 		*offset += sprintf(&code[*offset], "\t_%" PRIu64 " += _%" PRIu64 ";\n", o->op_store_var.to.index, o->op_store_var.from.index);
