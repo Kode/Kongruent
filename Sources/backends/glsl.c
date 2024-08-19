@@ -7,6 +7,7 @@
 #include "../shader_stage.h"
 #include "../types.h"
 #include "cstyle.h"
+#include "util.h"
 
 #include <assert.h>
 #include <inttypes.h>
@@ -387,6 +388,8 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 			                   type_string(f->parameter_type.type), parameter_id);
 		}
 
+		int indentation = 1;
+
 		size_t index = 0;
 		while (index < size) {
 			opcode *o = (opcode *)&data[index];
@@ -395,13 +398,15 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 				if (o->op_call.func == add_name("sample")) {
 					debug_context context = {0};
 					check(o->op_call.parameters_size == 3, context, "sample requires three parameters");
-					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = texture(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
+					indent(code, offset, indentation);
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = texture(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
 					                   o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[2].index);
 				}
 				else if (o->op_call.func == add_name("sample_lod")) {
 					debug_context context = {0};
 					check(o->op_call.parameters_size == 4, context, "sample_lod requires four parameters");
-					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = textureLod(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
+					indent(code, offset, indentation);
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = textureLod(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
 					                   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index,
 					                   o->op_call.parameters[2].index, o->op_call.parameters[3].index);
 				}
@@ -417,7 +422,8 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 						function_name = "vec4";
 					}
 
-					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index, function_name);
+					indent(code, offset, indentation);
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index, function_name);
 					if (o->op_call.parameters_size > 0) {
 						*offset += sprintf(&code[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
 						for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
@@ -438,12 +444,13 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 					}
 				}
 
+				indent(code, offset, indentation);
 				if (f == main && o->op_load_member.member_parent_type == input) {
-					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = %s", type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %s", type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
 					                   type_string(o->op_load_member.member_parent_type));
 				}
 				else {
-					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
 					                   o->op_load_member.from.index);
 				}
 
@@ -466,49 +473,67 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
 					if (f == main && stage == SHADER_STAGE_VERTEX) {
-						*offset += sprintf(&code[*offset], "\t{\n");
+						indent(code, offset, indentation);
+						*offset += sprintf(&code[*offset], "{\n");
 
 						type *t = get_type(f->return_type.type);
 
-						*offset += sprintf(&code[*offset], "\t\tgl_Position.x = _%" PRIu64 ".%s.x;\n", o->op_return.var.index, get_name(t->members.m[0].name));
-						*offset += sprintf(&code[*offset], "\t\tgl_Position.y = _%" PRIu64 ".%s.y;\n", o->op_return.var.index, get_name(t->members.m[0].name));
-						*offset += sprintf(&code[*offset], "\t\tgl_Position.z = (_%" PRIu64 ".%s.z * 2.0) - _%" PRIu64 ".%s.w;\n", o->op_return.var.index,
+						indent(code, offset, indentation + 1);
+						*offset += sprintf(&code[*offset], "gl_Position.x = _%" PRIu64 ".%s.x;\n", o->op_return.var.index, get_name(t->members.m[0].name));
+						indent(code, offset, indentation + 1);
+						*offset += sprintf(&code[*offset], "gl_Position.y = _%" PRIu64 ".%s.y;\n", o->op_return.var.index, get_name(t->members.m[0].name));
+						indent(code, offset, indentation + 1);
+						*offset += sprintf(&code[*offset], "gl_Position.z = (_%" PRIu64 ".%s.z * 2.0) - _%" PRIu64 ".%s.w;\n", o->op_return.var.index,
 						                   get_name(t->members.m[0].name), o->op_return.var.index, get_name(t->members.m[0].name));
-						*offset += sprintf(&code[*offset], "\t\tgl_Position.w = _%" PRIu64 ".%s.w;\n", o->op_return.var.index, get_name(t->members.m[0].name));
+						indent(code, offset, indentation + 1);
+						*offset += sprintf(&code[*offset], "gl_Position.w = _%" PRIu64 ".%s.w;\n", o->op_return.var.index, get_name(t->members.m[0].name));
 
 						for (size_t j = 1; j < t->members.size; ++j) {
-							*offset += sprintf(&code[*offset], "\t\t%s_%s = _%" PRIu64 ".%s;\n", get_name(t->name), get_name(t->members.m[j].name),
+							indent(code, offset, indentation + 1);
+							*offset += sprintf(&code[*offset], "%s_%s = _%" PRIu64 ".%s;\n", get_name(t->name), get_name(t->members.m[j].name),
 							                   o->op_return.var.index, get_name(t->members.m[j].name));
 						}
 
-						*offset += sprintf(&code[*offset], "\t\treturn;\n");
-						*offset += sprintf(&code[*offset], "\t}\n");
+						indent(code, offset, indentation);
+						*offset += sprintf(&code[*offset], "return;\n");
+						indent(code, offset, indentation);
+						*offset += sprintf(&code[*offset], "}\n");
 					}
 					else if (f == main && stage == SHADER_STAGE_FRAGMENT && f->return_type.array_size > 0) {
-						*offset += sprintf(&code[*offset], "\t{\n");
+						indent(code, offset, indentation);
+						*offset += sprintf(&code[*offset], "{\n");
 						for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
-							*offset += sprintf(&code[*offset], "\t\t_kong_colors[%i] = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
+							indent(code, offset, indentation + 1);
+							*offset += sprintf(&code[*offset], "_kong_colors[%i] = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
 						}
-						*offset += sprintf(&code[*offset], "\t\treturn;\n");
-						*offset += sprintf(&code[*offset], "\t}\n");
+						indent(code, offset, indentation + 1);
+						*offset += sprintf(&code[*offset], "return;\n");
+						indent(code, offset, indentation);
+						*offset += sprintf(&code[*offset], "}\n");
 					}
 					else if (f == main && stage == SHADER_STAGE_FRAGMENT) {
-						*offset += sprintf(&code[*offset], "\t{\n");
-						*offset += sprintf(&code[*offset], "\t\t_kong_color = _%" PRIu64 ";\n", o->op_return.var.index);
-						*offset += sprintf(&code[*offset], "\t\treturn;\n");
-						*offset += sprintf(&code[*offset], "\t}\n");
+						indent(code, offset, indentation);
+						*offset += sprintf(&code[*offset], "{\n");
+						indent(code, offset, indentation + 1);
+						*offset += sprintf(&code[*offset], "_kong_color = _%" PRIu64 ";\n", o->op_return.var.index);
+						indent(code, offset, indentation + 1);
+						*offset += sprintf(&code[*offset], "return;\n");
+						indent(code, offset, indentation);
+						*offset += sprintf(&code[*offset], "}\n");
 					}
 					else {
-						*offset += sprintf(&code[*offset], "\treturn _%" PRIu64 ";\n", o->op_return.var.index);
+						indent(code, offset, indentation);
+						*offset += sprintf(&code[*offset], "return _%" PRIu64 ";\n", o->op_return.var.index);
 					}
 				}
 				else {
-					*offset += sprintf(&code[*offset], "\treturn;\n");
+					indent(code, offset, indentation);
+					*offset += sprintf(&code[*offset], "return;\n");
 				}
 				break;
 			}
 			default:
-				cstyle_write_opcode(code, offset, o, type_string);
+				cstyle_write_opcode(code, offset, o, type_string, &indentation);
 				break;
 			}
 

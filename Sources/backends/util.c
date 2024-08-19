@@ -2,6 +2,16 @@
 
 #include "../errors.h"
 
+#include <string.h>
+
+void indent(char *code, size_t *offset, int indentation) {
+	indentation = indentation < 15 ? indentation : 15;
+	char indent[16];
+	memset(indent, '\t', sizeof(indent));
+	indent[indentation] = 0;
+	*offset += sprintf(&code[*offset], indent);
+}
+
 void find_referenced_functions(function *f, function **functions, size_t *functions_size) {
 	if (f->block == NULL) {
 		// built-in

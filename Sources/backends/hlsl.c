@@ -317,6 +317,8 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			                   type_string(f->parameter_type.type), parameter_id);
 		}
 
+		int indentation = 1;
+
 		size_t index = 0;
 		while (index < size) {
 			opcode *o = (opcode *)&data[index];
@@ -331,7 +333,8 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					}
 				}
 
-				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
+				indent(hlsl, offset, indentation);
+				*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
 				                   o->op_load_member.from.index);
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
@@ -349,36 +352,44 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
 					if (f == main && stage == SHADER_STAGE_FRAGMENT && f->return_type.array_size > 0) {
-						*offset += sprintf(&hlsl[*offset], "\t{\n");
-						*offset += sprintf(&hlsl[*offset], "\t\t_kong_colors_out _kong_colors;\n");
+						indent(hlsl, offset, indentation);
+						*offset += sprintf(&hlsl[*offset], "{\n");
+						indent(hlsl, offset, indentation + 1);
+						*offset += sprintf(&hlsl[*offset], "_kong_colors_out _kong_colors;\n");
 						for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
 							*offset += sprintf(&hlsl[*offset], "\t\t_kong_colors._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
 						}
-						*offset += sprintf(&hlsl[*offset], "\t\treturn _kong_colors;\n");
-						*offset += sprintf(&hlsl[*offset], "\t}\n");
+						indent(hlsl, offset, indentation + 1);
+						*offset += sprintf(&hlsl[*offset], "return _kong_colors;\n");
+						indent(hlsl, offset, indentation);
+						*offset += sprintf(&hlsl[*offset], "}\n");
 					}
 					else {
-						*offset += sprintf(&hlsl[*offset], "\treturn _%" PRIu64 ";\n", o->op_return.var.index);
+						indent(hlsl, offset, indentation);
+						*offset += sprintf(&hlsl[*offset], "return _%" PRIu64 ";\n", o->op_return.var.index);
 					}
 				}
 				else {
-					*offset += sprintf(&hlsl[*offset], "\treturn;\n");
+					indent(hlsl, offset, indentation);
+					*offset += sprintf(&hlsl[*offset], "return;\n");
 				}
 				break;
 			}
 			case OPCODE_MULTIPLY: {
 				if (o->op_binary.left.type.type == float4x4_id) {
-					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = mul(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_binary.result.type.type),
+					indent(hlsl, offset, indentation);
+					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = mul(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_binary.result.type.type),
 					                   o->op_binary.result.index, o->op_binary.right.index, o->op_binary.left.index);
 				}
 				else {
-					*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+					indent(hlsl, offset, indentation);
+					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
 					                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				}
 				break;
 			}
 			default:
-				cstyle_write_opcode(hlsl, offset, o, type_string);
+				cstyle_write_opcode(hlsl, offset, o, type_string, &indentation);
 				break;
 			}
 
