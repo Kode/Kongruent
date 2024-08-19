@@ -6,10 +6,10 @@
 
 void indent(char *code, size_t *offset, int indentation) {
 	indentation = indentation < 15 ? indentation : 15;
-	char indent[16];
-	memset(indent, '\t', sizeof(indent));
-	indent[indentation] = 0;
-	*offset += sprintf(&code[*offset], indent);
+	char str[16];
+	memset(str, '\t', sizeof(str));
+	str[indentation] = 0;
+	*offset += sprintf(&code[*offset], str);
 }
 
 void find_referenced_functions(function *f, function **functions, size_t *functions_size) {
@@ -85,9 +85,9 @@ void find_referenced_types(function *f, type_id *types, size_t *types_size) {
 	for (size_t l = 0; l < functions_size; ++l) {
 		function *func = functions[l];
 		debug_context context = {0};
-		check(func->parameter_type.type != NO_TYPE, context, "Parameter type missing");
+		check(func->parameter_type.type != NO_TYPE, context, "Function parameter type not found");
 		add_found_type(func->parameter_type.type, types, types_size);
-		check(func->return_type.type != NO_TYPE, context, "Return type missing");
+		check(func->return_type.type != NO_TYPE, context, "Function return type missing");
 		add_found_type(func->return_type.type, types, types_size);
 
 		uint8_t *data = functions[l]->code.o;
