@@ -45,7 +45,6 @@ typedef struct opcode {
 		OPCODE_AND,
 		OPCODE_OR,
 		OPCODE_IF,
-		OPCODE_ELSE,
 		OPCODE_WHILE_START,
 		OPCODE_WHILE_CONDITION,
 		OPCODE_WHILE_END,
@@ -102,6 +101,8 @@ typedef struct opcode {
 		} op_binary;
 		struct {
 			variable condition;
+			uint8_t exclusions_size;
+			variable exclusions[1];
 		} op_if;
 		struct {
 			variable condition;

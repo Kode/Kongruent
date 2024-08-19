@@ -306,14 +306,33 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		s->iffy.test = test;
 		s->iffy.if_block = if_block;
 
-		if (current(state).kind == TOKEN_ELSE) {
+		s->iffy.else_size = 0;
+
+		while (current(state).kind == TOKEN_ELSE) {
 			advance_state(state);
 
-			statement *else_block = parse_statement(state, parent_block);
-			s->iffy.else_block = else_block;
-		}
-		else {
-			s->iffy.else_block = NULL;
+			if (current(state).kind == TOKEN_IF) {
+				advance_state(state);
+				match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
+				advance_state(state);
+
+				expression *test = parse_expression(state);
+				match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
+				advance_state(state);
+
+				statement *if_block = parse_statement(state, parent_block);
+
+				s->iffy.else_tests[s->iffy.else_size] = test;
+				s->iffy.else_blocks[s->iffy.else_size] = if_block;
+			}
+			else {
+				statement *else_block = parse_statement(state, parent_block);
+				s->iffy.else_tests[s->iffy.else_size] = NULL;
+				s->iffy.else_blocks[s->iffy.else_size] = else_block;
+			}
+
+			s->iffy.else_size += 1;
+			assert(s->iffy.else_size < 64);
 		}
 
 		return s;

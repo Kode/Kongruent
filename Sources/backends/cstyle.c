@@ -170,11 +170,21 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		break;
 	}
 	case OPCODE_IF: {
-		*offset += sprintf(&code[*offset], "\tif (_%" PRIu64 ")\n", o->op_if.condition.index);
-		break;
-	}
-	case OPCODE_ELSE: {
-		*offset += sprintf(&code[*offset], "\telse\n");
+		if (o->op_if.condition.index != 0) {
+			*offset += sprintf(&code[*offset], "\tif (_%" PRIu64, o->op_if.condition.index);
+		}
+		else {
+			*offset += sprintf(&code[*offset], "\tif (");
+		}
+		for (uint8_t i = 0; i < o->op_if.exclusions_size; ++i) {
+			if (i == 0 && o->op_if.condition.index == 0) {
+				*offset += sprintf(&code[*offset], "!_%" PRIu64, o->op_if.exclusions[i].index);
+			}
+			else {
+				*offset += sprintf(&code[*offset], " && !_%" PRIu64, o->op_if.exclusions[i].index);
+			}
+		}
+		*offset += sprintf(&code[*offset], ")\n");
 		break;
 	}
 	case OPCODE_WHILE_START: {

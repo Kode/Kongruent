@@ -103,7 +103,9 @@ typedef struct statement {
 		struct {
 			expression *test;
 			struct statement *if_block;
-			struct statement *else_block;
+			expression *else_tests[64];
+			struct statement *else_blocks[64];
+			uint16_t else_size;
 		} iffy;
 		struct {
 			expression *test;

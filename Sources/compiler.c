@@ -539,30 +539,56 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		break;
 	}
 	case STATEMENT_IF: {
+		variable previous_conditions[64];
+		uint8_t previous_conditions_size = 0;
+
 		{
 			opcode o;
 			o.type = OPCODE_IF;
 			o.size = OP_SIZE(o, op_if);
 
-			variable v = emit_expression(code, parent, statement->iffy.test);
+			variable initial_condition = emit_expression(code, parent, statement->iffy.test);
 
-			o.op_if.condition = v;
+			o.op_if.condition = initial_condition;
+			o.op_if.exclusions_size = 0;
 
 			emit_op(code, &o);
+
+			previous_conditions[previous_conditions_size] = initial_condition;
+			previous_conditions_size += 1;
 		}
 
 		emit_statement(code, parent, statement->iffy.if_block);
 
-		if (statement->iffy.else_block != NULL) {
+		for (uint16_t i = 0; i < statement->iffy.else_size; ++i) {
 			opcode o;
-			o.type = OPCODE_ELSE;
-			o.size = OP_SIZE(o, op_nothing);
+			o.type = OPCODE_IF;
+			o.size = OP_SIZE(o, op_if) + sizeof(variable) * i;
+
+			for (uint8_t previous_condition_index = 0; previous_condition_index < previous_conditions_size; ++previous_condition_index) {
+				o.op_if.exclusions[previous_condition_index] = previous_conditions[previous_condition_index];
+			}
+			o.op_if.exclusions_size = previous_conditions_size;
+
+			if (statement->iffy.else_tests[i] != NULL) {
+				variable v = emit_expression(code, parent, statement->iffy.else_tests[i]);
+				o.op_if.condition = v;
+
+				previous_conditions[previous_conditions_size] = v;
+				previous_conditions_size += 1;
+			}
+			else {
+				o.op_if.condition.index = 0;
+				o.op_if.condition.kind = VARIABLE_GLOBAL;
+				o.op_if.condition.type.name = NO_NAME;
+				o.op_if.condition.type.type = NO_TYPE;
+			}
 
 			emit_op(code, &o);
 
-			emit_statement(code, parent, statement->iffy.else_block);
+			emit_statement(code, parent, statement->iffy.else_blocks[i]);
 		}
-
+		
 		break;
 	}
 	case STATEMENT_WHILE: {

@@ -272,8 +272,11 @@ void resolve_types_in_block(statement *parent, statement *block) {
 		case STATEMENT_IF: {
 			resolve_types_in_expression(block, s->iffy.test);
 			resolve_types_in_block(block, s->iffy.if_block);
-			if (s->iffy.else_block != NULL) {
-				resolve_types_in_block(block, s->iffy.else_block);
+			for (uint16_t i = 0; i < s->iffy.else_size; ++i) {
+				if (s->iffy.else_tests[i] != NULL) {
+					resolve_types_in_expression(block, s->iffy.else_tests[i]);
+				}
+				resolve_types_in_block(block, s->iffy.else_blocks[i]);
 			}
 			break;
 		}
