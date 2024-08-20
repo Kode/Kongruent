@@ -105,7 +105,18 @@ typedef struct opcode {
 			uint64_t end_id;
 		} op_if;
 		struct {
+			uint64_t start_id;
+			uint64_t continue_id;
+			uint64_t end_id;
+		} op_while_start;
+		struct {
+			uint64_t start_id;
+			uint64_t continue_id;
+			uint64_t end_id;
+		} op_while_end;
+		struct {
 			variable condition;
+			uint64_t end_id;
 		} op_while;
 		struct {
 			uint64_t id;

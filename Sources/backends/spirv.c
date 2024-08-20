@@ -144,10 +144,12 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_MEMBER_DECORATE = 72,
 	SPIRV_OPCODE_COMPOSITE_CONSTRUCT = 80,
 	SPIRV_OPCODE_F_ORD_LESS_THAN = 184,
+	SPIRV_OPCODE_LOOP_MERGE = 246,
 	SPIRV_OPCODE_SELECTION_MERGE = 247,
+	SPIRV_OPCODE_LABEL = 248,
+	SPIRV_OPCODE_BRANCH = 249,
 	SPIRV_OPCODE_BRANCH_CONDITIONAL = 250,
 	SPIRV_OPCODE_RETURN = 253,
-	SPIRV_OPCODE_LABEL = 248
 } spirv_opcode;
 
 static type_id find_access_type(int *indices, int indices_size, type_id base_type) {
@@ -215,6 +217,8 @@ typedef enum builtin { BUILTIN_POSITION = 0 } builtin;
 typedef enum storage_class { STORAGE_CLASS_INPUT = 1, STORAGE_CLASS_OUTPUT = 3, STORAGE_CLASS_FUNCTION = 7, STORAGE_CLASS_NONE = 9999 } storage_class;
 
 typedef enum selection_control { SELECTION_CONTROL_NONE = 0, SELCTION_CONTROL_FLATTEN = 1, SELECTION_CONTROL_DONT_FLATTEN = 2 } selection_control;
+
+typedef enum loop_control { LOOP_CONTROL_NONE = 0, LOOP_CONTROL_UNROLL = 1, LOOP_CONTROL_DONT_UNROLL = 2 } loop_control;
 
 typedef enum function_control { FUNCTION_CONTROL_NONE } function_control;
 
@@ -577,6 +581,16 @@ static spirv_id write_op_label(instructions_buffer *instructions) {
 static void write_op_label_preallocated(instructions_buffer *instructions, spirv_id result) {
 	uint32_t operands[] = {result.id};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_LABEL, operands);
+}
+
+static void write_op_branch(instructions_buffer *instructions, spirv_id target) {
+	uint32_t operands[] = {target.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_BRANCH, operands);
+}
+
+static void write_op_loop_merge(instructions_buffer *instructions, spirv_id merge_block, spirv_id continue_target, loop_control control) {
+	uint32_t operands[] = {merge_block.id, continue_target.id, (uint32_t)control};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_LOOP_MERGE, operands);
 }
 
 static void write_op_return(instructions_buffer *instructions) {
@@ -949,6 +963,43 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			write_op_branch_conditional(instructions, convert_kong_index_to_spirv_id(o->op_if.condition.index), convert_kong_index_to_spirv_id(o->op_if.start_id),
 			                            convert_kong_index_to_spirv_id(o->op_if.end_id));
 
+			break;
+		}
+		case OPCODE_WHILE_START: {
+			spirv_id while_start_label = convert_kong_index_to_spirv_id(o->op_while_start.start_id);
+			spirv_id while_continue_label = convert_kong_index_to_spirv_id(o->op_while_start.continue_id);
+			spirv_id while_end_label = convert_kong_index_to_spirv_id(o->op_while_start.end_id);
+
+			write_op_branch(instructions, while_start_label);
+			write_op_label_preallocated(instructions, while_start_label);
+			
+			write_op_loop_merge(instructions, while_end_label, while_continue_label, LOOP_CONTROL_NONE);
+
+			spirv_id loop_start_id = allocate_index();
+			write_op_branch(instructions, loop_start_id);
+			write_op_label_preallocated(instructions, loop_start_id);
+			break;
+		}
+		case OPCODE_WHILE_CONDITION: {
+			spirv_id while_end_label = convert_kong_index_to_spirv_id(o->op_while.end_id);
+
+			spirv_id pass = allocate_index();
+
+			write_op_branch_conditional(instructions, convert_kong_index_to_spirv_id(o->op_while.condition.index), pass, while_end_label);
+
+			write_op_label_preallocated(instructions, pass);
+			break;
+		}
+		case OPCODE_WHILE_END: {
+			spirv_id while_start_label = convert_kong_index_to_spirv_id(o->op_while_end.start_id);
+			spirv_id while_continue_label = convert_kong_index_to_spirv_id(o->op_while_end.continue_id);
+			spirv_id while_end_label = convert_kong_index_to_spirv_id(o->op_while_end.end_id);
+
+			write_op_branch(instructions, while_continue_label);
+			write_op_label_preallocated(instructions, while_continue_label);
+
+			write_op_branch(instructions, while_start_label);
+			write_op_label_preallocated(instructions, while_end_label);
 			break;
 		}
 		case OPCODE_BLOCK_START:

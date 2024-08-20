@@ -654,10 +654,20 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 		break;
 	}
 	case STATEMENT_WHILE: {
+		uint64_t start_id = next_variable_id;
+		++next_variable_id;
+		uint64_t continue_id = next_variable_id;
+		++next_variable_id;
+		uint64_t end_id = next_variable_id;
+		++next_variable_id;
+
 		{
 			opcode o;
 			o.type = OPCODE_WHILE_START;
-			o.size = OP_SIZE(o, op_nothing);
+			o.op_while_start.start_id = start_id;
+			o.op_while_start.continue_id = continue_id;
+			o.op_while_start.end_id = end_id;
+			o.size = OP_SIZE(o, op_while_start);
 			emit_op(code, &o);
 		}
 
@@ -669,6 +679,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			variable v = emit_expression(code, parent, statement->whiley.test);
 
 			o.op_while.condition = v;
+			o.op_while.end_id = end_id;
 
 			emit_op(code, &o);
 		}
@@ -678,17 +689,30 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 		{
 			opcode o;
 			o.type = OPCODE_WHILE_END;
-			o.size = OP_SIZE(o, op_nothing);
+			o.op_while_end.start_id = start_id;
+			o.op_while_end.continue_id = continue_id;
+			o.op_while_end.end_id = end_id;
+			o.size = OP_SIZE(o, op_while_end);
 			emit_op(code, &o);
 		}
 
 		break;
 	}
 	case STATEMENT_DO_WHILE: {
+		uint64_t start_id = next_variable_id;
+		++next_variable_id;
+		uint64_t continue_id = next_variable_id;
+		++next_variable_id;
+		uint64_t end_id = next_variable_id;
+		++next_variable_id;
+
 		{
 			opcode o;
 			o.type = OPCODE_WHILE_START;
-			o.size = OP_SIZE(o, op_nothing);
+			o.op_while_start.start_id = start_id;
+			o.op_while_start.continue_id = continue_id;
+			o.op_while_start.end_id = end_id;
+			o.size = OP_SIZE(o, op_while_start);
 			emit_op(code, &o);
 		}
 
@@ -702,6 +726,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			variable v = emit_expression(code, parent, statement->whiley.test);
 
 			o.op_while.condition = v;
+			o.op_while.end_id = end_id;
 
 			emit_op(code, &o);
 		}
@@ -709,7 +734,10 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 		{
 			opcode o;
 			o.type = OPCODE_WHILE_END;
-			o.size = OP_SIZE(o, op_nothing);
+			o.op_while_end.start_id = start_id;
+			o.op_while_end.continue_id = continue_id;
+			o.op_while_end.end_id = end_id;
+			o.size = OP_SIZE(o, op_while_end);
 			emit_op(code, &o);
 		}
 
