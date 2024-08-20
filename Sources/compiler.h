@@ -101,10 +101,15 @@ typedef struct opcode {
 		} op_binary;
 		struct {
 			variable condition;
+			uint64_t start_id;
+			uint64_t end_id;
 		} op_if;
 		struct {
 			variable condition;
 		} op_while;
+		struct {
+			uint64_t id;
+		} op_block;
 		struct {
 			uint8_t nothing;
 		} op_nothing;

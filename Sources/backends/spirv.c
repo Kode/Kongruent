@@ -126,6 +126,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_EXECUTION_MODE = 16,
 	SPIRV_OPCODE_CAPABILITY = 17,
 	SPIRV_OPCODE_TYPE_VOID = 19,
+	SPIRV_OPCODE_TYPE_BOOL = 20,
 	SPIRV_OPCODE_TYPE_INT = 21,
 	SPIRV_OPCODE_TYPE_FLOAT = 22,
 	SPIRV_OPCODE_TYPE_VECTOR = 23,
@@ -142,6 +143,9 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_DECORATE = 71,
 	SPIRV_OPCODE_MEMBER_DECORATE = 72,
 	SPIRV_OPCODE_COMPOSITE_CONSTRUCT = 80,
+	SPIRV_OPCODE_F_ORD_LESS_THAN = 184,
+	SPIRV_OPCODE_SELECTION_MERGE = 247,
+	SPIRV_OPCODE_BRANCH_CONDITIONAL = 250,
 	SPIRV_OPCODE_RETURN = 253,
 	SPIRV_OPCODE_LABEL = 248
 } spirv_opcode;
@@ -209,6 +213,8 @@ typedef enum decoration { DECORATION_BLOCK = 2, DECORATION_BUILTIN = 11, DECORAT
 typedef enum builtin { BUILTIN_POSITION = 0 } builtin;
 
 typedef enum storage_class { STORAGE_CLASS_INPUT = 1, STORAGE_CLASS_OUTPUT = 3, STORAGE_CLASS_FUNCTION = 7, STORAGE_CLASS_NONE = 9999 } storage_class;
+
+typedef enum selection_control { SELECTION_CONTROL_NONE = 0, SELCTION_CONTROL_FLATTEN = 1, SELECTION_CONTROL_DONT_FLATTEN = 2 } selection_control;
 
 typedef enum function_control { FUNCTION_CONTROL_NONE } function_control;
 
@@ -361,6 +367,14 @@ static spirv_id write_type_int(instructions_buffer *instructions, uint32_t width
 	return int_type;
 }
 
+static spirv_id write_type_bool(instructions_buffer *instructions) {
+	spirv_id bool_type = allocate_index();
+
+	uint32_t operands[] = {bool_type.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_BOOL, operands);
+	return bool_type;
+}
+
 static spirv_id write_type_struct(instructions_buffer *instructions, spirv_id *types, uint16_t types_size) {
 	spirv_id struct_type = allocate_index();
 
@@ -394,6 +408,7 @@ static spirv_id spirv_uint_type;
 static spirv_id spirv_float2_type;
 static spirv_id spirv_float3_type;
 static spirv_id spirv_float4_type;
+static spirv_id spirv_bool_type;
 
 typedef struct complex_type {
 	type_id type;
@@ -460,6 +475,7 @@ static void write_base_types(instructions_buffer *constants, type_id vertex_inpu
 
 	spirv_uint_type = write_type_int(constants, 32, false);
 	spirv_int_type = write_type_int(constants, 32, true);
+	spirv_bool_type = write_type_bool(constants);
 }
 
 static void write_types(instructions_buffer *constants, function *main) {
@@ -550,7 +566,7 @@ static spirv_id write_op_function(instructions_buffer *instructions, spirv_id re
 	return result;
 }
 
-static spirv_id write_label(instructions_buffer *instructions) {
+static spirv_id write_op_label(instructions_buffer *instructions) {
 	spirv_id result = allocate_index();
 
 	uint32_t operands[] = {result.id};
@@ -558,11 +574,16 @@ static spirv_id write_label(instructions_buffer *instructions) {
 	return result;
 }
 
-static void write_return(instructions_buffer *instructions) {
+static void write_op_label_preallocated(instructions_buffer *instructions, spirv_id result) {
+	uint32_t operands[] = {result.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_LABEL, operands);
+}
+
+static void write_op_return(instructions_buffer *instructions) {
 	write_simple_instruction(instructions, SPIRV_OPCODE_RETURN);
 }
 
-static void write_function_end(instructions_buffer *instructions) {
+static void write_op_function_end(instructions_buffer *instructions) {
 	write_simple_instruction(instructions, SPIRV_OPCODE_FUNCTION_END);
 }
 
@@ -633,6 +654,26 @@ static spirv_id write_op_composite_construct(instructions_buffer *instructions, 
 	return result;
 }
 
+static spirv_id write_op_f_ord_less_than(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+	
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_F_ORD_LESS_THAN, operands);
+
+	return result;
+}
+
+static void write_op_selection_merge(instructions_buffer *instructions, spirv_id merge_block, selection_control control) {
+	uint32_t operands[] = {merge_block.id, (uint32_t)control};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_SELECTION_MERGE, operands);
+}
+
+static void write_op_branch_conditional(instructions_buffer *instructions, spirv_id condition, spirv_id pass, spirv_id fail) {
+	uint32_t operands[] = {condition.id, pass.id, fail.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_BRANCH_CONDITIONAL, operands);
+}
+
 static spirv_id write_op_variable(instructions_buffer *instructions, spirv_id result_type, storage_class storage) {
 	spirv_id result = allocate_index();
 
@@ -676,7 +717,7 @@ static size_t input_vars_count = 0;
 
 static void write_function(instructions_buffer *instructions, function *f, spirv_id function_id, shader_stage stage, bool main, type_id input, type_id output) {
 	write_op_function_preallocated(instructions, void_type, FUNCTION_CONTROL_NONE, void_function_type, function_id);
-	write_label(instructions);
+	write_op_label(instructions);
 
 	debug_context context = {0};
 	check(f->block != NULL, context, "Function block missing");
@@ -885,15 +926,34 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 						error(context, "Type unsupported for input in SPIR-V");
 					}
 				}
-				write_return(instructions);
+				write_op_return(instructions);
 			}
 			else if (stage == SHADER_STAGE_FRAGMENT && main) {
 				spirv_id object =
 				    write_op_load(instructions, convert_type_to_spirv_id(o->op_return.var.type.type), convert_kong_index_to_spirv_id(o->op_return.var.index));
 				write_op_store(instructions, output_var, object);
-				write_return(instructions);
+				write_op_return(instructions);
 			}
 			ends_with_return = true;
+			break;
+		}
+		case OPCODE_LESS: {
+			spirv_id result = write_op_f_ord_less_than(instructions, spirv_bool_type, convert_kong_index_to_spirv_id(o->op_binary.left.index),
+			                                           convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			hmput(index_map, o->op_binary.result.index, result);
+			break;
+		}
+		case OPCODE_IF: {
+			write_op_selection_merge(instructions, convert_kong_index_to_spirv_id(o->op_if.end_id), SELECTION_CONTROL_NONE);
+
+			write_op_branch_conditional(instructions, convert_kong_index_to_spirv_id(o->op_if.condition.index), convert_kong_index_to_spirv_id(o->op_if.start_id),
+			                            convert_kong_index_to_spirv_id(o->op_if.end_id));
+
+			break;
+		}
+		case OPCODE_BLOCK_START:
+		case OPCODE_BLOCK_END: {
+			write_op_label_preallocated(instructions, convert_kong_index_to_spirv_id(o->op_block.id));
 			break;
 		}
 		default: {
@@ -911,10 +971,10 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			// TODO
 		}
 		else {
-			write_return(instructions);
+			write_op_return(instructions);
 		}
 	}
-	write_function_end(instructions);
+	write_op_function_end(instructions);
 }
 
 static void write_functions(instructions_buffer *instructions, function *main, spirv_id entry_point, shader_stage stage, type_id input, type_id output) {

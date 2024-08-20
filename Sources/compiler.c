@@ -93,10 +93,16 @@ variable allocate_variable(type_ref type, variable_kind kind) {
 	return v;
 }
 
-void emit_op(opcodes *code, opcode *o) {
+opcode *emit_op(opcodes *code, opcode *o) {
 	assert(code->size + o->size < OPCODES_SIZE);
+
+	uint8_t *location = &code->o[code->size];
+
 	memcpy(&code->o[code->size], o, o->size);
+
 	code->size += o->size;
+
+	return (opcode *)location;
 }
 
 #define OP_SIZE(op, opmember) offsetof(opcode, opmember) + sizeof(o.opmember)
@@ -519,7 +525,12 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	}
 }
 
-void emit_statement(opcodes *code, block *parent, statement *statement) {
+typedef struct block_ids {
+	uint64_t start;
+	uint64_t end;
+} block_ids;
+
+static block_ids emit_statement(opcodes *code, block *parent, statement *statement) {
 	switch (statement->kind) {
 	case STATEMENT_EXPRESSION:
 		emit_expression(code, parent, statement->expression);
@@ -555,13 +566,16 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 
 			o.op_if.condition = initial_condition;
 
-			emit_op(code, &o);
+			opcode *written_opcode = emit_op(code, &o);
 
 			previous_conditions[previous_conditions_size].condition = initial_condition;
 			previous_conditions_size += 1;
-		}
 
-		emit_statement(code, parent, statement->iffy.if_block);
+			block_ids ids = emit_statement(code, parent, statement->iffy.if_block);
+
+			written_opcode->op_if.start_id = ids.start;
+			written_opcode->op_if.end_id = ids.end;
+		}
 
 		for (uint16_t i = 0; i < statement->iffy.else_size; ++i) {
 			variable current_condition;
@@ -598,7 +612,7 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 
 			opcode o;
 			o.type = OPCODE_IF;
-			o.size = OP_SIZE(o, op_if) + sizeof(variable) * i;
+			o.size = OP_SIZE(o, op_if);
 
 			if (statement->iffy.else_tests[i] != NULL) {
 				variable v = emit_expression(code, parent, statement->iffy.else_tests[i]);
@@ -627,9 +641,14 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 				o.op_if.condition = summed_condition;
 			}
 
-			emit_op(code, &o);
+			{
+				opcode *written_opcode = emit_op(code, &o);
 
-			emit_statement(code, parent, statement->iffy.else_blocks[i]);
+				block_ids ids = emit_statement(code, parent, statement->iffy.else_blocks[i]);
+
+				written_opcode->op_if.start_id = ids.start;
+				written_opcode->op_if.end_id = ids.end;
+			}
 		}
 		
 		break;
@@ -702,10 +721,17 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 			statement->block.vars.v[i].variable_id = var.index;
 		}
 
+		uint64_t start_block_id = next_variable_id;
+		++next_variable_id;
+
+		uint64_t end_block_id = next_variable_id;
+		++next_variable_id;
+
 		{
 			opcode o;
 			o.type = OPCODE_BLOCK_START;
-			o.size = OP_SIZE(o, op_nothing);
+			o.op_block.id = start_block_id;
+			o.size = OP_SIZE(o, op_block);
 			emit_op(code, &o);
 		}
 
@@ -716,11 +742,15 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		{
 			opcode o;
 			o.type = OPCODE_BLOCK_END;
-			o.size = OP_SIZE(o, op_nothing);
+			o.op_block.id = end_block_id;
+			o.size = OP_SIZE(o, op_block);
 			emit_op(code, &o);
 		}
 
-		break;
+		block_ids ids;
+		ids.start = start_block_id;
+		ids.end = end_block_id;
+		return ids;
 	}
 	case STATEMENT_LOCAL_VARIABLE: {
 		opcode o;
@@ -754,6 +784,11 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		break;
 	}
 	}
+
+	block_ids ids;
+	ids.start = 0;
+	ids.end = 0;
+	return ids;
 }
 
 void convert_globals(void) {
