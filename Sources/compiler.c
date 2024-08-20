@@ -539,7 +539,11 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 		break;
 	}
 	case STATEMENT_IF: {
-		variable previous_conditions[64];
+		struct previous_condition {
+			variable condition;
+			variable summed_condition;
+		};
+		struct previous_condition previous_conditions[64] = {0};
 		uint8_t previous_conditions_size = 0;
 
 		{
@@ -550,38 +554,77 @@ void emit_statement(opcodes *code, block *parent, statement *statement) {
 			variable initial_condition = emit_expression(code, parent, statement->iffy.test);
 
 			o.op_if.condition = initial_condition;
-			o.op_if.exclusions_size = 0;
 
 			emit_op(code, &o);
 
-			previous_conditions[previous_conditions_size] = initial_condition;
+			previous_conditions[previous_conditions_size].condition = initial_condition;
 			previous_conditions_size += 1;
 		}
 
 		emit_statement(code, parent, statement->iffy.if_block);
 
 		for (uint16_t i = 0; i < statement->iffy.else_size; ++i) {
+			variable current_condition;
+			{
+				opcode o;
+				o.type = OPCODE_NOT;
+				o.size = OP_SIZE(o, op_not);
+				o.op_not.from = previous_conditions[previous_conditions_size - 1].condition;
+				type_ref t;
+				init_type_ref(&t, NO_NAME);
+				t.type = bool_id;
+				current_condition = allocate_variable(t, VARIABLE_LOCAL);
+				o.op_not.to = current_condition;
+				emit_op(code, &o);
+			}
+
+			variable summed_condition;
+			if (previous_conditions_size == 1) {
+				summed_condition = previous_conditions[0].summed_condition = current_condition;
+			}
+			else {
+				opcode o;
+				o.type = OPCODE_AND;
+				o.size = OP_SIZE(o, op_binary);
+				o.op_binary.left = previous_conditions[previous_conditions_size - 2].summed_condition;
+				o.op_binary.right = current_condition;
+				type_ref t;
+				init_type_ref(&t, NO_NAME);
+				t.type = bool_id;
+				summed_condition = allocate_variable(t, VARIABLE_LOCAL);
+				o.op_binary.result = summed_condition;
+				emit_op(code, &o);
+			}
+
 			opcode o;
 			o.type = OPCODE_IF;
 			o.size = OP_SIZE(o, op_if) + sizeof(variable) * i;
 
-			for (uint8_t previous_condition_index = 0; previous_condition_index < previous_conditions_size; ++previous_condition_index) {
-				o.op_if.exclusions[previous_condition_index] = previous_conditions[previous_condition_index];
-			}
-			o.op_if.exclusions_size = previous_conditions_size;
-
 			if (statement->iffy.else_tests[i] != NULL) {
 				variable v = emit_expression(code, parent, statement->iffy.else_tests[i]);
-				o.op_if.condition = v;
+				
+				variable else_test;
+				{
+					opcode o;
+					o.type = OPCODE_AND;
+					o.size = OP_SIZE(o, op_binary);
+					o.op_binary.left = summed_condition;
+					o.op_binary.right = v;
+					type_ref t;
+					init_type_ref(&t, NO_NAME);
+					t.type = bool_id;
+					else_test = allocate_variable(t, VARIABLE_LOCAL);
+					o.op_binary.result = else_test;
+					emit_op(code, &o);
+				}
 
-				previous_conditions[previous_conditions_size] = v;
+				o.op_if.condition = else_test;
+
+				previous_conditions[previous_conditions_size].condition = v;
 				previous_conditions_size += 1;
 			}
 			else {
-				o.op_if.condition.index = 0;
-				o.op_if.condition.kind = VARIABLE_GLOBAL;
-				o.op_if.condition.type.name = NO_NAME;
-				o.op_if.condition.type.type = NO_TYPE;
+				o.op_if.condition = summed_condition;
 			}
 
 			emit_op(code, &o);

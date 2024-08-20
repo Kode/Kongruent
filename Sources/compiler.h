@@ -101,8 +101,6 @@ typedef struct opcode {
 		} op_binary;
 		struct {
 			variable condition;
-			uint8_t exclusions_size;
-			variable exclusions[1];
 		} op_if;
 		struct {
 			variable condition;

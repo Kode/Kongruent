@@ -26,7 +26,8 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		break;
 	case OPCODE_NOT:
 		indent(code, offset, *indentation);
-		*offset += sprintf(&code[*offset], "_%" PRIu64 " = !_%" PRIu64 ";\n", o->op_not.to.index, o->op_not.from.index);
+		*offset +=
+		    sprintf(&code[*offset], "%s _%" PRIu64 " = !_%" PRIu64 ";\n", type_string(o->op_not.to.type.type), o->op_not.to.index, o->op_not.from.index);
 		break;
 	case OPCODE_STORE_VARIABLE:
 		indent(code, offset, *indentation);
@@ -194,21 +195,7 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 	}
 	case OPCODE_IF: {
 		indent(code, offset, *indentation);
-		if (o->op_if.condition.index != 0) {
-			*offset += sprintf(&code[*offset], "if (_%" PRIu64, o->op_if.condition.index);
-		}
-		else {
-			*offset += sprintf(&code[*offset], "if (");
-		}
-		for (uint8_t i = 0; i < o->op_if.exclusions_size; ++i) {
-			if (i == 0 && o->op_if.condition.index == 0) {
-				*offset += sprintf(&code[*offset], "!_%" PRIu64, o->op_if.exclusions[i].index);
-			}
-			else {
-				*offset += sprintf(&code[*offset], " && !_%" PRIu64, o->op_if.exclusions[i].index);
-			}
-		}
-		*offset += sprintf(&code[*offset], ")\n");
+		*offset += sprintf(&code[*offset], "if (_%" PRIu64 ")\n", o->op_if.condition.index);
 		break;
 	}
 	case OPCODE_WHILE_START: {
