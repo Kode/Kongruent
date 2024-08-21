@@ -25,4 +25,6 @@ if (platform === Platform.Windows) {
 	project.addLib('Sources/libs/dxc/lib/x64/dxcompiler');
 }
 
+project.setDebugDir('Deployment');
+
 resolve(project);
