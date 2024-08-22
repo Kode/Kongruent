@@ -24,14 +24,8 @@ static const char *shaderString(shader_stage stage, int version) {
 			return "vs_4_0";
 		case SHADER_STAGE_FRAGMENT:
 			return "ps_4_0";
-			/*case EShLangGeometry:
-			    return "gs_4_0";
-			case EShLangTessControl:
-			    return "unsupported";
-			case EShLangTessEvaluation:
-			    return "unsupported";
-			case EShLangCompute:
-			    return "cs_4_0";*/
+		case SHADER_STAGE_COMPUTE:
+			return "cs_4_0";
 		}
 	}
 	else if (version == 5) {
@@ -40,14 +34,8 @@ static const char *shaderString(shader_stage stage, int version) {
 			return "vs_5_0";
 		case SHADER_STAGE_FRAGMENT:
 			return "ps_5_0";
-			/*case EShLangGeometry:
-			    return "gs_5_0";
-			case EShLangTessControl:
-			    return "hs_5_0";
-			case EShLangTessEvaluation:
-			    return "ds_5_0";
-			case EShLangCompute:
-			    return "cs_5_0";*/
+		case SHADER_STAGE_COMPUTE:
+			return "cs_5_0";
 		}
 	}
 

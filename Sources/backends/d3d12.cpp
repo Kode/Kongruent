@@ -21,14 +21,8 @@ static const wchar_t *shader_string(shader_stage stage) {
 		return L"vs_6_0";
 	case SHADER_STAGE_FRAGMENT:
 		return L"ps_6_0";
-	/*case EShLangGeometry:
-		return L"gs_6_0";
-	case EShLangTessControl:
-		return L"hs_6_0";
-	case EShLangTessEvaluation:
-		return L"ds_6_0";
-	case EShLangCompute:
-		return L"cs_6_0";*/
+	case SHADER_STAGE_COMPUTE:
+		return L"cs_6_0";
 	default: {
 		debug_context context = {0};
 		error(context, "Unsupported shader stage/version combination");

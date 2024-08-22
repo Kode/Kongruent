@@ -298,11 +298,11 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				*offset += sprintf(&hlsl[*offset], "%s main(", type_string(f->return_type.type));
 				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 					if (parameter_index == 0) {
-						*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 ") {\n", type_string(f->parameter_types[parameter_index].type),
+						*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type),
 						                   parameter_ids[parameter_index]);
 					}
 					else {
-						*offset += sprintf(&hlsl[*offset], ", %s _%" PRIu64 ") {\n", type_string(f->parameter_types[parameter_index].type),
+						*offset += sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type),
 						                   parameter_ids[parameter_index]);
 					}
 				}
@@ -343,6 +343,20 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					}
 					*offset += sprintf(&hlsl[*offset], ") : SV_Target0 {\n");
 				}
+			}
+			else if (stage == SHADER_STAGE_COMPUTE) {
+				*offset += sprintf(&hlsl[*offset], "[numthreads(64, 1, 1)] %s main(", type_string(f->return_type.type));
+				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+					if (parameter_index == 0) {
+						*offset +=
+						    sprintf(&hlsl[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+					}
+					else {
+						*offset +=
+						    sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+					}
+				}
+				*offset += sprintf(&hlsl[*offset], ") {\n");
 			}
 			else {
 				debug_context context = {0};
@@ -537,6 +551,47 @@ static void hlsl_export_fragment(char *directory, api_kind d3d, function *main) 
 	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
 }
 
+static void hlsl_export_compute(char *directory, api_kind d3d, function *main) {
+	char *hlsl = (char *)calloc(1024 * 1024, 1);
+	size_t offset = 0;
+
+	write_types(hlsl, &offset, SHADER_STAGE_COMPUTE, NO_TYPE, NO_TYPE, main);
+
+	write_globals(hlsl, &offset, main);
+
+	write_functions(hlsl, &offset, SHADER_STAGE_COMPUTE, main);
+
+	debug_context context = {0};
+
+	uint8_t *output = NULL;
+	size_t output_size = 0;
+	int result = 1;
+	switch (d3d) {
+	case API_DIRECT3D9:
+		error(context, "Compute shaders are not supported in Direct3D 9");
+		break;
+	case API_DIRECT3D11:
+		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_COMPUTE, false);
+		break;
+	case API_DIRECT3D12:
+		result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_COMPUTE, false);
+		break;
+	default:
+		error(context, "Unsupported API for HLSL");
+	}
+	check(result == 0, context, "HLSL compilation failed");
+
+	char *name = get_name(main->name);
+
+	char filename[512];
+	sprintf(filename, "kong_%s", name);
+
+	char var_name[256];
+	sprintf(var_name, "%s_code", name);
+
+	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
+}
+
 void hlsl_export(char *directory, api_kind d3d) {
 	int cbuffer_index = 0;
 	int texture_index = 0;
@@ -601,11 +656,26 @@ void hlsl_export(char *directory, api_kind d3d) {
 		}
 	}
 
+	function *compute_shaders[256];
+	size_t compute_shaders_size = 0;
+
+	for (function_id i = 0; get_function(i) != NULL; ++i) {
+		function *f = get_function(i);
+		if (f->attribute == add_name("compute")) {
+			compute_shaders[compute_shaders_size] = f;
+			compute_shaders_size += 1;
+		}
+	}
+
 	for (size_t i = 0; i < vertex_shaders_size; ++i) {
 		hlsl_export_vertex(directory, d3d, vertex_shaders[i]);
 	}
 
 	for (size_t i = 0; i < fragment_shaders_size; ++i) {
 		hlsl_export_fragment(directory, d3d, fragment_shaders[i]);
+	}
+
+	for (size_t i = 0; i < compute_shaders_size; ++i) {
+		hlsl_export_compute(directory, d3d, compute_shaders[i]);
 	}
 }

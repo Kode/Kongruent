@@ -409,6 +409,13 @@ void kinc_export(char *directory, api_kind api) {
 			}
 		}
 
+		for (function_id i = 0; get_function(i) != NULL; ++i) {
+			function *f = get_function(i);
+			if (f->attribute == add_name("compute")) {
+				fprintf(output, "extern kinc_g4_compute_shader %s;\n\n", get_name(f->name));
+			}
+		}
+
 		fprintf(output, "#endif\n");
 
 		fclose(output);
@@ -443,6 +450,13 @@ void kinc_export(char *directory, api_kind api) {
 							fprintf(output, "#include \"kong_%s.h\"\n", get_name(t->members.m[j].value.identifier));
 						}
 					}
+				}
+			}
+
+			for (function_id i = 0; get_function(i) != NULL; ++i) {
+				function *f = get_function(i);
+				if (f->attribute == add_name("compute")) {
+					fprintf(output, "#include \"kong_%s.h\"\n", get_name(f->name));
 				}
 			}
 		}
@@ -528,6 +542,13 @@ void kinc_export(char *directory, api_kind api) {
 						fprintf(output, "static kinc_g4_shader_t %s;\n", get_name(t->members.m[j].value.identifier));
 					}
 				}
+			}
+		}
+
+		for (function_id i = 0; get_function(i) != NULL; ++i) {
+			function *f = get_function(i);
+			if (f->attribute == add_name("compute")) {
+				fprintf(output, "kinc_g4_compute_shader %s;\n", get_name(f->name));
 			}
 		}
 
@@ -677,11 +698,11 @@ void kinc_export(char *directory, api_kind api) {
 						for (size_t j = 0; j < t->members.size; ++j) {
 							if (api == API_OPENGL) {
 								fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s_%s\", %s);\n", get_name(t->name), get_name(t->name),
-								        get_name(t->members.m[j].name), structure_type(t->members.m[j].type.type));
+									    get_name(t->members.m[j].name), structure_type(t->members.m[j].type.type));
 							}
 							else {
 								fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s\", %s);\n", get_name(t->name),
-								        get_name(t->members.m[j].name), structure_type(t->members.m[j].type.type));
+									    get_name(t->members.m[j].name), structure_type(t->members.m[j].type.type));
 							}
 						}
 						fprintf(output, "\n");
@@ -723,6 +744,14 @@ void kinc_export(char *directory, api_kind api) {
 				}
 			}
 		}
+
+		for (function_id i = 0; get_function(i) != NULL; ++i) {
+			function *f = get_function(i);
+			if (f->attribute == add_name("compute")) {
+				fprintf(output, "\tkinc_g4_compute_shader_init(&%s, %s_code, %s_code_size);\n", get_name(f->name), get_name(f->name), get_name(f->name));
+			}
+		}
+
 		fprintf(output, "}\n");
 
 		fclose(output);
