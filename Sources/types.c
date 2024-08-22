@@ -10,6 +10,7 @@ static type *types = NULL;
 static type_id types_size = 1024;
 static type_id next_type_index = 0;
 
+type_id void_id;
 type_id float_id;
 type_id float2_id;
 type_id float3_id;
@@ -149,6 +150,9 @@ void types_init(void) {
 	check(new_types != NULL, context, "Could not allocate types");
 	types = new_types;
 	next_type_index = 0;
+
+	void_id = add_type(add_name("void"));
+	get_type(void_id)->built_in = true;
 
 	sampler_type_id = add_type(add_name("sampler"));
 	get_type(sampler_type_id)->built_in = true;

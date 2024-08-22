@@ -307,20 +307,34 @@ static void write_functions(char *code, size_t *offset) {
 		uint8_t *data = f->code.o;
 		size_t size = f->code.size;
 
-		uint64_t parameter_id = 0;
-		for (size_t i = 0; i < f->block->block.vars.size; ++i) {
-			if (f->parameter_name == f->block->block.vars.v[i].name) {
-				parameter_id = f->block->block.vars.v[i].variable_id;
-				break;
+		uint64_t parameter_ids[256] = {0};
+		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+			for (size_t i = 0; i < f->block->block.vars.size; ++i) {
+				if (f->parameter_names[parameter_index] == f->block->block.vars.v[i].name) {
+					parameter_ids[parameter_index] = f->block->block.vars.v[i].variable_id;
+					break;
+				}
 			}
 		}
 
 		debug_context context = {0};
-		check(parameter_id != 0, context, "Parameter not found");
+		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+			check(parameter_ids[parameter_index] != 0, context, "Parameter not found");
+		}
 
 		if (is_vertex_function(i)) {
-			*offset += sprintf(&code[*offset], "@vertex fn %s(_%" PRIu64 ": %s) -> %s {\n", get_name(f->name), parameter_id,
-			                   type_string(f->parameter_type.type), type_string(f->return_type.type));
+			*offset += sprintf(&code[*offset], "@vertex fn %s(", get_name(f->name));
+			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+				if (parameter_index == 0) {
+					*offset +=
+					    sprintf(&code[*offset], "_%" PRIu64 ": %s", parameter_ids[parameter_index], type_string(f->parameter_types[parameter_index].type));
+				}
+				else {
+					*offset +=
+					    sprintf(&code[*offset], ", _%" PRIu64 ": %s", parameter_ids[parameter_index], type_string(f->parameter_types[parameter_index].type));
+				}
+			}
+			*offset += sprintf(&code[*offset], ") -> %s {\n", type_string(f->return_type.type));
 		}
 		else if (is_fragment_function(i)) {
 			if (f->return_type.array_size > 0) {
@@ -329,17 +343,47 @@ static void write_functions(char *code, size_t *offset) {
 					*offset += sprintf(&code[*offset], "\t%s _%i : SV_Target%i;\n", type_string(f->return_type.type), j, j);
 				}
 				*offset += sprintf(&code[*offset], "};\n\n");
-				*offset += sprintf(&code[*offset], "_kong_colors_out main(%s _%" PRIu64 ") {\n", type_string(f->parameter_type.type), parameter_id);
+
+				*offset += sprintf(&code[*offset], "_kong_colors_out main(");
+				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+					if (parameter_index == 0) {
+						*offset +=
+						    sprintf(&code[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+					}
+					else {
+						*offset +=
+						    sprintf(&code[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+					}
+				}
+				*offset += sprintf(&code[*offset], ") {\n");
 			}
 			else {
-				*offset += sprintf(&code[*offset], "@fragment fn %s(_%" PRIu64 ": %s) -> @location(0) %s {\n", get_name(f->name), parameter_id,
-				                   type_string(f->parameter_type.type), type_string(f->return_type.type));
+				*offset += sprintf(&code[*offset], "@fragment fn %s(", get_name(f->name));
+				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+					if (parameter_index == 0) {
+						*offset +=
+						    sprintf(&code[*offset], "_%" PRIu64 ": %s", parameter_ids[parameter_index], type_string(f->parameter_types[parameter_index].type));
+					}
+					else {
+						*offset +=
+						    sprintf(&code[*offset], ", _%" PRIu64 ": %s", parameter_ids[parameter_index], type_string(f->parameter_types[parameter_index].type));
+					}
+				}
+				*offset += sprintf(&code[*offset], ") -> @location(0) %s {\n", type_string(f->return_type.type));
 			}
 		}
 
 		else {
-			*offset += sprintf(&code[*offset], "%s %s(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), get_name(f->name),
-			                   type_string(f->parameter_type.type), parameter_id);
+			*offset += sprintf(&code[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
+			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+				if (parameter_index == 0) {
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+				}
+				else {
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+				}
+			}
+			*offset += sprintf(&code[*offset], ") {\n");
 		}
 
 		int indentation = 1;
@@ -643,14 +687,16 @@ void wgsl_export(char *directory) {
 					vertex_functions[vertex_functions_size] = i;
 					vertex_functions_size += 1;
 
-					vertex_inputs[vertex_inputs_size] = f->parameter_type.type;
+					assert(f->parameters_size > 0);
+					vertex_inputs[vertex_inputs_size] = f->parameter_types[0].type;
 					vertex_inputs_size += 1;
 				}
 				else if (f->name == fragment_shader_name) {
 					fragment_functions[fragment_functions_size] = i;
 					fragment_functions_size += 1;
 
-					fragment_inputs[fragment_inputs_size] = f->parameter_type.type;
+					assert(f->parameters_size > 0);
+					fragment_inputs[fragment_inputs_size] = f->parameter_types[0].type;
 					fragment_inputs_size += 1;
 				}
 			}

@@ -54,7 +54,6 @@ typedef struct token {
 		TOKEN_COMMA,
 		TOKEN_OPERATOR,
 		TOKEN_IN,
-		TOKEN_VOID,
 		TOKEN_STRUCT,
 		TOKEN_FUNCTION,
 		TOKEN_VAR,

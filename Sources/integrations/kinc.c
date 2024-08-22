@@ -322,7 +322,8 @@ void kinc_export(char *directory, api_kind api) {
 			for (function_id i = 0; get_function(i) != NULL; ++i) {
 				function *f = get_function(i);
 				if (f->name == vertex_shader_name) {
-					vertex_input = f->parameter_type.type;
+					check(f->parameters_size > 0, context, "Vertex function requires at least one parameter");
+					vertex_input = f->parameter_types[0].type;
 					break;
 				}
 			}
@@ -647,7 +648,9 @@ void kinc_export(char *directory, api_kind api) {
 					function *f = get_function(i);
 					if (f->name == vertex_shader_name) {
 						vertex_function = f;
-						vertex_input = f->parameter_type.type;
+						debug_context context = {0};
+						check(f->parameters_size > 0, context, "Vertex function requires at least one parameter");
+						vertex_input = f->parameter_types[0].type;
 						break;
 					}
 				}

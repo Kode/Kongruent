@@ -279,19 +279,34 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 		uint8_t *data = f->code.o;
 		size_t size = f->code.size;
 
-		uint64_t parameter_id = 0;
-		for (size_t i = 0; i < f->block->block.vars.size; ++i) {
-			if (f->parameter_name == f->block->block.vars.v[i].name) {
-				parameter_id = f->block->block.vars.v[i].variable_id;
-				break;
+		uint64_t parameter_ids[256] = {0};
+		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+			for (size_t i = 0; i < f->block->block.vars.size; ++i) {
+				if (f->parameter_names[parameter_index] == f->block->block.vars.v[i].name) {
+					parameter_ids[parameter_index] = f->block->block.vars.v[i].variable_id;
+					break;
+				}
 			}
 		}
 
-		check(parameter_id != 0, context, "Parameter not found");
+		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+			check(parameter_ids[parameter_index] != 0, context, "Parameter not found");
+		}
+
 		if (f == main) {
 			if (stage == SHADER_STAGE_VERTEX) {
-				*offset += sprintf(&hlsl[*offset], "%s main(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), type_string(f->parameter_type.type),
-				                   parameter_id);
+				*offset += sprintf(&hlsl[*offset], "%s main(", type_string(f->return_type.type));
+				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+					if (parameter_index == 0) {
+						*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 ") {\n", type_string(f->parameter_types[parameter_index].type),
+						                   parameter_ids[parameter_index]);
+					}
+					else {
+						*offset += sprintf(&hlsl[*offset], ", %s _%" PRIu64 ") {\n", type_string(f->parameter_types[parameter_index].type),
+						                   parameter_ids[parameter_index]);
+					}
+				}
+				*offset += sprintf(&hlsl[*offset], ") {\n");
 			}
 			else if (stage == SHADER_STAGE_FRAGMENT) {
 				if (f->return_type.array_size > 0) {
@@ -300,11 +315,33 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 						*offset += sprintf(&hlsl[*offset], "\t%s _%i : SV_Target%i;\n", type_string(f->return_type.type), j, j);
 					}
 					*offset += sprintf(&hlsl[*offset], "};\n\n");
-					*offset += sprintf(&hlsl[*offset], "_kong_colors_out main(%s _%" PRIu64 ") {\n", type_string(f->parameter_type.type), parameter_id);
+					
+					*offset += sprintf(&hlsl[*offset], "_kong_colors_out main(");
+					for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+						if (parameter_index == 0) {
+							*offset +=
+							    sprintf(&hlsl[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+						}
+						else {
+							*offset +=
+							    sprintf(&hlsl[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+						}
+					}
+					*offset += sprintf(&hlsl[*offset], ") {\n");
 				}
 				else {
-					*offset += sprintf(&hlsl[*offset], "%s main(%s _%" PRIu64 ") : SV_Target0 {\n", type_string(f->return_type.type),
-					                   type_string(f->parameter_type.type), parameter_id);
+					*offset += sprintf(&hlsl[*offset], "%s main(", type_string(f->return_type.type));
+					for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+						if (parameter_index == 0) {
+							*offset +=
+							    sprintf(&hlsl[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+						}
+						else {
+							*offset +=
+							    sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+						}
+					}
+					*offset += sprintf(&hlsl[*offset], ") : SV_Target0 {\n");
 				}
 			}
 			else {
@@ -313,8 +350,16 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			}
 		}
 		else {
-			*offset += sprintf(&hlsl[*offset], "%s %s(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), get_name(f->name),
-			                   type_string(f->parameter_type.type), parameter_id);
+			*offset += sprintf(&hlsl[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
+			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+				if (parameter_index == 0) {
+					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+				}
+				else {
+					*offset += sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+				}
+			}
+			*offset += sprintf(&hlsl[*offset], ") {\n");
 		}
 
 		int indentation = 1;
@@ -404,7 +449,8 @@ static void hlsl_export_vertex(char *directory, api_kind d3d, function *main) {
 	char *hlsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
-	type_id vertex_input = main->parameter_type.type;
+	assert(main->parameters_size > 0);
+	type_id vertex_input = main->parameter_types[0].type;
 	type_id vertex_output = main->return_type.type;
 
 	debug_context context = {0};
@@ -450,7 +496,8 @@ static void hlsl_export_fragment(char *directory, api_kind d3d, function *main) 
 	char *hlsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
-	type_id pixel_input = main->parameter_type.type;
+	assert(main->parameters_size > 0);
+	type_id pixel_input = main->parameter_types[0].type;
 
 	debug_context context = {0};
 	check(pixel_input != NO_TYPE, context, "fragment input missing");

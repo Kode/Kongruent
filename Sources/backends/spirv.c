@@ -739,21 +739,25 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 	uint8_t *data = f->code.o;
 	size_t size = f->code.size;
 
-	uint64_t parameter_id = 0;
-	type_id parameter_type = 0;
-	for (size_t i = 0; i < f->block->block.vars.size; ++i) {
-		if (f->parameter_name == f->block->block.vars.v[i].name) {
-			parameter_id = f->block->block.vars.v[i].variable_id;
-			parameter_type = f->block->block.vars.v[i].type.type;
-			break;
+	uint64_t parameter_ids[256] = {0};
+	type_id parameter_types[256] = {0};
+	for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+		for (size_t i = 0; i < f->block->block.vars.size; ++i) {
+			if (f->parameter_names[parameter_index] == f->block->block.vars.v[i].name) {
+				parameter_ids[parameter_index] = f->block->block.vars.v[i].variable_id;
+				parameter_types[parameter_index] = f->block->block.vars.v[i].type.type;
+				break;
+			}
 		}
 	}
 
-	check(parameter_id != 0, context, "Parameter not found");
+	for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+		check(parameter_ids[parameter_index] != 0, context, "Parameter not found");
+	}
 
 	// create variable for the input parameter
-	spirv_id spirv_parameter_id = convert_kong_index_to_spirv_id(parameter_id);
-	write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_type, STORAGE_CLASS_FUNCTION), spirv_parameter_id,
+	spirv_id spirv_parameter_id = convert_kong_index_to_spirv_id(parameter_ids[0]);
+	write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_types[0], STORAGE_CLASS_FUNCTION), spirv_parameter_id,
 	                               STORAGE_CLASS_FUNCTION);
 
 	// all vars have to go first
@@ -801,7 +805,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			}
 
 			storage_class storage;
-			if (o->op_load_member.from.index == parameter_id) {
+			if (o->op_load_member.from.index == parameter_ids[0]) {
 				storage = STORAGE_CLASS_FUNCTION;
 			}
 			else {
@@ -1102,7 +1106,8 @@ static void spirv_export_vertex(char *directory, function *main) {
 	instructions_buffer constants = {0};
 	constants.instructions = (uint32_t *)calloc(1024 * 1024, 1);
 
-	type_id vertex_input = main->parameter_type.type;
+	assert(main->parameters_size > 0);
+	type_id vertex_input = main->parameter_types[0].type;
 	type_id vertex_output = main->return_type.type;
 
 	debug_context context = {0};
@@ -1198,7 +1203,8 @@ static void spirv_export_fragment(char *directory, function *main) {
 	instructions_buffer constants = {0};
 	constants.instructions = (uint32_t *)calloc(1024 * 1024, 1);
 
-	type_id pixel_input = main->parameter_type.type;
+	assert(main->parameters_size > 0);
+	type_id pixel_input = main->parameter_types[0].type;
 
 	debug_context context = {0};
 	check(pixel_input != NO_TYPE, context, "fragment input missing");

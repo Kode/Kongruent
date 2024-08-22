@@ -332,12 +332,14 @@ void resolve_types(void) {
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
 
-		if (f->parameter_type.type == NO_TYPE) {
-			name_id parameter_type_name = f->parameter_type.name;
-			f->parameter_type.type = find_type_by_name(parameter_type_name);
-			if (f->parameter_type.type == NO_TYPE) {
-				debug_context context = {0};
-				error(context, "Could not find type %s for %s", get_name(parameter_type_name), get_name(f->name));
+		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+			if (f->parameter_types[parameter_index].type == NO_TYPE) {
+				name_id parameter_type_name = f->parameter_types[parameter_index].name;
+				f->parameter_types[parameter_index].type = find_type_by_name(parameter_type_name);
+				if (f->parameter_types[parameter_index].type == NO_TYPE) {
+					debug_context context = {0};
+					error(context, "Could not find type %s for %s", get_name(parameter_type_name), get_name(f->name));
+				}
 			}
 		}
 
@@ -359,10 +361,12 @@ void resolve_types(void) {
 			continue;
 		}
 
-		f->block->block.vars.v[f->block->block.vars.size].name = f->parameter_name;
-		f->block->block.vars.v[f->block->block.vars.size].type = f->parameter_type;
-		f->block->block.vars.v[f->block->block.vars.size].variable_id = 0;
-		++f->block->block.vars.size;
+		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+			f->block->block.vars.v[f->block->block.vars.size].name = f->parameter_names[parameter_index];
+			f->block->block.vars.v[f->block->block.vars.size].type = f->parameter_types[parameter_index];
+			f->block->block.vars.v[f->block->block.vars.size].variable_id = 0;
+			++f->block->block.vars.size;
+		}
 
 		resolve_types_in_block(NULL, f->block);
 	}

@@ -27,9 +27,10 @@ void functions_init(void) {
 		function *f = get_function(sample_id);
 		init_type_ref(&f->return_type, add_name("float4"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
-		f->parameter_name = add_name("tex_coord");
-		init_type_ref(&f->parameter_type, add_name("float2"));
-		f->parameter_type.type = find_type_by_ref(&f->parameter_type);
+		f->parameter_names[0] = add_name("tex_coord");
+		init_type_ref(&f->parameter_types[0], add_name("float2"));
+		f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+		f->parameters_size = 1;
 		f->block = NULL;
 	}
 
@@ -38,9 +39,10 @@ void functions_init(void) {
 		function *f = get_function(sample_id);
 		init_type_ref(&f->return_type, add_name("float4"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
-		f->parameter_name = add_name("tex_coord");
-		init_type_ref(&f->parameter_type, add_name("float2"));
-		f->parameter_type.type = find_type_by_ref(&f->parameter_type);
+		f->parameter_names[0] = add_name("tex_coord");
+		init_type_ref(&f->parameter_types[0], add_name("float2"));
+		f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+		f->parameters_size = 1;
 		f->block = NULL;
 	}
 
@@ -49,9 +51,10 @@ void functions_init(void) {
 		function *f = get_function(float2_constructor_id);
 		init_type_ref(&f->return_type, add_name("float2"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
-		f->parameter_name = add_name("x");
-		init_type_ref(&f->parameter_type, add_name("float"));
-		f->parameter_type.type = find_type_by_ref(&f->parameter_type);
+		f->parameter_names[0] = add_name("x");
+		init_type_ref(&f->parameter_types[0], add_name("float"));
+		f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+		f->parameters_size = 1;
 		f->block = NULL;
 	}
 
@@ -60,9 +63,10 @@ void functions_init(void) {
 		function *f = get_function(float3_constructor_id);
 		init_type_ref(&f->return_type, add_name("float3"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
-		f->parameter_name = add_name("x");
-		init_type_ref(&f->parameter_type, add_name("float"));
-		f->parameter_type.type = find_type_by_ref(&f->parameter_type);
+		f->parameter_names[0] = add_name("x");
+		init_type_ref(&f->parameter_types[0], add_name("float"));
+		f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+		f->parameters_size = 1;
 		f->block = NULL;
 	}
 
@@ -71,9 +75,10 @@ void functions_init(void) {
 		function *f = get_function(float4_constructor_id);
 		init_type_ref(&f->return_type, add_name("float4"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
-		f->parameter_name = add_name("x");
-		init_type_ref(&f->parameter_type, add_name("float"));
-		f->parameter_type.type = find_type_by_ref(&f->parameter_type);
+		f->parameter_names[0] = add_name("x");
+		init_type_ref(&f->parameter_types[0], add_name("float"));
+		f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+		f->parameters_size = 1;
 		f->block = NULL;
 	}
 }
@@ -97,8 +102,7 @@ function_id add_function(name_id name) {
 	functions[f].name = name;
 	functions[f].attribute = NO_NAME;
 	init_type_ref(&functions[f].return_type, NO_NAME);
-	functions[f].parameter_name = NO_NAME;
-	init_type_ref(&functions[f].parameter_type, NO_NAME);
+	functions[f].parameters_size = 0;
 	functions[f].block = NULL;
 	memset(functions[f].code.o, 0, sizeof(functions[f].code.o));
 	functions[f].code.size = 0;

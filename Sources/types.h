@@ -48,6 +48,7 @@ type_id find_type_by_ref(type_ref *t);
 
 type *get_type(type_id t);
 
+extern type_id void_id;
 extern type_id float_id;
 extern type_id float2_id;
 extern type_id float3_id;

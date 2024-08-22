@@ -260,15 +260,20 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 		uint8_t *data = f->code.o;
 		size_t size = f->code.size;
 
-		uint64_t parameter_id = 0;
-		for (size_t i = 0; i < f->block->block.vars.size; ++i) {
-			if (f->parameter_name == f->block->block.vars.v[i].name) {
-				parameter_id = f->block->block.vars.v[i].variable_id;
-				break;
+		uint64_t parameter_ids[256] = {0};
+		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+			for (size_t i = 0; i < f->block->block.vars.size; ++i) {
+				if (f->parameter_names[parameter_index] == f->block->block.vars.v[i].name) {
+					parameter_ids[parameter_index] = f->block->block.vars.v[i].variable_id;
+					break;
+				}
 			}
 		}
 
-		check(parameter_id != 0, context, "Parameter not found");
+		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+			check(parameter_ids[parameter_index] != 0, context, "Parameter not found");
+		}
+
 		if (f == main) {
 			if (stage == SHADER_STAGE_VERTEX) {
 				*offset += sprintf(&code[*offset], "void main() {\n");
@@ -289,8 +294,16 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 			}
 		}
 		else {
-			*offset += sprintf(&code[*offset], "%s %s(%s _%" PRIu64 ") {\n", type_string(f->return_type.type), get_name(f->name),
-			                   type_string(f->parameter_type.type), parameter_id);
+			*offset += sprintf(&code[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
+			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+				if (parameter_index == 0) {
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+				}
+				else {
+					*offset += sprintf(&code[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+				}
+			}
+			*offset += sprintf(&code[*offset], ") {\n");
 		}
 
 		int indentation = 1;
@@ -456,7 +469,8 @@ static void glsl_export_vertex(char *directory, function *main) {
 
 	size_t offset = 0;
 
-	type_id vertex_input = main->parameter_type.type;
+	assert(main->parameters_size > 0);
+	type_id vertex_input = main->parameter_types[0].type;
 	type_id vertex_output = main->return_type.type;
 
 	check(vertex_input != NO_TYPE, context, "vertex input missing");
@@ -488,7 +502,8 @@ static void glsl_export_fragment(char *directory, function *main) {
 
 	size_t offset = 0;
 
-	type_id pixel_input = main->parameter_type.type;
+	assert(main->parameters_size > 0);
+	type_id pixel_input = main->parameter_types[0].type;
 
 	check(pixel_input != NO_TYPE, context, "fragment input missing");
 

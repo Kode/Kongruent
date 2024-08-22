@@ -14,8 +14,9 @@ typedef struct function {
 	name_id attribute;
 	name_id name;
 	type_ref return_type;
-	name_id parameter_name;
-	type_ref parameter_type;
+	name_id parameter_names[256];
+	type_ref parameter_types[256];
+	uint8_t parameters_size;
 	struct statement *block;
 
 	opcodes code;

@@ -62,7 +62,8 @@ static void advance_state(state_t *state) {
 }
 
 static void match_token(state_t *state, int token, const char *error_message) {
-	if (current(state).kind != token) {
+	int current_token = current(state).kind;
+	if (current_token != token) {
 		error(state->context, error_message);
 	}
 }
@@ -1012,28 +1013,43 @@ static definition parse_function(state_t *state) {
 	advance_state(state);
 	match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
 	advance_state(state);
-	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 
-	token param_name = current(state);
-	advance_state(state);
-	match_token(state, TOKEN_COLON, "Expected a colon");
-	advance_state(state);
-	type_ref param_type = parse_type_ref(state);
+	uint8_t parameters_size = 0;
+	token param_names[256] = {0};
+	type_ref param_types[256] = {0};
+
+	while (current(state).kind != TOKEN_RIGHT_PAREN) {
+		match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+		param_names[parameters_size] = current(state);
+		advance_state(state);
+		match_token(state, TOKEN_COLON, "Expected a colon");
+		advance_state(state);
+		param_types[parameters_size] = parse_type_ref(state);
+		if (current(state).kind == TOKEN_COMMA) {
+			advance_state(state);
+		}
+		parameters_size += 1;
+	}
+
 	match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
 	advance_state(state);
 	match_token(state, TOKEN_COLON, "Expected a colon");
 	advance_state(state);
+
 	type_ref return_type = parse_type_ref(state);
 
 	statement *block = parse_block(state, NULL);
+	
 	definition d;
-
 	d.kind = DEFINITION_FUNCTION;
 	d.function = add_function(name.identifier);
 	function *f = get_function(d.function);
 	f->return_type = return_type;
-	f->parameter_name = param_name.identifier;
-	f->parameter_type = param_type;
+	f->parameters_size = parameters_size;
+	for (uint8_t parameter_index = 0; parameter_index < parameters_size; ++parameter_index) {
+		f->parameter_names[parameter_index] = param_names[parameter_index].identifier;
+		f->parameter_types[parameter_index] = param_types[parameter_index];
+	}
 	f->block = block;
 
 	return d;

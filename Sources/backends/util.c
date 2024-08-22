@@ -82,16 +82,18 @@ void find_referenced_types(function *f, type_id *types, size_t *types_size) {
 
 	find_referenced_functions(f, functions, &functions_size);
 
-	for (size_t l = 0; l < functions_size; ++l) {
-		function *func = functions[l];
+	for (size_t function_index = 0; function_index < functions_size; ++function_index) {
+		function *func = functions[function_index];
 		debug_context context = {0};
-		check(func->parameter_type.type != NO_TYPE, context, "Function parameter type not found");
-		add_found_type(func->parameter_type.type, types, types_size);
+		for (uint8_t parameter_index = 0; parameter_index < func->parameters_size; ++parameter_index) {
+			check(func->parameter_types[parameter_index].type != NO_TYPE, context, "Function parameter type not found");
+			add_found_type(func->parameter_types[parameter_index].type, types, types_size);
+		}
 		check(func->return_type.type != NO_TYPE, context, "Function return type missing");
 		add_found_type(func->return_type.type, types, types_size);
 
-		uint8_t *data = functions[l]->code.o;
-		size_t size = functions[l]->code.size;
+		uint8_t *data = functions[function_index]->code.o;
+		size_t size = functions[function_index]->code.size;
 
 		size_t index = 0;
 		while (index < size) {
