@@ -100,7 +100,7 @@ function_id add_function(name_id name) {
 	++next_function_index;
 
 	functions[f].name = name;
-	functions[f].attribute = NO_NAME;
+	functions[f].attributes.attributes_count = 0;
 	init_type_ref(&functions[f].return_type, NO_NAME);
 	functions[f].parameters_size = 0;
 	functions[f].block = NULL;

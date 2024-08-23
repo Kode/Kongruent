@@ -187,7 +187,7 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 	for (size_t i = 0; i < types_size; ++i) {
 		type *t = get_type(types[i]);
 
-		if (!t->built_in && t->attribute != add_name("pipe")) {
+		if (!t->built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
 			*offset += sprintf(&hlsl[*offset], "struct %s {\n", get_name(t->name));
 
 			if (stage == SHADER_STAGE_VERTEX && types[i] == input) {
@@ -345,7 +345,13 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				}
 			}
 			else if (stage == SHADER_STAGE_COMPUTE) {
-				*offset += sprintf(&hlsl[*offset], "[numthreads(64, 1, 1)] %s main(", type_string(f->return_type.type));
+				attribute *threads_attribute = find_attribute(&f->attributes, add_name("threads"));
+				if (threads_attribute == NULL || threads_attribute->paramters_count != 3) {
+					debug_context context = {0};
+					error(context, "Compute function requires a threads attribute with three parameters");
+				}
+				*offset += sprintf(&hlsl[*offset], "[numthreads(%i, %i, %i)] %s main(", (int)threads_attribute->parameters[0],
+				                   (int)threads_attribute->parameters[1], (int)threads_attribute->parameters[2], type_string(f->return_type.type));
 				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 					if (parameter_index == 0) {
 						*offset +=
@@ -625,7 +631,7 @@ void hlsl_export(char *directory, api_kind d3d) {
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
-		if (!t->built_in && t->attribute == add_name("pipe")) {
+		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 			name_id vertex_shader_name = NO_NAME;
 			name_id fragment_shader_name = NO_NAME;
 
@@ -661,7 +667,7 @@ void hlsl_export(char *directory, api_kind d3d) {
 
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
-		if (f->attribute == add_name("compute")) {
+		if (has_attribute(&f->attributes, add_name("compute"))) {
 			compute_shaders[compute_shaders_size] = f;
 			compute_shaders_size += 1;
 		}

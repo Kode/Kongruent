@@ -166,7 +166,7 @@ static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id 
 	for (size_t i = 0; i < types_size; ++i) {
 		type *t = get_type(types[i]);
 
-		if (!t->built_in && t->attribute != add_name("pipe")) {
+		if (!t->built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
 			if (stage == SHADER_STAGE_VERTEX && types[i] == input) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					*offset += sprintf(&glsl[*offset], "layout(location = %zu) in %s %s_%s;\n", j, type_string(t->members.m[j].type.type), get_name(t->name),
@@ -197,7 +197,7 @@ static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id 
 	for (size_t i = 0; i < types_size; ++i) {
 		type *t = get_type(types[i]);
 
-		if (!t->built_in && t->attribute != add_name("pipe")) {
+		if (!t->built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
 			*offset += sprintf(&glsl[*offset], "struct %s {\n", get_name(t->name));
 
 			for (size_t j = 0; j < t->members.size; ++j) {
@@ -559,7 +559,7 @@ void glsl_export(char *directory) {
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
-		if (!t->built_in && t->attribute == add_name("pipe")) {
+		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 			name_id vertex_shader_name = NO_NAME;
 			name_id fragment_shader_name = NO_NAME;
 

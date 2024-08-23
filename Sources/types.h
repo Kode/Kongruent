@@ -31,8 +31,37 @@ typedef struct members {
 	size_t size;
 } members;
 
+typedef struct attribute {
+	name_id name;
+	double parameters[16];
+	uint8_t paramters_count;
+} attribute;
+
+typedef struct attributes {
+	attribute attributes[64];
+	uint8_t attributes_count;
+} attribute_list;
+
+static bool has_attribute(attribute_list *attributes, name_id name) {
+	for (uint8_t index = 0; index < attributes->attributes_count; ++index) {
+		if (attributes->attributes[index].name == name) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static attribute *find_attribute(attribute_list *attributes, name_id name) {
+	for (uint8_t index = 0; index < attributes->attributes_count; ++index) {
+		if (attributes->attributes[index].name == name) {
+			return &attributes->attributes[index];
+		}
+	}
+	return NULL;
+}
+
 typedef struct type {
-	name_id attribute;
+	attribute_list attributes;
 	name_id name;
 	members members;
 	bool built_in;

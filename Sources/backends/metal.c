@@ -148,7 +148,7 @@ static void write_types(char *metal, size_t *offset) {
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 
-		if (!t->built_in && t->attribute != add_name("pipe")) {
+		if (!t->built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
 			if (t->name == NO_NAME) {
 				char name[256];
 
@@ -483,7 +483,7 @@ void metal_export(char *directory) {
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
-		if (!t->built_in && t->attribute == add_name("pipe")) {
+		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 			name_id vertex_shader_name = NO_NAME;
 			name_id fragment_shader_name = NO_NAME;
 

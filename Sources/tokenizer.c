@@ -31,8 +31,7 @@ typedef enum mode {
 	MODE_OPERATOR,
 	MODE_IDENTIFIER,
 	MODE_LINE_COMMENT,
-	MODE_COMMENT,
-	MODE_ATTRIBUTE,
+	MODE_COMMENT
 } mode;
 
 typedef struct tokenizer_state {
@@ -122,8 +121,8 @@ static name_id tokenizer_buffer_to_name(tokenizer_buffer *buffer) {
 }
 
 static double tokenizer_buffer_parse_number(tokenizer_buffer *buffer) {
-	char *end = &buffer->buf[buffer->current_size];
-	return strtod(buffer->buf, &end);
+	buffer->buf[buffer->current_size] = 0;
+	return strtod(buffer->buf, NULL);
 }
 
 token token_create(int kind, tokenizer_state *state) {
@@ -201,14 +200,6 @@ static void tokens_add_identifier(tokenizer_state *state, tokens *tokens, tokeni
 	tokens_add(tokens, token);
 }
 
-static void tokens_add_attribute(tokenizer_state *state, tokens *tokens, tokenizer_buffer *buffer) {
-	token token = token_create(TOKEN_ATTRIBUTE, state);
-	token.attribute = tokenizer_buffer_to_name(buffer);
-	token.column = buffer->column;
-	token.line = buffer->line;
-	tokens_add(tokens, token);
-}
-
 tokens tokenize(const char *filename, const char *source) {
 	mode mode = MODE_SELECT;
 
@@ -229,9 +220,6 @@ tokens tokenize(const char *filename, const char *source) {
 			switch (mode) {
 			case MODE_IDENTIFIER:
 				tokens_add_identifier(&state, &tokens, &buffer);
-				break;
-			case MODE_ATTRIBUTE:
-				tokens_add_attribute(&state, &tokens, &buffer);
 				break;
 			case MODE_NUMBER: {
 				token token = token_create(TOKEN_NUMBER, &state);
@@ -274,21 +262,6 @@ tokens tokenize(const char *filename, const char *source) {
 						}
 					}
 				}
-				else if (ch == '#') {
-					tokenizer_state_advance(&context, &state);
-					if (state.next >= 0) {
-						char ch = state.next;
-						if (ch != '[') {
-							error(context, "Expected [");
-						}
-					}
-					else {
-						error(context, "Expected [");
-					}
-
-					mode = MODE_ATTRIBUTE;
-					tokenizer_buffer_reset(&buffer, &state);
-				}
 				else if (is_num(ch)) {
 					mode = MODE_NUMBER;
 					tokenizer_buffer_reset(&buffer, &state);
@@ -312,6 +285,9 @@ tokens tokenize(const char *filename, const char *source) {
 				}
 				else if (ch == '}') {
 					tokens_add(&tokens, token_create(TOKEN_RIGHT_CURLY, &state));
+				}
+				else if (ch == '#') {
+					tokens_add(&tokens, token_create(TOKEN_HASH, &state));
 				}
 				else if (ch == '[') {
 					tokens_add(&tokens, token_create(TOKEN_LEFT_SQUARE, &state));
@@ -516,18 +492,6 @@ tokens tokenize(const char *filename, const char *source) {
 				if (is_whitespace(ch) || is_op(ch) || ch == '(' || ch == ')' || ch == '{' || ch == '}' || ch == '[' || ch == ']' || ch == '"' || ch == '\'' ||
 				    ch == ';' || ch == '.' || ch == ',' || ch == ':') {
 					tokens_add_identifier(&state, &tokens, &buffer);
-					mode = MODE_SELECT;
-				}
-				else {
-					tokenizer_buffer_add(&buffer, ch);
-					tokenizer_state_advance(&context, &state);
-				}
-				break;
-			}
-			case MODE_ATTRIBUTE: {
-				if (ch == ']') {
-					tokens_add_attribute(&state, &tokens, &buffer);
-					tokenizer_state_advance(&context, &state);
 					mode = MODE_SELECT;
 				}
 				else {

@@ -36,13 +36,13 @@ typedef struct token {
 		TOKEN_NUMBER,
 		// TOKEN_STRING,
 		TOKEN_IDENTIFIER,
-		TOKEN_ATTRIBUTE,
 		TOKEN_LEFT_PAREN,
 		TOKEN_RIGHT_PAREN,
 		TOKEN_LEFT_CURLY,
 		TOKEN_RIGHT_CURLY,
 		TOKEN_LEFT_SQUARE,
 		TOKEN_RIGHT_SQUARE,
+		TOKEN_HASH,
 		TOKEN_IF,
 		TOKEN_ELSE,
 		TOKEN_WHILE,
@@ -66,7 +66,6 @@ typedef struct token {
 		double number;
 		// char string[MAX_IDENTIFIER_SIZE];
 		name_id identifier;
-		name_id attribute;
 		operatorr op;
 	};
 } token;

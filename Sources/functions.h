@@ -11,7 +11,7 @@ typedef uint32_t function_id;
 struct statement;
 
 typedef struct function {
-	name_id attribute;
+	attribute_list attributes;
 	name_id name;
 	type_ref return_type;
 	name_id parameter_names[256];

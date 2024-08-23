@@ -490,7 +490,7 @@ static void write_types(instructions_buffer *constants, function *main) {
 	for (size_t i = 0; i < types_size; ++i) {
 		type *t = get_type(types[i]);
 
-		if (!t->built_in && t->attribute != add_name("pipe")) {
+		if (!t->built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
 			spirv_id member_types[256];
 			uint16_t member_types_size = 0;
 			for (size_t j = 0; j < t->members.size; ++j) {
@@ -1265,7 +1265,7 @@ void spirv_export(char *directory) {
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
-		if (!t->built_in && t->attribute == add_name("pipe")) {
+		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 			name_id vertex_shader_name = NO_NAME;
 			name_id fragment_shader_name = NO_NAME;
 

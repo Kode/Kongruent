@@ -145,114 +145,80 @@ static void modifiers_add(modifiers_t *modifiers, modifier_t modifier) {
 	modifiers->size += 1;
 }
 
-/*static statement_t *parse_declaration(state_t *state, modifiers_t modifiers) {
-    switch (current(state).type) {
-    case TOKEN_IN: {
-        advance_state(state);
-        modifiers_add(&modifiers, MODIFIER_IN);
-        return parse_declaration(state, modifiers);
-    }
-    case TOKEN_IDENTIFIER: {
-        // type name
-        advance_state(state);
-        break;
-    }
-    case TOKEN_VOID: {
-        advance_state(state);
-        break;
-    }
-    default:
-        error("Expected a variable declaration");
-    }
-
-    token_t identifier;
-    if (current(state).type == TOKEN_IDENTIFIER) {
-        identifier = current(state);
-        advance_state(state);
-    }
-    else {
-        error("Expected an identifier");
-    }
-
-    switch (current(state).type) {
-    case TOKEN_OPERATOR: {
-        operator_t op = current(state).op;
-        switch (op) {
-        case OPERATOR_ASSIGN: {
-            advance_state(state);
-            expression_t *expr = parse_expression(state);
-            switch (current(state).type) {
-            case TOKEN_SEMICOLON: {
-                advance_state(state);
-                statement_t *statement = statement_allocate();
-                statement->type = STATEMENT_DECLARATION;
-                strcpy(statement->declaration.name, identifier.identifier);
-                statement->declaration.init = expr;
-                return statement;
-            }
-            default:
-                error("Expected a semicolon");
-                return NULL;
-            }
-        }
-        default:
-            error("Expected an assignment operator");
-            return NULL;
-        };
-    }
-    case TOKEN_SEMICOLON: {
-        advance_state(state);
-        statement_t *statement = statement_allocate();
-        statement->type = STATEMENT_DECLARATION;
-        strcpy(statement->declaration.name, identifier.identifier);
-        statement->declaration.init = NULL;
-        return statement;
-    }
-    case TOKEN_LEFT_PAREN: {
-        advance_state(state);
-        switch (current(state).type) {
-        case TOKEN_RIGHT_PAREN: {
-            advance_state(state);
-            statement_t *statement = statement_allocate();
-            statement->type = STATEMENT_FUNCTION;
-            statement->function.parameters.size = 0;
-            statement->function.block = parse_block(state);
-            return statement;
-        }
-        default:
-            error("Expected right paren");
-            return NULL;
-        }
-    }
-    default:
-        error("Expected an assign or a semicolon");
-        return NULL;
-    }
-}*/
-
 static definition parse_struct(state_t *state);
 static definition parse_function(state_t *state);
 static definition parse_const(state_t *state);
 
-static definition parse_definition(state_t *state) {
-	name_id attribute = NO_NAME;
+static double attribute_parameter_to_number(name_id attribute_name, name_id parameter_name) {
+	debug_context context = {0};
+	error(context, "Unknown attribute parameter %s", get_name(parameter_name));
+	return 0;
+}
 
-	if (current(state).kind == TOKEN_ATTRIBUTE) {
-		token token = current(state);
-		attribute = token.attribute;
+static definition parse_definition(state_t *state) {
+	attribute_list attributes = {0};
+
+	if (current(state).kind == TOKEN_HASH) {
+		advance_state(state);
+		match_token(state, TOKEN_LEFT_SQUARE, "Expected left square");
+		advance_state(state);
+
+		while (current(state).kind != TOKEN_RIGHT_SQUARE) {
+			attribute current_attribute = {0};
+
+			match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+			current_attribute.name = current(state).identifier;
+
+			advance_state(state);
+			
+			if (current(state).kind == TOKEN_LEFT_PAREN) {
+				advance_state(state);
+
+				while (current(state).kind != TOKEN_RIGHT_PAREN) {
+					if (current(state).kind == TOKEN_IDENTIFIER) {
+						current_attribute.parameters[current_attribute.paramters_count] = attribute_parameter_to_number(current_attribute.name, current(state).identifier);
+						current_attribute.paramters_count += 1;
+						advance_state(state);
+					}
+					else if (current(state).kind == TOKEN_NUMBER) {
+						current_attribute.parameters[current_attribute.paramters_count] = current(state).number;
+						current_attribute.paramters_count += 1;
+						advance_state(state);
+					}
+					else {
+						debug_context context = {0};
+						error(context, "Expected an identifier or a number");
+					}
+
+					if (current(state).kind != TOKEN_RIGHT_PAREN){
+						match_token(state, TOKEN_COMMA, "Expected a comma");
+						advance_state(state);
+					}
+				}
+				advance_state(state);
+			}
+
+			attributes.attributes[attributes.attributes_count] = current_attribute;
+			attributes.attributes_count += 1;
+
+			if (current(state).kind != TOKEN_RIGHT_SQUARE) {
+				match_token(state, TOKEN_COMMA, "Expected a comma");
+				advance_state(state);
+			}
+		}
 		advance_state(state);
 	}
 
 	switch (current(state).kind) {
 	case TOKEN_STRUCT: {
 		definition structy = parse_struct(state);
-		get_type(structy.type)->attribute = attribute;
+		get_type(structy.type)->attributes = attributes;
 		return structy;
 	}
 	case TOKEN_FUNCTION: {
 		definition d = parse_function(state);
 		function *f = get_function(d.function);
-		f->attribute = attribute;
+		f->attributes = attributes;
 		return d;
 	}
 	case TOKEN_CONST: {

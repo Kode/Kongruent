@@ -233,7 +233,7 @@ type_id add_type(name_id name) {
 	++next_type_index;
 
 	types[s].name = name;
-	types[s].attribute = NO_NAME;
+	types[s].attributes.attributes_count = 0;
 	types[s].members.size = 0;
 	types[s].built_in = false;
 

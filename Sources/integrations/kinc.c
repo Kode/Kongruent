@@ -303,7 +303,7 @@ void kinc_export(char *directory, api_kind api) {
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
-		if (!t->built_in && t->attribute == add_name("pipe")) {
+		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 			name_id vertex_shader_name = NO_NAME;
 
 			for (size_t j = 0; j < t->members.size; ++j) {
@@ -404,14 +404,14 @@ void kinc_export(char *directory, api_kind api) {
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
-			if (!t->built_in && t->attribute == add_name("pipe")) {
+			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 				fprintf(output, "extern kinc_g4_pipeline_t %s;\n\n", get_name(t->name));
 			}
 		}
 
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
-			if (f->attribute == add_name("compute")) {
+			if (has_attribute(&f->attributes, add_name("compute"))) {
 				fprintf(output, "extern kinc_g4_compute_shader %s;\n\n", get_name(f->name));
 			}
 		}
@@ -438,7 +438,7 @@ void kinc_export(char *directory, api_kind api) {
 		else {
 			for (type_id i = 0; get_type(i) != NULL; ++i) {
 				type *t = get_type(i);
-				if (!t->built_in && t->attribute == add_name("pipe")) {
+				if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 					for (size_t j = 0; j < t->members.size; ++j) {
 						debug_context context = {0};
 						if (t->members.m[j].name == add_name("vertex")) {
@@ -455,7 +455,7 @@ void kinc_export(char *directory, api_kind api) {
 
 			for (function_id i = 0; get_function(i) != NULL; ++i) {
 				function *f = get_function(i);
-				if (f->attribute == add_name("compute")) {
+				if (has_attribute(&f->attributes, add_name("compute"))) {
 					fprintf(output, "#include \"kong_%s.h\"\n", get_name(f->name));
 				}
 			}
@@ -474,7 +474,7 @@ void kinc_export(char *directory, api_kind api) {
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
-			if (!t->built_in && t->attribute == add_name("pipe")) {
+			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 				fprintf(output, "kinc_g4_pipeline_t %s;\n\n", get_name(t->name));
 			}
 		}
@@ -534,7 +534,7 @@ void kinc_export(char *directory, api_kind api) {
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
-			if (!t->built_in && t->attribute == add_name("pipe")) {
+			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("vertex") || t->members.m[j].name == add_name("fragment")) {
 						debug_context context = {0};
@@ -547,7 +547,7 @@ void kinc_export(char *directory, api_kind api) {
 
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
-			if (f->attribute == add_name("compute")) {
+			if (has_attribute(&f->attributes, add_name("compute"))) {
 				fprintf(output, "kinc_g4_compute_shader %s;\n", get_name(f->name));
 			}
 		}
@@ -568,7 +568,7 @@ void kinc_export(char *directory, api_kind api) {
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
-			if (!t->built_in && t->attribute == add_name("pipe")) {
+			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 				fprintf(output, "\tkinc_g4_pipeline_init(&%s);\n\n", get_name(t->name));
 
 				name_id vertex_shader_name = NO_NAME;
@@ -747,7 +747,7 @@ void kinc_export(char *directory, api_kind api) {
 
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
-			if (f->attribute == add_name("compute")) {
+			if (has_attribute(&f->attributes, add_name("compute"))) {
 				fprintf(output, "\tkinc_g4_compute_shader_init(&%s, %s_code, %s_code_size);\n", get_name(f->name), get_name(f->name), get_name(f->name));
 			}
 		}
