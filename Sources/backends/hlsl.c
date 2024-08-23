@@ -350,6 +350,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					debug_context context = {0};
 					error(context, "Compute function requires a threads attribute with three parameters");
 				}
+
 				*offset += sprintf(&hlsl[*offset], "[numthreads(%i, %i, %i)] %s main(", (int)threads_attribute->parameters[0],
 				                   (int)threads_attribute->parameters[1], (int)threads_attribute->parameters[2], type_string(f->return_type.type));
 				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
@@ -450,6 +451,50 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					indent(hlsl, offset, indentation);
 					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = _%" PRIu64 " * _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
 					                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
+				}
+				break;
+			}
+			case OPCODE_CALL: {
+				indent(hlsl, offset, indentation);
+				debug_context context = {0};
+				if (o->op_call.func == add_name("sample")) {
+					check(o->op_call.parameters_size == 3, context, "sample requires three parameters");
+					*offset +=
+					    sprintf(&hlsl[*offset], "%s _%" PRIu64 " = _%" PRIu64 ".Sample(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
+					            o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index, o->op_call.parameters[2].index);
+				}
+				else if (o->op_call.func == add_name("sample_lod")) {
+					check(o->op_call.parameters_size == 4, context, "sample_lod requires four parameters");
+					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = _%" PRIu64 ".SampleLevel(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
+					                   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index,
+					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index, o->op_call.parameters[3].index);
+				}
+				else if (o->op_call.func == add_name("group_id")) {
+					check(o->op_call.parameters_size == 0, context, "group_id can not have a parameter");
+					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = SV_GroupID;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+				}
+				else if (o->op_call.func == add_name("group_thread_id")) {
+					check(o->op_call.parameters_size == 0, context, "group_thread_id can not have a parameter");
+					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = SV_GroupThreadID;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+				}
+				else if (o->op_call.func == add_name("dispatch_thread_id")) {
+					check(o->op_call.parameters_size == 0, context, "dispatch_thread_id can not have a parameter");
+					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = SV_DispatchThreadID;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+				}
+				else if (o->op_call.func == add_name("group_index")) {
+					check(o->op_call.parameters_size == 0, context, "group_index can not have a parameter");
+					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = SV_GroupIndex;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+				}
+				else {
+					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index,
+					                   function_string(o->op_call.func));
+					if (o->op_call.parameters_size > 0) {
+						*offset += sprintf(&hlsl[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
+						for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
+							*offset += sprintf(&hlsl[*offset], ", _%" PRIu64, o->op_call.parameters[i].index);
+						}
+					}
+					*offset += sprintf(&hlsl[*offset], ");\n");
 				}
 				break;
 			}

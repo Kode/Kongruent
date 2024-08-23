@@ -94,33 +94,6 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %f;\n", type_string(o->op_load_constant.to.type.type), o->op_load_constant.to.index,
 		                   o->op_load_constant.number);
 		break;
-	case OPCODE_CALL: {
-		indent(code, offset, *indentation);
-		debug_context context = {0};
-		if (o->op_call.func == add_name("sample")) {
-			check(o->op_call.parameters_size == 3, context, "sample requires three parameters");
-			*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64 ".Sample(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
-			                   o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index, o->op_call.parameters[2].index);
-		}
-		else if (o->op_call.func == add_name("sample_lod")) {
-			check(o->op_call.parameters_size == 4, context, "sample_lod requires four parameters");
-			*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64 ".SampleLevel(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
-			                   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index,
-			                   o->op_call.parameters[2].index, o->op_call.parameters[3].index);
-		}
-		else {
-			*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index,
-			                   function_string(o->op_call.func));
-			if (o->op_call.parameters_size > 0) {
-				*offset += sprintf(&code[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
-				for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
-					*offset += sprintf(&code[*offset], ", _%" PRIu64, o->op_call.parameters[i].index);
-				}
-			}
-			*offset += sprintf(&code[*offset], ");\n");
-		}
-		break;
-	}
 	case OPCODE_ADD: {
 		indent(code, offset, *indentation);
 		*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64 " + _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),

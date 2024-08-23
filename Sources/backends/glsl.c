@@ -288,6 +288,17 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 					*offset += sprintf(&code[*offset], "void main() {\n");
 				}
 			}
+			else if (stage == SHADER_STAGE_COMPUTE) {
+				attribute *threads_attribute = find_attribute(&f->attributes, add_name("threads"));
+				if (threads_attribute == NULL || threads_attribute->paramters_count != 3) {
+					debug_context context = {0};
+					error(context, "Compute function requires a threads attribute with three parameters");
+				}
+
+				*offset += sprintf(&code[*offset], "layout (local_size_x = %i, local_size_y = %i, local_size_z = %i) in;\n\n",
+				                   (int)threads_attribute->parameters[0], (int)threads_attribute->parameters[1], (int)threads_attribute->parameters[2]);
+				*offset += sprintf(&code[*offset], "void main() {\n");
+			}
 			else {
 				debug_context context = {0};
 				error(context, "Unsupported shader stage");
@@ -327,6 +338,22 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = textureLod(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
 					                   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index,
 					                   o->op_call.parameters[2].index, o->op_call.parameters[3].index);
+				}
+				else if (o->op_call.func == add_name("group_id")) {
+					check(o->op_call.parameters_size == 0, context, "group_id can not have a parameter");
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = gl_WorkGroupID;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+				}
+				else if (o->op_call.func == add_name("group_thread_id")) {
+					check(o->op_call.parameters_size == 0, context, "group_thread_id can not have a parameter");
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = gl_LocalInvocationID;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+				}
+				else if (o->op_call.func == add_name("dispatch_thread_id")) {
+					check(o->op_call.parameters_size == 0, context, "dispatch_thread_id can not have a parameter");
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = gl_GlobalInvocationID;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+				}
+				else if (o->op_call.func == add_name("group_index")) {
+					check(o->op_call.parameters_size == 0, context, "group_index can not have a parameter");
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = gl_LocalInvocationIndex;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else {
 					const char *function_name = get_name(o->op_call.func);
@@ -526,6 +553,34 @@ static void glsl_export_fragment(char *directory, function *main) {
 	write_code(glsl, directory, filename, var_name);
 }
 
+static void glsl_export_compute(char *directory, function *main) {
+	char *glsl = (char *)calloc(1024 * 1024, 1);
+	debug_context context = {0};
+	check(glsl != NULL, context, "Could not allocate glsl string");
+
+	size_t offset = 0;
+
+	assert(main->parameters_size == 0);
+
+	offset += sprintf(&glsl[offset], "#version 330\n\n");
+
+	write_types(glsl, &offset, SHADER_STAGE_COMPUTE, NO_TYPE, NO_TYPE, main);
+
+	write_globals(glsl, &offset, main);
+
+	write_functions(glsl, &offset, SHADER_STAGE_COMPUTE, NO_TYPE, NO_TYPE, main);
+
+	char *name = get_name(main->name);
+
+	char filename[512];
+	sprintf(filename, "kong_%s", name);
+
+	char var_name[256];
+	sprintf(var_name, "%s_code", name);
+
+	write_code(glsl, directory, filename, var_name);
+}
+
 void glsl_export(char *directory) {
 	int cbuffer_index = 0;
 	int texture_index = 0;
@@ -590,11 +645,26 @@ void glsl_export(char *directory) {
 		}
 	}
 
+	function *compute_shaders[256];
+	size_t compute_shaders_size = 0;
+
+	for (function_id i = 0; get_function(i) != NULL; ++i) {
+		function *f = get_function(i);
+		if (has_attribute(&f->attributes, add_name("compute"))) {
+			compute_shaders[compute_shaders_size] = f;
+			compute_shaders_size += 1;
+		}
+	}
+
 	for (size_t i = 0; i < vertex_shaders_size; ++i) {
 		glsl_export_vertex(directory, vertex_shaders[i]);
 	}
 
 	for (size_t i = 0; i < fragment_shaders_size; ++i) {
 		glsl_export_fragment(directory, fragment_shaders[i]);
+	}
+
+	for (size_t i = 0; i < compute_shaders_size; ++i) {
+		glsl_export_compute(directory, compute_shaders[i]);
 	}
 }
