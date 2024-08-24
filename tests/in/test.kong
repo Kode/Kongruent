@@ -1,4 +1,4 @@
-struct VertexIn {
+/*struct VertexIn {
     position: float3;
 }
 
@@ -19,10 +19,14 @@ fun pos(input: VertexIn): FragmentIn {
 #[fragment]
 fun pixel(input: FragmentIn): float4 {
     var color: float4;
-    color.r = 1.0;
-    color.g = 0.0;
+    color.r = 0.0;
+    color.g = 1.0;
     color.b = 0.0;
     color.a = 1.0;
+
+    var a: int = 3;
+    a += 2;
+
     return color;
 }
 
@@ -32,4 +36,43 @@ struct Pipe {
     fragment = pixel;
 }
 
-// https://shader-playground.timjones.io/9daab221a76e1fe6fe3fbad510c436c1
+#[compute, threads(32, 1, 1)]
+fun comp(): void {
+
+}*/
+
+// based on https://landelare.github.io/2023/02/18/dxr-tutorial.html
+
+const camera: float3 = float3(0, 1.5, -7);
+const light: float3 = float3(0, 200, 0);
+const skyTop: float3 = float3(0.24, 0.44, 0.72);
+const skyBottom: float3 = float3(0.75, 0.86, 0.93);
+
+struct Payload {
+    color: float3;
+    allow_reflection: bool;
+    missed: bool;
+}
+
+fun sendrays(): void {
+
+}
+
+fun raymissed(payload: Payload): void {
+    var slope: float = normalize(world_ray_direction()).y;
+    var t: float = saturate(slope * 5 + 0.5);
+    payload.color = lerp(skyBottom, skyTop, t);
+
+    payload.missed = true;
+}
+
+fun closesthit(payload: Payload, uv: float2): void {
+
+}
+
+#[raypipe]
+struct RayPipe {
+    gen = sendrays;
+    miss = raymissed;
+    closest = closesthit;
+}

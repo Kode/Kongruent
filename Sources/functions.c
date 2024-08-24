@@ -49,6 +49,18 @@ static void add_func_float3(char *name) {
 	f->block = NULL;
 }
 
+static void add_func_float_float(char *name) {
+	function_id func = add_function(add_name(name));
+	function *f = get_function(func);
+	init_type_ref(&f->return_type, add_name("float"));
+	f->return_type.type = find_type_by_ref(&f->return_type);
+	f->parameter_names[0] = add_name("a");
+	init_type_ref(&f->parameter_types[0], add_name("float"));
+	f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+	f->parameters_size = 1;
+	f->block = NULL;
+}
+
 static void add_func_float3_float3(char *name) {
 	function_id func = add_function(add_name(name));
 	function *f = get_function(func);
@@ -136,6 +148,7 @@ void functions_init(void) {
 	add_func_float3_float_float_float("lerp");
 	add_func_float3("world_ray_direction");
 	add_func_float3_float3("normalize");
+	add_func_float_float("saturate");
 }
 
 static void grow_if_needed(uint64_t size) {

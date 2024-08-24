@@ -533,6 +533,11 @@ static spirv_id write_constant_float(instructions_buffer *instructions, spirv_id
 	return write_constant(instructions, spirv_float_type, value_id, uint32_value);
 }
 
+static spirv_id write_constant_bool(instructions_buffer *instructions, spirv_id value_id, bool value) {
+	uint32_t uint32_value = *(uint32_t *)&value;
+	return write_constant(instructions, spirv_bool_type, value_id, uint32_value);
+}
+
 static void write_vertex_output_decorations(instructions_buffer *instructions, spirv_id output_struct) {
 	{
 		uint32_t operands[] = {output_struct.id, 0, (uint32_t)DECORATION_BUILTIN, (uint32_t)BUILTIN_POSITION};
@@ -625,6 +630,20 @@ static spirv_id get_float_constant(float value) {
 	if (index.id == 0) {
 		index = allocate_index();
 		hmput(float_constants, value, index);
+	}
+	return index;
+}
+
+static struct {
+	bool key;
+	spirv_id value;
+} *bool_constants = NULL;
+
+static spirv_id get_bool_constant(bool value) {
+	spirv_id index = hmget(bool_constants, value);
+	if (index.id == 0) {
+		index = allocate_index();
+		hmput(bool_constants, value, index);
 	}
 	return index;
 }
@@ -819,9 +838,14 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 			break;
 		}
-		case OPCODE_LOAD_CONSTANT: {
-			spirv_id id = get_float_constant(o->op_load_constant.number);
-			hmput(index_map, o->op_load_constant.to.index, id);
+		case OPCODE_LOAD_FLOAT_CONSTANT: {
+			spirv_id id = get_float_constant(o->op_load_float_constant.number);
+			hmput(index_map, o->op_load_float_constant.to.index, id);
+			break;
+		}
+		case OPCODE_LOAD_BOOL_CONSTANT: {
+			spirv_id id = get_bool_constant(o->op_load_bool_constant.boolean);
+			hmput(index_map, o->op_load_bool_constant.to.index, id);
 			break;
 		}
 		case OPCODE_CALL: {
@@ -1045,6 +1069,11 @@ static void write_constants(instructions_buffer *instructions) {
 	size = hmlenu(float_constants);
 	for (size_t i = 0; i < size; ++i) {
 		write_constant_float(instructions, float_constants[i].value, float_constants[i].key);
+	}
+
+	size = hmlenu(bool_constants);
+	for (size_t i = 0; i < size; ++i) {
+		write_constant_bool(instructions, bool_constants[i].value, bool_constants[i].key);
 	}
 }
 

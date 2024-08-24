@@ -603,6 +603,10 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					check(o->op_call.parameters_size == 0, context, "group_index can not have a parameter");
 					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = SV_GroupIndex;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
+				else if (o->op_call.func == add_name("world_ray_direction")) {
+					check(o->op_call.parameters_size == 0, context, "group_index can not have a parameter");
+					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = WorldRayDirection();\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+				}
 				else {
 					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index,
 					                   function_string(o->op_call.func));

@@ -28,7 +28,8 @@ typedef struct opcode {
 		OPCODE_ADD_AND_STORE_MEMBER,
 		OPCODE_DIVIDE_AND_STORE_MEMBER,
 		OPCODE_MULTIPLY_AND_STORE_MEMBER,
-		OPCODE_LOAD_CONSTANT,
+		OPCODE_LOAD_FLOAT_CONSTANT,
+		OPCODE_LOAD_BOOL_CONSTANT,
 		OPCODE_LOAD_MEMBER,
 		OPCODE_RETURN,
 		OPCODE_CALL,
@@ -77,7 +78,11 @@ typedef struct opcode {
 		struct {
 			float number;
 			variable to;
-		} op_load_constant;
+		} op_load_float_constant;
+		struct {
+			bool boolean;
+			variable to;
+		} op_load_bool_constant;
 		struct {
 			variable from;
 			variable to;

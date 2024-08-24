@@ -566,10 +566,15 @@ static void write_functions(char *code, size_t *offset) {
 				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
-			case OPCODE_LOAD_CONSTANT:
+			case OPCODE_LOAD_FLOAT_CONSTANT:
 				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = %f;\n", o->op_load_constant.to.index,
-				                   type_string(o->op_load_constant.to.type.type), o->op_load_constant.number);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = %f;\n", o->op_load_float_constant.to.index,
+				                   type_string(o->op_load_float_constant.to.type.type), o->op_load_float_constant.number);
+				break;
+			case OPCODE_LOAD_BOOL_CONSTANT:
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = %s;\n", o->op_load_bool_constant.to.index,
+				                   type_string(o->op_load_bool_constant.to.type.type), o->op_load_bool_constant.boolean ? "true" : "false");
 				break;
 			case OPCODE_CALL: {
 				debug_context context = {0};

@@ -89,10 +89,15 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 			break;
 		}
 		break;
-	case OPCODE_LOAD_CONSTANT:
+	case OPCODE_LOAD_FLOAT_CONSTANT:
 		indent(code, offset, *indentation);
-		*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %f;\n", type_string(o->op_load_constant.to.type.type), o->op_load_constant.to.index,
-		                   o->op_load_constant.number);
+		*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %f;\n", type_string(o->op_load_float_constant.to.type.type), o->op_load_float_constant.to.index,
+		                   o->op_load_float_constant.number);
+		break;
+	case OPCODE_LOAD_BOOL_CONSTANT:
+		indent(code, offset, *indentation);
+		*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %s;\n", type_string(o->op_load_bool_constant.to.type.type), o->op_load_bool_constant.to.index,
+		                   o->op_load_bool_constant.boolean ? "true" : "false");
 		break;
 	case OPCODE_ADD: {
 		indent(code, offset, *indentation);

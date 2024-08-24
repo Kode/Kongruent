@@ -399,8 +399,19 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		}
 	}
 	case EXPRESSION_BOOLEAN: {
-		debug_context context = {0};
-		error(context, "not implemented");
+		type_ref t;
+		init_type_ref(&t, NO_NAME);
+		t.type = float_id;
+		variable v = allocate_variable(t, VARIABLE_LOCAL);
+
+		opcode o;
+		o.type = OPCODE_LOAD_BOOL_CONSTANT;
+		o.size = OP_SIZE(o, op_load_bool_constant);
+		o.op_load_bool_constant.boolean = e->boolean;
+		o.op_load_bool_constant.to = v;
+		emit_op(code, &o);
+
+		return v;
 	}
 	case EXPRESSION_NUMBER: {
 		type_ref t;
@@ -409,10 +420,10 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		variable v = allocate_variable(t, VARIABLE_LOCAL);
 
 		opcode o;
-		o.type = OPCODE_LOAD_CONSTANT;
-		o.size = OP_SIZE(o, op_load_constant);
-		o.op_load_constant.number = (float)e->number;
-		o.op_load_constant.to = v;
+		o.type = OPCODE_LOAD_FLOAT_CONSTANT;
+		o.size = OP_SIZE(o, op_load_float_constant);
+		o.op_load_float_constant.number = (float)e->number;
+		o.op_load_float_constant.to = v;
 		emit_op(code, &o);
 
 		return v;
@@ -457,9 +468,12 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		o.size = OP_SIZE(o, op_load_member);
 
 		debug_context context = {0};
-		check(e->member.left->kind == EXPRESSION_VARIABLE, context, "Misformed member construct");
-
-		o.op_load_member.from = find_variable(parent, e->member.left->variable);
+		if (e->member.left->kind == EXPRESSION_VARIABLE) {
+			o.op_load_member.from = find_variable(parent, e->member.left->variable);
+		}
+		else {
+			o.op_load_member.from = emit_expression(code, parent, e->member.left);
+		}
 
 		check(o.op_load_member.from.index != 0, context, "Load var is broken");
 		o.op_load_member.to = v;
