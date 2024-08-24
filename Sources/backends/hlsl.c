@@ -259,6 +259,18 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 			*offset += sprintf(&hlsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
 		}
 		else if (g.type == float_id) {
+			*offset += sprintf(&hlsl[*offset], "static const float _%" PRIu64 " = %f;\n\n", g.var_index, g.value.value.floats[0]);
+		}
+		else if (g.type == float2_id) {
+			*offset += sprintf(&hlsl[*offset], "static const float2 _%" PRIu64 " = float2(%f, %f);\n\n", g.var_index, g.value.value.floats[0], g.value.value.floats[1]);
+		}
+		else if (g.type == float3_id) {
+			*offset += sprintf(&hlsl[*offset], "static const float3 _%" PRIu64 " = float3(%f, %f, %f);\n\n", g.var_index, g.value.value.floats[0],
+			                   g.value.value.floats[1], g.value.value.floats[2]);
+		}
+		else if (g.type == float4_id) {
+			*offset += sprintf(&hlsl[*offset], "static const float4 _%" PRIu64 " = float4(%f, %f, %f, %f);\n\n", g.var_index, g.value.value.floats[0],
+			                   g.value.value.floats[1], g.value.value.floats[2], g.value.value.floats[3]);
 		}
 		else {
 			*offset += sprintf(&hlsl[*offset], "cbuffer _%" PRIu64 " : register(b%i) {\n", g.var_index, register_index);
@@ -468,7 +480,6 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				}
 				else if (parameter_index == 1) {
 					*offset += sprintf(&hlsl[*offset], ", BuiltInTriangleIntersectionAttributes _kong_triangle_intersection_attributes"); 
-					//type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 				}
 				else {
 					*offset += sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);

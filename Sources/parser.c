@@ -811,6 +811,7 @@ static expressions parse_parameters(state_t *state) {
 	e.size = 0;
 
 	if (current(state).kind == TOKEN_RIGHT_PAREN) {
+		advance_state(state);
 		return e;
 	}
 
@@ -1042,6 +1043,12 @@ static definition parse_const(state_t *state) {
 		advance_state(state);
 	}
 
+	expression *value = NULL;
+	if (current(state).kind == TOKEN_OPERATOR && current(state).op == OPERATOR_ASSIGN) {
+		advance_state(state);
+		value = parse_expression(state);
+	}
+
 	match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
 	advance_state(state);
 
@@ -1049,7 +1056,7 @@ static definition parse_const(state_t *state) {
 
 	if (type_name == NO_NAME) {
 		debug_context context = {0};
-		check(type != NO_TYPE, context, "Const has not type");
+		check(type != NO_TYPE, context, "Const has no type");
 		d.kind = DEFINITION_CONST_CUSTOM;
 		d.global = add_global(type, name.identifier);
 	}
@@ -1064,6 +1071,73 @@ static definition parse_const(state_t *state) {
 	else if (type_name == add_name("sampler")) {
 		d.kind = DEFINITION_SAMPLER;
 		d.global = add_global(sampler_type_id, name.identifier);
+	}
+	else if (type_name == add_name("float")) {
+		debug_context context = {0};
+		check(value != NULL, context, "const float requires an initialization value");
+		check(value->kind == EXPRESSION_NUMBER, context, "const float3 requires a number");
+
+		global_value float_value;
+		float_value.kind = GLOBAL_VALUE_FLOAT;
+
+		float_value.value.floats[0] = (float)value->number;
+
+		d.kind = DEFINITION_CONST_BASIC;
+		d.global = add_global_with_value(float_id, name.identifier, float_value);
+	}
+	else if (type_name == add_name("float2")) {
+		debug_context context = {0};
+		check(value != NULL, context, "const float2 requires an initialization value");
+		check(value->kind == EXPRESSION_CALL, context, "const float2 requires a constructor call");
+		check(value->call.func_name == add_name("float2"), context, "const float2 requires a float2 call");
+		check(value->call.parameters.size == 3, context, "const float2 construtor call requires two parameters");
+
+		global_value float2_value;
+		float2_value.kind = GLOBAL_VALUE_FLOAT2;
+
+		for (int i = 0; i < 2; ++i) {
+			check(value->call.parameters.e[i]->kind == EXPRESSION_NUMBER, context, "const float2 construtor parameters have to be numbers");
+			float2_value.value.floats[i] = (float)value->call.parameters.e[i]->number;
+		}
+
+		d.kind = DEFINITION_CONST_BASIC;
+		d.global = add_global_with_value(float2_id, name.identifier, float2_value);
+	}
+	else if (type_name == add_name("float3")) {
+		debug_context context = {0};
+		check(value != NULL, context, "const float3 requires an initialization value");
+		check(value->kind == EXPRESSION_CALL, context, "const float3 requires a constructor call");
+		check(value->call.func_name == add_name("float3"), context, "const float3 requires a float3 call");
+		check(value->call.parameters.size == 3, context, "const float3 construtor call requires three parameters");
+
+		global_value float3_value;
+		float3_value.kind = GLOBAL_VALUE_FLOAT3;
+
+		for (int i = 0; i < 3; ++i) {
+			check(value->call.parameters.e[i]->kind == EXPRESSION_NUMBER, context, "const float3 construtor parameters have to be numbers");
+			float3_value.value.floats[i] = (float)value->call.parameters.e[i]->number;
+		}
+
+		d.kind = DEFINITION_CONST_BASIC;
+		d.global = add_global_with_value(float3_id, name.identifier, float3_value);
+	}
+	else if (type_name == add_name("float4")) {
+		debug_context context = {0};
+		check(value != NULL, context, "const float4 requires an initialization value");
+		check(value->kind == EXPRESSION_CALL, context, "const float4 requires a constructor call");
+		check(value->call.func_name == add_name("float4"), context, "const float4 requires a float4 call");
+		check(value->call.parameters.size == 4, context, "const float4 construtor call requires four parameters");
+
+		global_value float4_value;
+		float4_value.kind = GLOBAL_VALUE_FLOAT4;
+
+		for (int i = 0; i < 4; ++i) {
+			check(value->call.parameters.e[i]->kind == EXPRESSION_NUMBER, context, "const float4 construtor parameters have to be numbers");
+			float4_value.value.floats[i] = (float)value->call.parameters.e[i]->number;
+		}
+
+		d.kind = DEFINITION_CONST_BASIC;
+		d.global = add_global_with_value(float4_id, name.identifier, float4_value);
 	}
 	else {
 		debug_context context = {0};

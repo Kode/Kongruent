@@ -610,43 +610,43 @@ void kinc_export(char *directory, api_kind api) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "depth_mode expects an identifier");
 						global g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.depth_mode = %s;\n\n", get_name(t->name), convert_compare_mode((int)g.value));
+						fprintf(output, "\t%s.depth_mode = %s;\n\n", get_name(t->name), convert_compare_mode(g.value.value.ints[0]));
 					}
 					else if (t->members.m[j].name == add_name("blend_source")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_source expects an identifier");
 						global g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.blend_source = %s;\n\n", get_name(t->name), convert_blend_mode((int)g.value));
+						fprintf(output, "\t%s.blend_source = %s;\n\n", get_name(t->name), convert_blend_mode(g.value.value.ints[0]));
 					}
 					else if (t->members.m[j].name == add_name("blend_destination")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_destination expects an identifier");
 						global g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.blend_destination = %s;\n\n", get_name(t->name), convert_blend_mode((int)g.value));
+						fprintf(output, "\t%s.blend_destination = %s;\n\n", get_name(t->name), convert_blend_mode(g.value.value.ints[0]));
 					}
 					else if (t->members.m[j].name == add_name("blend_operation")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_operation expects an identifier");
 						global g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.blend_operation = %s;\n\n", get_name(t->name), convert_blend_op((int)g.value));
+						fprintf(output, "\t%s.blend_operation = %s;\n\n", get_name(t->name), convert_blend_op(g.value.value.ints[0]));
 					}
 					else if (t->members.m[j].name == add_name("alpha_blend_source")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "alpha_blend_source expects an identifier");
 						global g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.alpha_blend_source = %s;\n\n", get_name(t->name), convert_blend_mode((int)g.value));
+						fprintf(output, "\t%s.alpha_blend_source = %s;\n\n", get_name(t->name), convert_blend_mode(g.value.value.ints[0]));
 					}
 					else if (t->members.m[j].name == add_name("alpha_blend_destination")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "alpha_blend_destination expects an identifier");
 						global g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.alpha_blend_destination = %s;\n\n", get_name(t->name), convert_blend_mode((int)g.value));
+						fprintf(output, "\t%s.alpha_blend_destination = %s;\n\n", get_name(t->name), convert_blend_mode(g.value.value.ints[0]));
 					}
 					else if (t->members.m[j].name == add_name("alpha_blend_operation")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "alpha_blend_operation expects an identifier");
 						global g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.alpha_blend_operation = %s;\n\n", get_name(t->name), convert_blend_op((int)g.value));
+						fprintf(output, "\t%s.alpha_blend_operation = %s;\n\n", get_name(t->name), convert_blend_op(g.value.value.ints[0]));
 					}
 					else {
 						debug_context context = {0};

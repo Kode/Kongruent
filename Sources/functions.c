@@ -15,6 +15,52 @@ function_id float2_constructor_id;
 function_id float3_constructor_id;
 function_id float4_constructor_id;
 
+static void add_func_int(char *name) {
+	function_id func = add_function(add_name(name));
+	function *f = get_function(func);
+	init_type_ref(&f->return_type, add_name("int"));
+	f->return_type.type = find_type_by_ref(&f->return_type);
+	f->parameters_size = 0;
+	f->block = NULL;
+}
+
+static void add_func_float3_float_float_float(char *name) {
+	function_id func = add_function(add_name(name));
+	function *f = get_function(func);
+	init_type_ref(&f->return_type, add_name("float3"));
+	f->return_type.type = find_type_by_ref(&f->return_type);
+	f->parameter_names[0] = add_name("a");
+	f->parameter_names[1] = add_name("b");
+	f->parameter_names[2] = add_name("c");
+	for (int i = 0; i < 3; ++i) {
+		init_type_ref(&f->parameter_types[0], add_name("float"));
+		f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+	}
+	f->parameters_size = 3;
+	f->block = NULL;
+}
+
+static void add_func_float3(char *name) {
+	function_id func = add_function(add_name(name));
+	function *f = get_function(func);
+	init_type_ref(&f->return_type, add_name("float3"));
+	f->return_type.type = find_type_by_ref(&f->return_type);
+	f->parameters_size = 0;
+	f->block = NULL;
+}
+
+static void add_func_float3_float3(char *name) {
+	function_id func = add_function(add_name(name));
+	function *f = get_function(func);
+	init_type_ref(&f->return_type, add_name("float3"));
+	f->return_type.type = find_type_by_ref(&f->return_type);
+	f->parameter_names[0] = add_name("a");
+	init_type_ref(&f->parameter_types[0], add_name("float3"));
+	f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+	f->parameters_size = 1;
+	f->block = NULL;
+}
+
 void functions_init(void) {
 	function *new_functions = realloc(functions, functions_size * sizeof(function));
 	debug_context context = {0};
@@ -81,6 +127,15 @@ void functions_init(void) {
 		f->parameters_size = 1;
 		f->block = NULL;
 	}
+
+	add_func_int("group_id");
+	add_func_int("group_thread_id");
+	add_func_int("dispatch_thread_id");
+	add_func_int("group_index");
+
+	add_func_float3_float_float_float("lerp");
+	add_func_float3("world_ray_direction");
+	add_func_float3_float3("normalize");
 }
 
 static void grow_if_needed(uint64_t size) {

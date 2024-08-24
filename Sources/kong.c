@@ -69,6 +69,12 @@ type_ref resolve_member_var_type(statement *parent_block, type_ref parent_type, 
 			return left->type;
 		}
 	}
+	else if (left->kind == EXPRESSION_CALL) {
+		if (parent_block != NULL) {
+			resolve_types_in_expression(parent_block, left);
+			return left->type;
+		}
+	}
 	else if (left->kind == EXPRESSION_INDEX) {
 		if (parent_type.type != NO_TYPE) {
 			init_type_ref(&left->type, NO_NAME);

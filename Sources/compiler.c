@@ -429,7 +429,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	case EXPRESSION_CALL: {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
-		t.type = float4_id;
+		t.type = e->type.type;
 		variable v = allocate_variable(t, VARIABLE_LOCAL);
 
 		opcode o;
