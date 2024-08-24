@@ -23,6 +23,8 @@ static const wchar_t *shader_string(shader_stage stage) {
 		return L"ps_6_0";
 	case SHADER_STAGE_COMPUTE:
 		return L"cs_6_0";
+	case SHADER_STAGE_RAY_GENERATION:
+		return L"lib_6_3";
 	default: {
 		debug_context context = {0};
 		error(context, "Unsupported shader stage/version combination");
