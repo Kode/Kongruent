@@ -108,7 +108,7 @@ void resolve_member_type(statement *parent_block, type_ref parent_type, expressi
 	e->type = e->member.right->type;
 }
 
-static bool types_compatible(type_id left, type_id right){
+static bool types_compatible(type_id left, type_id right) {
 	if (left == right) {
 		return true;
 	}
@@ -123,6 +123,32 @@ static bool types_compatible(type_id left, type_id right){
 		return true;
 	}
 	if ((left == int4_id && right == float4_id) || (left == float4_id && right == int4_id)) {
+		return true;
+	}
+
+	if ((left == uint_id && right == float_id) || (left == float_id && right == uint_id)) {
+		return true;
+	}
+	if ((left == uint2_id && right == float2_id) || (left == float2_id && right == uint2_id)) {
+		return true;
+	}
+	if ((left == uint3_id && right == float3_id) || (left == float3_id && right == uint3_id)) {
+		return true;
+	}
+	if ((left == uint4_id && right == float4_id) || (left == float4_id && right == uint4_id)) {
+		return true;
+	}
+
+	if ((left == uint_id && right == int_id) || (left == int_id && right == uint_id)) {
+		return true;
+	}
+	if ((left == uint2_id && right == int2_id) || (left == int2_id && right == uint2_id)) {
+		return true;
+	}
+	if ((left == uint3_id && right == int3_id) || (left == int3_id && right == uint3_id)) {
+		return true;
+	}
+	if ((left == uint4_id && right == int4_id) || (left == int4_id && right == uint4_id)) {
 		return true;
 	}
 
@@ -159,6 +185,56 @@ static type_ref upgrade_type(type_ref left_type, type_ref right_type) {
 		return right_type;
 	}
 	if (left == float4_id && right == int4_id) {
+		return left_type;
+	}
+
+	if (left == uint_id && right == float_id) {
+		return right_type;
+	}
+	if (left == float_id && right == uint_id) {
+		return left_type;
+	}
+	if (left == uint2_id && right == float2_id) {
+		return right_type;
+	}
+	if (left == float2_id && right == uint2_id) {
+		return left_type;
+	}
+	if (left == uint3_id && right == float3_id) {
+		return right_type;
+	}
+	if (left == float3_id && right == uint3_id) {
+		return left_type;
+	}
+	if (left == uint4_id && right == float4_id) {
+		return right_type;
+	}
+	if (left == float4_id && right == uint4_id) {
+		return left_type;
+	}
+
+	if (left == uint_id && right == int_id) {
+		return right_type;
+	}
+	if (left == int_id && right == uint_id) {
+		return left_type;
+	}
+	if (left == uint2_id && right == int2_id) {
+		return right_type;
+	}
+	if (left == int2_id && right == uint2_id) {
+		return left_type;
+	}
+	if (left == uint3_id && right == int3_id) {
+		return right_type;
+	}
+	if (left == int3_id && right == uint3_id) {
+		return left_type;
+	}
+	if (left == uint4_id && right == int4_id) {
+		return right_type;
+	}
+	if (left == int4_id && right == uint4_id) {
 		return left_type;
 	}
 

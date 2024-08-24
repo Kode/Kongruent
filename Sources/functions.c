@@ -49,6 +49,15 @@ static void add_func_float3(char *name) {
 	f->block = NULL;
 }
 
+static void add_func_uint3(char *name) {
+	function_id func = add_function(add_name(name));
+	function *f = get_function(func);
+	init_type_ref(&f->return_type, add_name("uint3"));
+	f->return_type.type = find_type_by_ref(&f->return_type);
+	f->parameters_size = 0;
+	f->block = NULL;
+}
+
 static void add_func_float_float(char *name) {
 	function_id func = add_function(add_name(name));
 	function *f = get_function(func);
@@ -149,6 +158,8 @@ void functions_init(void) {
 	add_func_float3("world_ray_direction");
 	add_func_float3_float3("normalize");
 	add_func_float_float("saturate");
+	add_func_uint3("ray_index");
+	add_func_float3("ray_dimensions");
 }
 
 static void grow_if_needed(uint64_t size) {

@@ -55,7 +55,13 @@ struct Payload {
 }
 
 fun sendrays(): void {
+    var idx: uint2 = ray_index().xy;
+    var size: float2 = ray_dimensions().xy;
 
+    var uv: float2 = idx / size;
+    var target: float3 = float3((uv.x * 2 - 1) * 1.8 * (size.x / size.y),
+                           (1 - uv.y) * 4 - 2 + camera.y,
+                           0);
 }
 
 fun raymissed(payload: Payload): void {
