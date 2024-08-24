@@ -102,6 +102,64 @@ void resolve_member_type(statement *parent_block, type_ref parent_type, expressi
 	e->type = e->member.right->type;
 }
 
+static bool types_compatible(type_id left, type_id right){
+	if (left == right) {
+		return true;
+	}
+
+	if ((left == int_id && right == float_id) || (left == float_id && right == int_id)) {
+		return true;
+	}
+	if ((left == int2_id && right == float2_id) || (left == float2_id && right == int2_id)) {
+		return true;
+	}
+	if ((left == int3_id && right == float3_id) || (left == float3_id && right == int3_id)) {
+		return true;
+	}
+	if ((left == int4_id && right == float4_id) || (left == float4_id && right == int4_id)) {
+		return true;
+	}
+
+	return false;
+}
+
+static type_ref upgrade_type(type_ref left_type, type_ref right_type) {
+	type_id left = left_type.type;
+	type_id right = right_type.type;
+
+	if (left == right) {
+		return left_type;
+	}
+
+	if (left == int_id && right == float_id) {
+		return right_type;
+	}
+	if (left == float_id && right == int_id) {
+		return left_type;
+	}
+	if (left == int2_id && right == float2_id) {
+		return right_type;
+	}
+	if (left == float2_id && right == int2_id) {
+		return left_type;
+	}
+	if (left == int3_id && right == float3_id) {
+		return right_type;
+	}
+	if (left == float3_id && right == int3_id) {
+		return left_type;
+	}
+	if (left == int4_id && right == float4_id) {
+		return right_type;
+	}
+	if (left == float4_id && right == int4_id) {
+		return left_type;
+	}
+
+	kong_log(LOG_LEVEL_WARNING, "Suspicious type upgrade");
+	return left_type;
+}
+
 void resolve_types_in_expression(statement *parent, expression *e) {
 	switch (e->kind) {
 	case EXPRESSION_BINARY: {
@@ -123,11 +181,14 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		case OPERATOR_MULTIPLY_ASSIGN: {
 			type_id left_type = e->binary.left->type.type;
 			type_id right_type = e->binary.right->type.type;
-			if (left_type == right_type || (left_type == float4x4_id && right_type == float4_id)) {
+			if (left_type == float4x4_id && right_type == float4_id) {
 				e->type = e->binary.right->type;
 			}
 			else if (right_type == float_id && (left_type == float2_id || left_type == float3_id || left_type == float4_id)) {
 				e->type = e->binary.left->type;
+			}
+			else if (types_compatible(left_type, right_type)) {
+				e->type = e->binary.right->type;
 			}
 			else {
 				debug_context context = {0};
@@ -138,14 +199,23 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		case OPERATOR_MINUS:
 		case OPERATOR_PLUS:
 		case OPERATOR_DIVIDE:
-		case OPERATOR_MOD:
+		case OPERATOR_MOD: {
+			type_id left_type = e->binary.left->type.type;
+			type_id right_type = e->binary.right->type.type;
+			if (!types_compatible(left_type, right_type)) {
+				debug_context context = {0};
+				error(context, "Type mismatch %s vs %s", get_name(get_type(left_type)->name), get_name(get_type(right_type)->name));
+			}
+			e->type = upgrade_type(e->binary.left->type, e->binary.right->type);
+			break;
+		}
 		case OPERATOR_ASSIGN:
 		case OPERATOR_DIVIDE_ASSIGN:
 		case OPERATOR_MINUS_ASSIGN:
 		case OPERATOR_PLUS_ASSIGN: {
 			type_id left_type = e->binary.left->type.type;
 			type_id right_type = e->binary.right->type.type;
-			if (left_type != right_type) {
+			if (!types_compatible(left_type, right_type)) {
 				debug_context context = {0};
 				error(context, "Type mismatch %s vs %s", get_name(get_type(left_type)->name), get_name(get_type(right_type)->name));
 			}
