@@ -434,8 +434,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		return find_variable(parent, e->variable);
 	}
 	case EXPRESSION_GROUPING: {
-		debug_context context = {0};
-		error(context, "not implemented");
+		return emit_expression(code, parent, e->grouping);
 	}
 	case EXPRESSION_CALL: {
 		type_ref t;
