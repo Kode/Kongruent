@@ -62,6 +62,20 @@ fun sendrays(): void {
     var target: float3 = float3((uv.x * 2 - 1) * 1.8 * (size.x / size.y),
                            (1 - uv.y) * 4 - 2 + camera.y,
                            0);
+
+    //RayDesc ray;
+    //ray.Origin = camera;
+    //ray.Direction = target - camera;
+    //ray.TMin = 0.001;
+    //ray.TMax = 1000;
+
+    var payload: Payload;
+    payload.allow_reflection = true;
+    payload.missed = false;
+
+    //TraceRay(scene, RAY_FLAG_NONE, 0xFF, 0, 0, 0, ray, payload);
+
+    //uav[idx] = float4(payload.color, 1);
 }
 
 fun raymissed(payload: Payload): void {

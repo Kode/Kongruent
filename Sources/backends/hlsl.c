@@ -513,6 +513,9 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					global g = get_global(j);
 					if (o->op_load_member.from.index == g.var_index) {
 						global_var_index = g.var_index;
+						if (get_type(g.type)->built_in) {
+							global_var_index = 0;
+						}
 						break;
 					}
 				}
