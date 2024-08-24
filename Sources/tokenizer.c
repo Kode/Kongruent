@@ -12,8 +12,8 @@ token tokens_get(tokens *tokens, size_t index) {
 	return tokens->t[index];
 }
 
-static bool is_num(char ch) {
-	return ch == '0' || ch == '1' || ch == '2' || ch == '3' || ch == '4' || ch == '5' || ch == '6' || ch == '7' || ch == '8' || ch == '9';
+static bool is_num(char ch, char chch) {
+	return (ch >= '0' && ch <= '9') || (ch == '-' && chch >= '0' && chch <= '9');
 }
 
 static bool is_op(char ch) {
@@ -262,7 +262,7 @@ tokens tokenize(const char *filename, const char *source) {
 						}
 					}
 				}
-				else if (is_num(ch)) {
+				else if (is_num(ch, state.next_next)) {
 					mode = MODE_NUMBER;
 					tokenizer_buffer_reset(&buffer, &state);
 					tokenizer_buffer_add(&buffer, ch);
@@ -341,7 +341,7 @@ tokens tokenize(const char *filename, const char *source) {
 				break;
 			}
 			case MODE_NUMBER: {
-				if (is_num(ch) || ch == '.') {
+				if (is_num(ch, 0) || ch == '.') {
 					tokenizer_buffer_add(&buffer, ch);
 					tokenizer_state_advance(&context, &state);
 				}
