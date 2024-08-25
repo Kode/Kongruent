@@ -29,6 +29,8 @@ type_id function_type_id;
 type_id tex2d_type_id;
 type_id texcube_type_id;
 type_id sampler_type_id;
+type_id ray_type_id;
+type_id bvh_type_id;
 
 typedef struct prefix {
 	char str[5];
@@ -478,6 +480,40 @@ void types_init(void) {
 	{
 		float4x4_id = add_type(add_name("float4x4"));
 		get_type(float4x4_id)->built_in = true;
+	}
+
+	{
+		ray_type_id = add_type(add_name("ray"));
+		get_type(ray_type_id)->built_in = true;
+
+		type *t = get_type(ray_type_id);
+		
+		debug_context context = {0};
+		
+		t->members.m[t->members.size].name = add_name("origin");
+		t->members.m[t->members.size].type.type = float3_id;
+		t->members.m[t->members.size].type.array_size = 0;
+		++t->members.size;
+
+		t->members.m[t->members.size].name = add_name("direction");
+		t->members.m[t->members.size].type.type = float3_id;
+		t->members.m[t->members.size].type.array_size = 0;
+		++t->members.size;
+
+		t->members.m[t->members.size].name = add_name("min");
+		t->members.m[t->members.size].type.type = float_id;
+		t->members.m[t->members.size].type.array_size = 0;
+		++t->members.size;
+
+		t->members.m[t->members.size].name = add_name("max");
+		t->members.m[t->members.size].type.type = float_id;
+		t->members.m[t->members.size].type.array_size = 0;
+		++t->members.size;
+	}
+
+	{
+		bvh_type_id = add_type(add_name("bvh"));
+		get_type(bvh_type_id)->built_in = true;
 	}
 
 	{

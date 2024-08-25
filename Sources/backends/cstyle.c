@@ -12,6 +12,30 @@ static char *function_string(name_id func) {
 	return get_name(func);
 }
 
+// HLSL for now
+static char *member_string(type *parent_type, name_id member_name) {
+	if (parent_type == get_type(ray_type_id)) {
+		if (member_name == add_name("origin")) {
+			return "Origin";
+		}
+		else if (member_name == add_name("direction")) {
+			return "Direction";
+		}
+		else if (member_name == add_name("min")) {
+			return "TMin";
+		}
+		else if (member_name == add_name("max")) {
+			return "TMax";
+		}
+		else {
+			return get_name(member_name);
+		}
+	}
+	else {
+		return get_name(member_name);
+	}
+}
+
 void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func type_string, int *indentation) {
 	switch (o->type) {
 	case OPCODE_VAR:
@@ -66,7 +90,7 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 			else {
 				debug_context context = {0};
 				check(o->op_store_member.member_indices[i] < s->members.size, context, "Member index out of bounds");
-				*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
+				*offset += sprintf(&code[*offset], ".%s", member_string(s, s->members.m[o->op_store_member.member_indices[i]].name));
 				is_array = s->members.m[o->op_store_member.member_indices[i]].type.array_size > 0;
 				s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
 			}

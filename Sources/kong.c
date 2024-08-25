@@ -58,7 +58,7 @@ type_ref resolve_member_var_type(statement *parent_block, type_ref parent_type, 
 			}
 
 			debug_context context = {0};
-			error(context, "Member not found");
+			error(context, "Member %s not found", get_name(name));
 			type_ref t;
 			init_type_ref(&t, NO_NAME);
 			return t;

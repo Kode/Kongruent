@@ -35,6 +35,12 @@ static char *type_string(type_id type) {
 	if (type == float4x4_id) {
 		return "float4x4";
 	}
+	if (type == ray_type_id) {
+		return "RayDesc";
+	}
+	if (type == bvh_type_id) {
+		return "RaytracingAccelerationStructure";
+	}
 	return get_name(get_type(type)->name);
 }
 
