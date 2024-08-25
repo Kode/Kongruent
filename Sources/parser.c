@@ -1072,6 +1072,10 @@ static definition parse_const(state_t *state) {
 		d.kind = DEFINITION_SAMPLER;
 		d.global = add_global(sampler_type_id, name.identifier);
 	}
+	else if (type_name == add_name("bvh")) {
+		d.kind = DEFINITION_BVH;
+		d.global = add_global(bvh_type_id, name.identifier);
+	}
 	else if (type_name == add_name("float")) {
 		debug_context context = {0};
 		check(value != NULL, context, "const float requires an initialization value");

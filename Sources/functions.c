@@ -149,6 +149,31 @@ void functions_init(void) {
 		f->block = NULL;
 	}
 
+	{
+		function_id func = add_function(add_name("trace_ray"));
+		function *f = get_function(func);
+		
+		init_type_ref(&f->return_type, add_name("void"));
+		f->return_type.type = find_type_by_ref(&f->return_type);
+
+		f->parameter_names[0] = add_name("scene");
+		init_type_ref(&f->parameter_types[0], add_name("bvh"));
+		f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+		f->parameters_size = 1;
+
+		f->parameter_names[1] = add_name("ray");
+		init_type_ref(&f->parameter_types[1], add_name("ray"));
+		f->parameter_types[1].type = find_type_by_ref(&f->parameter_types[1]);
+		f->parameters_size = 1;
+
+		f->parameter_names[2] = add_name("payload");
+		init_type_ref(&f->parameter_types[2], add_name("void"));
+		f->parameter_types[2].type = find_type_by_ref(&f->parameter_types[2]);
+		f->parameters_size = 1;
+
+		f->block = NULL;
+	}
+
 	add_func_int("group_id");
 	add_func_int("group_thread_id");
 	add_func_int("dispatch_thread_id");

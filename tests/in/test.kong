@@ -43,16 +43,18 @@ fun comp(): void {
 
 // based on https://landelare.github.io/2023/02/18/dxr-tutorial.html
 
-const camera: float3 = float3(0, 1.5, -7);
-const light: float3 = float3(0, 200, 0);
-const skyTop: float3 = float3(0.24, 0.44, 0.72);
-const skyBottom: float3 = float3(0.75, 0.86, 0.93);
-
 struct Payload {
     color: float3;
     allow_reflection: bool;
     missed: bool;
 }
+
+const scene: bvh;
+
+const camera: float3 = float3(0, 1.5, -7);
+const light: float3 = float3(0, 200, 0);
+const skyTop: float3 = float3(0.24, 0.44, 0.72);
+const skyBottom: float3 = float3(0.75, 0.86, 0.93);
 
 fun sendrays(): void {
     var idx: uint2 = ray_index().xy;
@@ -73,7 +75,7 @@ fun sendrays(): void {
     payload.allow_reflection = true;
     payload.missed = false;
 
-    //trace_ray(scene, primary, payload);
+    trace_ray(scene, primary, payload);
 
     //uav[idx] = float4(payload.color, 1);
 }

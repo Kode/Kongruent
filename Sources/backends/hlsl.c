@@ -264,6 +264,9 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 		else if (g.type == texcube_type_id) {
 			*offset += sprintf(&hlsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
 		}
+		else if (g.type == bvh_type_id) {
+			*offset += sprintf(&hlsl[*offset], "RaytracingAccelerationStructure  _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
+		}
 		else if (g.type == float_id) {
 			*offset += sprintf(&hlsl[*offset], "static const float _%" PRIu64 " = %f;\n\n", g.var_index, g.value.value.floats[0]);
 		}
@@ -624,9 +627,19 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					check(o->op_call.parameters_size == 0, context, "group_index can not have a parameter");
 					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = DispatchRaysDimensions();\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
+				else if (o->op_call.func == add_name("trace_ray")) {
+					check(o->op_call.parameters_size == 3, context, "trace_ray requires three parameters");
+					*offset += sprintf(&hlsl[*offset], "TraceRay(_%" PRIu64 ", RAY_FLAG_NONE, 0xFF, 0, 0, 0, _%" PRIu64 ", _%" PRIu64 ");\n", o->op_call.parameters[0].index,
+					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index);
+				}
 				else {
-					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index,
-					                   function_string(o->op_call.func));
+					if (o->op_call.var.type.type == void_id) {
+						*offset += sprintf(&hlsl[*offset], "%s(", function_string(o->op_call.func));
+					}
+					else {
+						*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index,
+						                   function_string(o->op_call.func));
+					}
 					if (o->op_call.parameters_size > 0) {
 						*offset += sprintf(&hlsl[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
 						for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
@@ -838,7 +851,7 @@ void hlsl_export(char *directory, api_kind d3d) {
 			global_register_indices[i] = sampler_index;
 			sampler_index += 1;
 		}
-		else if (g.type == tex2d_type_id || g.type == texcube_type_id) {
+		else if (g.type == tex2d_type_id || g.type == texcube_type_id || g.type == bvh_type_id) {
 			global_register_indices[i] = texture_index;
 			texture_index += 1;
 		}
