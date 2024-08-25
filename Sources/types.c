@@ -391,12 +391,12 @@ void types_init(void) {
 		permute(letters, (int)strlen(letters), 1, vec4_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec4_found_vec2);
 		permute(letters, (int)strlen(letters), 3, vec4_found_vec3);
-		permute(letters, (int)strlen(letters), 3, vec4_found_vec4);
+		permute(letters, (int)strlen(letters), 4, vec4_found_vec4);
 		letters = "rgba";
 		permute(letters, (int)strlen(letters), 1, vec4_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec4_found_vec2);
 		permute(letters, (int)strlen(letters), 3, vec4_found_vec3);
-		permute(letters, (int)strlen(letters), 3, vec4_found_vec4);
+		permute(letters, (int)strlen(letters), 4, vec4_found_vec4);
 	}
 
 	{
@@ -430,12 +430,12 @@ void types_init(void) {
 		permute(letters, (int)strlen(letters), 1, int4_found_int);
 		permute(letters, (int)strlen(letters), 2, int4_found_int2);
 		permute(letters, (int)strlen(letters), 3, int4_found_int3);
-		permute(letters, (int)strlen(letters), 3, int4_found_int4);
+		permute(letters, (int)strlen(letters), 4, int4_found_int4);
 		letters = "rgba";
 		permute(letters, (int)strlen(letters), 1, int4_found_int);
 		permute(letters, (int)strlen(letters), 2, int4_found_int2);
 		permute(letters, (int)strlen(letters), 3, int4_found_int3);
-		permute(letters, (int)strlen(letters), 3, int4_found_int4);
+		permute(letters, (int)strlen(letters), 4, int4_found_int4);
 	}
 
 	{
@@ -469,12 +469,12 @@ void types_init(void) {
 		permute(letters, (int)strlen(letters), 1, uint4_found_uint);
 		permute(letters, (int)strlen(letters), 2, uint4_found_uint2);
 		permute(letters, (int)strlen(letters), 3, uint4_found_uint3);
-		permute(letters, (int)strlen(letters), 3, uint4_found_uint4);
+		permute(letters, (int)strlen(letters), 4, uint4_found_uint4);
 		letters = "rgba";
 		permute(letters, (int)strlen(letters), 1, uint4_found_uint);
 		permute(letters, (int)strlen(letters), 2, uint4_found_uint2);
 		permute(letters, (int)strlen(letters), 3, uint4_found_uint3);
-		permute(letters, (int)strlen(letters), 3, uint4_found_uint4);
+		permute(letters, (int)strlen(letters), 4, uint4_found_uint4);
 	}
 
 	{
