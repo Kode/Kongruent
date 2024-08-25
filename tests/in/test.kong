@@ -51,6 +51,8 @@ struct Payload {
 
 const scene: bvh;
 
+#[write] const uav: tex2d;
+
 const camera: float3 = float3(0, 1.5, -7);
 const light: float3 = float3(0, 200, 0);
 const skyTop: float3 = float3(0.24, 0.44, 0.72);
@@ -77,7 +79,7 @@ fun sendrays(): void {
 
     trace_ray(scene, primary, payload);
 
-    //uav[idx] = float4(payload.color, 1);
+    uav[idx] = float4(payload.color.r, payload.color.g, payload.color.b, 1);
 }
 
 fun raymissed(payload: Payload): void {
