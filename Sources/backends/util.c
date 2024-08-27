@@ -9,7 +9,7 @@ void indent(char *code, size_t *offset, int indentation) {
 	char str[16];
 	memset(str, '\t', sizeof(str));
 	str[indentation] = 0;
-	*offset += sprintf(&code[*offset], str);
+	*offset += sprintf(&code[*offset], "%s", str);
 }
 
 static void find_referenced_global_for_var(variable v, global_id *globals, size_t *globals_size) {
