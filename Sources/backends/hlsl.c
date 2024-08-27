@@ -246,6 +246,12 @@ static size_t raymiss_shaders_size = 0;
 static function *rayclosesthit_shaders[256];
 static size_t rayclosesthit_shaders_size = 0;
 
+static function *rayintersection_shaders[256];
+static size_t rayintersection_shaders_size = 0;
+
+static function *rayanyhit_shaders[256];
+static size_t rayanyhit_shaders_size = 0;
+
 static bool is_raygen_shader(function *f) {
 	for (size_t rayshader_index = 0; rayshader_index < raygen_shaders_size; ++rayshader_index) {
 		if (f == raygen_shaders[rayshader_index]) {
@@ -267,6 +273,24 @@ static bool is_raymiss_shader(function *f) {
 static bool is_rayclosesthit_shader(function *f) {
 	for (size_t rayshader_index = 0; rayshader_index < rayclosesthit_shaders_size; ++rayshader_index) {
 		if (f == rayclosesthit_shaders[rayshader_index]) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool is_rayintersection_shader(function *f) {
+	for (size_t rayshader_index = 0; rayshader_index < rayintersection_shaders_size; ++rayshader_index) {
+		if (f == rayintersection_shaders[rayshader_index]) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool is_rayanyhit_shader(function *f) {
+	for (size_t rayshader_index = 0; rayshader_index < rayanyhit_shaders_size; ++rayshader_index) {
+		if (f == rayanyhit_shaders[rayshader_index]) {
 			return true;
 		}
 	}
@@ -504,6 +528,48 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			check(f->parameter_types[1].type == float2_id, context, "Second parameter of a rayclosesthit shader needs to be a float2");
 
 			*offset += sprintf(&hlsl[*offset], "[shader(\"closesthit\")]\n");
+
+			*offset += sprintf(&hlsl[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
+			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+				if (parameter_index == 0) {
+					*offset +=
+					    sprintf(&hlsl[*offset], "inout %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+				}
+				else if (parameter_index == 1) {
+					*offset += sprintf(&hlsl[*offset], ", BuiltInTriangleIntersectionAttributes _kong_triangle_intersection_attributes");
+				}
+				else {
+					*offset += sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+				}
+			}
+			*offset += sprintf(&hlsl[*offset], ") {\n");
+			*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _kong_triangle_intersection_attributes.barycentrics;\n",
+			                   type_string(f->parameter_types[1].type), parameter_ids[1]);
+		}
+		else if (is_rayintersection_shader(f)) {
+			debug_context context = {0};
+			check(f->parameters_size == 0, context, "intersection shader can not have any parameters");
+
+			*offset += sprintf(&hlsl[*offset], "[shader(\"intersection\")]\n");
+
+			*offset += sprintf(&hlsl[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
+			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+				if (parameter_index == 0) {
+					*offset +=
+					    sprintf(&hlsl[*offset], "inout %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+				}
+				else {
+					*offset += sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+				}
+			}
+			*offset += sprintf(&hlsl[*offset], ") {\n");
+		}
+		else if (is_rayanyhit_shader(f)) {
+			debug_context context = {0};
+			check(f->parameters_size == 2, context, "anyhit shader requires two arguments");
+			check(f->parameter_types[1].type == float2_id, context, "Second parameter of a rayanyhit shader needs to be a float2");
+
+			*offset += sprintf(&hlsl[*offset], "[shader(\"anyhit\")]\n");
 
 			*offset += sprintf(&hlsl[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
@@ -927,6 +993,14 @@ static void hlsl_export_all_ray_shaders(char *directory) {
 		all_rayshaders[all_rayshaders_size] = rayclosesthit_shaders[rayshader_index];
 		all_rayshaders_size += 1;
 	}
+	for (size_t rayshader_index = 0; rayshader_index < rayintersection_shaders_size; ++rayshader_index) {
+		all_rayshaders[all_rayshaders_size] = rayintersection_shaders[rayshader_index];
+		all_rayshaders_size += 1;
+	}
+	for (size_t rayshader_index = 0; rayshader_index < rayanyhit_shaders_size; ++rayshader_index) {
+		all_rayshaders[all_rayshaders_size] = rayanyhit_shaders[rayshader_index];
+		all_rayshaders_size += 1;
+	}
 
 	write_types(hlsl, &offset, SHADER_STAGE_RAY_GENERATION, NO_TYPE, NO_TYPE, NULL, all_rayshaders, all_rayshaders_size);
 
@@ -1064,6 +1138,8 @@ void hlsl_export(char *directory, api_kind d3d) {
 			name_id raygen_shader_name = NO_NAME;
 			name_id raymiss_shader_name = NO_NAME;
 			name_id rayclosesthit_shader_name = NO_NAME;
+			name_id rayintersection_shader_name = NO_NAME;
+			name_id rayanyhit_shader_name = NO_NAME;
 
 			for (size_t j = 0; j < t->members.size; ++j) {
 				if (t->members.m[j].name == add_name("gen")) {
@@ -1074,6 +1150,12 @@ void hlsl_export(char *directory, api_kind d3d) {
 				}
 				else if (t->members.m[j].name == add_name("closest")) {
 					rayclosesthit_shader_name = t->members.m[j].value.identifier;
+				}
+				else if (t->members.m[j].name == add_name("intersection")) {
+					rayintersection_shader_name = t->members.m[j].value.identifier;
+				}
+				else if (t->members.m[j].name == add_name("any")) {
+					rayanyhit_shader_name = t->members.m[j].value.identifier;
 				}
 			}
 
@@ -1095,6 +1177,14 @@ void hlsl_export(char *directory, api_kind d3d) {
 				else if (f->name == rayclosesthit_shader_name) {
 					rayclosesthit_shaders[rayclosesthit_shaders_size] = f;
 					rayclosesthit_shaders_size += 1;
+				}
+				else if (f->name == rayintersection_shader_name) {
+					rayintersection_shaders[rayintersection_shaders_size] = f;
+					rayintersection_shaders_size += 1;
+				}
+				else if (f->name == rayanyhit_shader_name) {
+					rayanyhit_shaders[rayanyhit_shaders_size] = f;
+					rayanyhit_shaders_size += 1;
 				}
 			}
 		}
