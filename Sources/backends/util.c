@@ -84,7 +84,6 @@ void find_referenced_globals(function *f, global_id *globals, size_t *globals_si
 		}
 	}
 }
-
 void find_referenced_functions(function *f, function **functions, size_t *functions_size) {
 	if (f->block == NULL) {
 		// built-in

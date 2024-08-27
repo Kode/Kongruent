@@ -112,79 +112,6 @@ static void write_bytecode(char *hlsl, char *directory, const char *filename, co
 	}
 }
 
-static void find_referenced_global_for_var(variable v, global_id *globals, size_t *globals_size) {
-	for (global_id j = 0; get_global(j).type != NO_TYPE; ++j) {
-		global g = get_global(j);
-		if (v.index == g.var_index) {
-			bool found = false;
-			for (size_t k = 0; k < *globals_size; ++k) {
-				if (globals[k] == j) {
-					found = true;
-					break;
-				}
-			}
-			if (!found) {
-				globals[*globals_size] = j;
-				*globals_size += 1;
-			}
-			return;
-		}
-	}
-}
-
-static void find_referenced_globals(function *f, global_id *globals, size_t *globals_size) {
-	if (f->block == NULL) {
-		// built-in
-		return;
-	}
-
-	function *functions[256];
-	size_t functions_size = 0;
-
-	functions[functions_size] = f;
-	functions_size += 1;
-
-	find_referenced_functions(f, functions, &functions_size);
-
-	for (size_t l = 0; l < functions_size; ++l) {
-		uint8_t *data = functions[l]->code.o;
-		size_t size = functions[l]->code.size;
-
-		size_t index = 0;
-		while (index < size) {
-			opcode *o = (opcode *)&data[index];
-			switch (o->type) {
-			case OPCODE_MULTIPLY:
-			case OPCODE_DIVIDE:
-			case OPCODE_ADD:
-			case OPCODE_SUB:
-			case OPCODE_EQUALS:
-			case OPCODE_NOT_EQUALS:
-			case OPCODE_GREATER:
-			case OPCODE_GREATER_EQUAL:
-			case OPCODE_LESS:
-			case OPCODE_LESS_EQUAL: {
-				find_referenced_global_for_var(o->op_binary.left, globals, globals_size);
-				find_referenced_global_for_var(o->op_binary.right, globals, globals_size);
-				break;
-			}
-			case OPCODE_LOAD_MEMBER: {
-				find_referenced_global_for_var(o->op_load_member.from, globals, globals_size);
-				break;
-			}
-			case OPCODE_CALL: {
-				for (uint8_t i = 0; i < o->op_call.parameters_size; ++i) {
-					find_referenced_global_for_var(o->op_call.parameters[i], globals, globals_size);
-				}
-				break;
-			}
-			}
-
-			index += o->size;
-		}
-	}
-}
-
 static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id input, type_id output, function *main, function **rayshaders,
                         size_t rayshaders_count) {
 	type_id types[256];
@@ -271,7 +198,8 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 			*offset += sprintf(&hlsl[*offset], "static const float _%" PRIu64 " = %f;\n\n", g.var_index, g.value.value.floats[0]);
 		}
 		else if (g.type == float2_id) {
-			*offset += sprintf(&hlsl[*offset], "static const float2 _%" PRIu64 " = float2(%f, %f);\n\n", g.var_index, g.value.value.floats[0], g.value.value.floats[1]);
+			*offset += sprintf(&hlsl[*offset], "static const float2 _%" PRIu64 " = float2(%f, %f);\n\n", g.var_index, g.value.value.floats[0],
+			                   g.value.value.floats[1]);
 		}
 		else if (g.type == float3_id) {
 			*offset += sprintf(&hlsl[*offset], "static const float3 _%" PRIu64 " = float3(%f, %f, %f);\n\n", g.var_index, g.value.value.floats[0],
@@ -292,7 +220,6 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 		}
 	}
 }
-
 
 static function *raygen_shaders[256];
 static size_t raygen_shaders_size = 0;
@@ -375,12 +302,12 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				*offset += sprintf(&hlsl[*offset], "%s main(", type_string(f->return_type.type));
 				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 					if (parameter_index == 0) {
-						*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type),
-						                   parameter_ids[parameter_index]);
+						*offset +=
+						    sprintf(&hlsl[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 					}
 					else {
-						*offset += sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type),
-						                   parameter_ids[parameter_index]);
+						*offset +=
+						    sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 					}
 				}
 				*offset += sprintf(&hlsl[*offset], ") {\n");
@@ -392,7 +319,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 						*offset += sprintf(&hlsl[*offset], "\t%s _%i : SV_Target%i;\n", type_string(f->return_type.type), j, j);
 					}
 					*offset += sprintf(&hlsl[*offset], "};\n\n");
-					
+
 					*offset += sprintf(&hlsl[*offset], "_kong_colors_out main(");
 					for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 						if (parameter_index == 0) {
@@ -414,8 +341,8 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 							    sprintf(&hlsl[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 						}
 						else {
-							*offset +=
-							    sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+							*offset += sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type),
+							                   parameter_ids[parameter_index]);
 						}
 					}
 					*offset += sprintf(&hlsl[*offset], ") : SV_Target0 {\n");
@@ -467,7 +394,8 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			*offset += sprintf(&hlsl[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 				if (parameter_index == 0) {
-					*offset += sprintf(&hlsl[*offset], "inout %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+					*offset +=
+					    sprintf(&hlsl[*offset], "inout %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 				}
 				else {
 					*offset += sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
@@ -485,17 +413,19 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			*offset += sprintf(&hlsl[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 				if (parameter_index == 0) {
-					*offset += sprintf(&hlsl[*offset], "inout %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+					*offset +=
+					    sprintf(&hlsl[*offset], "inout %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 				}
 				else if (parameter_index == 1) {
-					*offset += sprintf(&hlsl[*offset], ", BuiltInTriangleIntersectionAttributes _kong_triangle_intersection_attributes"); 
+					*offset += sprintf(&hlsl[*offset], ", BuiltInTriangleIntersectionAttributes _kong_triangle_intersection_attributes");
 				}
 				else {
 					*offset += sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 				}
 			}
 			*offset += sprintf(&hlsl[*offset], ") {\n");
-			*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _kong_triangle_intersection_attributes.barycentrics;\n", type_string(f->parameter_types[1].type), parameter_ids[1]);
+			*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 " = _kong_triangle_intersection_attributes.barycentrics;\n",
+			                   type_string(f->parameter_types[1].type), parameter_ids[1]);
 		}
 		else {
 			*offset += sprintf(&hlsl[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
@@ -625,12 +555,13 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				}
 				else if (o->op_call.func == add_name("ray_dimensions")) {
 					check(o->op_call.parameters_size == 0, context, "group_index can not have a parameter");
-					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = DispatchRaysDimensions();\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+					*offset +=
+					    sprintf(&hlsl[*offset], "%s _%" PRIu64 " = DispatchRaysDimensions();\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else if (o->op_call.func == add_name("trace_ray")) {
 					check(o->op_call.parameters_size == 3, context, "trace_ray requires three parameters");
-					*offset += sprintf(&hlsl[*offset], "TraceRay(_%" PRIu64 ", RAY_FLAG_NONE, 0xFF, 0, 0, 0, _%" PRIu64 ", _%" PRIu64 ");\n", o->op_call.parameters[0].index,
-					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index);
+					*offset += sprintf(&hlsl[*offset], "TraceRay(_%" PRIu64 ", RAY_FLAG_NONE, 0xFF, 0, 0, 0, _%" PRIu64 ", _%" PRIu64 ");\n",
+					                   o->op_call.parameters[0].index, o->op_call.parameters[1].index, o->op_call.parameters[2].index);
 				}
 				else {
 					if (o->op_call.var.type.type == void_id) {
@@ -803,7 +734,7 @@ static void hlsl_export_all_ray_shaders(char *directory) {
 
 	function *all_rayshaders[256 * 3];
 	size_t all_rayshaders_size = 0;
-	for (size_t rayshader_index = 0; rayshader_index < raygen_shaders_size; ++rayshader_index){
+	for (size_t rayshader_index = 0; rayshader_index < raygen_shaders_size; ++rayshader_index) {
 		all_rayshaders[all_rayshaders_size] = raygen_shaders[rayshader_index];
 		all_rayshaders_size += 1;
 	}

@@ -1,5 +1,6 @@
 #include "kinc.h"
 
+#include "../backends/util.h"
 #include "../compiler.h"
 #include "../errors.h"
 #include "../functions.h"
@@ -54,80 +55,6 @@ static void find_referenced_functions(function *f, function **functions, size_t 
 		}
 
 		index += o->size;
-	}
-}
-
-static void find_referenced_global_for_var(variable v, global_id *globals, size_t *globals_size) {
-	for (global_id j = 0; get_global(j).type != NO_TYPE; ++j) {
-		global g = get_global(j);
-		if (v.index == g.var_index) {
-			bool found = false;
-			for (size_t k = 0; k < *globals_size; ++k) {
-				if (globals[k] == j) {
-					found = true;
-					break;
-				}
-			}
-			if (!found) {
-				globals[*globals_size] = j;
-				*globals_size += 1;
-			}
-			return;
-		}
-	}
-}
-
-static void find_referenced_globals(function *f, global_id *globals, size_t *globals_size) {
-	if (f->block == NULL) {
-		// built-in
-		return;
-	}
-
-	function *functions[256];
-	size_t functions_size = 0;
-
-	functions[functions_size] = f;
-	functions_size += 1;
-
-	find_referenced_functions(f, functions, &functions_size);
-
-	for (size_t l = 0; l < functions_size; ++l) {
-		uint8_t *data = functions[l]->code.o;
-		size_t size = functions[l]->code.size;
-
-		size_t index = 0;
-		while (index < size) {
-			opcode *o = (opcode *)&data[index];
-			switch (o->type) {
-			case OPCODE_MULTIPLY:
-			case OPCODE_DIVIDE:
-			case OPCODE_ADD:
-			case OPCODE_SUB:
-			case OPCODE_EQUALS:
-			case OPCODE_NOT_EQUALS:
-			case OPCODE_GREATER:
-			case OPCODE_GREATER_EQUAL:
-			case OPCODE_LESS:
-			case OPCODE_LESS_EQUAL:
-			{
-				find_referenced_global_for_var(o->op_binary.left, globals, globals_size);
-				find_referenced_global_for_var(o->op_binary.right, globals, globals_size);
-				break;
-			}
-			case OPCODE_LOAD_MEMBER: {
-				find_referenced_global_for_var(o->op_load_member.from, globals, globals_size);
-				break;
-			}
-			case OPCODE_CALL: {
-				for (uint8_t i = 0; i < o->op_call.parameters_size; ++i) {
-					find_referenced_global_for_var(o->op_call.parameters[i], globals, globals_size);
-				}
-				break;
-			}
-			}
-
-			index += o->size;
-		}
 	}
 }
 
@@ -698,11 +625,11 @@ void kinc_export(char *directory, api_kind api) {
 						for (size_t j = 0; j < t->members.size; ++j) {
 							if (api == API_OPENGL) {
 								fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s_%s\", %s);\n", get_name(t->name), get_name(t->name),
-									    get_name(t->members.m[j].name), structure_type(t->members.m[j].type.type));
+								        get_name(t->members.m[j].name), structure_type(t->members.m[j].type.type));
 							}
 							else {
 								fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s\", %s);\n", get_name(t->name),
-									    get_name(t->members.m[j].name), structure_type(t->members.m[j].type.type));
+								        get_name(t->members.m[j].name), structure_type(t->members.m[j].type.type));
 							}
 						}
 						fprintf(output, "\n");
