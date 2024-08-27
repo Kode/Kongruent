@@ -463,6 +463,7 @@ void kinc_export(char *directory, api_kind api) {
 				fprintf(output, "\tkinc_g4_pipeline_init(&%s);\n\n", get_name(t->name));
 
 				name_id vertex_shader_name = NO_NAME;
+				name_id amplification_shader_name = NO_NAME;
 				name_id mesh_shader_name = NO_NAME;
 				name_id fragment_shader_name = NO_NAME;
 
@@ -480,7 +481,10 @@ void kinc_export(char *directory, api_kind api) {
 						fprintf(output, "\t%s.vertex_shader = &%s;\n\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
 						vertex_shader_name = t->members.m[j].value.identifier;
 					}
-					if (t->members.m[j].name == add_name("mesh")) {
+					else if (t->members.m[j].name == add_name("amplification")) {
+						amplification_shader_name = t->members.m[j].value.identifier;
+					}
+					else if (t->members.m[j].name == add_name("mesh")) {
 						mesh_shader_name = t->members.m[j].value.identifier;
 					}
 					else if (t->members.m[j].name == add_name("fragment")) {

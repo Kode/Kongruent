@@ -372,7 +372,36 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 						    sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 					}
 				}
-				*offset += sprintf(&hlsl[*offset], ") {\n");
+				if (f->parameters_size > 0) {
+					*offset += sprintf(&hlsl[*offset], ", ");
+				}
+				*offset += sprintf(&hlsl[*offset], "in uint3 _kong_group_id : SV_GroupID, in uint3 _kong_group_thread_id : SV_GroupThreadID, in uint3 "
+				                                   "_kong_dispatch_thread_id : SV_DispatchThreadID, in uint _kong_group_index : SV_GroupIndex) {\n");
+			}
+			else if (stage == SHADER_STAGE_AMPLIFICATION) {
+				attribute *threads_attribute = find_attribute(&f->attributes, add_name("threads"));
+				if (threads_attribute == NULL || threads_attribute->paramters_count != 3) {
+					debug_context context = {0};
+					error(context, "Compute function requires a threads attribute with three parameters");
+				}
+
+				*offset += sprintf(&hlsl[*offset], "[numthreads(%i, %i, %i)] %s main(", (int)threads_attribute->parameters[0],
+				                   (int)threads_attribute->parameters[1], (int)threads_attribute->parameters[2], type_string(f->return_type.type));
+				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+					if (parameter_index == 0) {
+						*offset +=
+						    sprintf(&hlsl[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+					}
+					else {
+						*offset +=
+						    sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+					}
+				}
+				if (f->parameters_size > 0) {
+					*offset += sprintf(&hlsl[*offset], ", ");
+				}
+				*offset += sprintf(&hlsl[*offset], "in uint3 _kong_group_id : SV_GroupID, in uint3 _kong_group_thread_id : SV_GroupThreadID, in uint3 "
+				                                   "_kong_dispatch_thread_id : SV_DispatchThreadID, in uint _kong_group_index : SV_GroupIndex) {\n");
 			}
 			else if (stage == SHADER_STAGE_MESH) {
 				attribute *topology_attribute = find_attribute(&f->attributes, add_name("topology"));
@@ -399,7 +428,11 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 						    sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 					}
 				}
-				*offset += sprintf(&hlsl[*offset], ") {\n");
+				if (f->parameters_size > 0) {
+					*offset += sprintf(&hlsl[*offset], ", ");
+				}
+				*offset += sprintf(&hlsl[*offset], "in uint3 _kong_group_id : SV_GroupID, in uint3 _kong_group_thread_id : SV_GroupThreadID, in uint3 "
+				                                   "_kong_dispatch_thread_id : SV_DispatchThreadID, in uint _kong_group_index : SV_GroupIndex) {\n");
 			}
 			else {
 				debug_context context = {0};
@@ -563,19 +596,21 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				}
 				else if (o->op_call.func == add_name("group_id")) {
 					check(o->op_call.parameters_size == 0, context, "group_id can not have a parameter");
-					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = SV_GroupID;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = _kong_group_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else if (o->op_call.func == add_name("group_thread_id")) {
 					check(o->op_call.parameters_size == 0, context, "group_thread_id can not have a parameter");
-					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = SV_GroupThreadID;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+					*offset +=
+					    sprintf(&hlsl[*offset], "%s _%" PRIu64 " = _kong_group_thread_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else if (o->op_call.func == add_name("dispatch_thread_id")) {
 					check(o->op_call.parameters_size == 0, context, "dispatch_thread_id can not have a parameter");
-					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = SV_DispatchThreadID;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+					*offset +=
+					    sprintf(&hlsl[*offset], "%s _%" PRIu64 " = _kong_dispatch_thread_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else if (o->op_call.func == add_name("group_index")) {
 					check(o->op_call.parameters_size == 0, context, "group_index can not have a parameter");
-					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = SV_GroupIndex;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = _kong_group_index;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else if (o->op_call.func == add_name("world_ray_direction")) {
 					check(o->op_call.parameters_size == 0, context, "group_index can not have a parameter");
@@ -594,6 +629,12 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					check(o->op_call.parameters_size == 3, context, "trace_ray requires three parameters");
 					*offset += sprintf(&hlsl[*offset], "TraceRay(_%" PRIu64 ", RAY_FLAG_NONE, 0xFF, 0, 0, 0, _%" PRIu64 ", _%" PRIu64 ");\n",
 					                   o->op_call.parameters[0].index, o->op_call.parameters[1].index, o->op_call.parameters[2].index);
+				}
+				else if (o->op_call.func == add_name("dispatch_mesh")) {
+					check(o->op_call.parameters_size == 4, context, "dispatch_mesh requires four parameters");
+					*offset +=
+					    sprintf(&hlsl[*offset], "DispatchMesh(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n", o->op_call.parameters[0].index,
+					            o->op_call.parameters[1].index, o->op_call.parameters[2].index, o->op_call.parameters[3].index);
 				}
 				else {
 					if (o->op_call.var.type.type == void_id) {
@@ -659,6 +700,34 @@ static void hlsl_export_vertex(char *directory, api_kind d3d, function *main) {
 	default:
 		error(context, "Unsupported API for HLSL");
 	}
+	check(result == 0, context, "HLSL compilation failed");
+
+	char *name = get_name(main->name);
+
+	char filename[512];
+	sprintf(filename, "kong_%s", name);
+
+	char var_name[256];
+	sprintf(var_name, "%s_code", name);
+
+	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
+}
+
+static void hlsl_export_amplification(char *directory, function *main) {
+	char *hlsl = (char *)calloc(1024 * 1024, 1);
+	size_t offset = 0;
+
+	write_types(hlsl, &offset, SHADER_STAGE_AMPLIFICATION, NO_TYPE, NO_TYPE, main, NULL, 0);
+
+	write_globals(hlsl, &offset, main, NULL, 0);
+
+	write_functions(hlsl, &offset, SHADER_STAGE_AMPLIFICATION, main, NULL, 0);
+
+	char *output = NULL;
+	size_t output_size = 0;
+	int result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_AMPLIFICATION, false);
+
+	debug_context context = {0};
 	check(result == 0, context, "HLSL compilation failed");
 
 	char *name = get_name(main->name);
@@ -868,6 +937,9 @@ void hlsl_export(char *directory, api_kind d3d) {
 	function *vertex_shaders[256];
 	size_t vertex_shaders_size = 0;
 
+	function *amplification_shaders[256];
+	size_t amplification_shaders_size = 0;
+
 	function *mesh_shaders[256];
 	size_t mesh_shaders_size = 0;
 
@@ -878,12 +950,16 @@ void hlsl_export(char *directory, api_kind d3d) {
 		type *t = get_type(i);
 		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 			name_id vertex_shader_name = NO_NAME;
+			name_id amplification_shader_name = NO_NAME;
 			name_id mesh_shader_name = NO_NAME;
 			name_id fragment_shader_name = NO_NAME;
 
 			for (size_t j = 0; j < t->members.size; ++j) {
 				if (t->members.m[j].name == add_name("vertex")) {
 					vertex_shader_name = t->members.m[j].value.identifier;
+				}
+				else if (t->members.m[j].name == add_name("amplification")) {
+					amplification_shader_name = t->members.m[j].value.identifier;
 				}
 				else if (t->members.m[j].name == add_name("mesh")) {
 					mesh_shader_name = t->members.m[j].value.identifier;
@@ -902,6 +978,10 @@ void hlsl_export(char *directory, api_kind d3d) {
 				if (vertex_shader_name != NO_NAME && f->name == vertex_shader_name) {
 					vertex_shaders[vertex_shaders_size] = f;
 					vertex_shaders_size += 1;
+				}
+				if (amplification_shader_name != NO_NAME && f->name == amplification_shader_name) {
+					amplification_shaders[amplification_shaders_size] = f;
+					amplification_shaders_size += 1;
 				}
 				if (mesh_shader_name != NO_NAME && f->name == mesh_shader_name) {
 					mesh_shaders[mesh_shaders_size] = f;
@@ -973,6 +1053,10 @@ void hlsl_export(char *directory, api_kind d3d) {
 	}
 
 	if (d3d == API_DIRECT3D12) {
+		for (size_t i = 0; i < amplification_shaders_size; ++i) {
+			hlsl_export_amplification(directory, amplification_shaders[i]);
+		}
+
 		for (size_t i = 0; i < mesh_shaders_size; ++i) {
 			hlsl_export_mesh(directory, mesh_shaders[i]);
 		}

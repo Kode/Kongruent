@@ -25,6 +25,8 @@ static const wchar_t *shader_string(shader_stage stage) {
 		return L"cs_6_0";
 	case SHADER_STAGE_RAY_GENERATION:
 		return L"lib_6_3";
+	case SHADER_STAGE_AMPLIFICATION:
+		return L"as_6_5";
 	case SHADER_STAGE_MESH:
 		return L"ms_6_5";
 	default: {
