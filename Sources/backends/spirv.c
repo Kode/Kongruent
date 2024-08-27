@@ -691,7 +691,7 @@ static spirv_id write_op_f_ord_less_than(instructions_buffer *instructions, spir
 	spirv_id result = allocate_index();
 
 	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
-	
+
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_F_ORD_LESS_THAN, operands);
 
 	return result;
@@ -790,7 +790,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			hmput(index_map, o->op_var.var.index, result);
 			break;
 		}
-		default: 
+		default:
 			break;
 		}
 
@@ -896,7 +896,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			int indices[256];
 			uint16_t indices_size = o->op_store_member.member_indices_size;
 			for (size_t i = 0; i < indices_size; ++i) {
-				indices[i] = (int)o->op_store_member.member_indices[i];
+				check(!o->op_store_member.dynamic_member[i], context, "TODO");
+				indices[i] = (int)o->op_store_member.static_member_indices[i];
 			}
 
 			type_id access_kong_type = find_access_type(indices, indices_size, o->op_store_member.to.type.type);
@@ -988,8 +989,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		case OPCODE_IF: {
 			write_op_selection_merge(instructions, convert_kong_index_to_spirv_id(o->op_if.end_id), SELECTION_CONTROL_NONE);
 
-			write_op_branch_conditional(instructions, convert_kong_index_to_spirv_id(o->op_if.condition.index), convert_kong_index_to_spirv_id(o->op_if.start_id),
-			                            convert_kong_index_to_spirv_id(o->op_if.end_id));
+			write_op_branch_conditional(instructions, convert_kong_index_to_spirv_id(o->op_if.condition.index),
+			                            convert_kong_index_to_spirv_id(o->op_if.start_id), convert_kong_index_to_spirv_id(o->op_if.end_id));
 
 			break;
 		}
@@ -1000,7 +1001,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 			write_op_branch(instructions, while_start_label);
 			write_op_label_preallocated(instructions, while_start_label);
-			
+
 			write_op_loop_merge(instructions, while_end_label, while_continue_label, LOOP_CONTROL_NONE);
 
 			spirv_id loop_start_id = allocate_index();

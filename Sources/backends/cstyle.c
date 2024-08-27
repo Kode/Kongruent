@@ -50,8 +50,7 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		break;
 	case OPCODE_NOT:
 		indent(code, offset, *indentation);
-		*offset +=
-		    sprintf(&code[*offset], "%s _%" PRIu64 " = !_%" PRIu64 ";\n", type_string(o->op_not.to.type.type), o->op_not.to.index, o->op_not.from.index);
+		*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = !_%" PRIu64 ";\n", type_string(o->op_not.to.type.type), o->op_not.to.index, o->op_not.from.index);
 		break;
 	case OPCODE_STORE_VARIABLE:
 		indent(code, offset, *indentation);
@@ -84,15 +83,21 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		bool is_array = o->op_store_member.member_parent_array;
 		for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
 			if (is_array) {
-				*offset += sprintf(&code[*offset], "[%i]", o->op_store_member.member_indices[i]);
+				if (o->op_store_member.dynamic_member[i]) {
+					*offset += sprintf(&code[*offset], "[_% " PRIu64 "]", o->op_store_member.dynamic_member_indices[i].index);
+				}
+				else {
+					*offset += sprintf(&code[*offset], "[%i]", o->op_store_member.static_member_indices[i]);
+				}
 				is_array = false;
 			}
 			else {
 				debug_context context = {0};
-				check(o->op_store_member.member_indices[i] < s->members.size, context, "Member index out of bounds");
-				*offset += sprintf(&code[*offset], ".%s", member_string(s, s->members.m[o->op_store_member.member_indices[i]].name));
-				is_array = s->members.m[o->op_store_member.member_indices[i]].type.array_size > 0;
-				s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
+				check(!o->op_store_member.dynamic_member[i], context, "Unexpected dynamic member");
+				check(o->op_store_member.static_member_indices[i] < s->members.size, context, "Member index out of bounds");
+				*offset += sprintf(&code[*offset], ".%s", member_string(s, s->members.m[o->op_store_member.static_member_indices[i]].name));
+				is_array = s->members.m[o->op_store_member.static_member_indices[i]].type.array_size > 0;
+				s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
 			}
 		}
 		switch (o->type) {

@@ -365,8 +365,8 @@ static void write_functions(char *code, size_t *offset) {
 						    sprintf(&code[*offset], "_%" PRIu64 ": %s", parameter_ids[parameter_index], type_string(f->parameter_types[parameter_index].type));
 					}
 					else {
-						*offset +=
-						    sprintf(&code[*offset], ", _%" PRIu64 ": %s", parameter_ids[parameter_index], type_string(f->parameter_types[parameter_index].type));
+						*offset += sprintf(&code[*offset], ", _%" PRIu64 ": %s", parameter_ids[parameter_index],
+						                   type_string(f->parameter_types[parameter_index].type));
 					}
 				}
 				*offset += sprintf(&code[*offset], ") -> @location(0) %s {\n", type_string(f->return_type.type));
@@ -413,8 +413,8 @@ static void write_functions(char *code, size_t *offset) {
 				}
 
 				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64, o->op_load_member.to.index,
-				                   type_string(o->op_load_member.to.type.type), o->op_load_member.from.index);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64, o->op_load_member.to.index, type_string(o->op_load_member.to.type.type),
+				                   o->op_load_member.from.index);
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
 					*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
@@ -432,17 +432,21 @@ static void write_functions(char *code, size_t *offset) {
 					char *last_member_name = NULL;
 					for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
 						if (i == o->op_store_member.member_indices_size - 1) {
-							last_member_name = get_name(s->members.m[o->op_store_member.member_indices[i]].name);
+							if (!o->op_store_member.dynamic_member[i]) {
+								last_member_name = get_name(s->members.m[o->op_store_member.static_member_indices[i]].name);
+							}
 						}
 
-						type_id t = s->members.m[o->op_store_member.member_indices[i]].type.type;
-						s = get_type(t);
+						if (!o->op_store_member.dynamic_member[i]) {
+							type_id t = s->members.m[o->op_store_member.static_member_indices[i]].type.type;
+							s = get_type(t);
 
-						if (i == o->op_store_member.member_indices_size - 2) {
-							last_last_type = t;
-						}
-						else if (i == o->op_store_member.member_indices_size - 1) {
-							last_type = t;
+							if (i == o->op_store_member.member_indices_size - 2) {
+								last_last_type = t;
+							}
+							else if (i == o->op_store_member.member_indices_size - 1) {
+								last_type = t;
+							}
 						}
 					}
 
@@ -471,20 +475,26 @@ static void write_functions(char *code, size_t *offset) {
 								bool is_array = o->op_store_member.member_parent_array;
 								for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
 									if (is_array) {
-										*offset += sprintf(&code[*offset], "[%i]", o->op_store_member.member_indices[i]);
+										if (o->op_store_member.dynamic_member[i]) {
+											*offset += sprintf(&code[*offset], "[_%" PRIu64 "]", o->op_store_member.dynamic_member_indices[i].index);
+										}
+										else {
+											*offset += sprintf(&code[*offset], "[%i]", o->op_store_member.static_member_indices[i]);
+										}
 										is_array = false;
 									}
 									else {
 										debug_context context = {0};
-										check(o->op_store_member.member_indices[i] < s->members.size, context, "Member index out of bounds");
+										check(!o->op_store_member.dynamic_member[i], context, "Unexpected dynamic member");
+										check(o->op_store_member.static_member_indices[i] < s->members.size, context, "Member index out of bounds");
 										if (i == o->op_store_member.member_indices_size - 1) {
 											*offset += sprintf(&code[*offset], ".%c", last_member_name[element]);
 										}
 										else {
-											*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
+											*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.static_member_indices[i]].name));
 										}
-										is_array = s->members.m[o->op_store_member.member_indices[i]].type.array_size > 0;
-										s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
+										is_array = s->members.m[o->op_store_member.static_member_indices[i]].type.array_size > 0;
+										s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
 									}
 								}
 								*offset += sprintf(&code[*offset], " = _%" PRIu64 ".%c;\n", o->op_store_member.from.index, last_member_name[element]);
@@ -501,15 +511,21 @@ static void write_functions(char *code, size_t *offset) {
 				bool is_array = o->op_store_member.member_parent_array;
 				for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
 					if (is_array) {
-						*offset += sprintf(&code[*offset], "[%i]", o->op_store_member.member_indices[i]);
+						if (o->op_store_member.dynamic_member[i]) {
+							*offset += sprintf(&code[*offset], "[_%" PRIu64 "]", o->op_store_member.dynamic_member_indices[i].index);
+						}
+						else {
+							*offset += sprintf(&code[*offset], "[%i]", o->op_store_member.static_member_indices[i]);
+						}
 						is_array = false;
 					}
 					else {
 						debug_context context = {0};
-						check(o->op_store_member.member_indices[i] < s->members.size, context, "Member index out of bounds");
-						*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.member_indices[i]].name));
-						is_array = s->members.m[o->op_store_member.member_indices[i]].type.array_size > 0;
-						s = get_type(s->members.m[o->op_store_member.member_indices[i]].type.type);
+						check(!o->op_store_member.dynamic_member[i], context, "Unexpected dynamic member");
+						check(o->op_store_member.static_member_indices[i] < s->members.size, context, "Member index out of bounds");
+						*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.static_member_indices[i]].name));
+						is_array = s->members.m[o->op_store_member.static_member_indices[i]].type.array_size > 0;
+						s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
 					}
 				}
 				*offset += sprintf(&code[*offset], " = _%" PRIu64 ";\n", o->op_store_member.from.index);
