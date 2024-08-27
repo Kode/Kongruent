@@ -30,12 +30,13 @@ typedef struct global {
 	type_id type;
 	uint64_t var_index;
 	global_value value;
+	attribute_list attributes;
 } global;
 
 void globals_init(void);
 
-global_id add_global(type_id type, name_id name);
-global_id add_global_with_value(type_id type, name_id name, global_value value);
+global_id add_global(type_id type, attribute_list attributes, name_id name);
+global_id add_global_with_value(type_id type, attribute_list attributes, name_id name, global_value value);
 
 global find_global(name_id name);
 

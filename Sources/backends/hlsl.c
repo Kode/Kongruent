@@ -186,7 +186,12 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 			*offset += sprintf(&hlsl[*offset], "SamplerState _%" PRIu64 " : register(s%i);\n\n", g.var_index, register_index);
 		}
 		else if (g.type == tex2d_type_id) {
-			*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
+			if (has_attribute(&g.attributes, add_name("write"))) {
+				*offset += sprintf(&hlsl[*offset], "RWTexture2D<float4> _%" PRIu64 " : register(u%i);\n\n", g.var_index, register_index);
+			}
+			else {
+				*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
+			}
 		}
 		else if (g.type == texcube_type_id) {
 			*offset += sprintf(&hlsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
@@ -770,8 +775,9 @@ static void hlsl_export_all_ray_shaders(char *directory) {
 }
 
 void hlsl_export(char *directory, api_kind d3d) {
-	int cbuffer_index = 0;
-	int texture_index = 0;
+	int cbv_index = 0;
+	int srv_index = 0;
+	int uav_index = 0;
 	int sampler_index = 0;
 
 	memset(global_register_indices, 0, sizeof(global_register_indices));
@@ -782,15 +788,25 @@ void hlsl_export(char *directory, api_kind d3d) {
 			global_register_indices[i] = sampler_index;
 			sampler_index += 1;
 		}
-		else if (g.type == tex2d_type_id || g.type == texcube_type_id || g.type == bvh_type_id) {
-			global_register_indices[i] = texture_index;
-			texture_index += 1;
+		else if (g.type == tex2d_type_id) {
+			if (has_attribute(&g.attributes, add_name("write"))) {
+				global_register_indices[i] = uav_index;
+				uav_index += 1;
+			}
+			else {
+				global_register_indices[i] = srv_index;
+				srv_index += 1;
+			}
+		}
+		else if (g.type == texcube_type_id || g.type == bvh_type_id) {
+			global_register_indices[i] = srv_index;
+			srv_index += 1;
 		}
 		else if (g.type == float_id) {
 		}
 		else {
-			global_register_indices[i] = cbuffer_index;
-			cbuffer_index += 1;
+			global_register_indices[i] = cbv_index;
+			cbv_index += 1;
 		}
 	}
 

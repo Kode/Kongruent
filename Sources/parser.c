@@ -147,7 +147,7 @@ static void modifiers_add(modifiers_t *modifiers, modifier_t modifier) {
 
 static definition parse_struct(state_t *state);
 static definition parse_function(state_t *state);
-static definition parse_const(state_t *state);
+static definition parse_const(state_t *state, attribute_list attributes);
 
 static double attribute_parameter_to_number(name_id attribute_name, name_id parameter_name) {
 	debug_context context = {0};
@@ -223,7 +223,7 @@ static definition parse_definition(state_t *state) {
 		return d;
 	}
 	case TOKEN_CONST: {
-		definition d = parse_const(state);
+		definition d = parse_const(state, attributes);
 		return d;
 	}
 	default: {
@@ -1053,7 +1053,7 @@ static definition parse_function(state_t *state) {
 	return d;
 }
 
-static definition parse_const(state_t *state) {
+static definition parse_const(state_t *state, attribute_list attributes) {
 	advance_state(state);
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 
@@ -1089,23 +1089,23 @@ static definition parse_const(state_t *state) {
 		debug_context context = {0};
 		check(type != NO_TYPE, context, "Const has no type");
 		d.kind = DEFINITION_CONST_CUSTOM;
-		d.global = add_global(type, name.identifier);
+		d.global = add_global(type, attributes, name.identifier);
 	}
 	else if (type_name == add_name("tex2d")) {
 		d.kind = DEFINITION_TEX2D;
-		d.global = add_global(tex2d_type_id, name.identifier);
+		d.global = add_global(tex2d_type_id, attributes, name.identifier);
 	}
 	else if (type_name == add_name("texcube")) {
 		d.kind = DEFINITION_TEXCUBE;
-		d.global = add_global(texcube_type_id, name.identifier);
+		d.global = add_global(texcube_type_id, attributes, name.identifier);
 	}
 	else if (type_name == add_name("sampler")) {
 		d.kind = DEFINITION_SAMPLER;
-		d.global = add_global(sampler_type_id, name.identifier);
+		d.global = add_global(sampler_type_id, attributes, name.identifier);
 	}
 	else if (type_name == add_name("bvh")) {
 		d.kind = DEFINITION_BVH;
-		d.global = add_global(bvh_type_id, name.identifier);
+		d.global = add_global(bvh_type_id, attributes, name.identifier);
 	}
 	else if (type_name == add_name("float")) {
 		debug_context context = {0};
@@ -1118,7 +1118,7 @@ static definition parse_const(state_t *state) {
 		float_value.value.floats[0] = (float)value->number;
 
 		d.kind = DEFINITION_CONST_BASIC;
-		d.global = add_global_with_value(float_id, name.identifier, float_value);
+		d.global = add_global_with_value(float_id, attributes, name.identifier, float_value);
 	}
 	else if (type_name == add_name("float2")) {
 		debug_context context = {0};
@@ -1136,7 +1136,7 @@ static definition parse_const(state_t *state) {
 		}
 
 		d.kind = DEFINITION_CONST_BASIC;
-		d.global = add_global_with_value(float2_id, name.identifier, float2_value);
+		d.global = add_global_with_value(float2_id, attributes, name.identifier, float2_value);
 	}
 	else if (type_name == add_name("float3")) {
 		debug_context context = {0};
@@ -1154,7 +1154,7 @@ static definition parse_const(state_t *state) {
 		}
 
 		d.kind = DEFINITION_CONST_BASIC;
-		d.global = add_global_with_value(float3_id, name.identifier, float3_value);
+		d.global = add_global_with_value(float3_id, attributes, name.identifier, float3_value);
 	}
 	else if (type_name == add_name("float4")) {
 		debug_context context = {0};
@@ -1172,7 +1172,7 @@ static definition parse_const(state_t *state) {
 		}
 
 		d.kind = DEFINITION_CONST_BASIC;
-		d.global = add_global_with_value(float4_id, name.identifier, float4_value);
+		d.global = add_global_with_value(float4_id, attributes, name.identifier, float4_value);
 	}
 	else {
 		debug_context context = {0};
