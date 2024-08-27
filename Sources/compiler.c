@@ -122,7 +122,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		case OPERATOR_GREATER_EQUAL:
 		case OPERATOR_LESS:
 		case OPERATOR_LESS_EQUAL:
-		case OPERATOR_AND: 
+		case OPERATOR_AND:
 		case OPERATOR_OR: {
 			variable right_var = emit_expression(code, parent, right);
 			variable left_var = emit_expression(code, parent, left);
@@ -250,7 +250,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				emit_op(code, &o);
 				break;
 			}
-			case EXPRESSION_MEMBER: {
+			case EXPRESSION_STATIC_MEMBER: {
 				variable member_var = emit_expression(code, parent, left->member.left);
 
 				opcode o;
@@ -287,7 +287,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				o.op_store_member.member_parent_type = prev_struct;
 				o.op_store_member.member_parent_array = left->member.left->type.array_size > 0;
 
-				while (right->kind == EXPRESSION_MEMBER) {
+				while (right->kind == EXPRESSION_STATIC_MEMBER) {
 					debug_context context = {0};
 					check(right->type.type != NO_TYPE, context, "Part of the member does not have a type");
 
@@ -459,7 +459,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 		return v;
 	}
-	case EXPRESSION_MEMBER: {
+	case EXPRESSION_STATIC_MEMBER: {
 		variable v = allocate_variable(e->type, VARIABLE_LOCAL);
 
 		opcode o;
@@ -483,7 +483,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		type *prev_s = get_type(prev_struct);
 		o.op_load_member.member_parent_type = prev_struct;
 
-		while (right->kind == EXPRESSION_MEMBER) {
+		while (right->kind == EXPRESSION_STATIC_MEMBER) {
 			check(right->type.type != NO_TYPE, context, "Malformed member construct");
 			check(right->member.left->kind == EXPRESSION_VARIABLE, context, "Malformed member construct");
 
@@ -629,7 +629,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 
 			if (statement->iffy.else_tests[i] != NULL) {
 				variable v = emit_expression(code, parent, statement->iffy.else_tests[i]);
-				
+
 				variable else_test;
 				{
 					opcode o;
@@ -663,7 +663,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 				written_opcode->op_if.end_id = ids.end;
 			}
 		}
-		
+
 		break;
 	}
 	case STATEMENT_WHILE: {

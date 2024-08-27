@@ -93,19 +93,30 @@ type_ref resolve_member_var_type(statement *parent_block, type_ref parent_type, 
 }
 
 void resolve_member_type(statement *parent_block, type_ref parent_type, expression *e) {
-	if (e->kind == EXPRESSION_VARIABLE) {
-		resolve_member_var_type(parent_block, parent_type, e);
-		return;
-	}
-
 	debug_context context = {0};
-	check(e->kind == EXPRESSION_MEMBER, context, "Malformed member");
+	check(e->kind == EXPRESSION_STATIC_MEMBER || e->kind == EXPRESSION_DYNAMIC_MEMBER, context, "Malformed member");
 
 	type_ref t = resolve_member_var_type(parent_block, parent_type, e->member.left);
 
-	resolve_member_type(parent_block, t, e->member.right);
-
-	e->type = e->member.right->type;
+	if (e->kind == EXPRESSION_STATIC_MEMBER && e->member.right->kind == EXPRESSION_VARIABLE) {
+		resolve_member_var_type(parent_block, t, e->member.right);
+		e->type = e->member.right->type;
+	}
+	else if (e->kind == EXPRESSION_DYNAMIC_MEMBER) {
+		resolve_types_in_expression(parent_block, e->member.right);
+		if (e->member.left->type.type == tex2d_type_id) {
+			init_type_ref(&e->type, NO_NAME);
+			e->type.type = float4_id;
+		}
+		else {
+			e->type = e->member.left->type;
+			e->type.array_size = 0;
+		}
+	}
+	else {
+		resolve_member_type(parent_block, t, e->member.right);
+		e->type = e->member.right->type;
+	}
 }
 
 static bool types_compatible(type_id left, type_id right) {
@@ -386,7 +397,8 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		}
 		break;
 	}
-	case EXPRESSION_MEMBER: {
+	case EXPRESSION_STATIC_MEMBER:
+	case EXPRESSION_DYNAMIC_MEMBER: {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
 		resolve_member_type(parent, t, e);
@@ -785,14 +797,14 @@ int main(int argc, char **argv) {
 #include <Windows.h>
 #endif
 
-void execute_sync(const char* command) {
+void execute_sync(const char *command) {
 #ifdef _WIN32
 	STARTUPINFOA startupInfo;
 	PROCESS_INFORMATION processInfo;
 	memset(&startupInfo, 0, sizeof(startupInfo));
 	memset(&processInfo, 0, sizeof(processInfo));
 	startupInfo.cb = sizeof(startupInfo);
-	CreateProcessA(NULL, (char*)command, NULL, NULL, FALSE, CREATE_DEFAULT_ERROR_MODE, "PATH=%PATH%;.\\cygwin\\bin\0", NULL, &startupInfo, &processInfo);
+	CreateProcessA(NULL, (char *)command, NULL, NULL, FALSE, CREATE_DEFAULT_ERROR_MODE, "PATH=%PATH%;.\\cygwin\\bin\0", NULL, &startupInfo, &processInfo);
 	WaitForSingleObject(processInfo.hProcess, INFINITE);
 	CloseHandle(processInfo.hProcess);
 	CloseHandle(processInfo.hThread);

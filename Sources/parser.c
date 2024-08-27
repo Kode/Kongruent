@@ -170,13 +170,14 @@ static definition parse_definition(state_t *state) {
 			current_attribute.name = current(state).identifier;
 
 			advance_state(state);
-			
+
 			if (current(state).kind == TOKEN_LEFT_PAREN) {
 				advance_state(state);
 
 				while (current(state).kind != TOKEN_RIGHT_PAREN) {
 					if (current(state).kind == TOKEN_IDENTIFIER) {
-						current_attribute.parameters[current_attribute.paramters_count] = attribute_parameter_to_number(current_attribute.name, current(state).identifier);
+						current_attribute.parameters[current_attribute.paramters_count] =
+						    attribute_parameter_to_number(current_attribute.name, current(state).identifier);
 						current_attribute.paramters_count += 1;
 						advance_state(state);
 					}
@@ -190,7 +191,7 @@ static definition parse_definition(state_t *state) {
 						error(context, "Expected an identifier or a number");
 					}
 
-					if (current(state).kind != TOKEN_RIGHT_PAREN){
+					if (current(state).kind != TOKEN_RIGHT_PAREN) {
 						match_token(state, TOKEN_COMMA, "Expected a comma");
 						advance_state(state);
 					}
@@ -314,7 +315,7 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		advance_state(state);
 
 		statement *while_block = parse_statement(state, parent_block);
-		
+
 		statement *s = statement_allocate();
 		s->kind = STATEMENT_WHILE;
 		s->whiley.test = test;
@@ -324,9 +325,9 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 	}
 	case TOKEN_DO: {
 		advance_state(state);
-		
+
 		statement *do_block = parse_statement(state, parent_block);
-		
+
 		statement *s = statement_allocate();
 		s->kind = STATEMENT_DO_WHILE;
 		s->whiley.while_block = do_block;
@@ -464,7 +465,8 @@ static expression *parse_assign(state_t *state) {
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
-			if (op == OPERATOR_ASSIGN || op == OPERATOR_MINUS_ASSIGN || op == OPERATOR_PLUS_ASSIGN || op == OPERATOR_DIVIDE_ASSIGN || op == OPERATOR_MULTIPLY_ASSIGN) {
+			if (op == OPERATOR_ASSIGN || op == OPERATOR_MINUS_ASSIGN || op == OPERATOR_PLUS_ASSIGN || op == OPERATOR_DIVIDE_ASSIGN ||
+			    op == OPERATOR_MULTIPLY_ASSIGN) {
 				advance_state(state);
 				expression *right = parse_logical(state);
 				expression *expression = expression_allocate();
@@ -659,8 +661,8 @@ static expression *parse_unary(state_t *state) {
 
 static expression *parse_call(state_t *state, name_id func_name);
 
-static expression *parse_member(state_t *state, bool number) {
-	if (current(state).kind == TOKEN_IDENTIFIER && !number) {
+static expression *parse_member(state_t *state, bool square) {
+	if (current(state).kind == TOKEN_IDENTIFIER && !square) {
 		token token = current(state);
 		advance_state(state);
 
@@ -668,7 +670,7 @@ static expression *parse_member(state_t *state, bool number) {
 			return parse_call(state, token.identifier);
 		}
 		else if (current(state).kind == TOKEN_DOT || current(state).kind == TOKEN_LEFT_SQUARE) {
-			bool number = current(state).kind == TOKEN_LEFT_SQUARE;
+			bool square = current(state).kind == TOKEN_LEFT_SQUARE;
 
 			advance_state(state);
 
@@ -677,9 +679,9 @@ static expression *parse_member(state_t *state, bool number) {
 			var->variable = token.identifier;
 
 			expression *member = expression_allocate();
-			member->kind = EXPRESSION_MEMBER;
+			member->kind = EXPRESSION_STATIC_MEMBER;
 			member->member.left = var;
-			member->member.right = parse_member(state, number);
+			member->member.right = parse_member(state, square);
 
 			return member;
 		}
@@ -690,14 +692,14 @@ static expression *parse_member(state_t *state, bool number) {
 			return var;
 		}
 	}
-	else if (current(state).kind == TOKEN_NUMBER && number) {
+	else if (current(state).kind == TOKEN_NUMBER && square) {
 		uint32_t index = (uint32_t)current(state).number;
 		advance_state(state);
 		match_token(state, TOKEN_RIGHT_SQUARE, "Expected a closing square bracket");
 		advance_state(state);
 
 		if (current(state).kind == TOKEN_DOT || current(state).kind == TOKEN_LEFT_SQUARE) {
-			bool number = current(state).kind == TOKEN_LEFT_SQUARE;
+			bool square = current(state).kind == TOKEN_LEFT_SQUARE;
 
 			advance_state(state);
 
@@ -706,9 +708,9 @@ static expression *parse_member(state_t *state, bool number) {
 			var->index = index;
 
 			expression *member = expression_allocate();
-			member->kind = EXPRESSION_MEMBER;
+			member->kind = EXPRESSION_STATIC_MEMBER;
 			member->member.left = var;
-			member->member.right = parse_member(state, number);
+			member->member.right = parse_member(state, square);
 
 			return member;
 		}
@@ -717,6 +719,27 @@ static expression *parse_member(state_t *state, bool number) {
 			var->kind = EXPRESSION_INDEX;
 			var->index = index;
 			return var;
+		}
+	}
+	else if (square) {
+		expression *index = parse_expression(state);
+		match_token(state, TOKEN_RIGHT_SQUARE, "Expected a closing square bracket");
+		advance_state(state);
+
+		if (current(state).kind == TOKEN_DOT || current(state).kind == TOKEN_LEFT_SQUARE) {
+			bool square = current(state).kind == TOKEN_LEFT_SQUARE;
+
+			advance_state(state);
+
+			expression *member = expression_allocate();
+			member->kind = EXPRESSION_DYNAMIC_MEMBER;
+			member->member.left = index;
+			member->member.right = parse_member(state, square);
+
+			return member;
+		}
+		else {
+			return index;
 		}
 	}
 	else {
@@ -783,13 +806,16 @@ static expression *parse_primary(state_t *state) {
 	}
 
 	if (current(state).kind == TOKEN_DOT || current(state).kind == TOKEN_LEFT_SQUARE) {
-		bool number = current(state).kind == TOKEN_LEFT_SQUARE;
+		bool square = current(state).kind == TOKEN_LEFT_SQUARE;
 
 		advance_state(state);
-		expression *right = parse_member(state, number);
+
+		bool dynamic = square && current(state).kind != TOKEN_NUMBER;
+
+		expression *right = parse_member(state, square);
 
 		expression *member = expression_allocate();
-		member->kind = EXPRESSION_MEMBER;
+		member->kind = dynamic ? EXPRESSION_DYNAMIC_MEMBER : EXPRESSION_STATIC_MEMBER;
 		member->member.left = left;
 		member->member.right = right;
 
@@ -841,12 +867,17 @@ static expression *parse_call(state_t *state, name_id func_name) {
 	call->call.func_name = func_name;
 	call->call.parameters = parse_parameters(state);
 
-	if (current(state).kind == TOKEN_DOT) {
+	if (current(state).kind == TOKEN_DOT || current(state).kind == TOKEN_LEFT_SQUARE) {
+		bool square = current(state).kind == TOKEN_LEFT_SQUARE;
+
 		advance_state(state);
-		expression *right = parse_expression(state);
+
+		bool dynamic = square && current(state).kind == TOKEN_NUMBER;
+
+		expression *right = parse_member(state, square);
 
 		expression *member = expression_allocate();
-		member->kind = EXPRESSION_MEMBER;
+		member->kind = dynamic ? EXPRESSION_DYNAMIC_MEMBER : EXPRESSION_STATIC_MEMBER;
 		member->member.left = call;
 		member->member.right = right;
 
@@ -1006,7 +1037,7 @@ static definition parse_function(state_t *state) {
 	type_ref return_type = parse_type_ref(state);
 
 	statement *block = parse_block(state, NULL);
-	
+
 	definition d;
 	d.kind = DEFINITION_FUNCTION;
 	d.function = add_function(name.identifier);
