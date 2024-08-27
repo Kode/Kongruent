@@ -72,6 +72,14 @@ void find_referenced_globals(function *f, global_id *globals, size_t *globals_si
 				find_referenced_global_for_var(o->op_load_member.from, globals, globals_size);
 				break;
 			}
+			case OPCODE_STORE_MEMBER:
+			case OPCODE_SUB_AND_STORE_MEMBER:
+			case OPCODE_ADD_AND_STORE_MEMBER:
+			case OPCODE_DIVIDE_AND_STORE_MEMBER:
+			case OPCODE_MULTIPLY_AND_STORE_MEMBER: {
+				find_referenced_global_for_var(o->op_store_member.to, globals, globals_size);
+				break;
+			}
 			case OPCODE_CALL: {
 				for (uint8_t i = 0; i < o->op_call.parameters_size; ++i) {
 					find_referenced_global_for_var(o->op_call.parameters[i], globals, globals_size);
