@@ -153,6 +153,12 @@ static double attribute_parameter_to_number(name_id attribute_name, name_id para
 	if (attribute_name == add_name("topology") && parameter_name == add_name("triangle")) {
 		return 0;
 	}
+
+	type_id type = find_type_by_name(parameter_name);
+	if (type != NO_TYPE) {
+		return (double)type;
+	}
+
 	debug_context context = {0};
 	error(context, "Unknown attribute parameter %s", get_name(parameter_name));
 	return 0;
@@ -875,7 +881,7 @@ static expression *parse_call(state_t *state, name_id func_name) {
 
 		advance_state(state);
 
-		bool dynamic = square && current(state).kind == TOKEN_NUMBER;
+		bool dynamic = square && current(state).kind != TOKEN_NUMBER;
 
 		expression *right = parse_member(state, square);
 

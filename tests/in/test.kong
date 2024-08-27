@@ -101,19 +101,28 @@ struct RayPipe {
     closest = closesthit;
 }*/
 
-struct VertexIn {
-    position: float3;
-}
-
 struct FragmentIn {
     position: float4;
 }
 
-//fun amplify(): void {}
+struct payloadStruct { 
+    myArbitraryData: uint; 
+}
 
-#[topology(triangle), threads(32, 1, 1)]
+#[threads(32, 1, 1)]
+fun amplify(): void {
+    var p: payloadStruct;
+    p.myArbitraryData = group_id().z;
+    dispatch_mesh(1, 1, 1, p);
+}
+
+#[topology(triangle), tris(128), vertices(128, FragmentIn), threads(32, 1, 1)]
 fun meshy(): void {
-    
+    set_mesh_output_counts(10, 11);
+    set_mesh_triangle(group_thread_id().x, uint3(0, 0, 0));
+    var vertex_out: FragmentIn;
+    vertex_out.position = float4(1.0, 0.0, 0.0, 1.0);
+    set_mesh_vertex(group_thread_id().x, vertex_out);
 }
 
 fun pixel(input: FragmentIn): float4 {
@@ -131,7 +140,7 @@ fun pixel(input: FragmentIn): float4 {
 
 #[pipe]
 struct Pipe {
-    //prim = amplify;
+    amplification = amplify;
     mesh = meshy;
     fragment = pixel;
 }

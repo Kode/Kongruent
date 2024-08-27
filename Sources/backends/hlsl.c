@@ -145,6 +145,17 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 					}
 				}
 			}
+			else if (stage == SHADER_STAGE_MESH && types[i] == output) {
+				for (size_t j = 0; j < t->members.size; ++j) {
+					if (j == 0) {
+						*offset += sprintf(&hlsl[*offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+					}
+					else {
+						*offset +=
+						    sprintf(&hlsl[*offset], "\t%s %s : TEXCOORD%zu;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name), j - 1);
+					}
+				}
+			}
 			else if (stage == SHADER_STAGE_FRAGMENT && types[i] == input) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (j == 0) {
@@ -416,6 +427,21 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					error(context, "Mesh function requires a threads attribute with three parameters");
 				}
 
+				attribute *tris_attribute = find_attribute(&f->attributes, add_name("tris"));
+				if (tris_attribute == NULL || tris_attribute->paramters_count != 1) {
+					debug_context context = {0};
+					error(context, "Mesh function requires a tris attribute with one parameter");
+				}
+
+				attribute *vertices_attribute = find_attribute(&f->attributes, add_name("vertices"));
+				if (vertices_attribute == NULL || vertices_attribute->paramters_count != 2) {
+					debug_context context = {0};
+					error(context, "Mesh function requires a vertices attribute with two parameters");
+				}
+
+				type_id vertex_type = (type_id)vertices_attribute->parameters[1];
+				char *vertex_name = get_name(get_type(vertex_type)->name);
+
 				*offset += sprintf(&hlsl[*offset], "[outputtopology(\"triangle\")][numthreads(%i, %i, %i)] %s main(", (int)threads_attribute->parameters[0],
 				                   (int)threads_attribute->parameters[1], (int)threads_attribute->parameters[2], type_string(f->return_type.type));
 				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
@@ -431,8 +457,12 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				if (f->parameters_size > 0) {
 					*offset += sprintf(&hlsl[*offset], ", ");
 				}
-				*offset += sprintf(&hlsl[*offset], "in uint3 _kong_group_id : SV_GroupID, in uint3 _kong_group_thread_id : SV_GroupThreadID, in uint3 "
-				                                   "_kong_dispatch_thread_id : SV_DispatchThreadID, in uint _kong_group_index : SV_GroupIndex) {\n");
+				*offset +=
+				    sprintf(&hlsl[*offset],
+				            "out indices uint3 _kong_mesh_tris[%i], out vertices %s _kong_mesh_vertices[%i], in uint3 _kong_group_id : SV_GroupID, in uint3 "
+				            "_kong_group_thread_id : SV_GroupThreadID, in uint3 "
+				            "_kong_dispatch_thread_id : SV_DispatchThreadID, in uint _kong_group_index : SV_GroupIndex) {\n",
+				            (int)tris_attribute->parameters[0], vertex_name, (int)vertices_attribute->parameters[0]);
 			}
 			else {
 				debug_context context = {0};
@@ -636,6 +666,21 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					    sprintf(&hlsl[*offset], "DispatchMesh(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n", o->op_call.parameters[0].index,
 					            o->op_call.parameters[1].index, o->op_call.parameters[2].index, o->op_call.parameters[3].index);
 				}
+				else if (o->op_call.func == add_name("set_mesh_output_counts")) {
+					check(o->op_call.parameters_size == 2, context, "set_mesh_output_counts requires two parameters");
+					*offset += sprintf(&hlsl[*offset], "SetMeshOutputCounts(_%" PRIu64 ", _%" PRIu64 ");\n", o->op_call.parameters[0].index,
+					                   o->op_call.parameters[1].index);
+				}
+				else if (o->op_call.func == add_name("set_mesh_triangle")) {
+					check(o->op_call.parameters_size == 2, context, "set_mesh_triangle requires two parameters");
+					*offset += sprintf(&hlsl[*offset], "_kong_mesh_tris[_%" PRIu64 "] = _%" PRIu64 ";\n", o->op_call.parameters[0].index,
+					                   o->op_call.parameters[1].index);
+				}
+				else if (o->op_call.func == add_name("set_mesh_vertex")) {
+					check(o->op_call.parameters_size == 2, context, "set_mesh_vertex requires two parameters");
+					*offset += sprintf(&hlsl[*offset], "_kong_mesh_vertices[_%" PRIu64 "] = _%" PRIu64 ";\n", o->op_call.parameters[0].index,
+					                   o->op_call.parameters[1].index);
+				}
 				else {
 					if (o->op_call.var.type.type == void_id) {
 						*offset += sprintf(&hlsl[*offset], "%s(", function_string(o->op_call.func));
@@ -745,7 +790,14 @@ static void hlsl_export_mesh(char *directory, function *main) {
 	char *hlsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
-	write_types(hlsl, &offset, SHADER_STAGE_MESH, NO_TYPE, NO_TYPE, main, NULL, 0);
+	attribute *vertices_attribute = find_attribute(&main->attributes, add_name("vertices"));
+	if (vertices_attribute == NULL || vertices_attribute->paramters_count != 2) {
+		debug_context context = {0};
+		error(context, "Mesh function requires a vertices attribute with two parameters");
+	}
+	type_id vertex_output = (type_id)vertices_attribute->parameters[1];
+
+	write_types(hlsl, &offset, SHADER_STAGE_MESH, NO_TYPE, vertex_output, main, NULL, 0);
 
 	write_globals(hlsl, &offset, main, NULL, 0);
 
