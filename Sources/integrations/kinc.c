@@ -13,51 +13,6 @@
 #include <stdio.h>
 #include <string.h>
 
-static void find_referenced_functions(function *f, function **functions, size_t *functions_size) {
-	if (f->block == NULL) {
-		// built-in
-		return;
-	}
-
-	uint8_t *data = f->code.o;
-	size_t size = f->code.size;
-
-	size_t index = 0;
-	while (index < size) {
-		opcode *o = (opcode *)&data[index];
-		switch (o->type) {
-		case OPCODE_CALL: {
-			for (function_id i = 0; get_function(i) != NULL; ++i) {
-				function *f = get_function(i);
-				if (f->name == o->op_call.func) {
-					if (f->block == NULL) {
-						// built-in
-						break;
-					}
-
-					bool found = false;
-					for (size_t j = 0; j < *functions_size; ++j) {
-						if (functions[j]->name == o->op_call.func) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) {
-						functions[*functions_size] = f;
-						*functions_size += 1;
-						find_referenced_functions(f, functions, functions_size);
-					}
-					break;
-				}
-			}
-			break;
-		}
-		}
-
-		index += o->size;
-	}
-}
-
 static char *type_string(type_id type) {
 	if (type == float_id) {
 		return "float";
