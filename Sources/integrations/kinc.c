@@ -187,6 +187,7 @@ void kinc_export(char *directory, api_kind api) {
 		type *t = get_type(i);
 		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 			name_id vertex_shader_name = NO_NAME;
+			name_id mesh_shader_name = NO_NAME;
 
 			for (size_t j = 0; j < t->members.size; ++j) {
 				if (t->members.m[j].name == add_name("vertex")) {
@@ -194,26 +195,34 @@ void kinc_export(char *directory, api_kind api) {
 					check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "vertex expects an identifier");
 					vertex_shader_name = t->members.m[j].value.identifier;
 				}
-			}
-
-			debug_context context = {0};
-			check(vertex_shader_name != NO_NAME, context, "No vertex shader name found");
-
-			type_id vertex_input = NO_TYPE;
-
-			for (function_id i = 0; get_function(i) != NULL; ++i) {
-				function *f = get_function(i);
-				if (f->name == vertex_shader_name) {
-					check(f->parameters_size > 0, context, "Vertex function requires at least one parameter");
-					vertex_input = f->parameter_types[0].type;
-					break;
+				if (t->members.m[j].name == add_name("mesh")) {
+					debug_context context = {0};
+					check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "mesh expects an identifier");
+					mesh_shader_name = t->members.m[j].value.identifier;
 				}
 			}
 
-			check(vertex_input != NO_TYPE, context, "No vertex input found");
+			debug_context context = {0};
+			check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "No vertex or mesh shader name found");
 
-			vertex_inputs[vertex_inputs_size] = vertex_input;
-			vertex_inputs_size += 1;
+			if (vertex_shader_name != NO_NAME) {
+
+				type_id vertex_input = NO_TYPE;
+
+				for (function_id i = 0; get_function(i) != NULL; ++i) {
+					function *f = get_function(i);
+					if (f->name == vertex_shader_name) {
+						check(f->parameters_size > 0, context, "Vertex function requires at least one parameter");
+						vertex_input = f->parameter_types[0].type;
+						break;
+					}
+				}
+
+				check(vertex_input != NO_TYPE, context, "No vertex input found");
+
+				vertex_inputs[vertex_inputs_size] = vertex_input;
+				vertex_inputs_size += 1;
+			}
 		}
 	}
 
@@ -454,6 +463,7 @@ void kinc_export(char *directory, api_kind api) {
 				fprintf(output, "\tkinc_g4_pipeline_init(&%s);\n\n", get_name(t->name));
 
 				name_id vertex_shader_name = NO_NAME;
+				name_id mesh_shader_name = NO_NAME;
 				name_id fragment_shader_name = NO_NAME;
 
 				for (size_t j = 0; j < t->members.size; ++j) {
@@ -469,6 +479,9 @@ void kinc_export(char *directory, api_kind api) {
 						}
 						fprintf(output, "\t%s.vertex_shader = &%s;\n\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
 						vertex_shader_name = t->members.m[j].value.identifier;
+					}
+					if (t->members.m[j].name == add_name("mesh")) {
+						mesh_shader_name = t->members.m[j].value.identifier;
 					}
 					else if (t->members.m[j].name == add_name("fragment")) {
 						if (api == API_METAL || api == API_WEBGPU) {
@@ -538,7 +551,7 @@ void kinc_export(char *directory, api_kind api) {
 
 				{
 					debug_context context = {0};
-					check(vertex_shader_name != NO_NAME, context, "No vertex shader name found");
+					check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "No vertex or mesh shader name found");
 					check(fragment_shader_name != NO_NAME, context, "No fragment shader name found");
 				}
 
@@ -547,14 +560,16 @@ void kinc_export(char *directory, api_kind api) {
 
 				type_id vertex_input = NO_TYPE;
 
-				for (function_id i = 0; get_function(i) != NULL; ++i) {
-					function *f = get_function(i);
-					if (f->name == vertex_shader_name) {
-						vertex_function = f;
-						debug_context context = {0};
-						check(f->parameters_size > 0, context, "Vertex function requires at least one parameter");
-						vertex_input = f->parameter_types[0].type;
-						break;
+				if (vertex_shader_name != NO_NAME) {
+					for (function_id i = 0; get_function(i) != NULL; ++i) {
+						function *f = get_function(i);
+						if (f->name == vertex_shader_name) {
+							vertex_function = f;
+							debug_context context = {0};
+							check(f->parameters_size > 0, context, "Vertex function requires at least one parameter");
+							vertex_input = f->parameter_types[0].type;
+							break;
+						}
 					}
 				}
 
@@ -568,31 +583,33 @@ void kinc_export(char *directory, api_kind api) {
 
 				{
 					debug_context context = {0};
-					check(vertex_function != NULL, context, "Vertex function not found");
+					check(vertex_shader_name == NO_NAME || vertex_function != NULL, context, "Vertex function not found");
 					check(fragment_function != NULL, context, "Fragment function not found");
-					check(vertex_input != NO_TYPE, context, "No vertex input found");
+					check(vertex_function == NULL || vertex_input != NO_TYPE, context, "No vertex input found");
 				}
 
-				for (type_id i = 0; get_type(i) != NULL; ++i) {
-					if (i == vertex_input) {
-						type *t = get_type(i);
-						fprintf(output, "\tkinc_g4_vertex_structure_init(&%s_structure);\n", get_name(t->name));
-						for (size_t j = 0; j < t->members.size; ++j) {
-							if (api == API_OPENGL) {
-								fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s_%s\", %s);\n", get_name(t->name), get_name(t->name),
-								        get_name(t->members.m[j].name), structure_type(t->members.m[j].type.type));
+				if (vertex_function != NULL) {
+					for (type_id i = 0; get_type(i) != NULL; ++i) {
+						if (i == vertex_input) {
+							type *t = get_type(i);
+							fprintf(output, "\tkinc_g4_vertex_structure_init(&%s_structure);\n", get_name(t->name));
+							for (size_t j = 0; j < t->members.size; ++j) {
+								if (api == API_OPENGL) {
+									fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s_%s\", %s);\n", get_name(t->name), get_name(t->name),
+									        get_name(t->members.m[j].name), structure_type(t->members.m[j].type.type));
+								}
+								else {
+									fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s\", %s);\n", get_name(t->name),
+									        get_name(t->members.m[j].name), structure_type(t->members.m[j].type.type));
+								}
 							}
-							else {
-								fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s\", %s);\n", get_name(t->name),
-								        get_name(t->members.m[j].name), structure_type(t->members.m[j].type.type));
-							}
+							fprintf(output, "\n");
 						}
-						fprintf(output, "\n");
 					}
-				}
 
-				fprintf(output, "\t%s.input_layout[0] = &%s_structure;\n", get_name(t->name), get_name(get_type(vertex_input)->name));
-				fprintf(output, "\t%s.input_layout[1] = NULL;\n\n", get_name(t->name));
+					fprintf(output, "\t%s.input_layout[0] = &%s_structure;\n", get_name(t->name), get_name(get_type(vertex_input)->name));
+					fprintf(output, "\t%s.input_layout[1] = NULL;\n\n", get_name(t->name));
+				}
 
 				if (fragment_function->return_type.array_size > 0) {
 					fprintf(output, "\t%s.color_attachment_count = %i;\n", get_name(t->name), fragment_function->return_type.array_size);

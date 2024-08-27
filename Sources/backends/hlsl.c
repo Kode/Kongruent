@@ -374,6 +374,33 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				}
 				*offset += sprintf(&hlsl[*offset], ") {\n");
 			}
+			else if (stage == SHADER_STAGE_MESH) {
+				attribute *topology_attribute = find_attribute(&f->attributes, add_name("topology"));
+				if (topology_attribute == NULL || topology_attribute->paramters_count != 1 || topology_attribute->parameters[0] != 0) {
+					debug_context context = {0};
+					error(context, "Mesh function requires a threads attribute with one parameter which has to be \"triangle\"");
+				}
+
+				attribute *threads_attribute = find_attribute(&f->attributes, add_name("threads"));
+				if (threads_attribute == NULL || threads_attribute->paramters_count != 3) {
+					debug_context context = {0};
+					error(context, "Mesh function requires a threads attribute with three parameters");
+				}
+
+				*offset += sprintf(&hlsl[*offset], "[outputtopology(\"triangle\")][numthreads(%i, %i, %i)] %s main(", (int)threads_attribute->parameters[0],
+				                   (int)threads_attribute->parameters[1], (int)threads_attribute->parameters[2], type_string(f->return_type.type));
+				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+					if (parameter_index == 0) {
+						*offset +=
+						    sprintf(&hlsl[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+					}
+					else {
+						*offset +=
+						    sprintf(&hlsl[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+					}
+				}
+				*offset += sprintf(&hlsl[*offset], ") {\n");
+			}
 			else {
 				debug_context context = {0};
 				error(context, "Unsupported shader stage");
@@ -645,6 +672,34 @@ static void hlsl_export_vertex(char *directory, api_kind d3d, function *main) {
 	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
 }
 
+static void hlsl_export_mesh(char *directory, function *main) {
+	char *hlsl = (char *)calloc(1024 * 1024, 1);
+	size_t offset = 0;
+
+	write_types(hlsl, &offset, SHADER_STAGE_MESH, NO_TYPE, NO_TYPE, main, NULL, 0);
+
+	write_globals(hlsl, &offset, main, NULL, 0);
+
+	write_functions(hlsl, &offset, SHADER_STAGE_MESH, main, NULL, 0);
+
+	char *output = NULL;
+	size_t output_size = 0;
+	int result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_MESH, false);
+
+	debug_context context = {0};
+	check(result == 0, context, "HLSL compilation failed");
+
+	char *name = get_name(main->name);
+
+	char filename[512];
+	sprintf(filename, "kong_%s", name);
+
+	char var_name[256];
+	sprintf(var_name, "%s_code", name);
+
+	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
+}
+
 static void hlsl_export_fragment(char *directory, api_kind d3d, function *main) {
 	char *hlsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
@@ -813,6 +868,9 @@ void hlsl_export(char *directory, api_kind d3d) {
 	function *vertex_shaders[256];
 	size_t vertex_shaders_size = 0;
 
+	function *mesh_shaders[256];
+	size_t mesh_shaders_size = 0;
+
 	function *fragment_shaders[256];
 	size_t fragment_shaders_size = 0;
 
@@ -820,11 +878,15 @@ void hlsl_export(char *directory, api_kind d3d) {
 		type *t = get_type(i);
 		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 			name_id vertex_shader_name = NO_NAME;
+			name_id mesh_shader_name = NO_NAME;
 			name_id fragment_shader_name = NO_NAME;
 
 			for (size_t j = 0; j < t->members.size; ++j) {
 				if (t->members.m[j].name == add_name("vertex")) {
 					vertex_shader_name = t->members.m[j].value.identifier;
+				}
+				else if (t->members.m[j].name == add_name("mesh")) {
+					mesh_shader_name = t->members.m[j].value.identifier;
 				}
 				else if (t->members.m[j].name == add_name("fragment")) {
 					fragment_shader_name = t->members.m[j].value.identifier;
@@ -832,16 +894,20 @@ void hlsl_export(char *directory, api_kind d3d) {
 			}
 
 			debug_context context = {0};
-			check(vertex_shader_name != NO_NAME, context, "vertex shader missing");
+			check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "vertex or mesh shader missing");
 			check(fragment_shader_name != NO_NAME, context, "fragment shader missing");
 
 			for (function_id i = 0; get_function(i) != NULL; ++i) {
 				function *f = get_function(i);
-				if (f->name == vertex_shader_name) {
+				if (vertex_shader_name != NO_NAME && f->name == vertex_shader_name) {
 					vertex_shaders[vertex_shaders_size] = f;
 					vertex_shaders_size += 1;
 				}
-				else if (f->name == fragment_shader_name) {
+				if (mesh_shader_name != NO_NAME && f->name == mesh_shader_name) {
+					mesh_shaders[mesh_shaders_size] = f;
+					mesh_shaders_size += 1;
+				}
+				if (f->name == fragment_shader_name) {
 					fragment_shaders[fragment_shaders_size] = f;
 					fragment_shaders_size += 1;
 				}
@@ -904,6 +970,12 @@ void hlsl_export(char *directory, api_kind d3d) {
 
 	for (size_t i = 0; i < vertex_shaders_size; ++i) {
 		hlsl_export_vertex(directory, d3d, vertex_shaders[i]);
+	}
+
+	if (d3d == API_DIRECT3D12) {
+		for (size_t i = 0; i < mesh_shaders_size; ++i) {
+			hlsl_export_mesh(directory, mesh_shaders[i]);
+		}
 	}
 
 	for (size_t i = 0; i < fragment_shaders_size; ++i) {

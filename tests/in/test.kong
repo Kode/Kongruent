@@ -43,7 +43,7 @@ fun comp(): void {
 
 // based on https://landelare.github.io/2023/02/18/dxr-tutorial.html
 
-struct Payload {
+/*struct Payload {
     color: float3;
     allow_reflection: bool;
     missed: bool;
@@ -99,4 +99,39 @@ struct RayPipe {
     gen = sendrays;
     miss = raymissed;
     closest = closesthit;
+}*/
+
+struct VertexIn {
+    position: float3;
+}
+
+struct FragmentIn {
+    position: float4;
+}
+
+//fun amplify(): void {}
+
+#[topology(triangle), threads(32, 1, 1)]
+fun meshy(): void {
+    
+}
+
+fun pixel(input: FragmentIn): float4 {
+    var color: float4;
+    color.r = 0.0;
+    color.g = 1.0;
+    color.b = 0.0;
+    color.a = 1.0;
+
+    var a: int = 3;
+    a += 2;
+
+    return color;
+}
+
+#[pipe]
+struct Pipe {
+    //prim = amplify;
+    mesh = meshy;
+    fragment = pixel;
 }

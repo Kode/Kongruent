@@ -25,6 +25,8 @@ static const wchar_t *shader_string(shader_stage stage) {
 		return L"cs_6_0";
 	case SHADER_STAGE_RAY_GENERATION:
 		return L"lib_6_3";
+	case SHADER_STAGE_MESH:
+		return L"ms_6_5";
 	default: {
 		debug_context context = {0};
 		error(context, "Unsupported shader stage/version combination");
@@ -44,10 +46,10 @@ int compile_hlsl_to_d3d12(const char *source, uint8_t **output, size_t *outputle
 	    L"-T",  shader_string(stage), // target
 	    L"-Zi",                       // enable debug info
 	                                  // L"-D", L"MYDEFINE=1",        // a single define
-	            // L"-Fo", L"myshader.bin",     // optional.  stored in the pdb.
-	            // L"-Fd", L"myshader.pdb",     // the file name of the pdb.  This must either be supplied or the auto generated file name must be used
-	            // L"-D", L"__XBOX_STRIP_DXIL", // strip DXIL
-	            // L"-Qstrip_reflect",          // strip reflection into a seperate blob
+	                                  // L"-Fo", L"myshader.bin",     // optional.  stored in the pdb.
+	    // L"-Fd", L"myshader.pdb",     // the file name of the pdb.  This must either be supplied or the auto generated file name must be used
+	    // L"-D", L"__XBOX_STRIP_DXIL", // strip DXIL
+	    // L"-Qstrip_reflect",          // strip reflection into a seperate blob
 	};
 
 	DxcBuffer source_buffer;

@@ -150,6 +150,9 @@ static definition parse_function(state_t *state);
 static definition parse_const(state_t *state, attribute_list attributes);
 
 static double attribute_parameter_to_number(name_id attribute_name, name_id parameter_name) {
+	if (attribute_name == add_name("topology") && parameter_name == add_name("triangle")) {
+		return 0;
+	}
 	debug_context context = {0};
 	error(context, "Unknown attribute parameter %s", get_name(parameter_name));
 	return 0;
