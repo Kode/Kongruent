@@ -15,6 +15,7 @@
 #include "backends/wgsl.h"
 
 #include "integrations/kinc.h"
+#include "integrations/kope.h"
 
 #include "dir.h"
 
@@ -536,7 +537,7 @@ void resolve_types(void) {
 	}
 }
 
-typedef enum arg_mode { MODE_MODECHECK, MODE_INPUT, MODE_OUTPUT, MODE_PLATFORM, MODE_API } arg_mode;
+typedef enum arg_mode { MODE_MODECHECK, MODE_INPUT, MODE_OUTPUT, MODE_PLATFORM, MODE_API, MODE_INTEGRATION } arg_mode;
 
 static void help(void) {
 	printf("No help is coming.");
@@ -572,6 +573,8 @@ static void read_file(char *filename) {
 	parse(filename, &tokens);
 }
 
+typedef enum integration_kind { INTEGRATION_KINC, INTEGRATION_KOPE } integration_kind;
+
 int main(int argc, char **argv) {
 	arg_mode mode = MODE_MODECHECK;
 
@@ -579,6 +582,7 @@ int main(int argc, char **argv) {
 	size_t inputs_size = 0;
 	char *platform = NULL;
 	api_kind api = API_DEFAULT;
+	integration_kind integration = INTEGRATION_KINC;
 	char *output = NULL;
 
 	for (int i = 1; i < argc; ++i) {
@@ -597,6 +601,9 @@ int main(int argc, char **argv) {
 					}
 					else if (strcmp(&argv[i][2], "api") == 0) {
 						mode = MODE_API;
+					}
+					else if (strcmp(&argv[i][2], "integration")) {
+						mode = MODE_INTEGRATION;
 					}
 					else if (strcmp(&argv[i][2], "help") == 0) {
 						help();
@@ -623,6 +630,9 @@ int main(int argc, char **argv) {
 						break;
 					case 'a':
 						mode = MODE_API;
+						break;
+					case 'n':
+						mode = MODE_INTEGRATION;
 						break;
 					case 'h':
 						help();
@@ -684,6 +694,20 @@ int main(int argc, char **argv) {
 			else {
 				debug_context context = {0};
 				error(context, "Unknown API %s", argv[i]);
+			}
+			mode = MODE_MODECHECK;
+			break;
+		}
+		case MODE_INTEGRATION: {
+			if (strcmp(argv[i], "kinc") == 0) {
+				integration = INTEGRATION_KINC;
+			}
+			else if (strcmp(argv[i], "kope") == 0) {
+				integration = INTEGRATION_KOPE;
+			}
+			else {
+				debug_context context = {0};
+				error(context, "Unknown integration %s", argv[i]);
 			}
 			mode = MODE_MODECHECK;
 			break;
@@ -788,7 +812,14 @@ int main(int argc, char **argv) {
 	}
 	}
 
-	kinc_export(output, api);
+	switch (integration) {
+	case INTEGRATION_KINC:
+		kinc_export(output, api);
+		break;
+	case INTEGRATION_KOPE:
+		kope_export(output, api);
+		break;
+	}
 
 	return 0;
 }
