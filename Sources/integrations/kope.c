@@ -308,7 +308,19 @@ void kope_export(char *directory, api_kind api) {
 				fprintf(output, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 			}
 			fprintf(output, "} %s;\n\n", get_name(t->name));
+
+			fprintf(output, "typedef struct %s_buffer {\n", get_name(t->name));
+			fprintf(output, "\tkope_g5_buffer buffer;\n");
+			fprintf(output, "\tsize_t count;\n");
+			fprintf(output, "} %s_buffer;\n\n", get_name(t->name));
+
+			fprintf(output, "void kong_create_buffer_%s(kope_g5_device * device, size_t count, %s_buffer *buffer);\n", get_name(t->name), get_name(t->name));
+			fprintf(output, "%s *kong_%s_buffer_lock(%s_buffer *buffer);\n", get_name(t->name), get_name(t->name), get_name(t->name));
+			fprintf(output, "void kong_%s_buffer_unlock(%s_buffer *buffer);\n", get_name(t->name), get_name(t->name));
+			fprintf(output, "void kong_set_vertex_buffer_%s(kope_g5_command_list *list, %s_buffer *buffer);\n\n", get_name(t->name), get_name(t->name));
 		}
+
+		fprintf(output, "void kong_set_pipeline(kope_g5_command_list *list, kope_d3d12_pipeline *pipeline);\n\n");
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
@@ -369,7 +381,9 @@ void kope_export(char *directory, api_kind api) {
 			}
 		}
 
-		fprintf(output, "\n#include <kope/direct3d12/pipeline_functions.h>\n\n");
+		fprintf(output, "\n#include <kope/direct3d12/buffer_functions.h>\n");
+		fprintf(output, "#include <kope/direct3d12/commandlist_functions.h>\n");
+		fprintf(output, "#include <kope/direct3d12/pipeline_functions.h>\n\n");
 
 		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
 			global g = get_global(i);
@@ -379,6 +393,36 @@ void kope_export(char *directory, api_kind api) {
 		}
 
 		fprintf(output, "\n");
+
+		for (size_t i = 0; i < vertex_inputs_size; ++i) {
+			type *t = get_type(vertex_inputs[i]);
+
+			fprintf(output, "void kong_create_buffer_%s(kope_g5_device * device, size_t count, %s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
+			fprintf(output, "\tkope_g5_buffer_parameters parameters;\n");
+			fprintf(output, "\tparameters.size = count * sizeof(%s);\n", get_name(t->name));
+			fprintf(output, "\tparameters.usage_flags = KOPE_G5_BUFFER_USAGE_CPU_WRITE;\n");
+			fprintf(output, "\tkope_g5_device_create_buffer(device, &parameters, &buffer->buffer);\n");
+			fprintf(output, "\tbuffer->count = count;\n");
+			fprintf(output, "}\n\n");
+
+			fprintf(output, "%s *kong_%s_buffer_lock(%s_buffer *buffer) {\n", get_name(t->name), get_name(t->name), get_name(t->name));
+			fprintf(output, "\treturn (%s *)kope_d3d12_buffer_lock(&buffer->buffer);\n", get_name(t->name));
+			fprintf(output, "}\n\n");
+
+			fprintf(output, "void kong_%s_buffer_unlock(%s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
+			fprintf(output, "\tkope_d3d12_buffer_unlock(&buffer->buffer);\n");
+			fprintf(output, "}\n\n");
+
+			fprintf(output, "void kong_set_vertex_buffer_%s(kope_g5_command_list *list, %s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
+			fprintf(output,
+			        "\tkope_d3d12_command_list_set_vertex_buffer(list, %" PRIu64 ", &buffer->buffer.d3d12, 0, buffer->count * sizeof(%s), sizeof(%s));\n", i,
+			        get_name(t->name), get_name(t->name));
+			fprintf(output, "}\n\n");
+		}
+
+		fprintf(output, "void kong_set_pipeline(kope_g5_command_list *list, kope_d3d12_pipeline *pipeline) {\n");
+		fprintf(output, "\tkope_d3d12_command_list_set_pipeline(list, pipeline);\n");
+		fprintf(output, "}\n\n");
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
@@ -623,7 +667,7 @@ void kope_export(char *directory, api_kind api) {
 				}
 
 				fprintf(output, "\t%s_parameters.primitive.topology = KOPE_D3D12_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;\n", get_name(t->name));
-				fprintf(output, "\t%s_parameters.primitive.strip_index_format = KOPE_G5_INDEX_FORMAT_UINT32;\n\n", get_name(t->name));
+				fprintf(output, "\t%s_parameters.primitive.strip_index_format = KOPE_G5_INDEX_FORMAT_UINT16;\n", get_name(t->name));
 				fprintf(output, "\t%s_parameters.primitive.front_face = KOPE_D3D12_FRONT_FACE_CW;\n", get_name(t->name));
 				fprintf(output, "\t%s_parameters.primitive.cull_mode = KOPE_D3D12_CULL_MODE_NONE;\n", get_name(t->name));
 				fprintf(output, "\t%s_parameters.primitive.unclipped_depth = false;\n\n", get_name(t->name));
