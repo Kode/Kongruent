@@ -339,6 +339,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 
 		if (f == main) {
 			if (stage == SHADER_STAGE_VERTEX) {
+				*offset += sprintf(&hlsl[*offset], "[RootSignature(\"RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)\")]\n");
 				*offset += sprintf(&hlsl[*offset], "%s main(", type_string(f->return_type.type));
 				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 					if (parameter_index == 0) {
@@ -360,6 +361,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					}
 					*offset += sprintf(&hlsl[*offset], "};\n\n");
 
+					*offset += sprintf(&hlsl[*offset], "[RootSignature(\"RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)\")]\n");
 					*offset += sprintf(&hlsl[*offset], "_kong_colors_out main(");
 					for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 						if (parameter_index == 0) {
