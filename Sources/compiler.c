@@ -8,7 +8,7 @@
 #include <string.h>
 
 typedef struct allocated_global {
-	global g;
+	global *g;
 	uint64_t variable_id;
 } allocated_global;
 
@@ -17,14 +17,13 @@ static size_t allocated_globals_size = 0;
 
 allocated_global find_allocated_global(name_id name) {
 	for (size_t i = 0; i < allocated_globals_size; ++i) {
-		if (name == allocated_globals[i].g.name) {
+		if (name == allocated_globals[i].g->name) {
 			return allocated_globals[i];
 		}
 	}
 
 	allocated_global a;
-	a.g.type = NO_TYPE;
-	a.g.name = NO_NAME;
+	a.g = NULL;
 	a.variable_id = 0;
 	return a;
 }
@@ -56,10 +55,10 @@ variable find_variable(block *parent, name_id name) {
 	variable local_var = find_local_var(parent, name);
 	if (local_var.index == 0) {
 		allocated_global global = find_allocated_global(name);
-		if (global.g.type != NO_TYPE && global.variable_id != 0) {
+		if (global.g->type != NO_TYPE && global.variable_id != 0) {
 			variable v;
 			init_type_ref(&v.type, NO_NAME);
-			v.type.type = global.g.type;
+			v.type.type = global.g->type;
 			v.index = global.variable_id;
 			return v;
 		}
@@ -846,12 +845,12 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 }
 
 void convert_globals(void) {
-	for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
-		global g = get_global(i);
+	for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
+		global *g = get_global(i);
 
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
-		t.type = g.type;
+		t.type = g->type;
 		variable v = allocate_variable(t, VARIABLE_GLOBAL);
 		allocated_globals[allocated_globals_size].g = g;
 		allocated_globals[allocated_globals_size].variable_id = v.index;

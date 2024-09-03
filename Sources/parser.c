@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "errors.h"
 #include "functions.h"
+#include "sets.h"
 #include "tokenizer.h"
 #include "types.h"
 
@@ -166,6 +167,7 @@ static double attribute_parameter_to_number(name_id attribute_name, name_id para
 
 static definition parse_definition(state_t *state) {
 	attribute_list attributes = {0};
+	descriptor_set *current_set = NULL;
 
 	if (current(state).kind == TOKEN_HASH) {
 		advance_state(state);
@@ -185,8 +187,14 @@ static definition parse_definition(state_t *state) {
 
 				while (current(state).kind != TOKEN_RIGHT_PAREN) {
 					if (current(state).kind == TOKEN_IDENTIFIER) {
-						current_attribute.parameters[current_attribute.paramters_count] =
-						    attribute_parameter_to_number(current_attribute.name, current(state).identifier);
+						if (current_attribute.name == add_name("set")) {
+							current_set = add_set(current(state).identifier);
+							current_attribute.parameters[current_attribute.paramters_count] = current_set->index;
+						}
+						else {
+							current_attribute.parameters[current_attribute.paramters_count] =
+							    attribute_parameter_to_number(current_attribute.name, current(state).identifier);
+						}
 						current_attribute.paramters_count += 1;
 						advance_state(state);
 					}
@@ -221,11 +229,21 @@ static definition parse_definition(state_t *state) {
 
 	switch (current(state).kind) {
 	case TOKEN_STRUCT: {
+		if (current_set != NULL) {
+			debug_context context = {0};
+			error(context, "A struct can not be assigned to a set");
+		}
+
 		definition structy = parse_struct(state);
 		get_type(structy.type)->attributes = attributes;
 		return structy;
 	}
 	case TOKEN_FUNCTION: {
+		if (current_set != NULL) {
+			debug_context context = {0};
+			error(context, "A function can not be assigned to a set");
+		}
+
 		definition d = parse_function(state);
 		function *f = get_function(d.function);
 		f->attributes = attributes;
@@ -233,6 +251,11 @@ static definition parse_definition(state_t *state) {
 	}
 	case TOKEN_CONST: {
 		definition d = parse_const(state, attributes);
+
+		if (current_set != NULL) {
+			add_definition_to_set(current_set, d);
+		}
+
 		return d;
 	}
 	default: {
@@ -978,9 +1001,9 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 				init_type_ref(&member.type, add_name("float"));
 			}
 			else if (member.value.kind == TOKEN_IDENTIFIER) {
-				global g = find_global(member.value.identifier);
-				if (g.name != NO_NAME) {
-					init_type_ref(&member.type, get_type(g.type)->name);
+				global *g = find_global(member.value.identifier);
+				if (g != NULL && g->name != NO_NAME) {
+					init_type_ref(&member.type, get_type(g->type)->name);
 				}
 				else {
 					init_type_ref(&member.type, add_name("fun"));

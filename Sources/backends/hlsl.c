@@ -4,6 +4,7 @@
 #include "../errors.h"
 #include "../functions.h"
 #include "../parser.h"
+#include "../sets.h"
 #include "../shader_stage.h"
 #include "../types.h"
 #include "cstyle.h"
@@ -190,47 +191,47 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 	}
 
 	for (size_t i = 0; i < globals_size; ++i) {
-		global g = get_global(globals[i]);
+		global *g = get_global(globals[i]);
 		int register_index = global_register_indices[globals[i]];
 
-		if (g.type == sampler_type_id) {
-			*offset += sprintf(&hlsl[*offset], "SamplerState _%" PRIu64 " : register(s%i);\n\n", g.var_index, register_index);
+		if (g->type == sampler_type_id) {
+			*offset += sprintf(&hlsl[*offset], "SamplerState _%" PRIu64 " : register(s%i);\n\n", g->var_index, register_index);
 		}
-		else if (g.type == tex2d_type_id) {
-			if (has_attribute(&g.attributes, add_name("write"))) {
-				*offset += sprintf(&hlsl[*offset], "RWTexture2D<float4> _%" PRIu64 " : register(u%i);\n\n", g.var_index, register_index);
+		else if (g->type == tex2d_type_id) {
+			if (has_attribute(&g->attributes, add_name("write"))) {
+				*offset += sprintf(&hlsl[*offset], "RWTexture2D<float4> _%" PRIu64 " : register(u%i);\n\n", g->var_index, register_index);
 			}
 			else {
-				*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
+				*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
 			}
 		}
-		else if (g.type == texcube_type_id) {
-			*offset += sprintf(&hlsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
+		else if (g->type == texcube_type_id) {
+			*offset += sprintf(&hlsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
 		}
-		else if (g.type == bvh_type_id) {
-			*offset += sprintf(&hlsl[*offset], "RaytracingAccelerationStructure  _%" PRIu64 " : register(t%i);\n\n", g.var_index, register_index);
+		else if (g->type == bvh_type_id) {
+			*offset += sprintf(&hlsl[*offset], "RaytracingAccelerationStructure  _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
 		}
-		else if (g.type == float_id) {
-			*offset += sprintf(&hlsl[*offset], "static const float _%" PRIu64 " = %f;\n\n", g.var_index, g.value.value.floats[0]);
+		else if (g->type == float_id) {
+			*offset += sprintf(&hlsl[*offset], "static const float _%" PRIu64 " = %f;\n\n", g->var_index, g->value.value.floats[0]);
 		}
-		else if (g.type == float2_id) {
-			*offset += sprintf(&hlsl[*offset], "static const float2 _%" PRIu64 " = float2(%f, %f);\n\n", g.var_index, g.value.value.floats[0],
-			                   g.value.value.floats[1]);
+		else if (g->type == float2_id) {
+			*offset += sprintf(&hlsl[*offset], "static const float2 _%" PRIu64 " = float2(%f, %f);\n\n", g->var_index, g->value.value.floats[0],
+			                   g->value.value.floats[1]);
 		}
-		else if (g.type == float3_id) {
-			*offset += sprintf(&hlsl[*offset], "static const float3 _%" PRIu64 " = float3(%f, %f, %f);\n\n", g.var_index, g.value.value.floats[0],
-			                   g.value.value.floats[1], g.value.value.floats[2]);
+		else if (g->type == float3_id) {
+			*offset += sprintf(&hlsl[*offset], "static const float3 _%" PRIu64 " = float3(%f, %f, %f);\n\n", g->var_index, g->value.value.floats[0],
+			                   g->value.value.floats[1], g->value.value.floats[2]);
 		}
-		else if (g.type == float4_id) {
-			*offset += sprintf(&hlsl[*offset], "static const float4 _%" PRIu64 " = float4(%f, %f, %f, %f);\n\n", g.var_index, g.value.value.floats[0],
-			                   g.value.value.floats[1], g.value.value.floats[2], g.value.value.floats[3]);
+		else if (g->type == float4_id) {
+			*offset += sprintf(&hlsl[*offset], "static const float4 _%" PRIu64 " = float4(%f, %f, %f, %f);\n\n", g->var_index, g->value.value.floats[0],
+			                   g->value.value.floats[1], g->value.value.floats[2], g->value.value.floats[3]);
 		}
 		else {
-			*offset += sprintf(&hlsl[*offset], "cbuffer _%" PRIu64 " : register(b%i) {\n", g.var_index, register_index);
-			type *t = get_type(g.type);
+			*offset += sprintf(&hlsl[*offset], "cbuffer _%" PRIu64 " : register(b%i) {\n", g->var_index, register_index);
+			type *t = get_type(g->type);
 			for (size_t i = 0; i < t->members.size; ++i) {
 				*offset +=
-				    sprintf(&hlsl[*offset], "\t%s _%" PRIu64 "_%s;\n", type_string(t->members.m[i].type.type), g.var_index, get_name(t->members.m[i].name));
+				    sprintf(&hlsl[*offset], "\t%s _%" PRIu64 "_%s;\n", type_string(t->members.m[i].type.type), g->var_index, get_name(t->members.m[i].name));
 			}
 			*offset += sprintf(&hlsl[*offset], "}\n\n");
 		}
@@ -601,11 +602,11 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			switch (o->type) {
 			case OPCODE_LOAD_MEMBER: {
 				uint64_t global_var_index = 0;
-				for (global_id j = 0; get_global(j).type != NO_TYPE; ++j) {
-					global g = get_global(j);
-					if (o->op_load_member.from.index == g.var_index) {
-						global_var_index = g.var_index;
-						if (get_type(g.type)->built_in) {
+				for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
+					global *g = get_global(j);
+					if (o->op_load_member.from.index == g->var_index) {
+						global_var_index = g->var_index;
+						if (get_type(g->type)->built_in) {
 							global_var_index = 0;
 						}
 						break;
@@ -1028,14 +1029,14 @@ void hlsl_export(char *directory, api_kind d3d) {
 
 	memset(global_register_indices, 0, sizeof(global_register_indices));
 
-	for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
-		global g = get_global(i);
-		if (g.type == sampler_type_id) {
+	for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
+		global *g = get_global(i);
+		if (g->type == sampler_type_id) {
 			global_register_indices[i] = sampler_index;
 			sampler_index += 1;
 		}
-		else if (g.type == tex2d_type_id) {
-			if (has_attribute(&g.attributes, add_name("write"))) {
+		else if (g->type == tex2d_type_id) {
+			if (has_attribute(&g->attributes, add_name("write"))) {
 				global_register_indices[i] = uav_index;
 				uav_index += 1;
 			}
@@ -1044,11 +1045,11 @@ void hlsl_export(char *directory, api_kind d3d) {
 				srv_index += 1;
 			}
 		}
-		else if (g.type == texcube_type_id || g.type == bvh_type_id) {
+		else if (g->type == texcube_type_id || g->type == bvh_type_id) {
 			global_register_indices[i] = srv_index;
 			srv_index += 1;
 		}
-		else if (g.type == float_id) {
+		else if (g->type == float_id) {
 		}
 		else {
 			global_register_indices[i] = cbv_index;

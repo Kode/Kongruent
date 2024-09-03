@@ -365,9 +365,9 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		break;
 	}
 	case EXPRESSION_VARIABLE: {
-		global g = find_global(e->variable);
-		if (g.type != NO_TYPE) {
-			e->type.type = g.type;
+		global *g = find_global(e->variable);
+		if (g != NULL && g->type != NO_TYPE) {
+			e->type.type = g->type;
 		}
 		else {
 			type_ref type = find_local_var_type(&parent->block, e->variable);

@@ -138,17 +138,17 @@ void kinc_export(char *directory, api_kind api) {
 	if (api == API_WEBGPU) {
 		int binding_index = 0;
 
-		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
-			global g = get_global(i);
-			if (g.type == sampler_type_id) {
+		for (global_id i = 0; get_global(i)->type != NO_TYPE; ++i) {
+			global *g = get_global(i);
+			if (g->type == sampler_type_id) {
 				global_register_indices[i] = binding_index;
 				binding_index += 1;
 			}
-			else if (g.type == tex2d_type_id || g.type == texcube_type_id) {
+			else if (g->type == tex2d_type_id || g->type == texcube_type_id) {
 				global_register_indices[i] = binding_index;
 				binding_index += 1;
 			}
-			else if (g.type == float_id) {
+			else if (g->type == float_id) {
 			}
 			else {
 				global_register_indices[i] = binding_index;
@@ -161,17 +161,17 @@ void kinc_export(char *directory, api_kind api) {
 		int texture_index = 0;
 		int sampler_index = 0;
 
-		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
-			global g = get_global(i);
-			if (g.type == sampler_type_id) {
+		for (global_id i = 0; get_global(i)->type != NO_TYPE; ++i) {
+			global *g = get_global(i);
+			if (g->type == sampler_type_id) {
 				global_register_indices[i] = sampler_index;
 				sampler_index += 1;
 			}
-			else if (g.type == tex2d_type_id || g.type == texcube_type_id) {
+			else if (g->type == tex2d_type_id || g->type == texcube_type_id) {
 				global_register_indices[i] = texture_index;
 				texture_index += 1;
 			}
-			else if (g.type == float_id) {
+			else if (g->type == float_id) {
 			}
 			else {
 				global_register_indices[i] = cbuffer_index;
@@ -241,22 +241,22 @@ void kinc_export(char *directory, api_kind api) {
 		fprintf(output, "#include <kinc/math/matrix.h>\n");
 		fprintf(output, "#include <kinc/math/vector.h>\n\n");
 
-		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
-			global g = get_global(i);
-			if (g.type == float_id) {
+		for (global_id i = 0; get_global(i)->type != NO_TYPE; ++i) {
+			global *g = get_global(i);
+			if (g->type == float_id) {
 			}
-			else if (g.type == tex2d_type_id || g.type == texcube_type_id || g.type == sampler_type_id) {
-				fprintf(output, "extern int %s;\n", get_name(g.name));
+			else if (g->type == tex2d_type_id || g->type == texcube_type_id || g->type == sampler_type_id) {
+				fprintf(output, "extern int %s;\n", get_name(g->name));
 			}
 			else {
-				type *t = get_type(g.type);
+				type *t = get_type(g->type);
 
 				char name[256];
 				if (t->name != NO_NAME) {
 					strcpy(name, get_name(t->name));
 				}
 				else {
-					strcpy(name, get_name(g.name));
+					strcpy(name, get_name(g->name));
 					strcat(name, "_type");
 				}
 
@@ -354,10 +354,10 @@ void kinc_export(char *directory, api_kind api) {
 
 		fprintf(output, "\n#include <kinc/graphics4/graphics.h>\n\n");
 
-		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
-			global g = get_global(i);
-			if (g.type == tex2d_type_id || g.type == texcube_type_id || g.type == sampler_type_id) {
-				fprintf(output, "int %s = %i;\n", get_name(g.name), global_register_indices[i]);
+		for (global_id i = 0; get_global(i)->type != NO_TYPE; ++i) {
+			global *g = get_global(i);
+			if (g->type == tex2d_type_id || g->type == texcube_type_id || g->type == sampler_type_id) {
+				fprintf(output, "int %s = %i;\n", get_name(g->name), global_register_indices[i]);
 			}
 		}
 
@@ -375,17 +375,17 @@ void kinc_export(char *directory, api_kind api) {
 			fprintf(output, "kinc_g4_vertex_structure_t %s_structure;\n", get_name(t->name));
 		}
 
-		for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
-			global g = get_global(i);
-			if (g.type != tex2d_type_id && g.type != texcube_type_id && g.type != sampler_type_id && g.type != float_id) {
-				type *t = get_type(g.type);
+		for (global_id i = 0; get_global(i)->type != NO_TYPE; ++i) {
+			global *g = get_global(i);
+			if (g->type != tex2d_type_id && g->type != texcube_type_id && g->type != sampler_type_id && g->type != float_id) {
+				type *t = get_type(g->type);
 
 				char type_name[256];
 				if (t->name != NO_NAME) {
 					strcpy(type_name, get_name(t->name));
 				}
 				else {
-					strcpy(type_name, get_name(g.name));
+					strcpy(type_name, get_name(g->name));
 					strcat(type_name, "_type");
 				}
 
@@ -508,44 +508,44 @@ void kinc_export(char *directory, api_kind api) {
 					else if (t->members.m[j].name == add_name("depth_mode")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "depth_mode expects an identifier");
-						global g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.depth_mode = %s;\n\n", get_name(t->name), convert_compare_mode(g.value.value.ints[0]));
+						global *g = find_global(t->members.m[j].value.identifier);
+						fprintf(output, "\t%s.depth_mode = %s;\n\n", get_name(t->name), convert_compare_mode(g->value.value.ints[0]));
 					}
 					else if (t->members.m[j].name == add_name("blend_source")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_source expects an identifier");
-						global g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.blend_source = %s;\n\n", get_name(t->name), convert_blend_mode(g.value.value.ints[0]));
+						global *g = find_global(t->members.m[j].value.identifier);
+						fprintf(output, "\t%s.blend_source = %s;\n\n", get_name(t->name), convert_blend_mode(g->value.value.ints[0]));
 					}
 					else if (t->members.m[j].name == add_name("blend_destination")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_destination expects an identifier");
-						global g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.blend_destination = %s;\n\n", get_name(t->name), convert_blend_mode(g.value.value.ints[0]));
+						global *g = find_global(t->members.m[j].value.identifier);
+						fprintf(output, "\t%s.blend_destination = %s;\n\n", get_name(t->name), convert_blend_mode(g->value.value.ints[0]));
 					}
 					else if (t->members.m[j].name == add_name("blend_operation")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_operation expects an identifier");
-						global g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.blend_operation = %s;\n\n", get_name(t->name), convert_blend_op(g.value.value.ints[0]));
+						global *g = find_global(t->members.m[j].value.identifier);
+						fprintf(output, "\t%s.blend_operation = %s;\n\n", get_name(t->name), convert_blend_op(g->value.value.ints[0]));
 					}
 					else if (t->members.m[j].name == add_name("alpha_blend_source")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "alpha_blend_source expects an identifier");
-						global g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.alpha_blend_source = %s;\n\n", get_name(t->name), convert_blend_mode(g.value.value.ints[0]));
+						global *g = find_global(t->members.m[j].value.identifier);
+						fprintf(output, "\t%s.alpha_blend_source = %s;\n\n", get_name(t->name), convert_blend_mode(g->value.value.ints[0]));
 					}
 					else if (t->members.m[j].name == add_name("alpha_blend_destination")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "alpha_blend_destination expects an identifier");
-						global g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.alpha_blend_destination = %s;\n\n", get_name(t->name), convert_blend_mode(g.value.value.ints[0]));
+						global *g = find_global(t->members.m[j].value.identifier);
+						fprintf(output, "\t%s.alpha_blend_destination = %s;\n\n", get_name(t->name), convert_blend_mode(g->value.value.ints[0]));
 					}
 					else if (t->members.m[j].name == add_name("alpha_blend_operation")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "alpha_blend_operation expects an identifier");
-						global g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.alpha_blend_operation = %s;\n\n", get_name(t->name), convert_blend_op(g.value.value.ints[0]));
+						global *g = find_global(t->members.m[j].value.identifier);
+						fprintf(output, "\t%s.alpha_blend_operation = %s;\n\n", get_name(t->name), convert_blend_op(g->value.value.ints[0]));
 					}
 					else {
 						debug_context context = {0};
@@ -632,16 +632,16 @@ void kinc_export(char *directory, api_kind api) {
 					find_referenced_globals(fragment_function, globals, &globals_size);
 
 					for (global_id i = 0; i < globals_size; ++i) {
-						global g = get_global(globals[i]);
-						if (g.type == sampler_type_id) {
+						global *g = get_global(globals[i]);
+						if (g->type == sampler_type_id) {
 						}
-						else if (g.type == tex2d_type_id || g.type == texcube_type_id) {
+						else if (g->type == tex2d_type_id || g->type == texcube_type_id) {
 						}
-						else if (g.type == float_id) {
+						else if (g->type == float_id) {
 						}
 						else {
 							fprintf(output, "\tkinc_g4_internal_opengl_setup_uniform_block(%s.impl.programId, \"_%" PRIu64 "\", %i);\n\n", get_name(t->name),
-							        g.var_index, global_register_indices[i]);
+							        g->var_index, global_register_indices[i]);
 						}
 					}
 				}

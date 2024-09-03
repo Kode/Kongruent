@@ -144,25 +144,25 @@ static void write_globals(char *glsl, size_t *offset, function *main) {
 	find_referenced_globals(main, globals, &globals_size);
 
 	for (size_t i = 0; i < globals_size; ++i) {
-		global g = get_global(globals[i]);
+		global *g = get_global(globals[i]);
 		int register_index = global_register_indices[globals[i]];
 
-		if (g.type == sampler_type_id) {
+		if (g->type == sampler_type_id) {
 		}
-		else if (g.type == tex2d_type_id) {
-			*offset += sprintf(&glsl[*offset], "uniform sampler2D _%" PRIu64 ";\n\n", g.var_index);
+		else if (g->type == tex2d_type_id) {
+			*offset += sprintf(&glsl[*offset], "uniform sampler2D _%" PRIu64 ";\n\n", g->var_index);
 		}
-		else if (g.type == texcube_type_id) {
-			*offset += sprintf(&glsl[*offset], "uniform samplerCube _%" PRIu64 ";\n\n", g.var_index);
+		else if (g->type == texcube_type_id) {
+			*offset += sprintf(&glsl[*offset], "uniform samplerCube _%" PRIu64 ";\n\n", g->var_index);
 		}
-		else if (g.type == float_id) {
+		else if (g->type == float_id) {
 		}
 		else {
-			*offset += sprintf(&glsl[*offset], "layout(std140) uniform _%" PRIu64 " {\n", g.var_index);
-			type *t = get_type(g.type);
+			*offset += sprintf(&glsl[*offset], "layout(std140) uniform _%" PRIu64 " {\n", g->var_index);
+			type *t = get_type(g->type);
 			for (size_t i = 0; i < t->members.size; ++i) {
 				*offset +=
-				    sprintf(&glsl[*offset], "\t%s _%" PRIu64 "_%s;\n", type_string(t->members.m[i].type.type), g.var_index, get_name(t->members.m[i].name));
+				    sprintf(&glsl[*offset], "\t%s _%" PRIu64 "_%s;\n", type_string(t->members.m[i].type.type), g->var_index, get_name(t->members.m[i].name));
 			}
 			*offset += sprintf(&glsl[*offset], "};\n\n");
 		}
@@ -311,10 +311,10 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 			}
 			case OPCODE_LOAD_MEMBER: {
 				uint64_t global_var_index = 0;
-				for (global_id j = 0; get_global(j).type != NO_TYPE; ++j) {
-					global g = get_global(j);
-					if (o->op_load_member.from.index == g.var_index) {
-						global_var_index = g.var_index;
+				for (global_id j = 0; get_global(j)->type != NO_TYPE; ++j) {
+					global *g = get_global(j);
+					if (o->op_load_member.from.index == g->var_index) {
+						global_var_index = g->var_index;
 						break;
 					}
 				}
@@ -518,17 +518,17 @@ void glsl_export(char *directory) {
 
 	memset(global_register_indices, 0, sizeof(global_register_indices));
 
-	for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
-		global g = get_global(i);
-		if (g.type == sampler_type_id) {
+	for (global_id i = 0; get_global(i)->type != NO_TYPE; ++i) {
+		global *g = get_global(i);
+		if (g->type == sampler_type_id) {
 			global_register_indices[i] = sampler_index;
 			sampler_index += 1;
 		}
-		else if (g.type == tex2d_type_id || g.type == texcube_type_id) {
+		else if (g->type == tex2d_type_id || g->type == texcube_type_id) {
 			global_register_indices[i] = texture_index;
 			texture_index += 1;
 		}
-		else if (g.type == float_id) {
+		else if (g->type == float_id) {
 		}
 		else {
 			global_register_indices[i] = cbuffer_index;

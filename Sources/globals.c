@@ -89,28 +89,22 @@ global_id add_global_with_value(type_id type, attribute_list attributes, name_id
 	return index;
 }
 
-global find_global(name_id name) {
+global *find_global(name_id name) {
 	for (uint32_t i = 0; i < globals_size; ++i) {
 		if (globals[i].name == name) {
-			return globals[i];
+			return &globals[i];
 		}
 	}
 
-	global g;
-	g.type = NO_TYPE;
-	g.name = NO_NAME;
-	return g;
+	return NULL;
 }
 
-global get_global(global_id id) {
+global *get_global(global_id id) {
 	if (id >= globals_size) {
-		global g;
-		g.type = NO_TYPE;
-		g.name = NO_NAME;
-		return g;
+		return NULL;
 	}
 
-	return globals[id];
+	return &globals[id];
 }
 
 void assign_global_var(global_id id, uint64_t var_index) {

@@ -80,10 +80,10 @@ static void write_types(char *metal, size_t *offset) {
 				char name[256];
 
 				bool found = false;
-				for (global_id j = 0; get_global(j).type != NO_TYPE; ++j) {
-					global g = get_global(j);
-					if (g.type == i) {
-						sprintf(name, "_%" PRIu64, g.var_index);
+				for (global_id j = 0; get_global(j)->type != NO_TYPE; ++j) {
+					global *g = get_global(j);
+					if (g->type == i) {
+						sprintf(name, "_%" PRIu64, g->var_index);
 						found = true;
 						break;
 					}
@@ -187,22 +187,22 @@ static void write_functions(char *code, size_t *offset) {
 			size_t buffers_offset = 0;
 
 			for (size_t i = 0; i < globals_size; ++i) {
-				global g = get_global(globals[i]);
+				global *g = get_global(globals[i]);
 				int register_index = global_register_indices[globals[i]];
 
-				if (g.type == sampler_type_id) {
-					buffers_offset += sprintf(&buffers[buffers_offset], ", sampler _%" PRIu64 " [[sampler(%i)]]", g.var_index, register_index);
+				if (g->type == sampler_type_id) {
+					buffers_offset += sprintf(&buffers[buffers_offset], ", sampler _%" PRIu64 " [[sampler(%i)]]", g->var_index, register_index);
 				}
-				else if (g.type == tex2d_type_id) {
-					buffers_offset += sprintf(&buffers[buffers_offset], ", texture2d<float> _%" PRIu64 " [[texture(%i)]]", g.var_index, register_index);
+				else if (g->type == tex2d_type_id) {
+					buffers_offset += sprintf(&buffers[buffers_offset], ", texture2d<float> _%" PRIu64 " [[texture(%i)]]", g->var_index, register_index);
 				}
-				else if (g.type == texcube_type_id) {
-					buffers_offset += sprintf(&buffers[buffers_offset], ", texturecube<float> _%" PRIu64 " [[texture(%i)]]", g.var_index, register_index);
+				else if (g->type == texcube_type_id) {
+					buffers_offset += sprintf(&buffers[buffers_offset], ", texturecube<float> _%" PRIu64 " [[texture(%i)]]", g->var_index, register_index);
 				}
-				else if (g.type == float_id) {
+				else if (g->type == float_id) {
 				}
 				else {
-					buffers_offset += sprintf(&buffers[buffers_offset], ", constant _%" PRIu64 "_type& _%" PRIu64 " [[buffer(%i)]]", g.var_index, g.var_index,
+					buffers_offset += sprintf(&buffers[buffers_offset], ", constant _%" PRIu64 "_type& _%" PRIu64 " [[buffer(%i)]]", g->var_index, g->var_index,
 					                          register_index);
 				}
 			}
@@ -262,10 +262,10 @@ static void write_functions(char *code, size_t *offset) {
 			switch (o->type) {
 			case OPCODE_LOAD_MEMBER: {
 				uint64_t global_var_index = 0;
-				for (global_id j = 0; get_global(j).type != NO_TYPE; ++j) {
-					global g = get_global(j);
-					if (o->op_load_member.from.index == g.var_index) {
-						global_var_index = g.var_index;
+				for (global_id j = 0; get_global(j)->type != NO_TYPE; ++j) {
+					global *g = get_global(j);
+					if (o->op_load_member.from.index == g->var_index) {
+						global_var_index = g->var_index;
 						break;
 					}
 				}
@@ -390,17 +390,17 @@ void metal_export(char *directory) {
 
 	memset(global_register_indices, 0, sizeof(global_register_indices));
 
-	for (global_id i = 0; get_global(i).type != NO_TYPE; ++i) {
-		global g = get_global(i);
-		if (g.type == sampler_type_id) {
+	for (global_id i = 0; get_global(i)->type != NO_TYPE; ++i) {
+		global *g = get_global(i);
+		if (g->type == sampler_type_id) {
 			global_register_indices[i] = sampler_index;
 			sampler_index += 1;
 		}
-		else if (g.type == tex2d_type_id || g.type == texcube_type_id) {
+		else if (g->type == tex2d_type_id || g->type == texcube_type_id) {
 			global_register_indices[i] = texture_index;
 			texture_index += 1;
 		}
-		else if (g.type == float_id) {
+		else if (g->type == float_id) {
 		}
 		else {
 			global_register_indices[i] = cbuffer_index;

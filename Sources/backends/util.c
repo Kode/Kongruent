@@ -13,9 +13,9 @@ void indent(char *code, size_t *offset, int indentation) {
 }
 
 static void find_referenced_global_for_var(variable v, global_id *globals, size_t *globals_size) {
-	for (global_id j = 0; get_global(j).type != NO_TYPE; ++j) {
-		global g = get_global(j);
-		if (v.index == g.var_index) {
+	for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
+		global *g = get_global(j);
+		if (v.index == g->var_index) {
 			bool found = false;
 			for (size_t k = 0; k < *globals_size; ++k) {
 				if (globals[k] == j) {

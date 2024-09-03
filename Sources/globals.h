@@ -25,12 +25,15 @@ typedef struct global_value {
 	} value;
 } global_value;
 
+struct descriptor_set;
+
 typedef struct global {
 	name_id name;
 	type_id type;
 	uint64_t var_index;
 	global_value value;
 	attribute_list attributes;
+	struct descriptor_set *set;
 } global;
 
 void globals_init(void);
@@ -38,8 +41,8 @@ void globals_init(void);
 global_id add_global(type_id type, attribute_list attributes, name_id name);
 global_id add_global_with_value(type_id type, attribute_list attributes, name_id name, global_value value);
 
-global find_global(name_id name);
+global *find_global(name_id name);
 
-global get_global(global_id id);
+global *get_global(global_id id);
 
 void assign_global_var(global_id id, uint64_t var_index);
