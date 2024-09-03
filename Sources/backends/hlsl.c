@@ -994,6 +994,10 @@ static void hlsl_export_all_ray_shaders(char *directory) {
 		all_rayshaders_size += 1;
 	}
 
+	if (all_rayshaders_size == 0) {
+		return;
+	}
+
 	write_types(hlsl, &offset, SHADER_STAGE_RAY_GENERATION, NO_TYPE, NO_TYPE, NULL, all_rayshaders, all_rayshaders_size);
 
 	write_globals(hlsl, &offset, NULL, all_rayshaders, all_rayshaders_size);
