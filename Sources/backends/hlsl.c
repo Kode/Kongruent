@@ -410,6 +410,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					*offset += sprintf(&hlsl[*offset], ") {\n");
 				}
 				else {
+					write_root_signature(hlsl, offset);
 					*offset += sprintf(&hlsl[*offset], "%s main(", type_string(f->return_type.type));
 					for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 						if (parameter_index == 0) {
