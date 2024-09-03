@@ -298,6 +298,39 @@ static bool is_rayanyhit_shader(function *f) {
 	return false;
 }
 
+static descriptor_set *all_descriptor_sets[256];
+static size_t all_descriptor_sets_count = 0;
+
+static void write_root_signature(char *hlsl, size_t *offset) {
+	uint32_t cbv_index = 0;
+
+	*offset += sprintf(&hlsl[*offset], "[RootSignature(\"RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)");
+
+	for (size_t set_count = 0; set_count < all_descriptor_sets_count; ++set_count) {
+		*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(");
+
+		descriptor_set *set = all_descriptor_sets[set_count];
+		for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+			definition *def = &set->definitions[definition_index];
+
+			switch (def->kind) {
+			case DEFINITION_CONST_CUSTOM:
+				*offset += sprintf(&hlsl[*offset], "CBV(b%i)", cbv_index);
+				cbv_index += 1;
+				break;
+			default: {
+				debug_context context = {0};
+				error(context, "Can not write definition to root signature");
+			}
+			}
+		}
+
+		*offset += sprintf(&hlsl[*offset], ")");
+	}
+
+	*offset += sprintf(&hlsl[*offset], "\")]\n");
+}
+
 static void write_functions(char *hlsl, size_t *offset, shader_stage stage, function *main, function **rayshaders, size_t rayshaders_count) {
 	function *functions[256];
 	size_t functions_size = 0;
@@ -340,7 +373,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 
 		if (f == main) {
 			if (stage == SHADER_STAGE_VERTEX) {
-				*offset += sprintf(&hlsl[*offset], "[RootSignature(\"RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)\")]\n");
+				write_root_signature(hlsl, offset);
 				*offset += sprintf(&hlsl[*offset], "%s main(", type_string(f->return_type.type));
 				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 					if (parameter_index == 0) {
@@ -362,7 +395,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					}
 					*offset += sprintf(&hlsl[*offset], "};\n\n");
 
-					*offset += sprintf(&hlsl[*offset], "[RootSignature(\"RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)\")]\n");
+					write_root_signature(hlsl, offset);
 					*offset += sprintf(&hlsl[*offset], "_kong_colors_out main(");
 					for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 						if (parameter_index == 0) {
@@ -1096,23 +1129,67 @@ void hlsl_export(char *directory, api_kind d3d) {
 			check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "vertex or mesh shader missing");
 			check(fragment_shader_name != NO_NAME, context, "fragment shader missing");
 
+			function *vertex_shader = NULL;
+			function *amplification_shader = NULL;
+			function *mesh_shader = NULL;
+			function *fragment_shader = NULL;
+
 			for (function_id i = 0; get_function(i) != NULL; ++i) {
 				function *f = get_function(i);
 				if (vertex_shader_name != NO_NAME && f->name == vertex_shader_name) {
+					vertex_shader = f;
 					vertex_shaders[vertex_shaders_size] = f;
 					vertex_shaders_size += 1;
 				}
 				if (amplification_shader_name != NO_NAME && f->name == amplification_shader_name) {
+					amplification_shader = f;
 					amplification_shaders[amplification_shaders_size] = f;
 					amplification_shaders_size += 1;
 				}
 				if (mesh_shader_name != NO_NAME && f->name == mesh_shader_name) {
+					mesh_shader = f;
 					mesh_shaders[mesh_shaders_size] = f;
 					mesh_shaders_size += 1;
 				}
 				if (f->name == fragment_shader_name) {
+					fragment_shader = f;
 					fragment_shaders[fragment_shaders_size] = f;
 					fragment_shaders_size += 1;
+				}
+			}
+
+			global_id all_globals[256];
+			size_t all_globals_size = 0;
+
+			if (vertex_shader != NULL) {
+				find_referenced_globals(vertex_shader, all_globals, &all_globals_size);
+			}
+			if (amplification_shader != NULL) {
+				find_referenced_globals(amplification_shader, all_globals, &all_globals_size);
+			}
+			if (mesh_shader != NULL) {
+				find_referenced_globals(mesh_shader, all_globals, &all_globals_size);
+			}
+			if (fragment_shader != NULL) {
+				find_referenced_globals(fragment_shader, all_globals, &all_globals_size);
+			}
+
+			for (size_t global_index = 0; global_index < all_globals_size; ++global_index) {
+				global *g = get_global(all_globals[global_index]);
+				if (g->set != NULL) {
+					bool found = false;
+
+					for (size_t set_index = 0; set_index < all_descriptor_sets_count; ++set_index) {
+						if (all_descriptor_sets[set_index] == g->set) {
+							found = true;
+							break;
+						}
+					}
+
+					if (!found) {
+						all_descriptor_sets[all_descriptor_sets_count] = g->set;
+						all_descriptor_sets_count += 1;
+					}
 				}
 			}
 		}

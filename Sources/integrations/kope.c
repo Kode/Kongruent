@@ -179,7 +179,7 @@ void kope_export(char *directory, api_kind api) {
 		int texture_index = 0;
 		int sampler_index = 0;
 
-		for (global_id i = 0; get_global(i)->type != NO_TYPE; ++i) {
+		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
 			if (g->type == sampler_type_id) {
 				global_register_indices[i] = sampler_index;
@@ -260,7 +260,7 @@ void kope_export(char *directory, api_kind api) {
 
 		fprintf(output, "\nvoid kong_init(kope_g5_device *device);\n\n");
 
-		for (global_id i = 0; get_global(i)->type != NO_TYPE; ++i) {
+		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
 			if (g->type == float_id) {
 			}
@@ -385,7 +385,7 @@ void kope_export(char *directory, api_kind api) {
 		fprintf(output, "#include <kope/direct3d12/commandlist_functions.h>\n");
 		fprintf(output, "#include <kope/direct3d12/pipeline_functions.h>\n\n");
 
-		for (global_id i = 0; get_global(i)->type != NO_TYPE; ++i) {
+		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
 			if (g->type == tex2d_type_id || g->type == texcube_type_id || g->type == sampler_type_id) {
 				fprintf(output, "int %s = %i;\n", get_name(g->name), global_register_indices[i]);
@@ -431,7 +431,7 @@ void kope_export(char *directory, api_kind api) {
 			}
 		}
 
-		for (global_id i = 0; get_global(i)->type != NO_TYPE; ++i) {
+		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
 			if (g->type != tex2d_type_id && g->type != texcube_type_id && g->type != sampler_type_id && g->type != float_id) {
 				type *t = get_type(g->type);
