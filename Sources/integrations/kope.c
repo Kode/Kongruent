@@ -5,6 +5,7 @@
 #include "../errors.h"
 #include "../functions.h"
 #include "../parser.h"
+#include "../sets.h"
 #include "../types.h"
 
 #include <assert.h>
@@ -257,6 +258,9 @@ void kope_export(char *directory, api_kind api) {
 		}
 	}
 
+	descriptor_set *sets[256];
+	size_t sets_count = 0;
+
 	{
 		char filename[512];
 		sprintf(filename, "%s/%s", directory, "kong.h");
@@ -298,17 +302,56 @@ void kope_export(char *directory, api_kind api) {
 				}
 				fprintf(output, "} %s;\n\n", name);
 
-				// fprintf(output, "typedef struct %s_buffer {\n", name);
-				// fprintf(output, "\tkkope_g5_buffer buffer;\n");
-				// fprintf(output, "\t%s *data;\n", name);
-				// fprintf(output, "} %s_buffer;\n\n", name);
-
 				fprintf(output, "void %s_buffer_create(kope_g5_device *device, kope_g5_buffer *buffer);\n", name);
 				fprintf(output, "void %s_buffer_destroy(kope_g5_buffer *buffer);\n", name);
 				fprintf(output, "%s *%s_buffer_lock(kope_g5_buffer *buffer);\n", name, name);
 				fprintf(output, "void %s_buffer_unlock(kope_g5_buffer *buffer);\n", name);
-				// fprintf(output, "void %s_buffer_set(kope_g5_buffer *buffer);\n\n", name);
 			}
+		}
+
+		fprintf(output, "\n");
+
+		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
+			global *g = get_global(i);
+			descriptor_set *set = g->set;
+
+			if (set == NULL) {
+				continue;
+			}
+
+			bool found = false;
+			for (size_t set_index = 0; set_index < sets_count; ++set_index) {
+				if (sets[set_index] == set) {
+					found = true;
+					break;
+				}
+			}
+
+			if (!found) {
+				sets[sets_count] = set;
+				sets_count += 1;
+			}
+		}
+
+		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
+			descriptor_set *set = sets[set_index];
+			fprintf(output, "typedef struct %s {\n", get_name(set->name));
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				definition d = set->definitions[definition_index];
+				switch (d.kind) {
+				case DEFINITION_CONST_CUSTOM:
+					fprintf(output, "\tkope_g5_buffer *%s;\n", get_name(get_global(d.global)->name));
+					break;
+				default: {
+					debug_context context = {0};
+					error(context, "Unexpected kind of definition");
+					break;
+				}
+				}
+			}
+			fprintf(output, "} %s;\n\n", get_name(set->name));
+
+			fprintf(output, "void kong_set_descriptor_set_%s(kope_g5_command_list * list, %s *set);\n\n", get_name(set->name), get_name(set->name));
 		}
 
 		fprintf(output, "\n");
@@ -496,11 +539,14 @@ void kope_export(char *directory, api_kind api) {
 				}
 				fprintf(output, "\tkope_g5_buffer_unlock(buffer);\n");
 				fprintf(output, "}\n\n");
-
-				// fprintf(output, "void %s_buffer_set(%s_buffer *buffer) {\n", type_name, type_name);
-				// fprintf(output, "\tkinc_g4_set_constant_buffer(%i, &buffer->buffer);\n", global_register_indices[i]);
-				// fprintf(output, "}\n\n");
 			}
+		}
+
+		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
+			descriptor_set *set = sets[set_index];
+
+			fprintf(output, "void kong_set_descriptor_set_%s(kope_g5_command_list * list, %s *set) {\n", get_name(set->name), get_name(set->name));
+			fprintf(output, "}\n\n");
 		}
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
