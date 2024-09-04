@@ -50,7 +50,7 @@ static const char *structure_type(type_id type) {
 	return "UNKNOWN";
 }
 
-static uint32_t structure_size(type_id type) {
+static uint32_t base_type_size(type_id type) {
 	if (type == float_id) {
 		return 4;
 	}
@@ -63,9 +63,22 @@ static uint32_t structure_size(type_id type) {
 	if (type == float4_id) {
 		return 4 * 4;
 	}
+	if (type == float4x4_id) {
+		return 4 * 4 * 4;
+	}
+
 	debug_context context = {0};
-	error(context, "Unknown type for vertex structure");
+	error(context, "Unknown type for structure");
 	return 1;
+}
+
+static uint32_t struct_size(type_id id) {
+	uint32_t size = 0;
+	type *t = get_type(id);
+	for (size_t member_index = 0; member_index < t->members.size; ++member_index) {
+		size += base_type_size(t->members.m[member_index].type.type);
+	}
+	return size;
 }
 
 static const char *convert_compare_mode(int mode) {
@@ -285,16 +298,16 @@ void kope_export(char *directory, api_kind api) {
 				}
 				fprintf(output, "} %s;\n\n", name);
 
-				fprintf(output, "typedef struct %s_buffer {\n", name);
-				fprintf(output, "\tkinc_g4_constant_buffer buffer;\n");
-				fprintf(output, "\t%s *data;\n", name);
-				fprintf(output, "} %s_buffer;\n\n", name);
+				// fprintf(output, "typedef struct %s_buffer {\n", name);
+				// fprintf(output, "\tkkope_g5_buffer buffer;\n");
+				// fprintf(output, "\t%s *data;\n", name);
+				// fprintf(output, "} %s_buffer;\n\n", name);
 
-				fprintf(output, "void %s_buffer_init(%s_buffer *buffer);\n", name, name);
-				fprintf(output, "void %s_buffer_destroy(%s_buffer *buffer);\n", name, name);
-				fprintf(output, "%s *%s_buffer_lock(%s_buffer *buffer);\n", name, name, name);
-				fprintf(output, "void %s_buffer_unlock(%s_buffer *buffer);\n", name, name);
-				fprintf(output, "void %s_buffer_set(%s_buffer *buffer);\n\n", name, name);
+				fprintf(output, "void %s_buffer_create(kope_g5_device *device, kope_g5_buffer *buffer);\n", name);
+				fprintf(output, "void %s_buffer_destroy(kope_g5_buffer *buffer);\n", name);
+				fprintf(output, "%s *%s_buffer_lock(kope_g5_buffer *buffer);\n", name, name);
+				fprintf(output, "void %s_buffer_unlock(kope_g5_buffer *buffer);\n", name);
+				// fprintf(output, "void %s_buffer_set(kope_g5_buffer *buffer);\n\n", name);
 			}
 		}
 
@@ -445,37 +458,48 @@ void kope_export(char *directory, api_kind api) {
 					strcat(type_name, "_type");
 				}
 
-				fprintf(output, "\nvoid %s_buffer_init(%s_buffer *buffer) {\n", type_name, type_name);
-				fprintf(output, "\tbuffer->data = NULL;\n");
-				fprintf(output, "\tkinc_g4_constant_buffer_init(&buffer->buffer, sizeof(%s));\n", type_name);
+				fprintf(output, "\nvoid %s_buffer_create(kope_g5_device *device, kope_g5_buffer *buffer) {\n", type_name);
+				fprintf(output, "\tkope_g5_buffer_parameters parameters;\n");
+				fprintf(output, "\tparameters.size = %i;\n", struct_size(g->type));
+				fprintf(output, "\tparameters.usage_flags = KOPE_G5_BUFFER_USAGE_CPU_WRITE;\n");
+				fprintf(output, "\tkope_g5_device_create_buffer(device, &parameters, buffer);\n");
 				fprintf(output, "}\n\n");
 
-				fprintf(output, "void %s_buffer_destroy(%s_buffer *buffer) {\n", type_name, type_name);
-				fprintf(output, "\tbuffer->data = NULL;\n");
-				fprintf(output, "\tkinc_g4_constant_buffer_destroy(&buffer->buffer);\n");
+				fprintf(output, "void %s_buffer_destroy(kope_g5_buffer *buffer) {\n", type_name);
+				fprintf(output, "\tkope_g5_buffer_destroy(buffer);\n");
 				fprintf(output, "}\n\n");
 
-				fprintf(output, "%s *%s_buffer_lock(%s_buffer *buffer) {\n", type_name, type_name, type_name);
-				fprintf(output, "\tbuffer->data = (%s *)kinc_g4_constant_buffer_lock_all(&buffer->buffer);\n", type_name);
-				fprintf(output, "\treturn buffer->data;\n");
+				fprintf(output, "%s *%s_buffer_lock(kope_g5_buffer *buffer) {\n", type_name, type_name);
+				fprintf(output, "\treturn (%s *)kope_g5_buffer_lock(buffer);\n", type_name);
 				fprintf(output, "}\n\n");
 
-				fprintf(output, "void %s_buffer_unlock(%s_buffer *buffer) {\n", type_name, type_name);
+				fprintf(output, "void %s_buffer_unlock(kope_g5_buffer *buffer) {\n", type_name);
 				if (api != API_OPENGL) {
-					// transpose matrices
+					bool has_matrices = false;
 					for (size_t j = 0; j < t->members.size; ++j) {
 						if (t->members.m[j].type.type == float4x4_id) {
-							fprintf(output, "\tkinc_matrix4x4_transpose(&buffer->data->%s);\n", get_name(t->members.m[j].name));
+							has_matrices = true;
+							break;
 						}
 					}
+
+					if (has_matrices) {
+						fprintf(output, "\t%s *data = (%s *)kope_g5_buffer_lock(buffer);\n", type_name, type_name);
+						// transpose matrices
+						for (size_t j = 0; j < t->members.size; ++j) {
+							if (t->members.m[j].type.type == float4x4_id) {
+								fprintf(output, "\tkinc_matrix4x4_transpose(&data->%s);\n", get_name(t->members.m[j].name));
+							}
+						}
+						fprintf(output, "\tkope_g5_buffer_unlock(buffer);\n");
+					}
 				}
-				fprintf(output, "\tbuffer->data = NULL;\n");
-				fprintf(output, "\tkinc_g4_constant_buffer_unlock_all(&buffer->buffer);\n");
+				fprintf(output, "\tkope_g5_buffer_unlock(buffer);\n");
 				fprintf(output, "}\n\n");
 
-				fprintf(output, "void %s_buffer_set(%s_buffer *buffer) {\n", type_name, type_name);
-				fprintf(output, "\tkinc_g4_set_constant_buffer(%i, &buffer->buffer);\n", global_register_indices[i]);
-				fprintf(output, "}\n\n");
+				// fprintf(output, "void %s_buffer_set(%s_buffer *buffer) {\n", type_name, type_name);
+				// fprintf(output, "\tkinc_g4_set_constant_buffer(%i, &buffer->buffer);\n", global_register_indices[i]);
+				// fprintf(output, "}\n\n");
 			}
 		}
 
@@ -655,7 +679,7 @@ void kope_export(char *directory, api_kind api) {
 									        get_name(t->name), j, j);
 								}
 
-								offset += structure_size(vertex_type->members.m[j].type.type);
+								offset += base_type_size(vertex_type->members.m[j].type.type);
 							}
 							fprintf(output, "\t%s_parameters.vertex.buffers[0].attributes_count = %" PRIu64 ";\n", get_name(t->name),
 							        vertex_type->members.size);
