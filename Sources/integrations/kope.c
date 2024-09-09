@@ -271,6 +271,7 @@ void kope_export(char *directory, api_kind api) {
 		fprintf(output, "#define KONG_INTEGRATION_HEADER\n\n");
 
 		fprintf(output, "#include <kope/graphics5/device.h>\n");
+		fprintf(output, "#include <kope/direct3d12/descriptorset_structs.h>\n");
 		fprintf(output, "#include <kope/direct3d12/pipeline_structs.h>\n");
 		fprintf(output, "#include <kinc/math/matrix.h>\n");
 		fprintf(output, "#include <kinc/math/vector.h>\n\n");
@@ -335,7 +336,8 @@ void kope_export(char *directory, api_kind api) {
 
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
-			fprintf(output, "typedef struct %s {\n", get_name(set->name));
+
+			fprintf(output, "typedef struct %s_parameters {\n", get_name(set->name));
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 				definition d = set->definitions[definition_index];
 				switch (d.kind) {
@@ -349,9 +351,15 @@ void kope_export(char *directory, api_kind api) {
 				}
 				}
 			}
-			fprintf(output, "} %s;\n\n", get_name(set->name));
+			fprintf(output, "} %s_parameters;\n\n", get_name(set->name));
 
-			fprintf(output, "void kong_set_descriptor_set_%s(kope_g5_command_list * list, %s *set);\n\n", get_name(set->name), get_name(set->name));
+			fprintf(output, "typedef struct %s_set {\n", get_name(set->name));
+			fprintf(output, "\tkope_d3d12_descriptor_set set;\n");
+			fprintf(output, "} %s_set;\n\n", get_name(set->name));
+
+			fprintf(output, "void kong_create_%s_set(kope_g5_device *device, const %s_parameters *parameters, %s_set *set);\n", get_name(set->name),
+			        get_name(set->name), get_name(set->name));
+			fprintf(output, "void kong_set_descriptor_set_%s(kope_g5_command_list *list, %s_set *set);\n\n", get_name(set->name), get_name(set->name));
 		}
 
 		fprintf(output, "\n");
@@ -439,6 +447,8 @@ void kope_export(char *directory, api_kind api) {
 
 		fprintf(output, "\n#include <kope/direct3d12/buffer_functions.h>\n");
 		fprintf(output, "#include <kope/direct3d12/commandlist_functions.h>\n");
+		fprintf(output, "#include <kope/direct3d12/device_functions.h>\n");
+		fprintf(output, "#include <kope/direct3d12/descriptorset_functions.h>\n");
 		fprintf(output, "#include <kope/direct3d12/pipeline_functions.h>\n\n");
 
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
@@ -545,7 +555,17 @@ void kope_export(char *directory, api_kind api) {
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
 
-			fprintf(output, "void kong_set_descriptor_set_%s(kope_g5_command_list * list, %s *set) {\n", get_name(set->name), get_name(set->name));
+			fprintf(output, "void kong_create_%s_set(kope_g5_device *device, const %s_parameters *parameters, %s_set *set) {\n", get_name(set->name),
+			        get_name(set->name), get_name(set->name));
+			fprintf(output, "\tkope_d3d12_device_create_descriptor_set(device, %" PRIu64 ", &set->set);\n", set->definitions_count);
+			for (size_t descriptor_index = 0; descriptor_index < set->definitions_count; ++descriptor_index) {
+				fprintf(output, "\tkope_d3d12_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
+				        get_name(get_global(set->definitions[descriptor_index].global)->name), descriptor_index);
+			}
+			fprintf(output, "}\n\n");
+
+			fprintf(output, "void kong_set_descriptor_set_%s(kope_g5_command_list *list, %s_set *set) {\n", get_name(set->name), get_name(set->name));
+			fprintf(output, "\tkope_d3d12_command_list_set_descriptor_table(list, 0, &set->set);\n");
 			fprintf(output, "}\n\n");
 		}
 
