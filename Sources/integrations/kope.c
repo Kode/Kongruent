@@ -85,21 +85,21 @@ static uint32_t struct_size(type_id id) {
 static const char *convert_compare_mode(int mode) {
 	switch (mode) {
 	case 0:
-		return "KINC_G4_COMPARE_ALWAYS";
+		return "KOPE_D3D12_COMPARE_FUNCTION_ALWAYS";
 	case 1:
-		return "KINC_G4_COMPARE_NEVER";
+		return "KOPE_D3D12_COMPARE_FUNCTION_NEVER";
 	case 2:
-		return "KINC_G4_COMPARE_EQUAL";
+		return "KOPE_D3D12_COMPARE_FUNCTION_EQUAL";
 	case 3:
-		return "KINC_G4_COMPARE_NOT_EQUAL";
+		return "KOPE_D3D12_COMPARE_FUNCTION_NOT_EQUAL";
 	case 4:
-		return "KINC_G4_COMPARE_LESS";
+		return "KOPE_D3D12_COMPARE_FUNCTION_LESS";
 	case 5:
-		return "KINC_G4_COMPARE_LESS_EQUAL";
+		return "KOPE_D3D12_COMPARE_FUNCTION_LESS_EQUAL";
 	case 6:
-		return "KINC_G4_COMPARE_GREATER";
+		return "KOPE_D3D12_COMPARE_FUNCTION_GREATER";
 	case 7:
-		return "KINC_G4_COMPARE_GREATER_EQUAL";
+		return "KOPE_D3D12_COMPARE_FUNCTION_GREATER_EQUAL";
 	default: {
 		debug_context context = {0};
 		error(context, "Unknown compare mode");
@@ -160,6 +160,16 @@ static const char *convert_blend_op(int op) {
 		return "UNKNOWN";
 	}
 	}
+}
+
+static member *find_member(type *t, char *name) {
+	for (size_t j = 0; j < t->members.size; ++j) {
+		if (t->members.m[j].name == add_name(name)) {
+			return &t->members.m[j];
+		}
+	}
+
+	return NULL;
 }
 
 static int global_register_indices[512];
@@ -632,17 +642,17 @@ void kope_export(char *directory, api_kind api) {
 						        get_name(t->members.m[j].value.identifier));
 						fragment_shader_name = t->members.m[j].value.identifier;
 					}
-					else if (t->members.m[j].name == add_name("depth_write")) {
-						debug_context context = {0};
-						check(t->members.m[j].value.kind == TOKEN_BOOLEAN, context, "depth_write expects a bool");
-						fprintf(output, "\t%s.depth_write = %s;\n\n", get_name(t->name), t->members.m[j].value.boolean ? "true" : "false");
-					}
-					else if (t->members.m[j].name == add_name("depth_mode")) {
-						debug_context context = {0};
-						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "depth_mode expects an identifier");
-						global *g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.depth_mode = %s;\n\n", get_name(t->name), convert_compare_mode(g->value.value.ints[0]));
-					}
+					// else if (t->members.m[j].name == add_name("depth_write")) {
+					//	debug_context context = {0};
+					//	check(t->members.m[j].value.kind == TOKEN_BOOLEAN, context, "depth_write expects a bool");
+					//	fprintf(output, "\t%s.depth_write = %s;\n\n", get_name(t->name), t->members.m[j].value.boolean ? "true" : "false");
+					// }
+					// else if (t->members.m[j].name == add_name("depth_mode")) {
+					//	debug_context context = {0};
+					//	check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "depth_mode expects an identifier");
+					//	global *g = find_global(t->members.m[j].value.identifier);
+					//	fprintf(output, "\t%s.depth_mode = %s;\n\n", get_name(t->name), convert_compare_mode(g->value.value.ints[0]));
+					//}
 					else if (t->members.m[j].name == add_name("blend_source")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_source expects an identifier");
@@ -679,10 +689,10 @@ void kope_export(char *directory, api_kind api) {
 						global *g = find_global(t->members.m[j].value.identifier);
 						fprintf(output, "\t%s.alpha_blend_operation = %s;\n\n", get_name(t->name), convert_blend_op(g->value.value.ints[0]));
 					}
-					else {
-						debug_context context = {0};
-						error(context, "Unsupported pipe member %s", get_name(t->members.m[j].name));
-					}
+					// else {
+					//	debug_context context = {0};
+					//	error(context, "Unsupported pipe member %s", get_name(t->members.m[j].name));
+					// }
 				}
 
 				{
@@ -763,8 +773,27 @@ void kope_export(char *directory, api_kind api) {
 				fprintf(output, "\t%s_parameters.primitive.unclipped_depth = false;\n\n", get_name(t->name));
 
 				fprintf(output, "\t%s_parameters.depth_stencil.format = KOPE_G5_TEXTURE_FORMAT_DEPTH32FLOAT;\n", get_name(t->name));
-				fprintf(output, "\t%s_parameters.depth_stencil.depth_write_enabled = true;\n", get_name(t->name));
-				fprintf(output, "\t%s_parameters.depth_stencil.depth_compare = KOPE_D3D12_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
+				member *depth_write = find_member(t, "depth_write");
+				if (depth_write != NULL) {
+					debug_context context = {0};
+					check(depth_write->value.kind == TOKEN_BOOLEAN, context, "depth_write expects a bool");
+					fprintf(output, "\t%s_parameters.depth_stencil.depth_write_enabled = %s;\n", get_name(t->name),
+					        depth_write->value.boolean ? "true" : "false");
+				}
+				else {
+					fprintf(output, "\t%s_parameters.depth_stencil.depth_write_enabled = false;\n", get_name(t->name));
+				}
+
+				member *depth_compare = find_member(t, "depth_compare");
+				if (depth_compare != NULL) {
+					debug_context context = {0};
+					check(depth_compare->value.kind == TOKEN_IDENTIFIER, context, "depth_compare expects an identifier");
+					global *g = find_global(depth_compare->value.identifier);
+					fprintf(output, "\t%s_parameters.depth_stencil.depth_compare = %s;\n", get_name(t->name), convert_compare_mode(g->value.value.ints[0]));
+				}
+				else {
+					fprintf(output, "\t%s_parameters.depth_stencil.depth_compare = KOPE_D3D12_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
+				}
 
 				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.compare = KOPE_D3D12_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
 				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.fail_op = KOPE_D3D12_STENCIL_OPERATION_KEEP;\n", get_name(t->name));
