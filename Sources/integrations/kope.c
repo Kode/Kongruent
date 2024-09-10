@@ -840,15 +840,15 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "\t%s_parameters.depth_stencil.depth_compare = %s;\n", get_name(t->name), convert_compare_mode(g->value.value.ints[0]));
 				}
 				else {
-					fprintf(output, "\t%s_parameters.depth_stencil.depth_compare = KOPE_D3D12_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
+					fprintf(output, "\t%s_parameters.depth_stencil.depth_compare = KOPE_G5_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
 				}
 
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.compare = KOPE_D3D12_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.compare = KOPE_G5_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
 				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.fail_op = KOPE_D3D12_STENCIL_OPERATION_KEEP;\n", get_name(t->name));
 				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.depth_fail_op = KOPE_D3D12_STENCIL_OPERATION_KEEP;\n", get_name(t->name));
 				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.pass_op = KOPE_D3D12_STENCIL_OPERATION_KEEP;\n", get_name(t->name));
 
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.compare = KOPE_D3D12_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.compare = KOPE_G5_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
 				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.fail_op = KOPE_D3D12_STENCIL_OPERATION_KEEP;\n", get_name(t->name));
 				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.depth_fail_op = KOPE_D3D12_STENCIL_OPERATION_KEEP;\n", get_name(t->name));
 				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.pass_op = KOPE_D3D12_STENCIL_OPERATION_KEEP;\n", get_name(t->name));
