@@ -354,6 +354,12 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_CONST_CUSTOM:
 					fprintf(output, "\tkope_g5_buffer *%s;\n", get_name(get_global(d.global)->name));
 					break;
+				case DEFINITION_TEX2D:
+					fprintf(output, "\tkope_g5_texture *%s;\n", get_name(get_global(d.global)->name));
+					break;
+				case DEFINITION_SAMPLER:
+					fprintf(output, "\tkope_g5_texture *%s;\n", get_name(get_global(d.global)->name));
+					break;
 				default: {
 					debug_context context = {0};
 					error(context, "Unexpected kind of definition");

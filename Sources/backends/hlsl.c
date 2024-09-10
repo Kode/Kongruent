@@ -303,29 +303,90 @@ static size_t all_descriptor_sets_count = 0;
 
 static void write_root_signature(char *hlsl, size_t *offset) {
 	uint32_t cbv_index = 0;
+	uint32_t srv_index = 0;
+	uint32_t sampler_index = 0;
 
 	*offset += sprintf(&hlsl[*offset], "[RootSignature(\"RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)");
 
 	for (size_t set_count = 0; set_count < all_descriptor_sets_count; ++set_count) {
-		*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(");
-
 		descriptor_set *set = all_descriptor_sets[set_count];
+
+		bool has_sampler = false;
+		bool has_other = false;
+
 		for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 			definition *def = &set->definitions[definition_index];
 
 			switch (def->kind) {
 			case DEFINITION_CONST_CUSTOM:
-				*offset += sprintf(&hlsl[*offset], "CBV(b%i)", cbv_index);
-				cbv_index += 1;
+			case DEFINITION_TEX2D:
+			case DEFINITION_TEXCUBE:
+				has_other = true;
 				break;
-			default: {
-				debug_context context = {0};
-				error(context, "Can not write definition to root signature");
-			}
+			case DEFINITION_SAMPLER:
+				has_sampler = true;
+				break;
 			}
 		}
 
-		*offset += sprintf(&hlsl[*offset], ")");
+		if (has_other) {
+			*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(");
+
+			bool first = true;
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				definition *def = &set->definitions[definition_index];
+
+				switch (def->kind) {
+				case DEFINITION_CONST_CUSTOM:
+					if (first) {
+						first = false;
+					}
+					else {
+						*offset += sprintf(&hlsl[*offset], ", ");
+					}
+					*offset += sprintf(&hlsl[*offset], "CBV(b%i)", cbv_index);
+					cbv_index += 1;
+					break;
+				case DEFINITION_TEX2D:
+				case DEFINITION_TEXCUBE:
+					if (first) {
+						first = false;
+					}
+					else {
+						*offset += sprintf(&hlsl[*offset], ", ");
+					}
+					*offset += sprintf(&hlsl[*offset], "SRV(t%i)", srv_index);
+					srv_index += 1;
+					break;
+				}
+			}
+
+			*offset += sprintf(&hlsl[*offset], ")");
+		}
+
+		if (has_sampler) {
+			*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(");
+
+			bool first = true;
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				definition *def = &set->definitions[definition_index];
+
+				switch (def->kind) {
+				case DEFINITION_SAMPLER:
+					if (first) {
+						first = false;
+					}
+					else {
+						*offset += sprintf(&hlsl[*offset], ", ");
+					}
+					*offset += sprintf(&hlsl[*offset], "Sampler(s%i)", sampler_index);
+					sampler_index += 1;
+					break;
+				}
+			}
+
+			*offset += sprintf(&hlsl[*offset], ")");
+		}
 	}
 
 	*offset += sprintf(&hlsl[*offset], "\")]\n");

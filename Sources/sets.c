@@ -32,7 +32,7 @@ void add_definition_to_set(descriptor_set *set, definition def) {
 	assert(def.kind != DEFINITION_FUNCTION && def.kind != DEFINITION_STRUCT);
 
 	for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-		if (set->definitions[definition_index].global = def.global) {
+		if (set->definitions[definition_index].global == def.global) {
 			return;
 		}
 	}
