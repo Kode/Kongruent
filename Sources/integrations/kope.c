@@ -281,6 +281,7 @@ void kope_export(char *directory, api_kind api) {
 		fprintf(output, "#define KONG_INTEGRATION_HEADER\n\n");
 
 		fprintf(output, "#include <kope/graphics5/device.h>\n");
+		fprintf(output, "#include <kope/graphics5/sampler.h>\n");
 		fprintf(output, "#include <kope/direct3d12/descriptorset_structs.h>\n");
 		fprintf(output, "#include <kope/direct3d12/pipeline_structs.h>\n");
 		fprintf(output, "#include <kinc/math/matrix.h>\n");
@@ -358,7 +359,7 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "\tkope_g5_texture *%s;\n", get_name(get_global(d.global)->name));
 					break;
 				case DEFINITION_SAMPLER:
-					fprintf(output, "\tkope_g5_texture *%s;\n", get_name(get_global(d.global)->name));
+					fprintf(output, "\tkope_g5_sampler *%s;\n", get_name(get_global(d.global)->name));
 					break;
 				default: {
 					debug_context context = {0};
@@ -573,10 +574,51 @@ void kope_export(char *directory, api_kind api) {
 
 			fprintf(output, "void kong_create_%s_set(kope_g5_device *device, const %s_parameters *parameters, %s_set *set) {\n", get_name(set->name),
 			        get_name(set->name), get_name(set->name));
-			fprintf(output, "\tkope_d3d12_device_create_descriptor_set(device, %" PRIu64 ", &set->set);\n", set->definitions_count);
+
+			size_t other_count = 0;
+			size_t sampler_count = 0;
+
 			for (size_t descriptor_index = 0; descriptor_index < set->definitions_count; ++descriptor_index) {
-				fprintf(output, "\tkope_d3d12_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
-				        get_name(get_global(set->definitions[descriptor_index].global)->name), descriptor_index);
+				definition d = set->definitions[descriptor_index];
+
+				switch (d.kind) {
+				case DEFINITION_CONST_CUSTOM:
+					other_count += 1;
+					break;
+				case DEFINITION_TEX2D:
+					other_count += 1;
+					break;
+				case DEFINITION_SAMPLER:
+					sampler_count += 1;
+					break;
+				}
+			}
+
+			fprintf(output, "\tkope_d3d12_device_create_descriptor_set(device, %" PRIu64 ", %" PRIu64 ", &set->set);\n", other_count, sampler_count);
+
+			size_t other_index = 0;
+			size_t sampler_index = 0;
+
+			for (size_t descriptor_index = 0; descriptor_index < set->definitions_count; ++descriptor_index) {
+				definition d = set->definitions[descriptor_index];
+
+				switch (d.kind) {
+				case DEFINITION_CONST_CUSTOM:
+					fprintf(output, "\tkope_d3d12_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
+					        get_name(get_global(d.global)->name), other_index);
+					other_index += 1;
+					break;
+				case DEFINITION_TEX2D:
+					fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_view_srv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
+					        get_name(get_global(d.global)->name), other_index);
+					other_index += 1;
+					break;
+				case DEFINITION_SAMPLER:
+					fprintf(output, "\tkope_d3d12_descriptor_set_set_sampler(device, &set->set, parameters->%s, %" PRIu64 ");\n",
+					        get_name(get_global(d.global)->name), sampler_index);
+					sampler_index += 1;
+					break;
+				}
 			}
 			fprintf(output, "}\n\n");
 
