@@ -371,7 +371,18 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "} %s_parameters;\n\n", get_name(set->name));
 
 			fprintf(output, "typedef struct %s_set {\n", get_name(set->name));
-			fprintf(output, "\tkope_d3d12_descriptor_set set;\n");
+			fprintf(output, "\tkope_d3d12_descriptor_set set;\n\n");
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				definition d = set->definitions[definition_index];
+				switch (d.kind) {
+				case DEFINITION_CONST_CUSTOM:
+					fprintf(output, "\tkope_g5_buffer *%s;\n", get_name(get_global(d.global)->name));
+					break;
+				case DEFINITION_TEX2D:
+					fprintf(output, "\tkope_g5_texture *%s;\n", get_name(get_global(d.global)->name));
+					break;
+				}
+			}
 			fprintf(output, "} %s_set;\n\n", get_name(set->name));
 
 			fprintf(output, "void kong_create_%s_set(kope_g5_device *device, const %s_parameters *parameters, %s_set *set);\n", get_name(set->name),
@@ -606,11 +617,13 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_CONST_CUSTOM:
 					fprintf(output, "\tkope_d3d12_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
 					        get_name(get_global(d.global)->name), other_index);
+					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
 					other_index += 1;
 					break;
 				case DEFINITION_TEX2D:
 					fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_view_srv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
 					        get_name(get_global(d.global)->name), other_index);
+					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
 					other_index += 1;
 					break;
 				case DEFINITION_SAMPLER:
@@ -623,7 +636,19 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "void kong_set_descriptor_set_%s(kope_g5_command_list *list, %s_set *set) {\n", get_name(set->name), get_name(set->name));
-			fprintf(output, "\tkope_d3d12_command_list_set_descriptor_table(list, 0, &set->set);\n");
+			for (size_t descriptor_index = 0; descriptor_index < set->definitions_count; ++descriptor_index) {
+				definition d = set->definitions[descriptor_index];
+
+				switch (d.kind) {
+				case DEFINITION_CONST_CUSTOM:
+					fprintf(output, "\tkope_d3d12_descriptor_set_prepare_cbv_buffer(list, set->%s);\n", get_name(get_global(d.global)->name));
+					break;
+				case DEFINITION_TEX2D:
+					fprintf(output, "\tkope_d3d12_descriptor_set_prepare_srv_texture(list, set->%s);\n", get_name(get_global(d.global)->name));
+					break;
+				}
+			}
+			fprintf(output, "\n\tkope_d3d12_command_list_set_descriptor_table(list, 0, &set->set);\n");
 			fprintf(output, "}\n\n");
 		}
 
