@@ -175,7 +175,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		case OPERATOR_MULTIPLY: {
 			variable right_var = emit_expression(code, parent, right);
 			variable left_var = emit_expression(code, parent, left);
-			variable result_var = allocate_variable(right_var.type, VARIABLE_LOCAL);
+			variable result_var = allocate_variable(e->type, VARIABLE_LOCAL);
 
 			opcode o;
 			switch (e->binary.op) {
@@ -443,7 +443,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	case EXPRESSION_INT: {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
-		t.type = float_id;
+		t.type = int_id;
 		variable v = allocate_variable(t, VARIABLE_LOCAL);
 
 		opcode o;

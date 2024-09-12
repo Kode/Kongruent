@@ -67,9 +67,12 @@ static uint32_t base_type_size(type_id type) {
 	if (type == float4x4_id) {
 		return 4 * 4 * 4;
 	}
+	if (type == float3x3_id) {
+		return 3 * 4 * 4;
+	}
 
 	debug_context context = {0};
-	error(context, "Unknown type for structure");
+	error(context, "Unknown type %s for structure", get_name(get_type(type)->name));
 	return 1;
 }
 

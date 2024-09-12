@@ -29,5 +29,3 @@ function_id add_function(name_id name);
 function_id find_function(name_id name);
 
 function *get_function(function_id function);
-
-extern function_id sample_id;

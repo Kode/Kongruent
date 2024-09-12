@@ -10,11 +10,6 @@ static function *functions = NULL;
 static function_id functions_size = 1024;
 static function_id next_function_index = 0;
 
-function_id sample_id;
-function_id float2_constructor_id;
-function_id float3_constructor_id;
-function_id float4_constructor_id;
-
 static void add_func_int(char *name) {
 	function_id func = add_function(add_name(name));
 	function *f = get_function(func);
@@ -70,6 +65,18 @@ static void add_func_float_float(char *name) {
 	f->block = NULL;
 }
 
+static void add_func_float_float2(char *name) {
+	function_id func = add_function(add_name(name));
+	function *f = get_function(func);
+	init_type_ref(&f->return_type, add_name("float"));
+	f->return_type.type = find_type_by_ref(&f->return_type);
+	f->parameter_names[0] = add_name("a");
+	init_type_ref(&f->parameter_types[0], add_name("float2"));
+	f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+	f->parameters_size = 1;
+	f->block = NULL;
+}
+
 static void add_func_float3_float3(char *name) {
 	function_id func = add_function(add_name(name));
 	function *f = get_function(func);
@@ -108,8 +115,8 @@ void functions_init(void) {
 	next_function_index = 0;
 
 	{
-		sample_id = add_function(add_name("sample"));
-		function *f = get_function(sample_id);
+		function_id func = add_function(add_name("sample"));
+		function *f = get_function(func);
 		init_type_ref(&f->return_type, add_name("float4"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
 		f->parameter_names[0] = add_name("tex_coord");
@@ -120,8 +127,8 @@ void functions_init(void) {
 	}
 
 	{
-		sample_id = add_function(add_name("sample_lod"));
-		function *f = get_function(sample_id);
+		function_id func = add_function(add_name("sample_lod"));
+		function *f = get_function(func);
 		init_type_ref(&f->return_type, add_name("float4"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
 		f->parameter_names[0] = add_name("tex_coord");
@@ -132,8 +139,22 @@ void functions_init(void) {
 	}
 
 	{
-		float2_constructor_id = add_function(add_name("float2"));
-		function *f = get_function(float2_constructor_id);
+		function_id func = add_function(add_name("float"));
+		function *f = get_function(func);
+		init_type_ref(&f->return_type, add_name("float"));
+		f->return_type.type = find_type_by_ref(&f->return_type);
+		f->parameter_names[0] = add_name("x");
+		init_type_ref(&f->parameter_types[0], add_name("float"));
+		f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+
+		f->parameters_size = 1;
+
+		f->block = NULL;
+	}
+
+	{
+		function_id func = add_function(add_name("float2"));
+		function *f = get_function(func);
 		init_type_ref(&f->return_type, add_name("float2"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
 		f->parameter_names[0] = add_name("x");
@@ -150,8 +171,8 @@ void functions_init(void) {
 	}
 
 	{
-		float3_constructor_id = add_function(add_name("float3"));
-		function *f = get_function(float3_constructor_id);
+		function_id func = add_function(add_name("float3"));
+		function *f = get_function(func);
 		init_type_ref(&f->return_type, add_name("float3"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
 
@@ -173,8 +194,8 @@ void functions_init(void) {
 	}
 
 	{
-		float4_constructor_id = add_function(add_name("float4"));
-		function *f = get_function(float4_constructor_id);
+		function_id func = add_function(add_name("float4"));
+		function *f = get_function(func);
 		init_type_ref(&f->return_type, add_name("float4"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
 
@@ -200,8 +221,23 @@ void functions_init(void) {
 	}
 
 	{
-		float2_constructor_id = add_function(add_name("int2"));
-		function *f = get_function(float2_constructor_id);
+		function_id func = add_function(add_name("int"));
+		function *f = get_function(func);
+		init_type_ref(&f->return_type, add_name("int"));
+		f->return_type.type = find_type_by_ref(&f->return_type);
+
+		f->parameter_names[0] = add_name("x");
+		init_type_ref(&f->parameter_types[0], add_name("int"));
+		f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+
+		f->parameters_size = 1;
+
+		f->block = NULL;
+	}
+
+	{
+		function_id func = add_function(add_name("int2"));
+		function *f = get_function(func);
 		init_type_ref(&f->return_type, add_name("int2"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
 
@@ -219,8 +255,8 @@ void functions_init(void) {
 	}
 
 	{
-		float3_constructor_id = add_function(add_name("int3"));
-		function *f = get_function(float3_constructor_id);
+		function_id func = add_function(add_name("int3"));
+		function *f = get_function(func);
 		init_type_ref(&f->return_type, add_name("int3"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
 
@@ -242,8 +278,8 @@ void functions_init(void) {
 	}
 
 	{
-		float4_constructor_id = add_function(add_name("int4"));
-		function *f = get_function(float4_constructor_id);
+		function_id func = add_function(add_name("int4"));
+		function *f = get_function(func);
 		init_type_ref(&f->return_type, add_name("int4"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
 
@@ -269,8 +305,23 @@ void functions_init(void) {
 	}
 
 	{
-		float2_constructor_id = add_function(add_name("uint2"));
-		function *f = get_function(float2_constructor_id);
+		function_id func = add_function(add_name("uint"));
+		function *f = get_function(func);
+		init_type_ref(&f->return_type, add_name("uint"));
+		f->return_type.type = find_type_by_ref(&f->return_type);
+
+		f->parameter_names[0] = add_name("x");
+		init_type_ref(&f->parameter_types[0], add_name("uint"));
+		f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+
+		f->parameters_size = 1;
+
+		f->block = NULL;
+	}
+
+	{
+		function_id func = add_function(add_name("uint2"));
+		function *f = get_function(func);
 		init_type_ref(&f->return_type, add_name("uint2"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
 
@@ -288,8 +339,8 @@ void functions_init(void) {
 	}
 
 	{
-		float3_constructor_id = add_function(add_name("uint3"));
-		function *f = get_function(float3_constructor_id);
+		function_id func = add_function(add_name("uint3"));
+		function *f = get_function(func);
 		init_type_ref(&f->return_type, add_name("uint3"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
 
@@ -311,8 +362,8 @@ void functions_init(void) {
 	}
 
 	{
-		float4_constructor_id = add_function(add_name("uint4"));
-		function *f = get_function(float4_constructor_id);
+		function_id func = add_function(add_name("uint4"));
+		function *f = get_function(func);
 		init_type_ref(&f->return_type, add_name("uint4"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
 
@@ -330,6 +381,90 @@ void functions_init(void) {
 
 		f->parameter_names[3] = add_name("w");
 		init_type_ref(&f->parameter_types[3], add_name("uint"));
+		f->parameter_types[3].type = find_type_by_ref(&f->parameter_types[3]);
+
+		f->parameters_size = 4;
+
+		f->block = NULL;
+	}
+
+	{
+		function_id func = add_function(add_name("bool"));
+		function *f = get_function(func);
+		init_type_ref(&f->return_type, add_name("bool"));
+		f->return_type.type = find_type_by_ref(&f->return_type);
+
+		f->parameter_names[0] = add_name("x");
+		init_type_ref(&f->parameter_types[0], add_name("bool"));
+		f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+
+		f->parameters_size = 1;
+
+		f->block = NULL;
+	}
+
+	{
+		function_id func = add_function(add_name("bool2"));
+		function *f = get_function(func);
+		init_type_ref(&f->return_type, add_name("bool2"));
+		f->return_type.type = find_type_by_ref(&f->return_type);
+
+		f->parameter_names[0] = add_name("x");
+		init_type_ref(&f->parameter_types[0], add_name("bool"));
+		f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+
+		f->parameter_names[1] = add_name("y");
+		init_type_ref(&f->parameter_types[1], add_name("bool"));
+		f->parameter_types[1].type = find_type_by_ref(&f->parameter_types[1]);
+
+		f->parameters_size = 2;
+
+		f->block = NULL;
+	}
+
+	{
+		function_id func = add_function(add_name("bool3"));
+		function *f = get_function(func);
+		init_type_ref(&f->return_type, add_name("bool3"));
+		f->return_type.type = find_type_by_ref(&f->return_type);
+
+		f->parameter_names[0] = add_name("x");
+		init_type_ref(&f->parameter_types[0], add_name("bool"));
+		f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+
+		f->parameter_names[1] = add_name("y");
+		init_type_ref(&f->parameter_types[1], add_name("bool"));
+		f->parameter_types[1].type = find_type_by_ref(&f->parameter_types[1]);
+
+		f->parameter_names[2] = add_name("z");
+		init_type_ref(&f->parameter_types[2], add_name("bool"));
+		f->parameter_types[2].type = find_type_by_ref(&f->parameter_types[2]);
+
+		f->parameters_size = 3;
+
+		f->block = NULL;
+	}
+
+	{
+		function_id func = add_function(add_name("bool4"));
+		function *f = get_function(func);
+		init_type_ref(&f->return_type, add_name("bool4"));
+		f->return_type.type = find_type_by_ref(&f->return_type);
+
+		f->parameter_names[0] = add_name("x");
+		init_type_ref(&f->parameter_types[0], add_name("bool"));
+		f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+
+		f->parameter_names[1] = add_name("y");
+		init_type_ref(&f->parameter_types[1], add_name("bool"));
+		f->parameter_types[1].type = find_type_by_ref(&f->parameter_types[1]);
+
+		f->parameter_names[2] = add_name("z");
+		init_type_ref(&f->parameter_types[2], add_name("bool"));
+		f->parameter_types[2].type = find_type_by_ref(&f->parameter_types[2]);
+
+		f->parameter_names[3] = add_name("w");
+		init_type_ref(&f->parameter_types[3], add_name("bool"));
 		f->parameter_types[3].type = find_type_by_ref(&f->parameter_types[3]);
 
 		f->parameters_size = 4;
@@ -401,6 +536,9 @@ void functions_init(void) {
 	add_func_float3("world_ray_direction");
 	add_func_float3_float3("normalize");
 	add_func_float_float("saturate");
+	add_func_float_float("sin");
+	add_func_float_float("cos");
+	add_func_float_float2("length");
 	add_func_uint3("ray_index");
 	add_func_float3("ray_dimensions");
 
