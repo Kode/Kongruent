@@ -304,6 +304,7 @@ static size_t all_descriptor_sets_count = 0;
 static void write_root_signature(char *hlsl, size_t *offset) {
 	uint32_t cbv_index = 0;
 	uint32_t srv_index = 0;
+	uint32_t uav_index = 0;
 	uint32_t sampler_index = 0;
 
 	*offset += sprintf(&hlsl[*offset], "[RootSignature(\"RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)");
@@ -355,8 +356,17 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 					else {
 						*offset += sprintf(&hlsl[*offset], ", ");
 					}
-					*offset += sprintf(&hlsl[*offset], "SRV(t%i)", srv_index);
-					srv_index += 1;
+
+					attribute *write_attribute = find_attribute(&get_global(def->global)->attributes, add_name("write"));
+
+					if (write_attribute != NULL) {
+						*offset += sprintf(&hlsl[*offset], "UAV(u%i)", uav_index);
+						uav_index += 1;
+					}
+					else {
+						*offset += sprintf(&hlsl[*offset], "SRV(t%i)", srv_index);
+						srv_index += 1;
+					}
 					break;
 				}
 			}
@@ -493,7 +503,8 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					error(context, "Compute function requires a threads attribute with three parameters");
 				}
 
-				*offset += sprintf(&hlsl[*offset], "[numthreads(%i, %i, %i)] %s main(", (int)threads_attribute->parameters[0],
+				write_root_signature(hlsl, offset);
+				*offset += sprintf(&hlsl[*offset], "[numthreads(%i, %i, %i)]\n%s main(", (int)threads_attribute->parameters[0],
 				                   (int)threads_attribute->parameters[1], (int)threads_attribute->parameters[2], type_string(f->return_type.type));
 				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 					if (parameter_index == 0) {
@@ -1263,6 +1274,30 @@ void hlsl_export(char *directory, api_kind d3d) {
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
 		if (has_attribute(&f->attributes, add_name("compute"))) {
+			global_id all_globals[256];
+			size_t all_globals_size = 0;
+
+			find_referenced_globals(f, all_globals, &all_globals_size);
+
+			for (size_t global_index = 0; global_index < all_globals_size; ++global_index) {
+				global *g = get_global(all_globals[global_index]);
+				if (g->set != NULL) {
+					bool found = false;
+
+					for (size_t set_index = 0; set_index < all_descriptor_sets_count; ++set_index) {
+						if (all_descriptor_sets[set_index] == g->set) {
+							found = true;
+							break;
+						}
+					}
+
+					if (!found) {
+						all_descriptor_sets[all_descriptor_sets_count] = g->set;
+						all_descriptor_sets_count += 1;
+					}
+				}
+			}
+
 			compute_shaders[compute_shaders_size] = f;
 			compute_shaders_size += 1;
 		}

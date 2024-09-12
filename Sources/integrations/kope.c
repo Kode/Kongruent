@@ -27,6 +27,9 @@ static char *type_string(type_id type) {
 	if (type == float4_id) {
 		return "kinc_vector4_t";
 	}
+	if (type == float3x3_id) {
+		return "kinc_matrix3x3_t";
+	}
 	if (type == float4x4_id) {
 		return "kinc_matrix4x4_t";
 	}
@@ -427,7 +430,7 @@ void kope_export(char *directory, api_kind api) {
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
 			if (has_attribute(&f->attributes, add_name("compute"))) {
-				fprintf(output, "extern kinc_g4_compute_shader %s;\n\n", get_name(f->name));
+				fprintf(output, "extern kope_d3d12_pipeline %s;\n\n", get_name(f->name));
 			}
 		}
 
@@ -561,7 +564,7 @@ void kope_export(char *directory, api_kind api) {
 				if (api != API_OPENGL) {
 					bool has_matrices = false;
 					for (size_t j = 0; j < t->members.size; ++j) {
-						if (t->members.m[j].type.type == float4x4_id) {
+						if (t->members.m[j].type.type == float4x4_id || t->members.m[j].type.type == float3x3_id) {
 							has_matrices = true;
 							break;
 						}
@@ -574,6 +577,9 @@ void kope_export(char *directory, api_kind api) {
 							if (t->members.m[j].type.type == float4x4_id) {
 								fprintf(output, "\tkinc_matrix4x4_transpose(&data->%s);\n", get_name(t->members.m[j].name));
 							}
+							else if (t->members.m[j].type.type == float3x3_id) {
+								fprintf(output, "\tkinc_matrix3x3_transpose(&data->%s);\n", get_name(t->members.m[j].name));
+							}
 						}
 						fprintf(output, "\tkope_g5_buffer_unlock(buffer);\n");
 					}
@@ -583,6 +589,7 @@ void kope_export(char *directory, api_kind api) {
 			}
 		}
 
+		uint32_t descriptor_table_index = 0;
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
 
@@ -623,12 +630,20 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
 					other_index += 1;
 					break;
-				case DEFINITION_TEX2D:
-					fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_view_srv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
-					        get_name(get_global(d.global)->name), other_index);
+				case DEFINITION_TEX2D: {
+					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
+					if (write_attribute != NULL) {
+						fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_view_uav(device, &set->set, parameters->%s, %" PRIu64 ");\n",
+						        get_name(get_global(d.global)->name), other_index);
+					}
+					else {
+						fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_view_srv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
+						        get_name(get_global(d.global)->name), other_index);
+					}
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
 					other_index += 1;
 					break;
+				}
 				case DEFINITION_SAMPLER:
 					fprintf(output, "\tkope_d3d12_descriptor_set_set_sampler(device, &set->set, parameters->%s, %" PRIu64 ");\n",
 					        get_name(get_global(d.global)->name), sampler_index);
@@ -646,13 +661,22 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_CONST_CUSTOM:
 					fprintf(output, "\tkope_d3d12_descriptor_set_prepare_cbv_buffer(list, set->%s);\n", get_name(get_global(d.global)->name));
 					break;
-				case DEFINITION_TEX2D:
-					fprintf(output, "\tkope_d3d12_descriptor_set_prepare_srv_texture(list, set->%s);\n", get_name(get_global(d.global)->name));
+				case DEFINITION_TEX2D: {
+					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
+					if (write_attribute != NULL) {
+						fprintf(output, "\tkope_d3d12_descriptor_set_prepare_uav_texture(list, set->%s);\n", get_name(get_global(d.global)->name));
+					}
+					else {
+						fprintf(output, "\tkope_d3d12_descriptor_set_prepare_srv_texture(list, set->%s);\n", get_name(get_global(d.global)->name));
+					}
 					break;
 				}
+				}
 			}
-			fprintf(output, "\n\tkope_d3d12_command_list_set_descriptor_table(list, 0, &set->set);\n");
+			fprintf(output, "\n\tkope_d3d12_command_list_set_descriptor_table(list, %i, &set->set);\n", descriptor_table_index);
 			fprintf(output, "}\n\n");
+
+			descriptor_table_index += (sampler_count > 0) ? 2 : 1;
 		}
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
@@ -671,7 +695,7 @@ void kope_export(char *directory, api_kind api) {
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
 			if (has_attribute(&f->attributes, add_name("compute"))) {
-				fprintf(output, "kinc_g4_compute_shader %s;\n", get_name(f->name));
+				fprintf(output, "kope_d3d12_pipeline %s;\n", get_name(f->name));
 			}
 		}
 
@@ -692,7 +716,7 @@ void kope_export(char *directory, api_kind api) {
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-				fprintf(output, "\tkope_d3d12_pipeline_parameters %s_parameters = {0};\n\n", get_name(t->name));
+				fprintf(output, "\tkope_d3d12_render_pipeline_parameters %s_parameters = {0};\n\n", get_name(t->name));
 
 				name_id vertex_shader_name = NO_NAME;
 				name_id amplification_shader_name = NO_NAME;
@@ -913,7 +937,7 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "\t%s_parameters.fragment.targets[0].write_mask = 0xf;\n\n", get_name(t->name));
 				}
 
-				fprintf(output, "\tkope_d3d12_pipeline_init(&device->d3d12, &%s, &%s_parameters);\n\n", get_name(t->name), get_name(t->name));
+				fprintf(output, "\tkope_d3d12_render_pipeline_init(&device->d3d12, &%s, &%s_parameters);\n\n", get_name(t->name), get_name(t->name));
 
 				if (api == API_OPENGL) {
 					global_id globals[256];
@@ -941,7 +965,10 @@ void kope_export(char *directory, api_kind api) {
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
 			if (has_attribute(&f->attributes, add_name("compute"))) {
-				fprintf(output, "\tkinc_g4_compute_shader_init(&%s, %s_code, %s_code_size);\n", get_name(f->name), get_name(f->name), get_name(f->name));
+				fprintf(output, "\tkope_d3d12_compute_pipeline_parameters %s_parameters;\n", get_name(f->name));
+				fprintf(output, "\t%s_parameters.shader.data = %s_code;\n", get_name(f->name), get_name(f->name));
+				fprintf(output, "\t%s_parameters.shader.size = %s_code_size;\n", get_name(f->name), get_name(f->name));
+				fprintf(output, "\tkope_d3d12_compute_pipeline_init(&device->d3d12, &%s, &%s_parameters);\n", get_name(f->name), get_name(f->name));
 			}
 		}
 
