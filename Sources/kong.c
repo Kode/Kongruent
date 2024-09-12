@@ -275,7 +275,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		case OPERATOR_MULTIPLY_ASSIGN: {
 			type_id left_type = e->binary.left->type.type;
 			type_id right_type = e->binary.right->type.type;
-			if (left_type == float4x4_id && right_type == float4_id) {
+			if ((left_type == float4x4_id && right_type == float4_id) || (left_type == float3x3_id && right_type == float3_id)) {
 				e->type = e->binary.right->type;
 			}
 			else if (right_type == float_id && (left_type == float2_id || left_type == float3_id || left_type == float4_id)) {

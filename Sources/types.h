@@ -82,6 +82,7 @@ extern type_id float_id;
 extern type_id float2_id;
 extern type_id float3_id;
 extern type_id float4_id;
+extern type_id float3x3_id;
 extern type_id float4x4_id;
 extern type_id int_id;
 extern type_id int2_id;
