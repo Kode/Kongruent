@@ -202,6 +202,7 @@ static void tokens_add_identifier(tokenizer_state *state, tokens *tokens, tokeni
 
 tokens tokenize(const char *filename, const char *source) {
 	mode mode = MODE_SELECT;
+	bool number_has_dot = false;
 
 	tokens tokens;
 	tokens_init(&tokens);
@@ -222,7 +223,7 @@ tokens tokenize(const char *filename, const char *source) {
 				tokens_add_identifier(&state, &tokens, &buffer);
 				break;
 			case MODE_NUMBER: {
-				token token = token_create(TOKEN_NUMBER, &state);
+				token token = token_create(number_has_dot ? TOKEN_FLOAT : TOKEN_INT, &state);
 				token.number = tokenizer_buffer_parse_number(&buffer);
 				tokens_add(&tokens, token);
 				break;
@@ -264,6 +265,7 @@ tokens tokenize(const char *filename, const char *source) {
 				}
 				else if (is_num(ch, state.next_next)) {
 					mode = MODE_NUMBER;
+					number_has_dot = false;
 					tokenizer_buffer_reset(&buffer, &state);
 					tokenizer_buffer_add(&buffer, ch);
 				}
@@ -342,11 +344,14 @@ tokens tokenize(const char *filename, const char *source) {
 			}
 			case MODE_NUMBER: {
 				if (is_num(ch, 0) || ch == '.') {
+					if (ch == '.') {
+						number_has_dot = true;
+					}
 					tokenizer_buffer_add(&buffer, ch);
 					tokenizer_state_advance(&context, &state);
 				}
 				else {
-					token token = token_create(TOKEN_NUMBER, &state);
+					token token = token_create(number_has_dot ? TOKEN_FLOAT : TOKEN_INT, &state);
 					token.number = tokenizer_buffer_parse_number(&buffer);
 					tokens_add(&tokens, token);
 					mode = MODE_SELECT;

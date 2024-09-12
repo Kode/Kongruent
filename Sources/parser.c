@@ -198,7 +198,7 @@ static definition parse_definition(state_t *state) {
 						current_attribute.paramters_count += 1;
 						advance_state(state);
 					}
-					else if (current(state).kind == TOKEN_NUMBER) {
+					else if (current(state).kind == TOKEN_FLOAT || current(state).kind == TOKEN_INT) {
 						current_attribute.parameters[current_attribute.paramters_count] = current(state).number;
 						current_attribute.paramters_count += 1;
 						advance_state(state);
@@ -276,7 +276,7 @@ static type_ref parse_type_ref(state_t *state) {
 	uint32_t array_size = 0;
 	if (current(state).kind == TOKEN_LEFT_SQUARE) {
 		advance_state(state);
-		match_token(state, TOKEN_NUMBER, "Expected a number");
+		match_token(state, TOKEN_INT, "Expected an integer");
 		array_size = (uint32_t)current(state).number;
 		advance_state(state);
 		match_token(state, TOKEN_RIGHT_SQUARE, "Expected a closing square bracket");
@@ -724,7 +724,7 @@ static expression *parse_member(state_t *state, bool square) {
 			return var;
 		}
 	}
-	else if (current(state).kind == TOKEN_NUMBER && square) {
+	else if (current(state).kind == TOKEN_INT && square) {
 		uint32_t index = (uint32_t)current(state).number;
 		advance_state(state);
 		match_token(state, TOKEN_RIGHT_SQUARE, "Expected a closing square bracket");
@@ -792,11 +792,19 @@ static expression *parse_primary(state_t *state) {
 		left->boolean = value;
 		break;
 	}
-	case TOKEN_NUMBER: {
+	case TOKEN_FLOAT: {
 		double value = current(state).number;
 		advance_state(state);
 		left = expression_allocate();
-		left->kind = EXPRESSION_NUMBER;
+		left->kind = EXPRESSION_FLOAT;
+		left->number = value;
+		break;
+	}
+	case TOKEN_INT: {
+		double value = current(state).number;
+		advance_state(state);
+		left = expression_allocate();
+		left->kind = EXPRESSION_INT;
 		left->number = value;
 		break;
 	}
@@ -842,7 +850,7 @@ static expression *parse_primary(state_t *state) {
 
 		advance_state(state);
 
-		bool dynamic = square && current(state).kind != TOKEN_NUMBER;
+		bool dynamic = square && current(state).kind != TOKEN_INT;
 
 		expression *right = parse_member(state, square);
 
@@ -904,7 +912,7 @@ static expression *parse_call(state_t *state, name_id func_name) {
 
 		advance_state(state);
 
-		bool dynamic = square && current(state).kind != TOKEN_NUMBER;
+		bool dynamic = square && current(state).kind != TOKEN_INT;
 
 		expression *right = parse_member(state, square);
 
@@ -959,7 +967,8 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 
 		if (current(state).kind == TOKEN_OPERATOR && current(state).op == OPERATOR_ASSIGN) {
 			advance_state(state);
-			if (current(state).kind == TOKEN_BOOLEAN || current(state).kind == TOKEN_NUMBER || current(state).kind == TOKEN_IDENTIFIER) {
+			if (current(state).kind == TOKEN_BOOLEAN || current(state).kind == TOKEN_FLOAT || current(state).kind == TOKEN_INT ||
+			    current(state).kind == TOKEN_IDENTIFIER) {
 				member_values[count] = current(state);
 				advance_state(state);
 			}
@@ -997,8 +1006,11 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 			if (member.value.kind == TOKEN_BOOLEAN) {
 				init_type_ref(&member.type, add_name("bool"));
 			}
-			else if (member.value.kind == TOKEN_NUMBER) {
+			else if (member.value.kind == TOKEN_FLOAT) {
 				init_type_ref(&member.type, add_name("float"));
+			}
+			else if (member.value.kind == TOKEN_INT) {
+				init_type_ref(&member.type, add_name("int"));
 			}
 			else if (member.value.kind == TOKEN_IDENTIFIER) {
 				global *g = find_global(member.value.identifier);
@@ -1142,7 +1154,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 	else if (type_name == add_name("float")) {
 		debug_context context = {0};
 		check(value != NULL, context, "const float requires an initialization value");
-		check(value->kind == EXPRESSION_NUMBER, context, "const float3 requires a number");
+		check(value->kind == EXPRESSION_FLOAT || value->kind == EXPRESSION_INT, context, "const float3 requires a number");
 
 		global_value float_value;
 		float_value.kind = GLOBAL_VALUE_FLOAT;
@@ -1163,7 +1175,8 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 		float2_value.kind = GLOBAL_VALUE_FLOAT2;
 
 		for (int i = 0; i < 2; ++i) {
-			check(value->call.parameters.e[i]->kind == EXPRESSION_NUMBER, context, "const float2 construtor parameters have to be numbers");
+			check(value->call.parameters.e[i]->kind == EXPRESSION_FLOAT || value->call.parameters.e[i]->kind == EXPRESSION_INT, context,
+			      "const float2 construtor parameters have to be numbers");
 			float2_value.value.floats[i] = (float)value->call.parameters.e[i]->number;
 		}
 
@@ -1181,7 +1194,8 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 		float3_value.kind = GLOBAL_VALUE_FLOAT3;
 
 		for (int i = 0; i < 3; ++i) {
-			check(value->call.parameters.e[i]->kind == EXPRESSION_NUMBER, context, "const float3 construtor parameters have to be numbers");
+			check(value->call.parameters.e[i]->kind == EXPRESSION_FLOAT || value->call.parameters.e[i]->kind == EXPRESSION_INT, context,
+			      "const float3 construtor parameters have to be numbers");
 			float3_value.value.floats[i] = (float)value->call.parameters.e[i]->number;
 		}
 
@@ -1199,7 +1213,8 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 		float4_value.kind = GLOBAL_VALUE_FLOAT4;
 
 		for (int i = 0; i < 4; ++i) {
-			check(value->call.parameters.e[i]->kind == EXPRESSION_NUMBER, context, "const float4 construtor parameters have to be numbers");
+			check(value->call.parameters.e[i]->kind == EXPRESSION_FLOAT || value->call.parameters.e[i]->kind == EXPRESSION_INT, context,
+			      "const float4 construtor parameters have to be numbers");
 			float4_value.value.floats[i] = (float)value->call.parameters.e[i]->number;
 		}
 

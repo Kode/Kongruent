@@ -164,6 +164,16 @@ static bool types_compatible(type_id left, type_id right) {
 		return true;
 	}
 
+	if ((left == float_id && right == float2_id) || (left == float_id && right == float3_id) || (left == float_id && right == float4_id) ||
+	    (left == float2_id && right == float_id) || (left == float3_id && right == float_id) || (left == float4_id && right == float_id)) {
+		return true;
+	}
+
+	if ((left == int_id && right == int2_id) || (left == int_id && right == int3_id) || (left == int_id && right == int4_id) ||
+	    (left == int2_id && right == int_id) || (left == int3_id && right == int_id) || (left == int4_id && right == int_id)) {
+		return true;
+	}
+
 	return false;
 }
 
@@ -248,6 +258,22 @@ static type_ref upgrade_type(type_ref left_type, type_ref right_type) {
 	}
 	if (left == int4_id && right == uint4_id) {
 		return left_type;
+	}
+
+	if ((left == float2_id && right == float_id) || (left == float3_id && right == float_id) || (left == float4_id && right == float_id)) {
+		return left_type;
+	}
+
+	if ((left == float_id && right == float2_id) || (left == float_id && right == float3_id) || (left == float_id && right == float4_id)) {
+		return right_type;
+	}
+
+	if ((left == int2_id && right == int_id) || (left == int3_id && right == int_id) || (left == int4_id && right == int_id)) {
+		return left_type;
+	}
+
+	if ((left == int_id && right == int2_id) || (left == int_id && right == int3_id) || (left == int_id && right == int4_id)) {
+		return right_type;
 	}
 
 	kong_log(LOG_LEVEL_WARNING, "Suspicious type upgrade");
@@ -360,8 +386,12 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		e->type.type = bool_id;
 		break;
 	}
-	case EXPRESSION_NUMBER: {
+	case EXPRESSION_FLOAT: {
 		e->type.type = float_id;
+		break;
+	}
+	case EXPRESSION_INT: {
+		e->type.type = int_id;
 		break;
 	}
 	case EXPRESSION_VARIABLE: {

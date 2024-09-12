@@ -33,7 +33,8 @@ typedef struct token {
 	enum {
 		TOKEN_NONE,
 		TOKEN_BOOLEAN,
-		TOKEN_NUMBER,
+		TOKEN_FLOAT,
+		TOKEN_INT,
 		// TOKEN_STRING,
 		TOKEN_IDENTIFIER,
 		TOKEN_LEFT_PAREN,

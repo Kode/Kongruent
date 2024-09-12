@@ -425,7 +425,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 		return v;
 	}
-	case EXPRESSION_NUMBER: {
+	case EXPRESSION_FLOAT: {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
 		t.type = float_id;
@@ -436,6 +436,21 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		o.size = OP_SIZE(o, op_load_float_constant);
 		o.op_load_float_constant.number = (float)e->number;
 		o.op_load_float_constant.to = v;
+		emit_op(code, &o);
+
+		return v;
+	}
+	case EXPRESSION_INT: {
+		type_ref t;
+		init_type_ref(&t, NO_NAME);
+		t.type = float_id;
+		variable v = allocate_variable(t, VARIABLE_LOCAL);
+
+		opcode o;
+		o.type = OPCODE_LOAD_INT_CONSTANT;
+		o.size = OP_SIZE(o, op_load_float_constant);
+		o.op_load_int_constant.number = (int)e->number;
+		o.op_load_int_constant.to = v;
 		emit_op(code, &o);
 
 		return v;
