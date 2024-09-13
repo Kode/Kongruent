@@ -441,6 +441,13 @@ void kope_export(char *directory, api_kind api) {
 			}
 		}
 
+		for (type_id i = 0; get_type(i) != NULL; ++i) {
+			type *t = get_type(i);
+			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
+				fprintf(output, "extern kope_d3d12_ray_pipeline %s;\n\n", get_name(t->name));
+			}
+		}
+
 		fprintf(output, "#ifdef __cplusplus\n");
 		fprintf(output, "}\n");
 		fprintf(output, "#endif\n\n");
@@ -543,6 +550,13 @@ void kope_export(char *directory, api_kind api) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 				fprintf(output, "kope_d3d12_render_pipeline %s;\n\n", get_name(t->name));
+			}
+		}
+
+		for (type_id i = 0; get_type(i) != NULL; ++i) {
+			type *t = get_type(i);
+			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
+				fprintf(output, "kope_d3d12_ray_pipeline %s;\n\n", get_name(t->name));
 			}
 		}
 
@@ -1000,6 +1014,56 @@ void kope_export(char *directory, api_kind api) {
 				fprintf(output, "\t%s_parameters.shader.data = %s_code;\n", get_name(f->name), get_name(f->name));
 				fprintf(output, "\t%s_parameters.shader.size = %s_code_size;\n", get_name(f->name), get_name(f->name));
 				fprintf(output, "\tkope_d3d12_compute_pipeline_init(&device->d3d12, &%s, &%s_parameters);\n", get_name(f->name), get_name(f->name));
+			}
+		}
+
+		for (type_id i = 0; get_type(i) != NULL; ++i) {
+			type *t = get_type(i);
+			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
+				fprintf(output, "\tkope_d3d12_ray_pipeline_parameters %s_parameters = {0};\n\n", get_name(t->name));
+
+				name_id gen_shader_name = NO_NAME;
+				name_id miss_shader_name = NO_NAME;
+				name_id closest_shader_name = NO_NAME;
+				name_id intersection_shader_name = NO_NAME;
+				name_id any_shader_name = NO_NAME;
+
+				for (size_t j = 0; j < t->members.size; ++j) {
+					if (t->members.m[j].name == add_name("gen")) {
+						gen_shader_name = t->members.m[j].value.identifier;
+					}
+					else if (t->members.m[j].name == add_name("miss")) {
+						miss_shader_name = t->members.m[j].value.identifier;
+					}
+					else if (t->members.m[j].name == add_name("closest")) {
+						closest_shader_name = t->members.m[j].value.identifier;
+					}
+					else if (t->members.m[j].name == add_name("intersection")) {
+						intersection_shader_name = t->members.m[j].value.identifier;
+					}
+					else if (t->members.m[j].name == add_name("any")) {
+						any_shader_name = t->members.m[j].value.identifier;
+					}
+				}
+
+				{
+					debug_context context = {0};
+					check(gen_shader_name != NO_NAME, context, "No ray gen shader name found");
+					check(miss_shader_name != NO_NAME, context, "No miss shader name found");
+					check(closest_shader_name != NO_NAME, context, "No closest hit shader name found");
+				}
+
+				fprintf(output, "\t%s_parameters.gen_shader_name = \"%s\";\n", get_name(t->name), get_name(gen_shader_name));
+				fprintf(output, "\t%s_parameters.miss_shader_name = \"%s\";\n", get_name(t->name), get_name(miss_shader_name));
+				fprintf(output, "\t%s_parameters.closest_shader_name = \"%s\";\n", get_name(t->name), get_name(closest_shader_name));
+				if (intersection_shader_name != NO_NAME) {
+					fprintf(output, "\t%s_parameters.intersection_shader_name = \"%s\";\n", get_name(t->name), get_name(intersection_shader_name));
+				}
+				if (any_shader_name != NO_NAME) {
+					fprintf(output, "\t%s_parameters.any_shader_name = \"%s\";\n", get_name(t->name), get_name(any_shader_name));
+				}
+
+				fprintf(output, "\n\tkope_d3d12_ray_pipeline_init(&device->d3d12, &%s, &%s_parameters);\n\n", get_name(t->name), get_name(t->name));
 			}
 		}
 
