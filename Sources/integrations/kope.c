@@ -297,12 +297,10 @@ void kope_export(char *directory, api_kind api) {
 
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
-			if (g->type == float_id) {
-			}
-			else if (g->type == tex2d_type_id || g->type == texcube_type_id || g->type == sampler_type_id) {
+			if (g->type == tex2d_type_id || g->type == texcube_type_id || g->type == sampler_type_id) {
 				fprintf(output, "extern int %s;\n", get_name(g->name));
 			}
-			else {
+			else if (!get_type(g->type)->built_in) {
 				type *t = get_type(g->type);
 
 				char name[256];
@@ -542,7 +540,7 @@ void kope_export(char *directory, api_kind api) {
 
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
-			if (g->type != tex2d_type_id && g->type != texcube_type_id && g->type != sampler_type_id && g->type != float_id) {
+			if (g->type != tex2d_type_id && g->type != texcube_type_id && g->type != sampler_type_id && !get_type(g->type)->built_in) {
 				type *t = get_type(g->type);
 
 				char type_name[256];
