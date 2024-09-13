@@ -317,6 +317,9 @@ void kope_export(char *directory, api_kind api) {
 				fprintf(output, "typedef struct %s {\n", name);
 				for (size_t j = 0; j < t->members.size; ++j) {
 					fprintf(output, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+					if (t->members.m[j].type.type == float3x3_id) {
+						fprintf(output, "\tfloat pad%" PRIu64 "[3];\n", j);
+					}
 				}
 				fprintf(output, "} %s;\n\n", name);
 
@@ -418,19 +421,21 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "void kong_set_vertex_buffer_%s(kope_g5_command_list *list, %s_buffer *buffer);\n\n", get_name(t->name), get_name(t->name));
 		}
 
-		fprintf(output, "void kong_set_pipeline(kope_g5_command_list *list, kope_d3d12_pipeline *pipeline);\n\n");
+		fprintf(output, "void kong_set_render_pipeline(kope_g5_command_list *list, kope_d3d12_render_pipeline *pipeline);\n\n");
+
+		fprintf(output, "void kong_set_compute_pipeline(kope_g5_command_list *list, kope_d3d12_compute_pipeline *pipeline);\n\n");
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-				fprintf(output, "extern kope_d3d12_pipeline %s;\n\n", get_name(t->name));
+				fprintf(output, "extern kope_d3d12_render_pipeline %s;\n\n", get_name(t->name));
 			}
 		}
 
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
 			if (has_attribute(&f->attributes, add_name("compute"))) {
-				fprintf(output, "extern kope_d3d12_pipeline %s;\n\n", get_name(f->name));
+				fprintf(output, "extern kope_d3d12_compute_pipeline %s;\n\n", get_name(f->name));
 			}
 		}
 
@@ -520,14 +525,18 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "}\n\n");
 		}
 
-		fprintf(output, "void kong_set_pipeline(kope_g5_command_list *list, kope_d3d12_pipeline *pipeline) {\n");
-		fprintf(output, "\tkope_d3d12_command_list_set_pipeline(list, pipeline);\n");
+		fprintf(output, "void kong_set_render_pipeline(kope_g5_command_list *list, kope_d3d12_render_pipeline *pipeline) {\n");
+		fprintf(output, "\tkope_d3d12_command_list_set_render_pipeline(list, pipeline);\n");
+		fprintf(output, "}\n\n");
+
+		fprintf(output, "void kong_set_compute_pipeline(kope_g5_command_list *list, kope_d3d12_compute_pipeline *pipeline) {\n");
+		fprintf(output, "\tkope_d3d12_command_list_set_compute_pipeline(list, pipeline);\n");
 		fprintf(output, "}\n\n");
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-				fprintf(output, "kope_d3d12_pipeline %s;\n\n", get_name(t->name));
+				fprintf(output, "kope_d3d12_render_pipeline %s;\n\n", get_name(t->name));
 			}
 		}
 
@@ -572,13 +581,29 @@ void kope_export(char *directory, api_kind api) {
 
 					if (has_matrices) {
 						fprintf(output, "\t%s *data = (%s *)kope_g5_buffer_lock(buffer);\n", type_name, type_name);
-						// transpose matrices
+						// adjust matrices
 						for (size_t j = 0; j < t->members.size; ++j) {
 							if (t->members.m[j].type.type == float4x4_id) {
 								fprintf(output, "\tkinc_matrix4x4_transpose(&data->%s);\n", get_name(t->members.m[j].name));
 							}
 							else if (t->members.m[j].type.type == float3x3_id) {
-								fprintf(output, "\tkinc_matrix3x3_transpose(&data->%s);\n", get_name(t->members.m[j].name));
+								// fprintf(output, "\tkinc_matrix3x3_transpose(&data->%s);\n", get_name(t->members.m[j].name));
+								fprintf(output, "\t{\n");
+								fprintf(output, "\t\tkinc_matrix3x3_t m = data->%s;\n", get_name(t->members.m[j].name));
+								fprintf(output, "\t\tfloat *m_data = (float *)&data->%s;\n", get_name(t->members.m[j].name));
+								fprintf(output, "\t\tm_data[0] = m.m[0];\n");
+								fprintf(output, "\t\tm_data[1] = m.m[1];\n");
+								fprintf(output, "\t\tm_data[2] = m.m[2];\n");
+								fprintf(output, "\t\tm_data[3] = 0.0f;\n");
+								fprintf(output, "\t\tm_data[4] = m.m[3];\n");
+								fprintf(output, "\t\tm_data[5] = m.m[4];\n");
+								fprintf(output, "\t\tm_data[6] = m.m[5];\n");
+								fprintf(output, "\t\tm_data[7] = 0.0f;\n");
+								fprintf(output, "\t\tm_data[8] = m.m[6];\n");
+								fprintf(output, "\t\tm_data[9] = m.m[7];\n");
+								fprintf(output, "\t\tm_data[10] = m.m[8];\n");
+								fprintf(output, "\t\tm_data[11] = 0.0f;\n");
+								fprintf(output, "\t}\n");
 							}
 						}
 						fprintf(output, "\tkope_g5_buffer_unlock(buffer);\n");
@@ -695,7 +720,7 @@ void kope_export(char *directory, api_kind api) {
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
 			if (has_attribute(&f->attributes, add_name("compute"))) {
-				fprintf(output, "kope_d3d12_pipeline %s;\n", get_name(f->name));
+				fprintf(output, "kope_d3d12_compute_pipeline %s;\n", get_name(f->name));
 			}
 		}
 
