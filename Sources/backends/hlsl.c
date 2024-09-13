@@ -55,10 +55,26 @@ static void write_bytecode(char *hlsl, char *directory, const char *filename, co
 	{
 		sprintf(full_filename, "%s/%s.h", directory, filename);
 		FILE *file = fopen(full_filename, "wb");
+
+		fprintf(file, "#ifndef KONG_%s_HEADER\n", name);
+		fprintf(file, "#define KONG_%s_HEADER\n\n", name);
+
 		fprintf(file, "#include <stddef.h>\n");
 		fprintf(file, "#include <stdint.h>\n\n");
+
+		fprintf(file, "#ifdef __cplusplus\n");
+		fprintf(file, "extern \"C\" {\n");
+		fprintf(file, "#endif\n\n");
+
 		fprintf(file, "extern uint8_t *%s;\n", name);
 		fprintf(file, "extern size_t %s_size;\n", name);
+
+		fprintf(file, "\n#ifdef __cplusplus\n");
+		fprintf(file, "}\n");
+		fprintf(file, "#endif\n\n");
+
+		fprintf(file, "#endif\n");
+
 		fclose(file);
 	}
 

@@ -293,6 +293,10 @@ void kope_export(char *directory, api_kind api) {
 		fprintf(output, "#include <kinc/math/matrix.h>\n");
 		fprintf(output, "#include <kinc/math/vector.h>\n\n");
 
+		fprintf(output, "#ifdef __cplusplus\n");
+		fprintf(output, "extern \"C\" {\n");
+		fprintf(output, "#endif\n");
+
 		fprintf(output, "\nvoid kong_init(kope_g5_device *device);\n\n");
 
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
@@ -436,6 +440,10 @@ void kope_export(char *directory, api_kind api) {
 				fprintf(output, "extern kope_d3d12_compute_pipeline %s;\n\n", get_name(f->name));
 			}
 		}
+
+		fprintf(output, "#ifdef __cplusplus\n");
+		fprintf(output, "}\n");
+		fprintf(output, "#endif\n\n");
 
 		fprintf(output, "#endif\n");
 
