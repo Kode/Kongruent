@@ -184,7 +184,41 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 	uint32_t uav_index = 0;
 	uint32_t sampler_index = 0;
 
-	fprintf(output, "\tD3D12_ROOT_PARAMETER params[%" PRIu64 "] = {};\n", all_descriptor_sets_count);
+	uint32_t table_count = 0;
+
+	for (size_t set_count = 0; set_count < all_descriptor_sets_count; ++set_count) {
+		descriptor_set *set = all_descriptor_sets[set_count];
+
+		bool has_sampler = false;
+		bool has_other = false;
+
+		for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+			definition *def = &set->definitions[definition_index];
+
+			switch (def->kind) {
+			case DEFINITION_CONST_CUSTOM:
+			case DEFINITION_TEX2D:
+			case DEFINITION_TEXCUBE:
+			case DEFINITION_BVH:
+				has_other = true;
+				break;
+			case DEFINITION_SAMPLER:
+				has_sampler = true;
+				break;
+			}
+		}
+
+		if (has_other && has_sampler) {
+			table_count += 2;
+		}
+		else if (has_other || has_sampler) {
+			table_count += 1;
+		}
+	}
+
+	fprintf(output, "\tD3D12_ROOT_PARAMETER params[%i] = {};\n", table_count);
+
+	uint32_t table_index = 0;
 
 	for (size_t set_count = 0; set_count < all_descriptor_sets_count; ++set_count) {
 		descriptor_set *set = all_descriptor_sets[set_count];
@@ -225,7 +259,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 				}
 			}
 
-			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%" PRIu64 "[%" PRIu64 "] = {};\n", set_count, count);
+			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%" PRIu64 "] = {};\n", table_index, count);
 
 			size_t range_index = 0;
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
@@ -233,9 +267,9 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 
 				switch (def->kind) {
 				case DEFINITION_CONST_CUSTOM:
-					fprintf(output, "\tranges%" PRIu64 "[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;\n", set_count, range_index);
-					fprintf(output, "\tranges%" PRIu64 "[%" PRIu64 "].BaseShaderRegister = %i;\n", set_count, range_index, cbv_index);
-					fprintf(output, "\tranges%" PRIu64 "[%" PRIu64 "].NumDescriptors = 1;\n", set_count, range_index);
+					fprintf(output, "\tranges%i[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;\n", table_index, range_index);
+					fprintf(output, "\tranges%i[%" PRIu64 "].BaseShaderRegister = %i;\n", table_index, range_index, cbv_index);
+					fprintf(output, "\tranges%i[%" PRIu64 "].NumDescriptors = 1;\n", table_index, range_index);
 
 					cbv_index += 1;
 
@@ -247,16 +281,16 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					attribute *write_attribute = find_attribute(&get_global(def->global)->attributes, add_name("write"));
 
 					if (write_attribute != NULL) {
-						fprintf(output, "\tranges%" PRIu64 "[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;\n", set_count, range_index);
-						fprintf(output, "\tranges%" PRIu64 "[%" PRIu64 "].BaseShaderRegister = %i;\n", set_count, range_index, uav_index);
-						fprintf(output, "\tranges%" PRIu64 "[%" PRIu64 "].NumDescriptors = 1;\n", set_count, range_index);
+						fprintf(output, "\tranges%i[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;\n", table_index, range_index);
+						fprintf(output, "\tranges%i[%" PRIu64 "].BaseShaderRegister = %i;\n", table_index, range_index, uav_index);
+						fprintf(output, "\tranges%i[%" PRIu64 "].NumDescriptors = 1;\n", table_index, range_index);
 
 						uav_index += 1;
 					}
 					else {
-						fprintf(output, "\tranges%" PRIu64 "[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;\n", set_count, range_index);
-						fprintf(output, "\tranges%" PRIu64 "[%" PRIu64 "].BaseShaderRegister = %i;\n", set_count, range_index, srv_index);
-						fprintf(output, "\tranges%" PRIu64 "[%" PRIu64 "].NumDescriptors = 1;\n", set_count, range_index);
+						fprintf(output, "\tranges%i[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;\n", table_index, range_index);
+						fprintf(output, "\tranges%i[%" PRIu64 "].BaseShaderRegister = %i;\n", table_index, range_index, srv_index);
+						fprintf(output, "\tranges%i[%" PRIu64 "].NumDescriptors = 1;\n", table_index, range_index);
 
 						srv_index += 1;
 					}
@@ -266,9 +300,9 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					break;
 				}
 				case DEFINITION_BVH:
-					fprintf(output, "\tranges%" PRIu64 "[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;\n", set_count, range_index);
-					fprintf(output, "\tranges%" PRIu64 "[%" PRIu64 "].BaseShaderRegister = %i;\n", set_count, range_index, srv_index);
-					fprintf(output, "\tranges%" PRIu64 "[%" PRIu64 "].NumDescriptors = 1;\n", set_count, range_index);
+					fprintf(output, "\tranges%i[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;\n", table_index, range_index);
+					fprintf(output, "\tranges%i[%" PRIu64 "].BaseShaderRegister = %i;\n", table_index, range_index, srv_index);
+					fprintf(output, "\tranges%i[%" PRIu64 "].NumDescriptors = 1;\n", table_index, range_index);
 
 					srv_index += 1;
 
@@ -278,34 +312,53 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 				}
 			}
 
-			fprintf(output, "\n\tparams[%" PRIu64 "].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;\n", set_count);
-			fprintf(output, "\tparams[%" PRIu64 "].DescriptorTable.NumDescriptorRanges = %" PRIu64 ";\n", set_count, count);
-			fprintf(output, "\tparams[%" PRIu64 "].DescriptorTable.pDescriptorRanges = ranges%" PRIu64 ";\n", set_count, set_count);
+			fprintf(output, "\n\tparams[%i].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;\n", table_index);
+			fprintf(output, "\tparams[%i].DescriptorTable.NumDescriptorRanges = %" PRIu64 ";\n", table_index, count);
+			fprintf(output, "\tparams[%i].DescriptorTable.pDescriptorRanges = ranges%i;\n", table_index, table_index);
+
+			table_index += 1;
 		}
 
 		if (has_sampler) {
-			bool first = true;
+			size_t count = 0;
+
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				definition *def = &set->definitions[definition_index];
+
+				switch (def->kind) {
+				case DEFINITION_SAMPLER: {
+					count += 1;
+					break;
+				}
+				}
+			}
+
+			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%" PRIu64 "] = {};\n", table_index, count);
+
+			size_t range_index = 0;
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 				definition *def = &set->definitions[definition_index];
 
 				switch (def->kind) {
 				case DEFINITION_SAMPLER:
-					if (first) {
-						first = false;
-					}
-					else {
-						fprintf(output, ", ");
-					}
-					// fprintf(output, "Sampler(s%i)", sampler_index);
+					fprintf(output, "\tranges%i[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;\n", table_index, range_index);
+					fprintf(output, "\tranges%i[%" PRIu64 "].BaseShaderRegister = %i;\n", table_index, range_index, sampler_index);
+					fprintf(output, "\tranges%i[%" PRIu64 "].NumDescriptors = 1;\n", table_index, range_index);
 					sampler_index += 1;
 					break;
 				}
 			}
+
+			fprintf(output, "\n\tparams[%i].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;\n", table_index);
+			fprintf(output, "\tparams[%i].DescriptorTable.NumDescriptorRanges = %" PRIu64 ";\n", table_index, count);
+			fprintf(output, "\tparams[%i].DescriptorTable.pDescriptorRanges = ranges%i;\n", table_index, table_index);
+
+			table_index += 1;
 		}
 	}
 
 	fprintf(output, "\n\tD3D12_ROOT_SIGNATURE_DESC desc = {};\n");
-	fprintf(output, "\tdesc.NumParameters = %" PRIu64 ";\n", all_descriptor_sets_count);
+	fprintf(output, "\tdesc.NumParameters = %i;\n", table_count);
 	fprintf(output, "\tdesc.pParameters = params;\n");
 
 	fprintf(output, "\n\tID3D12RootSignature* root_signature;\n");
@@ -569,6 +622,8 @@ void kope_export(char *directory, api_kind api) {
 
 		fprintf(output, "void kong_set_compute_pipeline(kope_g5_command_list *list, kope_d3d12_compute_pipeline *pipeline);\n\n");
 
+		fprintf(output, "void kong_set_ray_pipeline(kope_g5_command_list *list, kope_d3d12_ray_pipeline *pipeline);\n\n");
+
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
@@ -686,6 +741,10 @@ void kope_export(char *directory, api_kind api) {
 
 		fprintf(output, "void kong_set_compute_pipeline(kope_g5_command_list *list, kope_d3d12_compute_pipeline *pipeline) {\n");
 		fprintf(output, "\tkope_d3d12_command_list_set_compute_pipeline(list, pipeline);\n");
+		fprintf(output, "}\n\n");
+
+		fprintf(output, "void kong_set_ray_pipeline(kope_g5_command_list *list, kope_d3d12_ray_pipeline *pipeline) {\n");
+		fprintf(output, "\tkope_d3d12_command_list_set_ray_pipeline(list, pipeline);\n");
 		fprintf(output, "}\n\n");
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
@@ -1214,8 +1273,8 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "\t%s_parameters.any_shader_name = \"%s\";\n", get_name(t->name), get_name(any_shader_name));
 				}
 
-				fprintf(output, "\n\tkope_d3d12_ray_pipeline_init(&device->d3d12, &%s, &%s_parameters, kong_create_%s_root_signature(device));\n\n",
-				        get_name(t->name), get_name(t->name), get_name(t->name));
+				fprintf(output, "\n\tkope_d3d12_ray_pipeline_init(device, &%s, &%s_parameters, kong_create_%s_root_signature(device));\n\n", get_name(t->name),
+				        get_name(t->name), get_name(t->name));
 			}
 		}
 
