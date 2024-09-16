@@ -953,6 +953,11 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					check(o->op_call.parameters_size == 0, context, "primitive_index can not have a parameter");
 					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = PrimitiveIndex();\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
+				else if (o->op_call.func == add_name("saturate3")) {
+					check(o->op_call.parameters_size == 1, context, "saturate3 requires one parameter");
+					*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = saturate(_%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
+					                   o->op_call.var.index, o->op_call.parameters[0].index);
+				}
 				else if (o->op_call.func == add_name("trace_ray")) {
 					check(o->op_call.parameters_size == 3, context, "trace_ray requires three parameters");
 					*offset += sprintf(&hlsl[*offset], "TraceRay(_%" PRIu64 ", RAY_FLAG_NONE, 0xFF, 0, 0, 0, _%" PRIu64 ", _%" PRIu64 ");\n",
