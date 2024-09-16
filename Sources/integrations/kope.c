@@ -890,7 +890,7 @@ void kope_export(char *directory, api_kind api) {
 					other_index += 1;
 					break;
 				case DEFINITION_BVH:
-					fprintf(output, "\tkope_d3d12_descriptor_set_set_buffer_view_srv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
+					fprintf(output, "\tkope_d3d12_descriptor_set_set_bvh_view_srv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
 					        get_name(get_global(d.global)->name), other_index);
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
 					other_index += 1;
