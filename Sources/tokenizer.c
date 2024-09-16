@@ -17,7 +17,8 @@ static bool is_num(char ch, char chch) {
 }
 
 static bool is_op(char ch) {
-	return ch == '&' || ch == '|' || ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '=' || ch == '!' || ch == '<' || ch == '>' || ch == '%';
+	return ch == '&' || ch == '|' || ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '=' || ch == '!' || ch == '<' || ch == '>' || ch == '%' ||
+	       ch == '^';
 }
 
 static bool is_whitespace(char ch) {
@@ -452,6 +453,11 @@ tokens tokenize(const char *filename, const char *source) {
 				else if (tokenizer_buffer_equals(&buffer, "||")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
 					token.op = OPERATOR_OR;
+					tokens_add(&tokens, token);
+				}
+				else if (tokenizer_buffer_equals(&buffer, "^")) {
+					token token = token_create(TOKEN_OPERATOR, &state);
+					token.op = OPERATOR_XOR;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "&&")) {

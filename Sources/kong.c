@@ -293,7 +293,8 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		case OPERATOR_LESS:
 		case OPERATOR_LESS_EQUAL:
 		case OPERATOR_OR:
-		case OPERATOR_AND: {
+		case OPERATOR_AND:
+		case OPERATOR_XOR: {
 			e->type.type = bool_id;
 			break;
 		}
@@ -371,6 +372,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		case OPERATOR_DIVIDE:
 		case OPERATOR_MULTIPLY:
 		case OPERATOR_OR:
+		case OPERATOR_XOR:
 		case OPERATOR_AND:
 		case OPERATOR_MOD:
 		case OPERATOR_ASSIGN:

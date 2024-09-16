@@ -527,7 +527,7 @@ static expression *parse_logical(state_t *state) {
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
-			if (op == OPERATOR_OR || op == OPERATOR_AND) {
+			if (op == OPERATOR_OR || op == OPERATOR_AND || op == OPERATOR_XOR) {
 				advance_state(state);
 				expression *right = parse_equality(state);
 				expression *expression = expression_allocate();

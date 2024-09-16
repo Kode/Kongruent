@@ -35,10 +35,37 @@ static void add_func_float3_float_float_float(char *name) {
 	f->block = NULL;
 }
 
+static void add_func_float(char *name) {
+	function_id func = add_function(add_name(name));
+	function *f = get_function(func);
+	init_type_ref(&f->return_type, add_name("float"));
+	f->return_type.type = find_type_by_ref(&f->return_type);
+	f->parameters_size = 0;
+	f->block = NULL;
+}
+
 static void add_func_float3(char *name) {
 	function_id func = add_function(add_name(name));
 	function *f = get_function(func);
 	init_type_ref(&f->return_type, add_name("float3"));
+	f->return_type.type = find_type_by_ref(&f->return_type);
+	f->parameters_size = 0;
+	f->block = NULL;
+}
+
+static void add_func_float3x3(char *name) {
+	function_id func = add_function(add_name(name));
+	function *f = get_function(func);
+	init_type_ref(&f->return_type, add_name("float3x3"));
+	f->return_type.type = find_type_by_ref(&f->return_type);
+	f->parameters_size = 0;
+	f->block = NULL;
+}
+
+static void add_func_uint(char *name) {
+	function_id func = add_function(add_name(name));
+	function *f = get_function(func);
+	init_type_ref(&f->return_type, add_name("uint"));
 	f->return_type.type = find_type_by_ref(&f->return_type);
 	f->parameters_size = 0;
 	f->block = NULL;
@@ -86,6 +113,24 @@ static void add_func_float3_float3(char *name) {
 	init_type_ref(&f->parameter_types[0], add_name("float3"));
 	f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
 	f->parameters_size = 1;
+	f->block = NULL;
+}
+
+static void add_func_float3_float3_float3(char *name) {
+	function_id func = add_function(add_name(name));
+	function *f = get_function(func);
+	init_type_ref(&f->return_type, add_name("float3"));
+	f->return_type.type = find_type_by_ref(&f->return_type);
+
+	f->parameter_names[0] = add_name("a");
+	init_type_ref(&f->parameter_types[0], add_name("float3"));
+	f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+
+	f->parameter_names[1] = add_name("b");
+	init_type_ref(&f->parameter_types[1], add_name("float3"));
+	f->parameter_types[1].type = find_type_by_ref(&f->parameter_types[1]);
+
+	f->parameters_size = 2;
 	f->block = NULL;
 }
 
@@ -531,9 +576,12 @@ void functions_init(void) {
 	add_func_uint3("group_thread_id");
 	add_func_uint3("dispatch_thread_id");
 	add_func_int("group_index");
+	add_func_int("instance_id");
 
 	add_func_float3_float_float_float("lerp");
+	add_func_float3("world_ray_origin");
 	add_func_float3("world_ray_direction");
+	add_func_float("ray_length");
 	add_func_float3_float3("normalize");
 	add_func_float_float("saturate");
 	add_func_float_float("sin");
@@ -541,6 +589,13 @@ void functions_init(void) {
 	add_func_float_float2("length");
 	add_func_uint3("ray_index");
 	add_func_float3("ray_dimensions");
+	add_func_float_float("frac");
+	add_func_float3x3("object_to_world3x3");
+	add_func_float3_float3_float3("reflect");
+	add_func_uint("primitive_index");
+	add_func_float3_float3("abs");
+	add_func_float3_float3_float3("dot");
+	add_func_float3_float3("saturate");
 
 	add_func_void_uint_uint("set_mesh_output_counts");
 
