@@ -270,6 +270,8 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					fprintf(output, "\tranges%i[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;\n", table_index, range_index);
 					fprintf(output, "\tranges%i[%" PRIu64 "].BaseShaderRegister = %i;\n", table_index, range_index, cbv_index);
 					fprintf(output, "\tranges%i[%" PRIu64 "].NumDescriptors = 1;\n", table_index, range_index);
+					fprintf(output, "\tranges%i[%" PRIu64 "].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
+					        range_index);
 
 					cbv_index += 1;
 
@@ -284,6 +286,8 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 						fprintf(output, "\tranges%i[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;\n", table_index, range_index);
 						fprintf(output, "\tranges%i[%" PRIu64 "].BaseShaderRegister = %i;\n", table_index, range_index, uav_index);
 						fprintf(output, "\tranges%i[%" PRIu64 "].NumDescriptors = 1;\n", table_index, range_index);
+						fprintf(output, "\tranges%i[%" PRIu64 "].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
+						        range_index);
 
 						uav_index += 1;
 					}
@@ -291,6 +295,8 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 						fprintf(output, "\tranges%i[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;\n", table_index, range_index);
 						fprintf(output, "\tranges%i[%" PRIu64 "].BaseShaderRegister = %i;\n", table_index, range_index, srv_index);
 						fprintf(output, "\tranges%i[%" PRIu64 "].NumDescriptors = 1;\n", table_index, range_index);
+						fprintf(output, "\tranges%i[%" PRIu64 "].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
+						        range_index);
 
 						srv_index += 1;
 					}
@@ -303,6 +309,8 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					fprintf(output, "\tranges%i[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;\n", table_index, range_index);
 					fprintf(output, "\tranges%i[%" PRIu64 "].BaseShaderRegister = %i;\n", table_index, range_index, srv_index);
 					fprintf(output, "\tranges%i[%" PRIu64 "].NumDescriptors = 1;\n", table_index, range_index);
+					fprintf(output, "\tranges%i[%" PRIu64 "].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
+					        range_index);
 
 					srv_index += 1;
 
@@ -344,6 +352,8 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					fprintf(output, "\tranges%i[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;\n", table_index, range_index);
 					fprintf(output, "\tranges%i[%" PRIu64 "].BaseShaderRegister = %i;\n", table_index, range_index, sampler_index);
 					fprintf(output, "\tranges%i[%" PRIu64 "].NumDescriptors = 1;\n", table_index, range_index);
+					fprintf(output, "\tranges%i[%" PRIu64 "].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
+					        range_index);
 					sampler_index += 1;
 					break;
 				}
