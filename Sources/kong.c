@@ -308,7 +308,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 				e->type = e->binary.left->type;
 			}
 			else if (types_compatible(left_type, right_type)) {
-				e->type = e->binary.right->type;
+				e->type = upgrade_type(e->binary.left->type, e->binary.right->type);
 			}
 			else {
 				debug_context context = {0};
