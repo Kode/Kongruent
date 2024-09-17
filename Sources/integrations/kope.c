@@ -1192,7 +1192,17 @@ void kope_export(char *directory, api_kind api) {
 				if (fragment_function->return_type.array_size > 0) {
 					fprintf(output, "\t%s_parameters.fragment.targets_count = %i;\n", get_name(t->name), fragment_function->return_type.array_size);
 					for (uint32_t i = 0; i < fragment_function->return_type.array_size; ++i) {
-						fprintf(output, "\t%s.color_attachment[%i] = KINC_G4_RENDER_TARGET_FORMAT_32BIT;\n", get_name(t->name), i);
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].format = KOPE_G5_TEXTURE_FORMAT_RGBA8_UNORM;\n", get_name(t->name), i);
+
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.operation = KOPE_D3D12_BLEND_OPERATION_ADD;\n", get_name(t->name), i);
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.src_factor = KOPE_D3D12_BLEND_FACTOR_ONE;\n", get_name(t->name), i);
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.dst_factor = KOPE_D3D12_BLEND_FACTOR_ZERO;\n", get_name(t->name), i);
+
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.operation = KOPE_D3D12_BLEND_OPERATION_ADD;\n", get_name(t->name), i);
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.src_factor = KOPE_D3D12_BLEND_FACTOR_ONE;\n", get_name(t->name), i);
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.dst_factor = KOPE_D3D12_BLEND_FACTOR_ZERO;\n", get_name(t->name), i);
+
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].write_mask = 0xf;\n\n", get_name(t->name), i);
 					}
 					fprintf(output, "\n");
 				}
