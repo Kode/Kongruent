@@ -1240,6 +1240,25 @@ static void hlsl_export_all_ray_shaders(char *directory) {
 	}
 
 	if (all_rayshaders_size == 0) {
+		char *name = "ray";
+
+		char filename[512];
+		sprintf(filename, "kong_%s", name);
+
+		char full_filename[512];
+
+		sprintf(full_filename, "%s/%s.h", directory, filename);
+		FILE *file = fopen(full_filename, "wb");
+
+		fprintf(file, "#ifndef KONG_%s_HEADER\n", name);
+		fprintf(file, "#define KONG_%s_HEADER\n\n", name);
+
+		fprintf(file, "#define KONG_HAS_NO_RAY_SHADERS\n\n");
+
+		fprintf(file, "#endif\n");
+
+		fclose(file);
+
 		return;
 	}
 
