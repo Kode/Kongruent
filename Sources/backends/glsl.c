@@ -332,15 +332,15 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
 					if (f == main && o->op_load_member.member_parent_type == input && i == 0) {
-						*offset += sprintf(&code[*offset], "_%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+						*offset += sprintf(&code[*offset], "_%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
 					}
 					else if (global_var_index != 0) {
-						*offset += sprintf(&code[*offset], "_%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+						*offset += sprintf(&code[*offset], "_%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
 					}
 					else {
-						*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+						*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
 					}
-					s = get_type(s->members.m[o->op_load_member.member_indices[i]].type.type);
+					s = get_type(s->members.m[o->op_load_member.static_member_indices[i]].type.type);
 				}
 				*offset += sprintf(&code[*offset], ";\n");
 				break;

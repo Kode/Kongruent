@@ -820,7 +820,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			int indices[256];
 			uint16_t indices_size = o->op_load_member.member_indices_size;
 			for (size_t i = 0; i < indices_size; ++i) {
-				indices[i] = (int)o->op_load_member.member_indices[i];
+				indices[i] = (int)o->op_load_member.static_member_indices[i];
 			}
 
 			storage_class storage;

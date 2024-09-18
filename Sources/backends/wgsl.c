@@ -344,8 +344,8 @@ static void write_functions(char *code, size_t *offset) {
 				                   o->op_load_member.from.index);
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
-					*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
-					s = get_type(s->members.m[o->op_load_member.member_indices[i]].type.type);
+					*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
+					s = get_type(s->members.m[o->op_load_member.static_member_indices[i]].type.type);
 				}
 				*offset += sprintf(&code[*offset], ";\n");
 				break;

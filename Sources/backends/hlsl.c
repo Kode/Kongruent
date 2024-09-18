@@ -836,13 +836,21 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				                   o->op_load_member.from.index);
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
-					if (global_var_index != 0) {
-						*offset += sprintf(&hlsl[*offset], "_%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+					if (o->op_load_member.dynamic_member[i]) {
+						*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "]", o->op_load_member.dynamic_member_indices[i].index);
+
+						s = get_type(o->op_load_member.dynamic_member_indices[i].type.type);
 					}
 					else {
-						*offset += sprintf(&hlsl[*offset], ".%s", get_name(s->members.m[o->op_load_member.member_indices[i]].name));
+						if (global_var_index != 0 && i == 0) {
+							*offset += sprintf(&hlsl[*offset], "_%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
+						}
+						else {
+							*offset += sprintf(&hlsl[*offset], ".%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
+						}
+
+						s = get_type(s->members.m[o->op_load_member.static_member_indices[i]].type.type);
 					}
-					s = get_type(s->members.m[o->op_load_member.member_indices[i]].type.type);
 				}
 				*offset += sprintf(&hlsl[*offset], ";\n");
 				break;
