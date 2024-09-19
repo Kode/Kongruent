@@ -328,6 +328,34 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 	for (size_t set_count = 0; set_count < all_descriptor_sets_count; ++set_count) {
 		descriptor_set *set = all_descriptor_sets[set_count];
 
+		if (set->name == add_name("root_constants")) {
+			if (set->definitions_count != 1) {
+				debug_context context = {0};
+				error(context, "More than one root constants struct found");
+			}
+
+			uint32_t size = 0;
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				definition *def = &set->definitions[definition_index];
+
+				switch (def->kind) {
+				case DEFINITION_CONST_CUSTOM:
+					size += struct_size(get_global(def->global)->type);
+					break;
+				default: {
+					debug_context context = {0};
+					error(context, "Unsupported type for a root constant");
+					break;
+				}
+				}
+			}
+
+			*offset += sprintf(&hlsl[*offset], "\\\n, RootConstants(num32BitConstants=%i, b%i)", size / 4, cbv_index);
+			cbv_index += 1;
+
+			continue;
+		}
+
 		bool has_sampler = false;
 		bool has_other = false;
 

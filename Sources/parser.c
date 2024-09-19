@@ -180,6 +180,11 @@ static definition parse_definition(state_t *state) {
 			match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 			current_attribute.name = current(state).identifier;
 
+			if (current_attribute.name == add_name("root_constants")) {
+				current_set = add_set(current_attribute.name);
+				current_attribute.parameters[current_attribute.paramters_count] = current_set->index;
+			}
+
 			advance_state(state);
 
 			if (current(state).kind == TOKEN_LEFT_PAREN) {
@@ -188,6 +193,10 @@ static definition parse_definition(state_t *state) {
 				while (current(state).kind != TOKEN_RIGHT_PAREN) {
 					if (current(state).kind == TOKEN_IDENTIFIER) {
 						if (current_attribute.name == add_name("set")) {
+							if (current(state).identifier == add_name("root_constants")) {
+								debug_context context = {0};
+								error(context, "Descriptor set can not be called root_constants");
+							}
 							current_set = add_set(current(state).identifier);
 							current_attribute.parameters[current_attribute.paramters_count] = current_set->index;
 						}
