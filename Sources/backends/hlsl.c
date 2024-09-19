@@ -1348,7 +1348,7 @@ void hlsl_export(char *directory, api_kind d3d) {
 			global_register_indices[i] = srv_index;
 			srv_index += 1;
 		}
-		else if (g->type == float_id) {
+		else if (get_type(g->type)->built_in) {
 		}
 		else {
 			global_register_indices[i] = cbv_index;

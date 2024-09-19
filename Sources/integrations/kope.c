@@ -33,6 +33,30 @@ static char *type_string(type_id type) {
 	if (type == float4x4_id) {
 		return "kinc_matrix4x4_t";
 	}
+	if (type == int_id) {
+		return "int";
+	}
+	if (type == int2_id) {
+		return "kope_int2";
+	}
+	if (type == int3_id) {
+		return "kope_int3";
+	}
+	if (type == int4_id) {
+		return "kope_int4";
+	}
+	if (type == uint_id) {
+		return "unsigned";
+	}
+	if (type == uint2_id) {
+		return "kope_uint2";
+	}
+	if (type == uint3_id) {
+		return "kope_uint3";
+	}
+	if (type == uint4_id) {
+		return "kope_uint4";
+	}
 	return get_name(get_type(type)->name);
 }
 
@@ -75,6 +99,100 @@ static const char *convert_compare_mode(int mode) {
 	default: {
 		debug_context context = {0};
 		error(context, "Unknown compare mode");
+		return "UNKNOWN";
+	}
+	}
+}
+
+static const char *convert_texture_format(int format) {
+	switch (format) {
+	case 0:
+		return "KOPE_G5_TEXTURE_FORMAT_R8_UNORM";
+	case 1:
+		return "KOPE_G5_TEXTURE_FORMAT_R8_SNORM";
+	case 2:
+		return "KOPE_G5_TEXTURE_FORMAT_R8_UINT";
+	case 3:
+		return "KOPE_G5_TEXTURE_FORMAT_R8_SINT";
+	case 4:
+		return "KOPE_G5_TEXTURE_FORMAT_R16_UINT";
+	case 5:
+		return "KOPE_G5_TEXTURE_FORMAT_R16_SINT";
+	case 6:
+		return "KOPE_G5_TEXTURE_FORMAT_R16_FLOAT";
+	case 7:
+		return "KOPE_G5_TEXTURE_FORMAT_RG8_UNORM";
+	case 8:
+		return "KOPE_G5_TEXTURE_FORMAT_RG8_SNORM";
+	case 9:
+		return "KOPE_G5_TEXTURE_FORMAT_RG8_UINT";
+	case 10:
+		return "KOPE_G5_TEXTURE_FORMAT_RG8_SINT";
+	case 11:
+		return "KOPE_G5_TEXTURE_FORMAT_R32_UINT";
+	case 12:
+		return "KOPE_G5_TEXTURE_FORMAT_R32_SINT";
+	case 13:
+		return "KOPE_G5_TEXTURE_FORMAT_R32_FLOAT";
+	case 14:
+		return "KOPE_G5_TEXTURE_FORMAT_RG16_UINT";
+	case 15:
+		return "KOPE_G5_TEXTURE_FORMAT_RG16_SINT";
+	case 16:
+		return "KOPE_G5_TEXTURE_FORMAT_RG16_FLOAT";
+	case 17:
+		return "KOPE_G5_TEXTURE_FORMAT_RGBA8_UNORM";
+	case 18:
+		return "KOPE_G5_TEXTURE_FORMAT_RGBA8_UNORM_SRGB";
+	case 19:
+		return "KOPE_G5_TEXTURE_FORMAT_RGBA8_SNORM";
+	case 20:
+		return "KOPE_G5_TEXTURE_FORMAT_RGBA8_UINT";
+	case 21:
+		return "KOPE_G5_TEXTURE_FORMAT_RGBA8_SINT";
+	case 22:
+		return "KOPE_G5_TEXTURE_FORMAT_BGRA8_UNORM";
+	case 23:
+		return "KOPE_G5_TEXTURE_FORMAT_BGRA8_UNORM_SRGB";
+	case 24:
+		return "KOPE_G5_TEXTURE_FORMAT_RGB9E5U_FLOAT";
+	case 25:
+		return "KOPE_G5_TEXTURE_FORMAT_RGB10A2_UINT";
+	case 26:
+		return "KOPE_G5_TEXTURE_FORMAT_RGB10A2_UNORM";
+	case 27:
+		return "KOPE_G5_TEXTURE_FORMAT_RG11B10U_FLOAT";
+	case 28:
+		return "KOPE_G5_TEXTURE_FORMAT_RG32_UINT";
+	case 29:
+		return "KOPE_G5_TEXTURE_FORMAT_RG32_SINT";
+	case 30:
+		return "KOPE_G5_TEXTURE_FORMAT_RG32_FLOAT";
+	case 31:
+		return "KOPE_G5_TEXTURE_FORMAT_RGBA16_UINT";
+	case 32:
+		return "KOPE_G5_TEXTURE_FORMAT_RGBA16_SINT";
+	case 33:
+		return "KOPE_G5_TEXTURE_FORMAT_RGBA16_FLOAT";
+	case 34:
+		return "KOPE_G5_TEXTURE_FORMAT_RGBA32_UINT";
+	case 35:
+		return "KOPE_G5_TEXTURE_FORMAT_RGBA32_SINT";
+	case 36:
+		return "KOPE_G5_TEXTURE_FORMAT_RGBA32_FLOAT";
+	case 37:
+		return "KOPE_G5_TEXTURE_FORMAT_DEPTH16_UNORM";
+	case 38:
+		return "KOPE_G5_TEXTURE_FORMAT_DEPTH24PLUS_NOTHING8";
+	case 39:
+		return "KOPE_G5_TEXTURE_FORMAT_DEPTH24PLUS_STENCIL8";
+	case 40:
+		return "KOPE_G5_TEXTURE_FORMAT_DEPTH32FLOAT";
+	case 41:
+		return "KOPE_G5_TEXTURE_FORMAT_DEPTH32FLOAT_STENCIL8_NOTHING24";
+	default: {
+		debug_context context = {0};
+		error(context, "Unknown texture format");
 		return "UNKNOWN";
 	}
 	}
@@ -470,7 +588,6 @@ void kope_export(char *directory, api_kind api) {
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
 			if (g->type == tex2d_type_id || g->type == texcube_type_id || g->type == sampler_type_id) {
-				fprintf(output, "extern int %s;\n", get_name(g->name));
 			}
 			else if (!get_type(g->type)->built_in) {
 				type *t = get_type(g->type);
@@ -493,10 +610,15 @@ void kope_export(char *directory, api_kind api) {
 				}
 				fprintf(output, "} %s;\n\n", name);
 
-				fprintf(output, "void %s_buffer_create(kope_g5_device *device, kope_g5_buffer *buffer);\n", name);
-				fprintf(output, "void %s_buffer_destroy(kope_g5_buffer *buffer);\n", name);
-				fprintf(output, "%s *%s_buffer_lock(kope_g5_buffer *buffer);\n", name, name);
-				fprintf(output, "void %s_buffer_unlock(kope_g5_buffer *buffer);\n", name);
+				if (g->set != NULL && g->set->name == add_name("root_constants")) {
+					fprintf(output, "void kong_set_root_constants_%s(kope_g5_command_list *list, %s *constants);\n", get_name(g->name), name);
+				}
+				else {
+					fprintf(output, "void %s_buffer_create(kope_g5_device *device, kope_g5_buffer *buffer);\n", name);
+					fprintf(output, "void %s_buffer_destroy(kope_g5_buffer *buffer);\n", name);
+					fprintf(output, "%s *%s_buffer_lock(kope_g5_buffer *buffer);\n", name, name);
+					fprintf(output, "void %s_buffer_unlock(kope_g5_buffer *buffer);\n", name);
+				}
 			}
 		}
 
@@ -526,6 +648,10 @@ void kope_export(char *directory, api_kind api) {
 
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
+
+			if (set->name == add_name("root_constants")) {
+				continue;
+			}
 
 			fprintf(output, "typedef struct %s_parameters {\n", get_name(set->name));
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
@@ -679,15 +805,6 @@ void kope_export(char *directory, api_kind api) {
 		fprintf(output, "#include <kope/direct3d12/descriptorset_functions.h>\n");
 		fprintf(output, "#include <kope/direct3d12/pipeline_functions.h>\n\n");
 
-		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
-			global *g = get_global(i);
-			if (g->type == tex2d_type_id || g->type == texcube_type_id || g->type == sampler_type_id) {
-				fprintf(output, "int %s = %i;\n", get_name(g->name), global_register_indices[i]);
-			}
-		}
-
-		fprintf(output, "\n");
-
 		for (size_t i = 0; i < vertex_inputs_size; ++i) {
 			type *t = get_type(vertex_inputs[i]);
 
@@ -754,69 +871,81 @@ void kope_export(char *directory, api_kind api) {
 					strcat(type_name, "_type");
 				}
 
-				fprintf(output, "\nvoid %s_buffer_create(kope_g5_device *device, kope_g5_buffer *buffer) {\n", type_name);
-				fprintf(output, "\tkope_g5_buffer_parameters parameters;\n");
-				fprintf(output, "\tparameters.size = %i;\n", struct_size(g->type));
-				fprintf(output, "\tparameters.usage_flags = KOPE_G5_BUFFER_USAGE_CPU_WRITE;\n");
-				fprintf(output, "\tkope_g5_device_create_buffer(device, &parameters, buffer);\n");
-				fprintf(output, "}\n\n");
-
-				fprintf(output, "void %s_buffer_destroy(kope_g5_buffer *buffer) {\n", type_name);
-				fprintf(output, "\tkope_g5_buffer_destroy(buffer);\n");
-				fprintf(output, "}\n\n");
-
-				fprintf(output, "%s *%s_buffer_lock(kope_g5_buffer *buffer) {\n", type_name, type_name);
-				fprintf(output, "\treturn (%s *)kope_g5_buffer_lock(buffer);\n", type_name);
-				fprintf(output, "}\n\n");
-
-				fprintf(output, "void %s_buffer_unlock(kope_g5_buffer *buffer) {\n", type_name);
-				if (api != API_OPENGL) {
-					bool has_matrices = false;
-					for (size_t j = 0; j < t->members.size; ++j) {
-						if (t->members.m[j].type.type == float4x4_id || t->members.m[j].type.type == float3x3_id) {
-							has_matrices = true;
-							break;
-						}
-					}
-
-					if (has_matrices) {
-						fprintf(output, "\t%s *data = (%s *)kope_g5_buffer_lock(buffer);\n", type_name, type_name);
-						// adjust matrices
-						for (size_t j = 0; j < t->members.size; ++j) {
-							if (t->members.m[j].type.type == float4x4_id) {
-								fprintf(output, "\tkinc_matrix4x4_transpose(&data->%s);\n", get_name(t->members.m[j].name));
-							}
-							else if (t->members.m[j].type.type == float3x3_id) {
-								// fprintf(output, "\tkinc_matrix3x3_transpose(&data->%s);\n", get_name(t->members.m[j].name));
-								fprintf(output, "\t{\n");
-								fprintf(output, "\t\tkinc_matrix3x3_t m = data->%s;\n", get_name(t->members.m[j].name));
-								fprintf(output, "\t\tfloat *m_data = (float *)&data->%s;\n", get_name(t->members.m[j].name));
-								fprintf(output, "\t\tm_data[0] = m.m[0];\n");
-								fprintf(output, "\t\tm_data[1] = m.m[1];\n");
-								fprintf(output, "\t\tm_data[2] = m.m[2];\n");
-								fprintf(output, "\t\tm_data[3] = 0.0f;\n");
-								fprintf(output, "\t\tm_data[4] = m.m[3];\n");
-								fprintf(output, "\t\tm_data[5] = m.m[4];\n");
-								fprintf(output, "\t\tm_data[6] = m.m[5];\n");
-								fprintf(output, "\t\tm_data[7] = 0.0f;\n");
-								fprintf(output, "\t\tm_data[8] = m.m[6];\n");
-								fprintf(output, "\t\tm_data[9] = m.m[7];\n");
-								fprintf(output, "\t\tm_data[10] = m.m[8];\n");
-								fprintf(output, "\t\tm_data[11] = 0.0f;\n");
-								fprintf(output, "\t}\n");
-							}
-						}
-						fprintf(output, "\tkope_g5_buffer_unlock(buffer);\n");
-					}
+				if (g->set != NULL && g->set->name == add_name("root_constants")) {
+					fprintf(output, "void kong_set_root_constants_%s(kope_g5_command_list *list, %s *constants) {\n", get_name(g->name), type_name);
+					fprintf(output, "\tkope_d3d12_command_list_set_root_constants(list, constants, %i);\n", struct_size(g->type));
+					fprintf(output, "}\n\n");
 				}
-				fprintf(output, "\tkope_g5_buffer_unlock(buffer);\n");
-				fprintf(output, "}\n\n");
+				else {
+					fprintf(output, "\nvoid %s_buffer_create(kope_g5_device *device, kope_g5_buffer *buffer) {\n", type_name);
+					fprintf(output, "\tkope_g5_buffer_parameters parameters;\n");
+					fprintf(output, "\tparameters.size = %i;\n", struct_size(g->type));
+					fprintf(output, "\tparameters.usage_flags = KOPE_G5_BUFFER_USAGE_CPU_WRITE;\n");
+					fprintf(output, "\tkope_g5_device_create_buffer(device, &parameters, buffer);\n");
+					fprintf(output, "}\n\n");
+
+					fprintf(output, "void %s_buffer_destroy(kope_g5_buffer *buffer) {\n", type_name);
+					fprintf(output, "\tkope_g5_buffer_destroy(buffer);\n");
+					fprintf(output, "}\n\n");
+
+					fprintf(output, "%s *%s_buffer_lock(kope_g5_buffer *buffer) {\n", type_name, type_name);
+					fprintf(output, "\treturn (%s *)kope_g5_buffer_lock(buffer);\n", type_name);
+					fprintf(output, "}\n\n");
+
+					fprintf(output, "void %s_buffer_unlock(kope_g5_buffer *buffer) {\n", type_name);
+					if (api != API_OPENGL) {
+						bool has_matrices = false;
+						for (size_t j = 0; j < t->members.size; ++j) {
+							if (t->members.m[j].type.type == float4x4_id || t->members.m[j].type.type == float3x3_id) {
+								has_matrices = true;
+								break;
+							}
+						}
+
+						if (has_matrices) {
+							fprintf(output, "\t%s *data = (%s *)kope_g5_buffer_lock(buffer);\n", type_name, type_name);
+							// adjust matrices
+							for (size_t j = 0; j < t->members.size; ++j) {
+								if (t->members.m[j].type.type == float4x4_id) {
+									fprintf(output, "\tkinc_matrix4x4_transpose(&data->%s);\n", get_name(t->members.m[j].name));
+								}
+								else if (t->members.m[j].type.type == float3x3_id) {
+									// fprintf(output, "\tkinc_matrix3x3_transpose(&data->%s);\n", get_name(t->members.m[j].name));
+									fprintf(output, "\t{\n");
+									fprintf(output, "\t\tkinc_matrix3x3_t m = data->%s;\n", get_name(t->members.m[j].name));
+									fprintf(output, "\t\tfloat *m_data = (float *)&data->%s;\n", get_name(t->members.m[j].name));
+									fprintf(output, "\t\tm_data[0] = m.m[0];\n");
+									fprintf(output, "\t\tm_data[1] = m.m[1];\n");
+									fprintf(output, "\t\tm_data[2] = m.m[2];\n");
+									fprintf(output, "\t\tm_data[3] = 0.0f;\n");
+									fprintf(output, "\t\tm_data[4] = m.m[3];\n");
+									fprintf(output, "\t\tm_data[5] = m.m[4];\n");
+									fprintf(output, "\t\tm_data[6] = m.m[5];\n");
+									fprintf(output, "\t\tm_data[7] = 0.0f;\n");
+									fprintf(output, "\t\tm_data[8] = m.m[6];\n");
+									fprintf(output, "\t\tm_data[9] = m.m[7];\n");
+									fprintf(output, "\t\tm_data[10] = m.m[8];\n");
+									fprintf(output, "\t\tm_data[11] = 0.0f;\n");
+									fprintf(output, "\t}\n");
+								}
+							}
+							fprintf(output, "\tkope_g5_buffer_unlock(buffer);\n");
+						}
+					}
+					fprintf(output, "\tkope_g5_buffer_unlock(buffer);\n");
+					fprintf(output, "}\n\n");
+				}
 			}
 		}
 
 		uint32_t descriptor_table_index = 0;
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
+
+			if (set->name == add_name("root_constants")) {
+				descriptor_table_index += 1;
+				continue;
+			}
 
 			fprintf(output, "void kong_create_%s_set(kope_g5_device *device, const %s_parameters *parameters, %s_set *set) {\n", get_name(set->name),
 			        get_name(set->name), get_name(set->name));
@@ -1158,7 +1287,17 @@ void kope_export(char *directory, api_kind api) {
 				if (fragment_function->return_type.array_size > 0) {
 					fprintf(output, "\t%s_parameters.fragment.targets_count = %i;\n", get_name(t->name), fragment_function->return_type.array_size);
 					for (uint32_t i = 0; i < fragment_function->return_type.array_size; ++i) {
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].format = KOPE_G5_TEXTURE_FORMAT_RGBA8_UNORM;\n", get_name(t->name), i);
+						member *format = find_member(t, "format");
+						if (format != NULL) {
+							debug_context context = {0};
+							check(format->value.kind == TOKEN_IDENTIFIER, context, "format expects an identifier");
+							global *g = find_global(format->value.identifier);
+							fprintf(output, "\t%s_parameters.fragment.targets[%i].format = %s;\n", get_name(t->name), i,
+							        convert_texture_format(g->value.value.ints[0]));
+						}
+						else {
+							fprintf(output, "\t%s_parameters.fragment.targets[%i].format = KOPE_G5_TEXTURE_FORMAT_RGBA8_UNORM;\n", get_name(t->name), i);
+						}
 
 						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.operation = KOPE_D3D12_BLEND_OPERATION_ADD;\n", get_name(t->name), i);
 						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.src_factor = KOPE_D3D12_BLEND_FACTOR_ONE;\n", get_name(t->name), i);
@@ -1174,7 +1313,18 @@ void kope_export(char *directory, api_kind api) {
 				}
 				else {
 					fprintf(output, "\t%s_parameters.fragment.targets_count = 1;\n", get_name(t->name));
-					fprintf(output, "\t%s_parameters.fragment.targets[0].format = KOPE_G5_TEXTURE_FORMAT_RGBA8_UNORM;\n", get_name(t->name));
+
+					member *format = find_member(t, "format");
+					if (format != NULL) {
+						debug_context context = {0};
+						check(format->value.kind == TOKEN_IDENTIFIER, context, "format expects an identifier");
+						global *g = find_global(format->value.identifier);
+						fprintf(output, "\t%s_parameters.fragment.targets[0].format = %s;\n", get_name(t->name),
+						        convert_texture_format(g->value.value.ints[0]));
+					}
+					else {
+						fprintf(output, "\t%s_parameters.fragment.targets[0].format = KOPE_G5_TEXTURE_FORMAT_RGBA8_UNORM;\n", get_name(t->name));
+					}
 
 					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.operation = KOPE_D3D12_BLEND_OPERATION_ADD;\n", get_name(t->name));
 					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.src_factor = KOPE_D3D12_BLEND_FACTOR_ONE;\n", get_name(t->name));

@@ -15,12 +15,17 @@ typedef struct global_value {
 		GLOBAL_VALUE_INT2,
 		GLOBAL_VALUE_INT3,
 		GLOBAL_VALUE_INT4,
+		GLOBAL_VALUE_UINT,
+		GLOBAL_VALUE_UINT2,
+		GLOBAL_VALUE_UINT3,
+		GLOBAL_VALUE_UINT4,
 		GLOBAL_VALUE_BOOL,
 		GLOBAL_VALUE_NONE
 	} kind;
 	union {
 		float floats[4];
 		int ints[4];
+		unsigned uints[4];
 		bool b;
 	} value;
 } global_value;
