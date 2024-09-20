@@ -81,21 +81,21 @@ static const char *structure_type(type_id type) {
 static const char *convert_compare_mode(int mode) {
 	switch (mode) {
 	case 0:
-		return "KOPE_D3D12_COMPARE_FUNCTION_ALWAYS";
+		return "KOPE_G5_COMPARE_FUNCTION_ALWAYS";
 	case 1:
-		return "KOPE_D3D12_COMPARE_FUNCTION_NEVER";
+		return "KOPE_G5_COMPARE_FUNCTION_NEVER";
 	case 2:
-		return "KOPE_D3D12_COMPARE_FUNCTION_EQUAL";
+		return "KOPE_G5_COMPARE_FUNCTION_EQUAL";
 	case 3:
-		return "KOPE_D3D12_COMPARE_FUNCTION_NOT_EQUAL";
+		return "KOPE_G5_COMPARE_FUNCTION_NOT_EQUAL";
 	case 4:
-		return "KOPE_D3D12_COMPARE_FUNCTION_LESS";
+		return "KOPE_G5_COMPARE_FUNCTION_LESS";
 	case 5:
-		return "KOPE_D3D12_COMPARE_FUNCTION_LESS_EQUAL";
+		return "KOPE_G5_COMPARE_FUNCTION_LESS_EQUAL";
 	case 6:
-		return "KOPE_D3D12_COMPARE_FUNCTION_GREATER";
+		return "KOPE_G5_COMPARE_FUNCTION_GREATER";
 	case 7:
-		return "KOPE_D3D12_COMPARE_FUNCTION_GREATER_EQUAL";
+		return "KOPE_G5_COMPARE_FUNCTION_GREATER_EQUAL";
 	default: {
 		debug_context context = {0};
 		error(context, "Unknown compare mode");
@@ -1241,7 +1241,17 @@ void kope_export(char *directory, api_kind api) {
 				fprintf(output, "\t%s_parameters.primitive.cull_mode = KOPE_D3D12_CULL_MODE_NONE;\n", get_name(t->name));
 				fprintf(output, "\t%s_parameters.primitive.unclipped_depth = false;\n\n", get_name(t->name));
 
-				fprintf(output, "\t%s_parameters.depth_stencil.format = KOPE_G5_TEXTURE_FORMAT_DEPTH32FLOAT;\n", get_name(t->name));
+				member *depth_stencil_format = find_member(t, "depth_stencil_format");
+				if (depth_stencil_format != NULL) {
+					debug_context context = {0};
+					check(depth_stencil_format->value.kind == TOKEN_IDENTIFIER, context, "depth_stencil_format expects an identifier");
+					global *g = find_global(depth_stencil_format->value.identifier);
+					fprintf(output, "\t%s_parameters.depth_stencil.format = %s;\n", get_name(t->name), convert_texture_format(g->value.value.ints[0]));
+				}
+				else {
+					fprintf(output, "\t%s_parameters.depth_stencil.format = KOPE_G5_TEXTURE_FORMAT_DEPTH32FLOAT;\n", get_name(t->name));
+				}
+
 				member *depth_write = find_member(t, "depth_write");
 				if (depth_write != NULL) {
 					debug_context context = {0};
