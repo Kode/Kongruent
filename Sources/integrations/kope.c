@@ -1298,7 +1298,12 @@ void kope_export(char *directory, api_kind api) {
 				if (fragment_function->return_type.array_size > 0) {
 					fprintf(output, "\t%s_parameters.fragment.targets_count = %i;\n", get_name(t->name), fragment_function->return_type.array_size);
 					for (uint32_t i = 0; i < fragment_function->return_type.array_size; ++i) {
-						member *format = find_member(t, "format");
+						char format_name[32];
+						sprintf(format_name, "format%i", i);
+						member *format = find_member(t, format_name);
+						if (format == NULL && i == 0) {
+							format = find_member(t, "format");
+						}
 						if (format != NULL) {
 							debug_context context = {0};
 							check(format->value.kind == TOKEN_IDENTIFIER, context, "format expects an identifier");
@@ -1326,6 +1331,9 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "\t%s_parameters.fragment.targets_count = 1;\n", get_name(t->name));
 
 					member *format = find_member(t, "format");
+					if (format == NULL) {
+						format = find_member(t, "format0");
+					}
 					if (format != NULL) {
 						debug_context context = {0};
 						check(format->value.kind == TOKEN_IDENTIFIER, context, "format expects an identifier");
