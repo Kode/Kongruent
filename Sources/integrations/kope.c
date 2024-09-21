@@ -514,7 +514,8 @@ void kope_export(char *directory, api_kind api) {
 		}
 	}
 
-	type_id vertex_inputs[256];
+	type_id vertex_inputs[256] = {0};
+	size_t vertex_input_slots[256] = {0};
 	size_t vertex_inputs_size = 0;
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
@@ -540,22 +541,20 @@ void kope_export(char *directory, api_kind api) {
 			check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "No vertex or mesh shader name found");
 
 			if (vertex_shader_name != NO_NAME) {
-
-				type_id vertex_input = NO_TYPE;
-
 				for (function_id i = 0; get_function(i) != NULL; ++i) {
 					function *f = get_function(i);
 					if (f->name == vertex_shader_name) {
 						check(f->parameters_size > 0, context, "Vertex function requires at least one parameter");
-						vertex_input = f->parameter_types[0].type;
+
+						for (size_t input_index = 0; input_index < f->parameters_size; ++input_index) {
+							vertex_inputs[vertex_inputs_size] = f->parameter_types[input_index].type;
+							vertex_input_slots[vertex_inputs_size] = input_index;
+							vertex_inputs_size += 1;
+						}
+
 						break;
 					}
 				}
-
-				check(vertex_input != NO_TYPE, context, "No vertex input found");
-
-				vertex_inputs[vertex_inputs_size] = vertex_input;
-				vertex_inputs_size += 1;
 			}
 		}
 	}
@@ -827,8 +826,9 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "void kong_set_vertex_buffer_%s(kope_g5_command_list *list, %s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
-			fprintf(output, "\tkope_d3d12_command_list_set_vertex_buffer(list, 0, &buffer->buffer.d3d12, 0, buffer->count * sizeof(%s), sizeof(%s));\n",
-			        get_name(t->name), get_name(t->name));
+			fprintf(output,
+			        "\tkope_d3d12_command_list_set_vertex_buffer(list, %" PRIu64 ", &buffer->buffer.d3d12, 0, buffer->count * sizeof(%s), sizeof(%s));\n",
+			        vertex_input_slots[i], get_name(t->name), get_name(t->name));
 			fprintf(output, "}\n\n");
 		}
 
@@ -1188,7 +1188,9 @@ void kope_export(char *directory, api_kind api) {
 				function *vertex_function = NULL;
 				function *fragment_function = NULL;
 
-				type_id vertex_input = NO_TYPE;
+				type_id vertex_inputs[64] = {0};
+				bool instanced[64] = {0};
+				size_t vertex_inputs_count = 0;
 
 				if (vertex_shader_name != NO_NAME) {
 					for (function_id i = 0; get_function(i) != NULL; ++i) {
@@ -1197,7 +1199,13 @@ void kope_export(char *directory, api_kind api) {
 							vertex_function = f;
 							debug_context context = {0};
 							check(f->parameters_size > 0, context, "Vertex function requires at least one parameter");
-							vertex_input = f->parameter_types[0].type;
+							for (size_t input_index = 0; input_index < f->parameters_size; ++input_index) {
+								vertex_inputs[input_index] = f->parameter_types[input_index].type;
+								if (f->parameter_attributes[input_index] == add_name("per_instance")) {
+									instanced[input_index] = true;
+								}
+							}
+							vertex_inputs_count = f->parameters_size;
 							break;
 						}
 					}
@@ -1215,39 +1223,41 @@ void kope_export(char *directory, api_kind api) {
 					debug_context context = {0};
 					check(vertex_shader_name == NO_NAME || vertex_function != NULL, context, "Vertex function not found");
 					check(fragment_function != NULL, context, "Fragment function not found");
-					check(vertex_function == NULL || vertex_input != NO_TYPE, context, "No vertex input found");
+					check(vertex_function == NULL || (vertex_inputs_count > 0 && vertex_inputs[0] != NO_TYPE), context, "No vertex input found");
 				}
 
 				if (vertex_function != NULL) {
-					for (type_id i = 0; get_type(i) != NULL; ++i) {
-						if (i == vertex_input) {
-							type *vertex_type = get_type(i);
-							size_t offset = 0;
+					size_t location = 0;
 
-							for (size_t j = 0; j < vertex_type->members.size; ++j) {
-								if (api == API_OPENGL) {
-									fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s_%s\", %s);\n", get_name(t->name),
-									        get_name(vertex_type->name), get_name(vertex_type->members.m[j].name),
-									        structure_type(vertex_type->members.m[j].type.type));
-								}
-								else {
-									fprintf(output, "\t%s_parameters.vertex.buffers[0].attributes[%" PRIu64 "].format = %s;\n", get_name(t->name), j,
-									        structure_type(vertex_type->members.m[j].type.type));
-									fprintf(output, "\t%s_parameters.vertex.buffers[0].attributes[%" PRIu64 "].offset = %" PRIu64 ";\n", get_name(t->name), j,
-									        offset);
-									fprintf(output, "\t%s_parameters.vertex.buffers[0].attributes[%" PRIu64 "].shader_location = %" PRIu64 ";\n",
-									        get_name(t->name), j, j);
-								}
+					for (size_t input_index = 0; input_index < vertex_inputs_count; ++input_index) {
+						type *vertex_type = get_type(vertex_inputs[input_index]);
+						size_t offset = 0;
 
-								offset += base_type_size(vertex_type->members.m[j].type.type);
+						for (size_t j = 0; j < vertex_type->members.size; ++j) {
+							if (api == API_OPENGL) {
+								fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s_%s\", %s);\n", get_name(t->name),
+								        get_name(vertex_type->name), get_name(vertex_type->members.m[j].name),
+								        structure_type(vertex_type->members.m[j].type.type));
 							}
-							fprintf(output, "\t%s_parameters.vertex.buffers[0].attributes_count = %" PRIu64 ";\n", get_name(t->name),
-							        vertex_type->members.size);
-							fprintf(output, "\t%s_parameters.vertex.buffers[0].array_stride = %" PRIu64 ";\n", get_name(t->name), offset);
-							fprintf(output, "\t%s_parameters.vertex.buffers[0].step_mode = KOPE_D3D12_VERTEX_STEP_MODE_VERTEX;\n", get_name(t->name));
-							fprintf(output, "\t%s_parameters.vertex.buffers_count = 1;\n\n", get_name(t->name));
+							else {
+								fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].attributes[%" PRIu64 "].format = %s;\n", get_name(t->name),
+								        input_index, j, structure_type(vertex_type->members.m[j].type.type));
+								fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].attributes[%" PRIu64 "].offset = %" PRIu64 ";\n",
+								        get_name(t->name), input_index, j, offset);
+								fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].attributes[%" PRIu64 "].shader_location = %" PRIu64 ";\n",
+								        get_name(t->name), input_index, j, location);
+							}
+
+							offset += base_type_size(vertex_type->members.m[j].type.type);
+							location += 1;
 						}
+						fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].attributes_count = %" PRIu64 ";\n", get_name(t->name), input_index,
+						        vertex_type->members.size);
+						fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].array_stride = %" PRIu64 ";\n", get_name(t->name), input_index, offset);
+						fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].step_mode = %s;\n", get_name(t->name), input_index,
+						        instanced[input_index] ? "KOPE_D3D12_VERTEX_STEP_MODE_INSTANCE" : "KOPE_D3D12_VERTEX_STEP_MODE_VERTEX");
 					}
+					fprintf(output, "\t%s_parameters.vertex.buffers_count = %" PRIu64 ";\n\n", get_name(t->name), vertex_inputs_count);
 				}
 
 				fprintf(output, "\t%s_parameters.primitive.topology = KOPE_D3D12_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;\n", get_name(t->name));
