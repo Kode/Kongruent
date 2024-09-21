@@ -827,8 +827,7 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "void kong_set_vertex_buffer_%s(kope_g5_command_list *list, %s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
-			fprintf(output,
-			        "\tkope_d3d12_command_list_set_vertex_buffer(list, %" PRIu64 ", &buffer->buffer.d3d12, 0, buffer->count * sizeof(%s), sizeof(%s));\n", i,
+			fprintf(output, "\tkope_d3d12_command_list_set_vertex_buffer(list, 0, &buffer->buffer.d3d12, 0, buffer->count * sizeof(%s), sizeof(%s));\n",
 			        get_name(t->name), get_name(t->name));
 			fprintf(output, "}\n\n");
 		}
