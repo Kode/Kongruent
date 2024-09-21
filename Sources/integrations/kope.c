@@ -691,6 +691,7 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "\tkope_g5_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
 					break;
 				case DEFINITION_TEX2D:
+				case DEFINITION_TEXCUBE:
 					fprintf(output, "\tkope_g5_texture *%s;\n", get_name(get_global(d.global)->name));
 					break;
 				}
@@ -962,6 +963,7 @@ void kope_export(char *directory, api_kind api) {
 					other_count += 1;
 					break;
 				case DEFINITION_TEX2D:
+				case DEFINITION_TEXCUBE:
 					other_count += 1;
 					break;
 				case DEFINITION_SAMPLER:
@@ -1005,6 +1007,18 @@ void kope_export(char *directory, api_kind api) {
 					other_index += 1;
 					break;
 				}
+				case DEFINITION_TEXCUBE: {
+					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
+					if (write_attribute != NULL) {
+						debug_context context = {0};
+						error(context, "Cube maps can not be writable");
+					}
+					fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_cube_view_srv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
+					        get_name(get_global(d.global)->name), other_index);
+					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
+					other_index += 1;
+					break;
+				}
 				case DEFINITION_SAMPLER:
 					fprintf(output, "\tkope_d3d12_descriptor_set_set_sampler(device, &set->set, parameters->%s, %" PRIu64 ");\n",
 					        get_name(get_global(d.global)->name), sampler_index);
@@ -1022,7 +1036,8 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_CONST_CUSTOM:
 					fprintf(output, "\tkope_d3d12_descriptor_set_prepare_cbv_buffer(list, set->%s);\n", get_name(get_global(d.global)->name));
 					break;
-				case DEFINITION_TEX2D: {
+				case DEFINITION_TEX2D:
+				case DEFINITION_TEXCUBE: {
 					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
 					if (write_attribute != NULL) {
 						fprintf(output, "\tkope_d3d12_descriptor_set_prepare_uav_texture(list, set->%s);\n", get_name(get_global(d.global)->name));
