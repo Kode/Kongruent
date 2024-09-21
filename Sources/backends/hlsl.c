@@ -152,9 +152,11 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 	size_t input_offsets[64];
 	input_offsets[0] = 0;
 
-	for (size_t input_index = 0; input_index < inputs_count - 1; ++input_index) {
-		type *t = get_type(inputs[input_index]);
-		input_offsets[input_index + 1] = input_offsets[input_index] + t->members.size;
+	if (inputs_count > 0) {
+		for (size_t input_index = 0; input_index < inputs_count - 1; ++input_index) {
+			type *t = get_type(inputs[input_index]);
+			input_offsets[input_index + 1] = input_offsets[input_index] + t->members.size;
+		}
 	}
 
 	for (size_t i = 0; i < types_size; ++i) {

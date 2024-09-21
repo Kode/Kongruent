@@ -174,6 +174,21 @@ static bool types_compatible(type_id left, type_id right) {
 		return true;
 	}
 
+	if ((left == uint_id && right == uint2_id) || (left == uint_id && right == uint3_id) || (left == uint_id && right == uint4_id) ||
+	    (left == uint2_id && right == uint_id) || (left == uint3_id && right == uint_id) || (left == uint4_id && right == uint_id)) {
+		return true;
+	}
+
+	if ((left == uint_id && right == int2_id) || (left == uint_id && right == int3_id) || (left == uint_id && right == int4_id) ||
+	    (left == int2_id && right == uint_id) || (left == int3_id && right == uint_id) || (left == int4_id && right == uint_id)) {
+		return true;
+	}
+
+	if ((left == int_id && right == uint2_id) || (left == int_id && right == uint3_id) || (left == int_id && right == uint4_id) ||
+	    (left == uint2_id && right == int_id) || (left == uint3_id && right == int_id) || (left == uint4_id && right == int_id)) {
+		return true;
+	}
+
 	return false;
 }
 
@@ -273,6 +288,30 @@ static type_ref upgrade_type(type_ref left_type, type_ref right_type) {
 	}
 
 	if ((left == int_id && right == int2_id) || (left == int_id && right == int3_id) || (left == int_id && right == int4_id)) {
+		return right_type;
+	}
+
+	if ((left == uint2_id && right == uint_id) || (left == uint3_id && right == uint_id) || (left == uint4_id && right == uint_id)) {
+		return left_type;
+	}
+
+	if ((left == uint_id && right == uint2_id) || (left == uint_id && right == uint3_id) || (left == uint_id && right == uint4_id)) {
+		return right_type;
+	}
+
+	if ((left == uint2_id && right == int_id) || (left == uint3_id && right == int_id) || (left == uint4_id && right == int_id)) {
+		return left_type;
+	}
+
+	if ((left == int_id && right == uint2_id) || (left == int_id && right == uint3_id) || (left == int_id && right == uint4_id)) {
+		return right_type;
+	}
+
+	if ((left == int2_id && right == uint_id) || (left == int3_id && right == uint_id) || (left == int4_id && right == uint_id)) {
+		return left_type;
+	}
+
+	if ((left == uint_id && right == int2_id) || (left == uint_id && right == int3_id) || (left == uint_id && right == int4_id)) {
 		return right_type;
 	}
 
