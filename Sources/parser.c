@@ -1066,12 +1066,25 @@ static definition parse_function(state_t *state) {
 	advance_state(state);
 
 	uint8_t parameters_size = 0;
-	token param_names[256] = {0};
+	name_id param_names[256] = {0};
 	type_ref param_types[256] = {0};
+	name_id param_attributes[256] = {0};
 
 	while (current(state).kind != TOKEN_RIGHT_PAREN) {
+		if (current(state).kind == TOKEN_HASH) {
+			advance_state(state);
+			match_token(state, TOKEN_LEFT_SQUARE, "Expected an opening square bracket");
+			advance_state(state);
+			match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
+			token attribute_name = current(state);
+			param_attributes[parameters_size] = attribute_name.identifier;
+			advance_state(state);
+			match_token(state, TOKEN_RIGHT_SQUARE, "Expected a closing square bracket");
+			advance_state(state);
+		}
+
 		match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
-		param_names[parameters_size] = current(state);
+		param_names[parameters_size] = current(state).identifier;
 		advance_state(state);
 		match_token(state, TOKEN_COLON, "Expected a colon");
 		advance_state(state);
@@ -1098,8 +1111,9 @@ static definition parse_function(state_t *state) {
 	f->return_type = return_type;
 	f->parameters_size = parameters_size;
 	for (uint8_t parameter_index = 0; parameter_index < parameters_size; ++parameter_index) {
-		f->parameter_names[parameter_index] = param_names[parameter_index].identifier;
+		f->parameter_names[parameter_index] = param_names[parameter_index];
 		f->parameter_types[parameter_index] = param_types[parameter_index];
+		f->parameter_attributes[parameter_index] = param_attributes[parameter_index];
 	}
 	f->block = block;
 
@@ -1136,7 +1150,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 	match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
 	advance_state(state);
 
-	definition d;
+	definition d = {0};
 
 	if (type_name == NO_NAME) {
 		debug_context context = {0};

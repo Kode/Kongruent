@@ -660,6 +660,7 @@ function_id add_function(name_id name) {
 	functions[f].attributes.attributes_count = 0;
 	init_type_ref(&functions[f].return_type, NO_NAME);
 	functions[f].parameters_size = 0;
+	memset(functions[f].parameter_attributes, 0, sizeof(functions[f].parameter_attributes));
 	functions[f].block = NULL;
 	memset(functions[f].code.o, 0, sizeof(functions[f].code.o));
 	functions[f].code.size = 0;

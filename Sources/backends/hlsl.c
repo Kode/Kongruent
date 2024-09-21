@@ -129,8 +129,17 @@ static void write_bytecode(char *hlsl, char *directory, const char *filename, co
 	}
 }
 
-static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id input, type_id output, function *main, function **rayshaders,
-                        size_t rayshaders_count) {
+static bool is_input(type_id t, type_id inputs[64], size_t inputs_count) {
+	for (size_t input_index = 0; input_index < inputs_count; ++input_index) {
+		if (inputs[input_index] == t) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id inputs[64], size_t inputs_count, type_id output, function *main,
+                        function **rayshaders, size_t rayshaders_count) {
 	type_id types[256];
 	size_t types_size = 0;
 	if (main != NULL) {
@@ -140,15 +149,32 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 		find_referenced_types(rayshaders[rayshader_index], types, &types_size);
 	}
 
+	size_t input_offsets[64];
+	input_offsets[0] = 0;
+
+	for (size_t input_index = 0; input_index < inputs_count - 1; ++input_index) {
+		type *t = get_type(inputs[input_index]);
+		input_offsets[input_index + 1] = input_offsets[input_index] + t->members.size;
+	}
+
 	for (size_t i = 0; i < types_size; ++i) {
 		type *t = get_type(types[i]);
 
 		if (!t->built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
 			*offset += sprintf(&hlsl[*offset], "struct %s {\n", get_name(t->name));
 
-			if (stage == SHADER_STAGE_VERTEX && types[i] == input) {
+			if (stage == SHADER_STAGE_VERTEX && is_input(types[i], inputs, inputs_count)) {
+				size_t input_offset = 0;
+				for (size_t input_index = 0; input_index < inputs_count; ++input_index) {
+					if (types[i] == inputs[input_index]) {
+						input_offset = input_offsets[input_index];
+						break;
+					}
+				}
+
 				for (size_t j = 0; j < t->members.size; ++j) {
-					*offset += sprintf(&hlsl[*offset], "\t%s %s : TEXCOORD%zu;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name), j);
+					*offset += sprintf(&hlsl[*offset], "\t%s %s : TEXCOORD%zu;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name),
+					                   j + input_offset);
 				}
 			}
 			else if (stage == SHADER_STAGE_VERTEX && types[i] == output) {
@@ -173,7 +199,7 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 					}
 				}
 			}
-			else if (stage == SHADER_STAGE_FRAGMENT && types[i] == input) {
+			else if (stage == SHADER_STAGE_FRAGMENT && types[i] == inputs[0]) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (j == 0) {
 						*offset += sprintf(&hlsl[*offset], "\t%s %s : SV_POSITION;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
@@ -554,6 +580,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 
 	for (size_t i = 0; i < functions_size; ++i) {
 		function *f = functions[i];
+		assert(f != NULL);
 
 		debug_context context = {0};
 		check(f->block != NULL, context, "Function block missing");
@@ -1055,14 +1082,17 @@ static void hlsl_export_vertex(char *directory, api_kind d3d, function *main) {
 	size_t offset = 0;
 
 	assert(main->parameters_size > 0);
-	type_id vertex_input = main->parameter_types[0].type;
+	type_id vertex_inputs[64];
+	for (size_t input_index = 0; input_index < main->parameters_size; ++input_index) {
+		vertex_inputs[input_index] = main->parameter_types[input_index].type;
+	}
 	type_id vertex_output = main->return_type.type;
 
 	debug_context context = {0};
-	check(vertex_input != NO_TYPE, context, "vertex input missing");
+	check(main->parameters_size > 0, context, "vertex input missing");
 	check(vertex_output != NO_TYPE, context, "vertex output missing");
 
-	write_types(hlsl, &offset, SHADER_STAGE_VERTEX, vertex_input, vertex_output, main, NULL, 0);
+	write_types(hlsl, &offset, SHADER_STAGE_VERTEX, vertex_inputs, main->parameters_size, vertex_output, main, NULL, 0);
 
 	write_globals(hlsl, &offset, main, NULL, 0);
 
@@ -1101,7 +1131,7 @@ static void hlsl_export_amplification(char *directory, function *main) {
 	char *hlsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
-	write_types(hlsl, &offset, SHADER_STAGE_AMPLIFICATION, NO_TYPE, NO_TYPE, main, NULL, 0);
+	write_types(hlsl, &offset, SHADER_STAGE_AMPLIFICATION, NULL, 0, NO_TYPE, main, NULL, 0);
 
 	write_globals(hlsl, &offset, main, NULL, 0);
 
@@ -1134,9 +1164,10 @@ static void hlsl_export_mesh(char *directory, function *main) {
 		debug_context context = {0};
 		error(context, "Mesh function requires a vertices attribute with two parameters");
 	}
+	assert(vertices_attribute != NULL);
 	type_id vertex_output = (type_id)vertices_attribute->parameters[1];
 
-	write_types(hlsl, &offset, SHADER_STAGE_MESH, NO_TYPE, vertex_output, main, NULL, 0);
+	write_types(hlsl, &offset, SHADER_STAGE_MESH, NULL, 0, vertex_output, main, NULL, 0);
 
 	write_globals(hlsl, &offset, main, NULL, 0);
 
@@ -1170,7 +1201,7 @@ static void hlsl_export_fragment(char *directory, api_kind d3d, function *main) 
 	debug_context context = {0};
 	check(pixel_input != NO_TYPE, context, "fragment input missing");
 
-	write_types(hlsl, &offset, SHADER_STAGE_FRAGMENT, pixel_input, NO_TYPE, main, NULL, 0);
+	write_types(hlsl, &offset, SHADER_STAGE_FRAGMENT, &pixel_input, 1, NO_TYPE, main, NULL, 0);
 
 	write_globals(hlsl, &offset, main, NULL, 0);
 
@@ -1209,7 +1240,7 @@ static void hlsl_export_compute(char *directory, api_kind d3d, function *main) {
 	char *hlsl = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
-	write_types(hlsl, &offset, SHADER_STAGE_COMPUTE, NO_TYPE, NO_TYPE, main, NULL, 0);
+	write_types(hlsl, &offset, SHADER_STAGE_COMPUTE, NULL, 0, NO_TYPE, main, NULL, 0);
 
 	write_globals(hlsl, &offset, main, NULL, 0);
 
@@ -1298,7 +1329,7 @@ static void hlsl_export_all_ray_shaders(char *directory) {
 		return;
 	}
 
-	write_types(hlsl, &offset, SHADER_STAGE_RAY_GENERATION, NO_TYPE, NO_TYPE, NULL, all_rayshaders, all_rayshaders_size);
+	write_types(hlsl, &offset, SHADER_STAGE_RAY_GENERATION, NULL, 0, NO_TYPE, NULL, all_rayshaders, all_rayshaders_size);
 
 	write_globals(hlsl, &offset, NULL, all_rayshaders, all_rayshaders_size);
 
