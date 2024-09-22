@@ -662,7 +662,15 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_TEX2D:
 				case DEFINITION_TEXCUBE:
 					fprintf(output, "\tkope_g5_texture *%s;\n", get_name(get_global(d.global)->name));
-					fprintf(output, "\tuint32_t %s_mip_level;\n", get_name(get_global(d.global)->name));
+
+					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
+					if (write_attribute != NULL) {
+						fprintf(output, "\tuint32_t %s_mip_level;\n", get_name(get_global(d.global)->name));
+					}
+					else {
+						fprintf(output, "\tuint32_t %s_highest_mip_level;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\tuint32_t %s_mip_count;\n", get_name(get_global(d.global)->name));
+					}
 					break;
 				case DEFINITION_SAMPLER:
 					fprintf(output, "\tkope_g5_sampler *%s;\n", get_name(get_global(d.global)->name));
@@ -693,7 +701,15 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_TEX2D:
 				case DEFINITION_TEXCUBE:
 					fprintf(output, "\tkope_g5_texture *%s;\n", get_name(get_global(d.global)->name));
-					fprintf(output, "\tuint32_t %s_mip_level;\n", get_name(get_global(d.global)->name));
+
+					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
+					if (write_attribute != NULL) {
+						fprintf(output, "\tuint32_t %s_mip_level;\n", get_name(get_global(d.global)->name));
+					}
+					else {
+						fprintf(output, "\tuint32_t %s_highest_mip_level;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\tuint32_t %s_mip_count;\n", get_name(get_global(d.global)->name));
+					}
 					break;
 				}
 			}
@@ -1010,15 +1026,24 @@ void kope_export(char *directory, api_kind api) {
 						fprintf(output,
 						        "\tkope_d3d12_descriptor_set_set_texture_view_uav(device, &set->set, parameters->%s, parameters->%s_mip_level, %" PRIu64 ");\n",
 						        get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), other_index);
+
+						fprintf(output, "\tset->%s_mip_level = parameters->%s_mip_level;\n", get_name(get_global(d.global)->name),
+						        get_name(get_global(d.global)->name));
 					}
 					else {
 						fprintf(output,
-						        "\tkope_d3d12_descriptor_set_set_texture_view_srv(device, &set->set, parameters->%s, parameters->%s_mip_level, %" PRIu64 ");\n",
-						        get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), other_index);
+						        "\tkope_d3d12_descriptor_set_set_texture_view_srv(device, &set->set, parameters->%s, parameters->%s_highest_mip_level, "
+						        "parameters->%s_mip_count, %" PRIu64 ");\n",
+						        get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), other_index);
+
+						fprintf(output, "\tset->%s_highest_mip_level = parameters->%s_highest_mip_level;\n", get_name(get_global(d.global)->name),
+						        get_name(get_global(d.global)->name));
+						fprintf(output, "\tset->%s_mip_count = parameters->%s_mip_count;\n", get_name(get_global(d.global)->name),
+						        get_name(get_global(d.global)->name));
 					}
+
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
-					fprintf(output, "\tset->%s_mip_level = parameters->%s_mip_level;\n", get_name(get_global(d.global)->name),
-					        get_name(get_global(d.global)->name));
+
 					other_index += 1;
 					break;
 				}
@@ -1059,8 +1084,8 @@ void kope_export(char *directory, api_kind api) {
 						        get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
 					}
 					else {
-						fprintf(output, "\tkope_d3d12_descriptor_set_prepare_srv_texture(list, set->%s, set->%s_mip_level);\n",
-						        get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
+						fprintf(output, "\tkope_d3d12_descriptor_set_prepare_srv_texture(list, set->%s, set->%s_highest_mip_level, set->%s_mip_count);\n",
+						        get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
 					}
 					break;
 				}
