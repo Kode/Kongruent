@@ -1164,7 +1164,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 	}
 	else if (type_name == add_name("tex2darray")) {
 		d.kind = DEFINITION_TEX2DARRAY;
-		d.global = add_global(tex2d_type_id, attributes, name.identifier);
+		d.global = add_global(tex2darray_type_id, attributes, name.identifier);
 	}
 	else if (type_name == add_name("texcube")) {
 		d.kind = DEFINITION_TEXCUBE;
