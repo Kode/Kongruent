@@ -860,6 +860,9 @@ void kope_export(char *directory, api_kind api) {
 			}
 		}
 
+		global *root_constants_global = NULL;
+		char root_constants_type_name[256] = {0};
+
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
 			if (g->type != tex2d_type_id && g->type != texcube_type_id && g->type != sampler_type_id && !get_type(g->type)->built_in) {
@@ -875,9 +878,8 @@ void kope_export(char *directory, api_kind api) {
 				}
 
 				if (g->set != NULL && g->set->name == add_name("root_constants")) {
-					fprintf(output, "void kong_set_root_constants_%s(kope_g5_command_list *list, %s *constants) {\n", get_name(g->name), type_name);
-					fprintf(output, "\tkope_d3d12_command_list_set_root_constants(list, constants, %i);\n", struct_size(g->type));
-					fprintf(output, "}\n\n");
+					root_constants_global = g;
+					strcpy(root_constants_type_name, type_name);
 				}
 				else {
 					fprintf(output, "\nvoid %s_buffer_create(kope_g5_device *device, kope_g5_buffer *buffer) {\n", type_name);
@@ -946,6 +948,14 @@ void kope_export(char *directory, api_kind api) {
 			descriptor_set *set = sets[set_index];
 
 			if (set->name == add_name("root_constants")) {
+				assert(root_constants_global != NULL);
+
+				fprintf(output, "void kong_set_root_constants_%s(kope_g5_command_list *list, %s *constants) {\n", get_name(root_constants_global->name),
+				        root_constants_type_name);
+				fprintf(output, "\tkope_d3d12_command_list_set_root_constants(list, %i, constants, %i);\n", descriptor_table_index,
+				        struct_size(root_constants_global->type));
+				fprintf(output, "}\n\n");
+
 				descriptor_table_index += 1;
 				continue;
 			}
