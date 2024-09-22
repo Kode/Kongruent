@@ -38,6 +38,7 @@ type_id bool3_id;
 type_id bool4_id;
 type_id function_type_id;
 type_id tex2d_type_id;
+type_id tex2darray_type_id;
 type_id texcube_type_id;
 type_id sampler_type_id;
 type_id ray_type_id;
@@ -449,6 +450,8 @@ void types_init(void) {
 	get_type(sampler_type_id)->built_in = true;
 	tex2d_type_id = add_type(add_name("tex2d"));
 	get_type(tex2d_type_id)->built_in = true;
+	tex2darray_type_id = add_type(add_name("tex2darray"));
+	get_type(tex2darray_type_id)->built_in = true;
 	texcube_type_id = add_type(add_name("texcube"));
 	get_type(texcube_type_id)->built_in = true;
 

@@ -232,6 +232,15 @@ static const char *convert_blend_mode(int mode) {
 	}
 }
 
+bool is_texture(type_id t) {
+	return t == tex2d_type_id || t == tex2darray_type_id || t == texcube_type_id;
+}
+
+#define CASE_TEXTURE                                                                                                                                           \
+	case DEFINITION_TEX2D:                                                                                                                                     \
+	case DEFINITION_TEX2DARRAY:                                                                                                                                \
+	case DEFINITION_TEXCUBE
+
 static const char *convert_blend_op(int op) {
 	switch (op) {
 	case 0:
@@ -281,8 +290,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 
 			switch (def->kind) {
 			case DEFINITION_CONST_CUSTOM:
-			case DEFINITION_TEX2D:
-			case DEFINITION_TEXCUBE:
+			CASE_TEXTURE:
 			case DEFINITION_BVH:
 				has_other = true;
 				break;
@@ -315,8 +323,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 
 			switch (def->kind) {
 			case DEFINITION_CONST_CUSTOM:
-			case DEFINITION_TEX2D:
-			case DEFINITION_TEXCUBE:
+			CASE_TEXTURE:
 			case DEFINITION_BVH:
 				has_other = true;
 				break;
@@ -334,8 +341,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 
 				switch (def->kind) {
 				case DEFINITION_CONST_CUSTOM:
-				case DEFINITION_TEX2D:
-				case DEFINITION_TEXCUBE:
+				CASE_TEXTURE:
 				case DEFINITION_BVH: {
 					count += 1;
 					break;
@@ -362,8 +368,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					range_index += 1;
 
 					break;
-				case DEFINITION_TEX2D:
-				case DEFINITION_TEXCUBE: {
+				CASE_TEXTURE: {
 					attribute *write_attribute = find_attribute(&get_global(def->global)->attributes, add_name("write"));
 
 					if (write_attribute != NULL) {
@@ -478,7 +483,7 @@ void kope_export(char *directory, api_kind api) {
 				global_register_indices[i] = binding_index;
 				binding_index += 1;
 			}
-			else if (g->type == tex2d_type_id || g->type == texcube_type_id) {
+			else if (is_texture(g->type)) {
 				global_register_indices[i] = binding_index;
 				binding_index += 1;
 			}
@@ -501,7 +506,7 @@ void kope_export(char *directory, api_kind api) {
 				global_register_indices[i] = sampler_index;
 				sampler_index += 1;
 			}
-			else if (g->type == tex2d_type_id || g->type == texcube_type_id) {
+			else if (is_texture(g->type)) {
 				global_register_indices[i] = texture_index;
 				texture_index += 1;
 			}
@@ -586,7 +591,7 @@ void kope_export(char *directory, api_kind api) {
 
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
-			if (g->type == tex2d_type_id || g->type == texcube_type_id || g->type == sampler_type_id) {
+			if (is_texture(g->type) || g->type == sampler_type_id) {
 			}
 			else if (!get_type(g->type)->built_in) {
 				type *t = get_type(g->type);
@@ -659,8 +664,7 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_CONST_CUSTOM:
 					fprintf(output, "\tkope_g5_buffer *%s;\n", get_name(get_global(d.global)->name));
 					break;
-				case DEFINITION_TEX2D:
-				case DEFINITION_TEXCUBE:
+				CASE_TEXTURE:
 					fprintf(output, "\tkope_g5_texture *%s;\n", get_name(get_global(d.global)->name));
 
 					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
@@ -698,8 +702,7 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_BVH:
 					fprintf(output, "\tkope_g5_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
 					break;
-				case DEFINITION_TEX2D:
-				case DEFINITION_TEXCUBE:
+				CASE_TEXTURE:
 					fprintf(output, "\tkope_g5_texture *%s;\n", get_name(get_global(d.global)->name));
 
 					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
@@ -881,7 +884,7 @@ void kope_export(char *directory, api_kind api) {
 
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
-			if (g->type != tex2d_type_id && g->type != texcube_type_id && g->type != sampler_type_id && !get_type(g->type)->built_in) {
+			if (!get_type(g->type)->built_in) {
 				type *t = get_type(g->type);
 
 				char type_name[256];
@@ -989,8 +992,7 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_CONST_CUSTOM:
 					other_count += 1;
 					break;
-				case DEFINITION_TEX2D:
-				case DEFINITION_TEXCUBE:
+				CASE_TEXTURE:
 					other_count += 1;
 					break;
 				case DEFINITION_SAMPLER:
@@ -1047,6 +1049,18 @@ void kope_export(char *directory, api_kind api) {
 					other_index += 1;
 					break;
 				}
+				case DEFINITION_TEX2DARRAY: {
+					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
+					if (write_attribute != NULL) {
+						debug_context context = {0};
+						error(context, "Texture arrays can not be writable");
+					}
+					fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_array_view_srv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
+					        get_name(get_global(d.global)->name), other_index);
+					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
+					other_index += 1;
+					break;
+				}
 				case DEFINITION_TEXCUBE: {
 					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
 					if (write_attribute != NULL) {
@@ -1076,8 +1090,7 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_CONST_CUSTOM:
 					fprintf(output, "\tkope_d3d12_descriptor_set_prepare_cbv_buffer(list, set->%s);\n", get_name(get_global(d.global)->name));
 					break;
-				case DEFINITION_TEX2D:
-				case DEFINITION_TEXCUBE: {
+				CASE_TEXTURE: {
 					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
 					if (write_attribute != NULL) {
 						fprintf(output, "\tkope_d3d12_descriptor_set_prepare_uav_texture(list, set->%s, set->%s_mip_level);\n",
@@ -1435,7 +1448,7 @@ void kope_export(char *directory, api_kind api) {
 						global *g = get_global(globals[i]);
 						if (g->type == sampler_type_id) {
 						}
-						else if (g->type == tex2d_type_id || g->type == texcube_type_id) {
+						else if (is_texture(g->type)) {
 						}
 						else if (g->type == float_id) {
 						}

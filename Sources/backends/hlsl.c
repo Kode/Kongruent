@@ -249,6 +249,9 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 				*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
 			}
 		}
+		else if (g->type == tex2darray_type_id) {
+			*offset += sprintf(&hlsl[*offset], "Texture2DArray<float4> _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
+		}
 		else if (g->type == texcube_type_id) {
 			*offset += sprintf(&hlsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
 		}
@@ -393,6 +396,7 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 			switch (def->kind) {
 			case DEFINITION_CONST_CUSTOM:
 			case DEFINITION_TEX2D:
+			case DEFINITION_TEX2DARRAY:
 			case DEFINITION_TEXCUBE:
 				has_other = true;
 				break;
@@ -421,6 +425,7 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 					cbv_index += 1;
 					break;
 				case DEFINITION_TEX2D:
+				case DEFINITION_TEX2DARRAY:
 				case DEFINITION_TEXCUBE:
 					if (first) {
 						first = false;
@@ -1377,7 +1382,7 @@ void hlsl_export(char *directory, api_kind d3d) {
 				srv_index += 1;
 			}
 		}
-		else if (g->type == texcube_type_id || g->type == bvh_type_id) {
+		else if (g->type == texcube_type_id || g->type == tex2darray_type_id || g->type == bvh_type_id) {
 			global_register_indices[i] = srv_index;
 			srv_index += 1;
 		}
