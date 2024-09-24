@@ -831,7 +831,11 @@ int main(int argc, char **argv) {
 			strcat(path, "/");
 			strcat(path, f.name);
 
-			read_file(path);
+			size_t length = strlen(path);
+			size_t dotkong_length = strlen(".kong");
+			if (length > dotkong_length && strcmp(&path[length - dotkong_length], ".kong") == 0) {
+				read_file(path);
+			}
 
 			f = read_next_file(&dir);
 		}
