@@ -665,16 +665,7 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "\tkope_g5_buffer *%s;\n", get_name(get_global(d.global)->name));
 					break;
 				CASE_TEXTURE:
-					fprintf(output, "\tkope_g5_texture *%s;\n", get_name(get_global(d.global)->name));
-
-					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
-					if (write_attribute != NULL) {
-						fprintf(output, "\tuint32_t %s_mip_level;\n", get_name(get_global(d.global)->name));
-					}
-					else {
-						fprintf(output, "\tuint32_t %s_highest_mip_level;\n", get_name(get_global(d.global)->name));
-						fprintf(output, "\tuint32_t %s_mip_count;\n", get_name(get_global(d.global)->name));
-					}
+					fprintf(output, "\tkope_g5_texture_view %s;\n", get_name(get_global(d.global)->name));
 					break;
 				case DEFINITION_SAMPLER:
 					fprintf(output, "\tkope_g5_sampler *%s;\n", get_name(get_global(d.global)->name));
@@ -703,16 +694,7 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "\tkope_g5_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
 					break;
 				CASE_TEXTURE:
-					fprintf(output, "\tkope_g5_texture *%s;\n", get_name(get_global(d.global)->name));
-
-					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
-					if (write_attribute != NULL) {
-						fprintf(output, "\tuint32_t %s_mip_level;\n", get_name(get_global(d.global)->name));
-					}
-					else {
-						fprintf(output, "\tuint32_t %s_highest_mip_level;\n", get_name(get_global(d.global)->name));
-						fprintf(output, "\tuint32_t %s_mip_count;\n", get_name(get_global(d.global)->name));
-					}
+					fprintf(output, "\tkope_g5_texture_view %s;\n", get_name(get_global(d.global)->name));
 					break;
 				}
 			}
@@ -1025,23 +1007,12 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_TEX2D: {
 					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
 					if (write_attribute != NULL) {
-						fprintf(output,
-						        "\tkope_d3d12_descriptor_set_set_texture_view_uav(device, &set->set, parameters->%s, parameters->%s_mip_level, %" PRIu64 ");\n",
-						        get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), other_index);
-
-						fprintf(output, "\tset->%s_mip_level = parameters->%s_mip_level;\n", get_name(get_global(d.global)->name),
-						        get_name(get_global(d.global)->name));
+						fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %" PRIu64 ");\n",
+						        get_name(get_global(d.global)->name), other_index);
 					}
 					else {
-						fprintf(output,
-						        "\tkope_d3d12_descriptor_set_set_texture_view_srv(device, &set->set, parameters->%s, parameters->%s_highest_mip_level, "
-						        "parameters->%s_mip_count, %" PRIu64 ");\n",
-						        get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), other_index);
-
-						fprintf(output, "\tset->%s_highest_mip_level = parameters->%s_highest_mip_level;\n", get_name(get_global(d.global)->name),
-						        get_name(get_global(d.global)->name));
-						fprintf(output, "\tset->%s_mip_count = parameters->%s_mip_count;\n", get_name(get_global(d.global)->name),
-						        get_name(get_global(d.global)->name));
+						fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_view_srv(device, &set->set, &parameters->%s, %" PRIu64 ");\n",
+						        get_name(get_global(d.global)->name), other_index);
 					}
 
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
@@ -1055,8 +1026,10 @@ void kope_export(char *directory, api_kind api) {
 						debug_context context = {0};
 						error(context, "Texture arrays can not be writable");
 					}
-					fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_array_view_srv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
+
+					fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_array_view_srv(device, &set->set, &parameters->%s, %" PRIu64 ");\n",
 					        get_name(get_global(d.global)->name), other_index);
+
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
 					other_index += 1;
 					break;
@@ -1067,8 +1040,9 @@ void kope_export(char *directory, api_kind api) {
 						debug_context context = {0};
 						error(context, "Cube maps can not be writable");
 					}
-					fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_cube_view_srv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
+					fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_cube_view_srv(device, &set->set, &parameters->%s, %" PRIu64 ");\n",
 					        get_name(get_global(d.global)->name), other_index);
+
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
 					other_index += 1;
 					break;
@@ -1093,12 +1067,10 @@ void kope_export(char *directory, api_kind api) {
 				CASE_TEXTURE: {
 					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
 					if (write_attribute != NULL) {
-						fprintf(output, "\tkope_d3d12_descriptor_set_prepare_uav_texture(list, set->%s, set->%s_mip_level);\n",
-						        get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
+						fprintf(output, "\tkope_d3d12_descriptor_set_prepare_uav_texture(list, &set->%s);\n", get_name(get_global(d.global)->name));
 					}
 					else {
-						fprintf(output, "\tkope_d3d12_descriptor_set_prepare_srv_texture(list, set->%s, set->%s_highest_mip_level, set->%s_mip_count);\n",
-						        get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
+						fprintf(output, "\tkope_d3d12_descriptor_set_prepare_srv_texture(list, &set->%s);\n", get_name(get_global(d.global)->name));
 					}
 					break;
 				}
