@@ -618,10 +618,10 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "void kong_set_root_constants_%s(kope_g5_command_list *list, %s *constants);\n", get_name(g->name), name);
 				}
 				else {
-					fprintf(output, "void %s_buffer_create(kope_g5_device *device, kope_g5_buffer *buffer);\n", name);
+					fprintf(output, "void %s_buffer_create(kope_g5_device *device, kope_g5_buffer *buffer, uint32_t count);\n", name);
 					fprintf(output, "void %s_buffer_destroy(kope_g5_buffer *buffer);\n", name);
-					fprintf(output, "%s *%s_buffer_lock(kope_g5_buffer *buffer);\n", name, name);
-					fprintf(output, "%s *%s_buffer_try_to_lock(kope_g5_buffer *buffer);\n", name, name);
+					fprintf(output, "%s *%s_buffer_lock(kope_g5_buffer *buffer, uint32_t index, uint32_t count);\n", name, name);
+					fprintf(output, "%s *%s_buffer_try_to_lock(kope_g5_buffer *buffer, uint32_t index, uint32_t count);\n", name, name);
 					fprintf(output, "void %s_buffer_unlock(kope_g5_buffer *buffer);\n", name);
 				}
 			}
@@ -823,11 +823,11 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "%s *kong_%s_buffer_lock(%s_buffer *buffer) {\n", get_name(t->name), get_name(t->name), get_name(t->name));
-			fprintf(output, "\treturn (%s *)kope_d3d12_buffer_lock(&buffer->buffer);\n", get_name(t->name));
+			fprintf(output, "\treturn (%s *)kope_d3d12_buffer_lock_all(&buffer->buffer);\n", get_name(t->name));
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "%s *kong_%s_buffer_try_to_lock(%s_buffer *buffer) {\n", get_name(t->name), get_name(t->name), get_name(t->name));
-			fprintf(output, "\treturn (%s *)kope_d3d12_buffer_try_to_lock(&buffer->buffer);\n", get_name(t->name));
+			fprintf(output, "\treturn (%s *)kope_d3d12_buffer_try_to_lock_all(&buffer->buffer);\n", get_name(t->name));
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "void kong_%s_buffer_unlock(%s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
@@ -889,7 +889,7 @@ void kope_export(char *directory, api_kind api) {
 					strcpy(root_constants_type_name, type_name);
 				}
 				else {
-					fprintf(output, "\nvoid %s_buffer_create(kope_g5_device *device, kope_g5_buffer *buffer) {\n", type_name);
+					fprintf(output, "\nvoid %s_buffer_create(kope_g5_device *device, kope_g5_buffer *buffer, uint32_t count) {\n", type_name);
 					fprintf(output, "\tkope_g5_buffer_parameters parameters;\n");
 					fprintf(output, "\tparameters.size = %i;\n", struct_size(g->type));
 					fprintf(output, "\tparameters.usage_flags = KOPE_G5_BUFFER_USAGE_CPU_WRITE;\n");
@@ -900,12 +900,13 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "\tkope_g5_buffer_destroy(buffer);\n");
 					fprintf(output, "}\n\n");
 
-					fprintf(output, "%s *%s_buffer_lock(kope_g5_buffer *buffer) {\n", type_name, type_name);
-					fprintf(output, "\treturn (%s *)kope_g5_buffer_lock(buffer);\n", type_name);
+					fprintf(output, "%s *%s_buffer_lock(kope_g5_buffer *buffer, uint32_t index, uint32_t count) {\n", type_name, type_name);
+					fprintf(output, "\treturn (%s *)kope_g5_buffer_lock(buffer, index * sizeof(%s), count * sizeof(%s));\n", type_name, type_name, type_name);
 					fprintf(output, "}\n\n");
 
-					fprintf(output, "%s *%s_buffer_try_to_lock(kope_g5_buffer *buffer) {\n", type_name, type_name);
-					fprintf(output, "\treturn (%s *)kope_g5_buffer_try_to_lock(buffer);\n", type_name);
+					fprintf(output, "%s *%s_buffer_try_to_lock(kope_g5_buffer *buffer, uint32_t index, uint32_t count) {\n", type_name, type_name);
+					fprintf(output, "\treturn (%s *)kope_g5_buffer_try_to_lock(buffer, index * sizeof(%s), count * sizeof(%s));\n", type_name, type_name,
+					        type_name);
 					fprintf(output, "}\n\n");
 
 					fprintf(output, "void %s_buffer_unlock(kope_g5_buffer *buffer) {\n", type_name);
@@ -919,7 +920,7 @@ void kope_export(char *directory, api_kind api) {
 						}
 
 						if (has_matrices) {
-							fprintf(output, "\t%s *data = (%s *)kope_g5_buffer_lock(buffer);\n", type_name, type_name);
+							fprintf(output, "\t%s *data = (%s *)buffer->d3d12.locked_data;\n", type_name, type_name);
 							// adjust matrices
 							for (size_t j = 0; j < t->members.size; ++j) {
 								if (t->members.m[j].type.type == float4x4_id) {
@@ -945,7 +946,6 @@ void kope_export(char *directory, api_kind api) {
 									fprintf(output, "\t}\n");
 								}
 							}
-							fprintf(output, "\tkope_g5_buffer_unlock(buffer);\n");
 						}
 					}
 					fprintf(output, "\tkope_g5_buffer_unlock(buffer);\n");
