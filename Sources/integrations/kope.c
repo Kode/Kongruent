@@ -703,7 +703,17 @@ void kope_export(char *directory, api_kind api) {
 
 			fprintf(output, "void kong_create_%s_set(kope_g5_device *device, const %s_parameters *parameters, %s_set *set);\n", get_name(set->name),
 			        get_name(set->name), get_name(set->name));
-			fprintf(output, "void kong_set_descriptor_set_%s(kope_g5_command_list *list, %s_set *set);\n\n", get_name(set->name), get_name(set->name));
+
+			fprintf(output, "void kong_set_descriptor_set_%s(kope_g5_command_list *list, %s_set *set", get_name(set->name), get_name(set->name));
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				definition d = set->definitions[definition_index];
+				switch (d.kind) {
+				case DEFINITION_CONST_CUSTOM:
+					fprintf(output, ", uint32_t %s_offset", get_name(get_global(d.global)->name));
+					break;
+				}
+			}
+			fprintf(output, ");\n\n");
 		}
 
 		fprintf(output, "\n");
@@ -1066,7 +1076,16 @@ void kope_export(char *directory, api_kind api) {
 			}
 			fprintf(output, "}\n\n");
 
-			fprintf(output, "void kong_set_descriptor_set_%s(kope_g5_command_list *list, %s_set *set) {\n", get_name(set->name), get_name(set->name));
+			fprintf(output, "void kong_set_descriptor_set_%s(kope_g5_command_list *list, %s_set *set", get_name(set->name), get_name(set->name));
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				definition d = set->definitions[definition_index];
+				switch (d.kind) {
+				case DEFINITION_CONST_CUSTOM:
+					fprintf(output, ", uint32_t %s_offset", get_name(get_global(d.global)->name));
+					break;
+				}
+			}
+			fprintf(output, ") {\n");
 			for (size_t descriptor_index = 0; descriptor_index < set->definitions_count; ++descriptor_index) {
 				definition d = set->definitions[descriptor_index];
 
