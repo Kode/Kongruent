@@ -709,7 +709,7 @@ void kope_export(char *directory, api_kind api) {
 				definition d = set->definitions[definition_index];
 				switch (d.kind) {
 				case DEFINITION_CONST_CUSTOM:
-					fprintf(output, ", uint32_t %s_offset", get_name(get_global(d.global)->name));
+					fprintf(output, ", uint32_t %s_index", get_name(get_global(d.global)->name));
 					break;
 				}
 			}
@@ -1081,7 +1081,7 @@ void kope_export(char *directory, api_kind api) {
 				definition d = set->definitions[definition_index];
 				switch (d.kind) {
 				case DEFINITION_CONST_CUSTOM:
-					fprintf(output, ", uint32_t %s_offset", get_name(get_global(d.global)->name));
+					fprintf(output, ", uint32_t %s_index", get_name(get_global(d.global)->name));
 					break;
 				}
 			}
