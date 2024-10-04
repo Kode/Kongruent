@@ -707,9 +707,12 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "void kong_set_descriptor_set_%s(kope_g5_command_list *list, %s_set *set", get_name(set->name), get_name(set->name));
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 				definition d = set->definitions[definition_index];
+
 				switch (d.kind) {
 				case DEFINITION_CONST_CUSTOM:
-					fprintf(output, ", uint32_t %s_index", get_name(get_global(d.global)->name));
+					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
+						fprintf(output, ", uint32_t %s_index", get_name(get_global(d.global)->name));
+					}
 					break;
 				}
 			}
@@ -1081,7 +1084,9 @@ void kope_export(char *directory, api_kind api) {
 				definition d = set->definitions[definition_index];
 				switch (d.kind) {
 				case DEFINITION_CONST_CUSTOM:
-					fprintf(output, ", uint32_t %s_index", get_name(get_global(d.global)->name));
+					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
+						fprintf(output, ", uint32_t %s_index", get_name(get_global(d.global)->name));
+					}
 					break;
 				}
 			}
