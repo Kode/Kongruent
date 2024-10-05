@@ -389,12 +389,20 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 
 		bool has_sampler = false;
 		bool has_other = false;
+		bool has_dynamic = false;
 
 		for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 			definition *def = &set->definitions[definition_index];
 
 			switch (def->kind) {
 			case DEFINITION_CONST_CUSTOM:
+				if (has_attribute(&get_global(def->global)->attributes, add_name("indexed"))) {
+					has_dynamic = true;
+				}
+				else {
+					has_other = true;
+				}
+				break;
 			case DEFINITION_TEX2D:
 			case DEFINITION_TEX2DARRAY:
 			case DEFINITION_TEXCUBE:
@@ -415,14 +423,16 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 
 				switch (def->kind) {
 				case DEFINITION_CONST_CUSTOM:
-					if (first) {
-						first = false;
+					if (!has_attribute(&get_global(def->global)->attributes, add_name("indexed"))) {
+						if (first) {
+							first = false;
+						}
+						else {
+							*offset += sprintf(&hlsl[*offset], ", ");
+						}
+						*offset += sprintf(&hlsl[*offset], "CBV(b%i)", cbv_index);
+						cbv_index += 1;
 					}
-					else {
-						*offset += sprintf(&hlsl[*offset], ", ");
-					}
-					*offset += sprintf(&hlsl[*offset], "CBV(b%i)", cbv_index);
-					cbv_index += 1;
 					break;
 				case DEFINITION_TEX2D:
 				case DEFINITION_TEX2DARRAY:
@@ -443,6 +453,32 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 					else {
 						*offset += sprintf(&hlsl[*offset], "SRV(t%i)", srv_index);
 						srv_index += 1;
+					}
+					break;
+				}
+			}
+
+			*offset += sprintf(&hlsl[*offset], ")");
+		}
+
+		if (has_dynamic) {
+			*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(");
+
+			bool first = true;
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				definition *def = &set->definitions[definition_index];
+
+				switch (def->kind) {
+				case DEFINITION_CONST_CUSTOM:
+					if (has_attribute(&get_global(def->global)->attributes, add_name("indexed"))) {
+						if (first) {
+							first = false;
+						}
+						else {
+							*offset += sprintf(&hlsl[*offset], ", ");
+						}
+						*offset += sprintf(&hlsl[*offset], "CBV(b%i)", cbv_index);
+						cbv_index += 1;
 					}
 					break;
 				}
