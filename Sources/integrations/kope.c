@@ -1110,7 +1110,46 @@ void kope_export(char *directory, api_kind api) {
 				}
 				}
 			}
-			fprintf(output, "\n\tkope_d3d12_command_list_set_descriptor_table(list, %i, &set->set);\n", descriptor_table_index);
+
+			fprintf(output, "\n");
+
+			uint32_t dynamic_count = 0;
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				definition d = set->definitions[definition_index];
+				switch (d.kind) {
+				case DEFINITION_CONST_CUSTOM:
+					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
+						dynamic_count += 1;
+					}
+					break;
+				}
+			}
+
+			if (dynamic_count > 0) {
+				fprintf(output, "\tuint32_t dynamic_offsets[%i];\n", dynamic_count);
+
+				uint32_t dynamic_index = 0;
+				for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+					definition d = set->definitions[definition_index];
+					switch (d.kind) {
+					case DEFINITION_CONST_CUSTOM:
+						if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
+							fprintf(output, "\tdynamic_offsets[%i] = %s_index;\n", dynamic_index, get_name(get_global(d.global)->name));
+							dynamic_index += 1;
+						}
+						break;
+					}
+				}
+			}
+
+			fprintf(output, "\n\tkope_d3d12_command_list_set_descriptor_table(list, %i, &set->set", descriptor_table_index);
+			if (dynamic_count > 0) {
+				fprintf(output, ", dynamic_offsets");
+			}
+			else {
+				fprintf(output, ", NULL");
+			}
+			fprintf(output, ");\n");
 			fprintf(output, "}\n\n");
 
 			descriptor_table_index += (sampler_count > 0) ? 2 : 1;
