@@ -1134,6 +1134,8 @@ void kope_export(char *directory, api_kind api) {
 				}
 
 				if (dynamic_count > 0) {
+					fprintf(output, "\tkope_g5_buffer *dynamic_buffers[%i];\n", dynamic_count);
+
 					fprintf(output, "\tuint32_t dynamic_offsets[%i];\n", dynamic_count);
 
 					uint32_t dynamic_index = 0;
@@ -1142,6 +1144,7 @@ void kope_export(char *directory, api_kind api) {
 						switch (d.kind) {
 						case DEFINITION_CONST_CUSTOM:
 							if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
+								fprintf(output, "\tdynamic_buffers[%i] = set->%s;\n", dynamic_index, get_name(get_global(d.global)->name));
 								fprintf(output, "\tdynamic_offsets[%i] = %s_index;\n", dynamic_index, get_name(get_global(d.global)->name));
 								dynamic_index += 1;
 							}
@@ -1152,10 +1155,10 @@ void kope_export(char *directory, api_kind api) {
 
 				fprintf(output, "\n\tkope_d3d12_command_list_set_descriptor_table(list, %i, &set->set", descriptor_table_index);
 				if (dynamic_count > 0) {
-					fprintf(output, ", dynamic_offsets");
+					fprintf(output, ", dynamic_buffers, dynamic_offsets");
 				}
 				else {
-					fprintf(output, ", NULL");
+					fprintf(output, ", NULL, NULL");
 				}
 				fprintf(output, ");\n");
 				fprintf(output, "}\n\n");
