@@ -822,7 +822,8 @@ void kope_export(char *directory, api_kind api) {
 		fprintf(output, "#include <kope/direct3d12/commandlist_functions.h>\n");
 		fprintf(output, "#include <kope/direct3d12/device_functions.h>\n");
 		fprintf(output, "#include <kope/direct3d12/descriptorset_functions.h>\n");
-		fprintf(output, "#include <kope/direct3d12/pipeline_functions.h>\n\n");
+		fprintf(output, "#include <kope/direct3d12/pipeline_functions.h>\n");
+		fprintf(output, "#include <kope/util/align.h>\n\n");
 
 		for (size_t i = 0; i < vertex_inputs_size; ++i) {
 			type *t = get_type(vertex_inputs[i]);
@@ -904,7 +905,7 @@ void kope_export(char *directory, api_kind api) {
 				else {
 					fprintf(output, "\nvoid %s_buffer_create(kope_g5_device *device, kope_g5_buffer *buffer, uint32_t count) {\n", type_name);
 					fprintf(output, "\tkope_g5_buffer_parameters parameters;\n");
-					fprintf(output, "\tparameters.size = %i;\n", struct_size(g->type));
+					fprintf(output, "\tparameters.size = align_pow2(%i, 256) * count;\n", struct_size(g->type));
 					fprintf(output, "\tparameters.usage_flags = KOPE_G5_BUFFER_USAGE_CPU_WRITE;\n");
 					fprintf(output, "\tkope_g5_device_create_buffer(device, &parameters, buffer);\n");
 					fprintf(output, "}\n\n");
@@ -914,12 +915,16 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "}\n\n");
 
 					fprintf(output, "%s *%s_buffer_lock(kope_g5_buffer *buffer, uint32_t index, uint32_t count) {\n", type_name, type_name);
-					fprintf(output, "\treturn (%s *)kope_g5_buffer_lock(buffer, index * sizeof(%s), count * sizeof(%s));\n", type_name, type_name, type_name);
+					fprintf(output,
+					        "\treturn (%s *)kope_g5_buffer_lock(buffer, index * align_pow2((int)sizeof(%s), 256), count * align_pow2((int)sizeof(%s), 256));\n",
+					        type_name, type_name, type_name);
 					fprintf(output, "}\n\n");
 
 					fprintf(output, "%s *%s_buffer_try_to_lock(kope_g5_buffer *buffer, uint32_t index, uint32_t count) {\n", type_name, type_name);
-					fprintf(output, "\treturn (%s *)kope_g5_buffer_try_to_lock(buffer, index * sizeof(%s), count * sizeof(%s));\n", type_name, type_name,
-					        type_name);
+					fprintf(output,
+					        "\treturn (%s *)kope_g5_buffer_try_to_lock(buffer, index * align_pow2((int)sizeof(%s), 256), count * align_pow2((int)sizeof(%s), "
+					        "256));\n",
+					        type_name, type_name, type_name);
 					fprintf(output, "}\n\n");
 
 					fprintf(output, "void %s_buffer_unlock(kope_g5_buffer *buffer) {\n", type_name);
@@ -1147,7 +1152,8 @@ void kope_export(char *directory, api_kind api) {
 						case DEFINITION_CONST_CUSTOM:
 							if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
 								fprintf(output, "\tdynamic_buffers[%i] = set->%s;\n", dynamic_index, get_name(get_global(d.global)->name));
-								fprintf(output, "\tdynamic_offsets[%i] = %s_index;\n", dynamic_index, get_name(get_global(d.global)->name));
+								fprintf(output, "\tdynamic_offsets[%i] = %s_index * align_pow2((int)%i, 256);\n", dynamic_index,
+								        get_name(get_global(d.global)->name), struct_size(get_global(d.global)->type));
 								dynamic_index += 1;
 							}
 							break;
