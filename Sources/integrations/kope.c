@@ -1110,7 +1110,17 @@ void kope_export(char *directory, api_kind api) {
 
 				switch (d.kind) {
 				case DEFINITION_CONST_CUSTOM:
-					fprintf(output, "\tkope_d3d12_descriptor_set_prepare_cbv_buffer(list, set->%s);\n", get_name(get_global(d.global)->name));
+					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
+						fprintf(
+						    output,
+						    "\tkope_d3d12_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), align_pow2((int)%i, 256));\n",
+						    get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), struct_size(get_global(d.global)->type),
+						    struct_size(get_global(d.global)->type));
+					}
+					else {
+						fprintf(output, "\tkope_d3d12_descriptor_set_prepare_cbv_buffer(list, set->%s, 0, UINT32_MAX);\n",
+						        get_name(get_global(d.global)->name));
+					}
 					break;
 				CASE_TEXTURE: {
 					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
@@ -1145,6 +1155,8 @@ void kope_export(char *directory, api_kind api) {
 
 					fprintf(output, "\tuint32_t dynamic_offsets[%i];\n", dynamic_count);
 
+					fprintf(output, "\tuint32_t dynamic_sizes[%i];\n", dynamic_count);
+
 					uint32_t dynamic_index = 0;
 					for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 						definition d = set->definitions[definition_index];
@@ -1154,6 +1166,7 @@ void kope_export(char *directory, api_kind api) {
 								fprintf(output, "\tdynamic_buffers[%i] = set->%s;\n", dynamic_index, get_name(get_global(d.global)->name));
 								fprintf(output, "\tdynamic_offsets[%i] = %s_index * align_pow2((int)%i, 256);\n", dynamic_index,
 								        get_name(get_global(d.global)->name), struct_size(get_global(d.global)->type));
+								fprintf(output, "\tdynamic_sizes[%i] = align_pow2((int)%i, 256);\n", dynamic_index, struct_size(get_global(d.global)->type));
 								dynamic_index += 1;
 							}
 							break;
@@ -1163,7 +1176,7 @@ void kope_export(char *directory, api_kind api) {
 
 				fprintf(output, "\n\tkope_d3d12_command_list_set_descriptor_table(list, %i, &set->set", descriptor_table_index);
 				if (dynamic_count > 0) {
-					fprintf(output, ", dynamic_buffers, dynamic_offsets");
+					fprintf(output, ", dynamic_buffers, dynamic_offsets, dynamic_sizes");
 				}
 				else {
 					fprintf(output, ", NULL, NULL");
