@@ -246,7 +246,12 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 				*offset += sprintf(&hlsl[*offset], "RWTexture2D<float4> _%" PRIu64 " : register(u%i);\n\n", g->var_index, register_index);
 			}
 			else {
-				*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
+				if (get_type(g->type)->kind == TYPE_ARRAY && get_type(g->type)->array.array_size == -1) {
+					*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 "[] : register(t%i, space1);\n\n", g->var_index, register_index);
+				}
+				else {
+					*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
+				}
 			}
 		}
 		else if (g->type == tex2darray_type_id) {

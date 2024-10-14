@@ -1141,6 +1141,22 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 		advance_state(state);
 	}
 
+	bool array = false;
+	int array_size = -1;
+
+	if (current(state).kind == TOKEN_LEFT_SQUARE) {
+		array = true;
+		advance_state(state);
+
+		if (current(state).kind == TOKEN_INT) {
+			array_size = (int)current(state).number;
+			advance_state(state);
+		}
+
+		match_token(state, TOKEN_RIGHT_SQUARE, "Expected a right square bracket");
+		advance_state(state);
+	}
+
 	expression *value = NULL;
 	if (current(state).kind == TOKEN_OPERATOR && current(state).op == OPERATOR_ASSIGN) {
 		advance_state(state);
@@ -1160,7 +1176,17 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 	}
 	else if (type_name == add_name("tex2d")) {
 		d.kind = DEFINITION_TEX2D;
-		d.global = add_global(tex2d_type_id, attributes, name.identifier);
+
+		type_id t_id = tex2d_type_id;
+		if (array) {
+			type_id array_type_id = add_type(get_type(t_id)->name);
+			get_type(array_type_id)->kind = TYPE_ARRAY;
+			get_type(array_type_id)->array.base = t_id;
+			get_type(array_type_id)->array.array_size = array_size;
+			t_id = array_type_id;
+		}
+
+		d.global = add_global(t_id, attributes, name.identifier);
 	}
 	else if (type_name == add_name("tex2darray")) {
 		d.kind = DEFINITION_TEX2DARRAY;
@@ -1181,7 +1207,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 	else if (type_name == add_name("float")) {
 		debug_context context = {0};
 		check(value != NULL, context, "const float requires an initialization value");
-		check(value->kind == EXPRESSION_FLOAT || value->kind == EXPRESSION_INT, context, "const float3 requires a number");
+		check(value->kind == EXPRESSION_FLOAT || value->kind == EXPRESSION_INT, context, "const float requires a number");
 
 		global_value float_value;
 		float_value.kind = GLOBAL_VALUE_FLOAT;

@@ -63,8 +63,16 @@ static attribute *find_attribute(attribute_list *attributes, name_id name) {
 typedef struct type {
 	attribute_list attributes;
 	name_id name;
-	members members;
 	bool built_in;
+
+	enum { TYPE_OBJECT, TYPE_ARRAY } kind;
+	union {
+		members members;
+		struct {
+			type_id base;
+			int array_size;
+		} array;
+	};
 } type;
 
 void types_init(void);

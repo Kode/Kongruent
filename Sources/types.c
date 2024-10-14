@@ -721,6 +721,7 @@ type_id add_type(name_id name) {
 	type_id s = next_type_index;
 	++next_type_index;
 
+	types[s].kind = TYPE_OBJECT;
 	types[s].name = name;
 	types[s].attributes.attributes_count = 0;
 	types[s].members.size = 0;
