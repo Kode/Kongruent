@@ -42,6 +42,9 @@ static char *type_string(type_id type) {
 	if (type == bvh_type_id) {
 		return "RaytracingAccelerationStructure";
 	}
+	if (type == tex2d_type_id) {
+		return "Texture2D<float4>";
+	}
 	return get_name(get_type(type)->name);
 }
 
@@ -238,15 +241,18 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 		global *g = get_global(globals[i]);
 		int register_index = global_register_indices[globals[i]];
 
-		if (g->type == sampler_type_id) {
+		type *t = get_type(g->type);
+		type_id base_type = t->kind == TYPE_ARRAY ? t->array.base : g->type;
+
+		if (base_type == sampler_type_id) {
 			*offset += sprintf(&hlsl[*offset], "SamplerState _%" PRIu64 " : register(s%i);\n\n", g->var_index, register_index);
 		}
-		else if (g->type == tex2d_type_id) {
+		else if (base_type == tex2d_type_id) {
 			if (has_attribute(&g->attributes, add_name("write"))) {
 				*offset += sprintf(&hlsl[*offset], "RWTexture2D<float4> _%" PRIu64 " : register(u%i);\n\n", g->var_index, register_index);
 			}
 			else {
-				if (get_type(g->type)->kind == TYPE_ARRAY && get_type(g->type)->array.array_size == -1) {
+				if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
 					*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 "[] : register(t%i, space1);\n\n", g->var_index, register_index);
 				}
 				else {
@@ -254,27 +260,27 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 				}
 			}
 		}
-		else if (g->type == tex2darray_type_id) {
+		else if (base_type == tex2darray_type_id) {
 			*offset += sprintf(&hlsl[*offset], "Texture2DArray<float4> _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
 		}
-		else if (g->type == texcube_type_id) {
+		else if (base_type == texcube_type_id) {
 			*offset += sprintf(&hlsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
 		}
-		else if (g->type == bvh_type_id) {
+		else if (base_type == bvh_type_id) {
 			*offset += sprintf(&hlsl[*offset], "RaytracingAccelerationStructure  _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
 		}
-		else if (g->type == float_id) {
+		else if (base_type == float_id) {
 			*offset += sprintf(&hlsl[*offset], "static const float _%" PRIu64 " = %f;\n\n", g->var_index, g->value.value.floats[0]);
 		}
-		else if (g->type == float2_id) {
+		else if (base_type == float2_id) {
 			*offset += sprintf(&hlsl[*offset], "static const float2 _%" PRIu64 " = float2(%f, %f);\n\n", g->var_index, g->value.value.floats[0],
 			                   g->value.value.floats[1]);
 		}
-		else if (g->type == float3_id) {
+		else if (base_type == float3_id) {
 			*offset += sprintf(&hlsl[*offset], "static const float3 _%" PRIu64 " = float3(%f, %f, %f);\n\n", g->var_index, g->value.value.floats[0],
 			                   g->value.value.floats[1], g->value.value.floats[2]);
 		}
-		else if (g->type == float4_id) {
+		else if (base_type == float4_id) {
 			*offset += sprintf(&hlsl[*offset], "static const float4 _%" PRIu64 " = float4(%f, %f, %f, %f);\n\n", g->var_index, g->value.value.floats[0],
 			                   g->value.value.floats[1], g->value.value.floats[2], g->value.value.floats[3]);
 		}
@@ -940,7 +946,13 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
 					if (o->op_load_member.dynamic_member[i]) {
-						*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "]", o->op_load_member.dynamic_member_indices[i].index);
+						type *from_type = get_type(o->op_load_member.from.type.type);
+						if (from_type->kind == TYPE_ARRAY && from_type->array.base == tex2d_type_id && from_type->array.array_size == -1) {
+							*offset += sprintf(&hlsl[*offset], "[NonUniformResourceIndex(_%" PRIu64 ")]", o->op_load_member.dynamic_member_indices[i].index);
+						}
+						else {
+							*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "]", o->op_load_member.dynamic_member_indices[i].index);
+						}
 
 						s = get_type(o->op_load_member.dynamic_member_indices[i].type.type);
 					}

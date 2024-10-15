@@ -109,6 +109,11 @@ void resolve_member_type(statement *parent_block, type_ref parent_type, expressi
 			init_type_ref(&e->type, NO_NAME);
 			e->type.type = float4_id;
 		}
+		else if (get_type(e->member.left->type.type)->kind == TYPE_ARRAY) {
+			init_type_ref(&e->type, NO_NAME);
+			e->type.type = get_type(e->member.left->type.type)->array.base;
+			e->type.array_size = 0;
+		}
 		else {
 			e->type = e->member.left->type;
 			e->type.array_size = 0;
