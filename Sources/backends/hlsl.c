@@ -401,12 +401,13 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 		bool has_sampler = false;
 		bool has_other = false;
 		bool has_dynamic = false;
+		bool has_boundless = false;
 
 		for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 			definition *def = &set->definitions[definition_index];
 
 			switch (def->kind) {
-			case DEFINITION_CONST_CUSTOM:
+			case DEFINITION_CONST_CUSTOM: {
 				if (has_attribute(&get_global(def->global)->attributes, add_name("indexed"))) {
 					has_dynamic = true;
 				}
@@ -414,11 +415,19 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 					has_other = true;
 				}
 				break;
+			}
 			case DEFINITION_TEX2D:
 			case DEFINITION_TEX2DARRAY:
-			case DEFINITION_TEXCUBE:
-				has_other = true;
+			case DEFINITION_TEXCUBE: {
+				type *t = get_type(get_global(def->global)->type);
+				if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+					has_boundless = true;
+				}
+				else {
+					has_other = true;
+				}
 				break;
+			}
 			case DEFINITION_SAMPLER:
 				has_sampler = true;
 				break;
@@ -520,6 +529,28 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 			}
 
 			*offset += sprintf(&hlsl[*offset], ")");
+		}
+
+		if (has_boundless) {
+			uint32_t boundless_space = 1;
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				definition *def = &set->definitions[definition_index];
+
+				switch (def->kind) {
+				case DEFINITION_TEX2D:
+				case DEFINITION_TEX2DARRAY:
+				case DEFINITION_TEXCUBE: {
+					type *t = get_type(get_global(def->global)->type);
+
+					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+						*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(SRV(t0, space = %i, numDescriptors = unbounded))", boundless_space);
+						boundless_space += 1;
+					}
+
+					break;
+				}
+				}
+			}
 		}
 	}
 
@@ -1421,12 +1452,19 @@ void hlsl_export(char *directory, api_kind d3d) {
 
 	for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 		global *g = get_global(i);
-		if (g->type == sampler_type_id) {
+
+		type *t = get_type(g->type);
+		type_id base_type = t->kind == TYPE_ARRAY ? t->array.base : g->type;
+
+		if (base_type == sampler_type_id) {
 			global_register_indices[i] = sampler_index;
 			sampler_index += 1;
 		}
-		else if (g->type == tex2d_type_id) {
-			if (has_attribute(&g->attributes, add_name("write"))) {
+		else if (base_type == tex2d_type_id) {
+			if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+				global_register_indices[i] = 0;
+			}
+			else if (has_attribute(&g->attributes, add_name("write"))) {
 				global_register_indices[i] = uav_index;
 				uav_index += 1;
 			}
@@ -1435,7 +1473,7 @@ void hlsl_export(char *directory, api_kind d3d) {
 				srv_index += 1;
 			}
 		}
-		else if (g->type == texcube_type_id || g->type == tex2darray_type_id || g->type == bvh_type_id) {
+		else if (base_type == texcube_type_id || base_type == tex2darray_type_id || base_type == bvh_type_id) {
 			global_register_indices[i] = srv_index;
 			srv_index += 1;
 		}
