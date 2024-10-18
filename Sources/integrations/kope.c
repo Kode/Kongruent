@@ -591,10 +591,13 @@ void kope_export(char *directory, api_kind api) {
 
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
-			if (is_texture(g->type) || g->type == sampler_type_id) {
+
+			type_id base_type = get_type(g->type)->kind == TYPE_ARRAY ? get_type(g->type)->array.base : g->type;
+
+			if (is_texture(base_type) || base_type == sampler_type_id) {
 			}
-			else if (!get_type(g->type)->built_in) {
-				type *t = get_type(g->type);
+			else if (!get_type(base_type)->built_in) {
+				type *t = get_type(base_type);
 
 				char name[256];
 				if (t->name != NO_NAME) {
