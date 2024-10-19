@@ -889,7 +889,10 @@ void kope_export(char *directory, api_kind api) {
 
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
-			if (!get_type(g->type)->built_in) {
+
+			type_id base_type = get_type(g->type)->kind == TYPE_ARRAY ? get_type(g->type)->array.base : g->type;
+
+			if (!get_type(base_type)->built_in) {
 				type *t = get_type(g->type);
 
 				char type_name[256];
