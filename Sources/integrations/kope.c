@@ -668,9 +668,17 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_CONST_CUSTOM:
 					fprintf(output, "\tkope_g5_buffer *%s;\n", get_name(get_global(d.global)->name));
 					break;
-				CASE_TEXTURE:
-					fprintf(output, "\tkope_g5_texture_view %s;\n", get_name(get_global(d.global)->name));
+				CASE_TEXTURE: {
+					type *t = get_type(get_global(d.global)->type);
+					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+						fprintf(output, "\tkope_g5_texture_view *%s;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\tsize_t %s_count;\n", get_name(get_global(d.global)->name));
+					}
+					else {
+						fprintf(output, "\tkope_g5_texture_view %s;\n", get_name(get_global(d.global)->name));
+					}
 					break;
+				}
 				case DEFINITION_SAMPLER:
 					fprintf(output, "\tkope_g5_sampler *%s;\n", get_name(get_global(d.global)->name));
 					break;
@@ -697,9 +705,17 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_BVH:
 					fprintf(output, "\tkope_g5_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
 					break;
-				CASE_TEXTURE:
-					fprintf(output, "\tkope_g5_texture_view %s;\n", get_name(get_global(d.global)->name));
+				CASE_TEXTURE: {
+					type *t = get_type(get_global(d.global)->type);
+					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+						fprintf(output, "\tkope_g5_texture_view *%s;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\tsize_t %s_count;\n", get_name(get_global(d.global)->name));
+					}
+					else {
+						fprintf(output, "\tkope_g5_texture_view %s;\n", get_name(get_global(d.global)->name));
+					}
 					break;
+				}
 				}
 			}
 			fprintf(output, "} %s_set;\n\n", get_name(set->name));
@@ -827,6 +843,8 @@ void kope_export(char *directory, api_kind api) {
 		fprintf(output, "#include <kope/direct3d12/descriptorset_functions.h>\n");
 		fprintf(output, "#include <kope/direct3d12/pipeline_functions.h>\n");
 		fprintf(output, "#include <kope/util/align.h>\n\n");
+		fprintf(output, "#include <assert.h>\n");
+		fprintf(output, "#include <stdlib.h>\n\n");
 
 		for (size_t i = 0; i < vertex_inputs_size; ++i) {
 			type *t = get_type(vertex_inputs[i]);
@@ -1048,17 +1066,32 @@ void kope_export(char *directory, api_kind api) {
 					other_index += 1;
 					break;
 				case DEFINITION_TEX2D: {
-					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
-					if (write_attribute != NULL) {
-						fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %" PRIu64 ");\n",
-						        get_name(get_global(d.global)->name), other_index);
+					type *t = get_type(get_global(d.global)->type);
+					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+						fprintf(output, "\tset->%s = (kope_g5_texture_view *)malloc(sizeof(kope_g5_texture_view) * parameters->textures_count);\n",
+						        get_name(get_global(d.global)->name));
+						fprintf(output, "\tassert(set->%s != NULL);\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
+						fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(get_global(d.global)->name),
+						        get_name(get_global(d.global)->name));
+						fprintf(output, "\t}\n");
+
+						fprintf(output, "\tset->%s_count = parameters->%s_count;\n", get_name(get_global(d.global)->name),
+						        get_name(get_global(d.global)->name));
 					}
 					else {
-						fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_view_srv(device, &set->set, &parameters->%s, %" PRIu64 ");\n",
-						        get_name(get_global(d.global)->name), other_index);
-					}
+						attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
+						if (write_attribute != NULL) {
+							fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %" PRIu64 ");\n",
+							        get_name(get_global(d.global)->name), other_index);
+						}
+						else {
+							fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_view_srv(device, &set->set, &parameters->%s, %" PRIu64 ");\n",
+							        get_name(get_global(d.global)->name), other_index);
+						}
 
-					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
+						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
+					}
 
 					other_index += 1;
 					break;
@@ -1129,12 +1162,20 @@ void kope_export(char *directory, api_kind api) {
 					}
 					break;
 				CASE_TEXTURE: {
-					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
-					if (write_attribute != NULL) {
-						fprintf(output, "\tkope_d3d12_descriptor_set_prepare_uav_texture(list, &set->%s);\n", get_name(get_global(d.global)->name));
+					type *t = get_type(get_global(d.global)->type);
+					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+						fprintf(output, "\tfor (size_t index = 0; index < set->%s_count; ++index) {\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\t\tkope_d3d12_descriptor_set_prepare_srv_texture(list, &set->%s[index]);\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\t}\n");
 					}
 					else {
-						fprintf(output, "\tkope_d3d12_descriptor_set_prepare_srv_texture(list, &set->%s);\n", get_name(get_global(d.global)->name));
+						attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
+						if (write_attribute != NULL) {
+							fprintf(output, "\tkope_d3d12_descriptor_set_prepare_uav_texture(list, &set->%s);\n", get_name(get_global(d.global)->name));
+						}
+						else {
+							fprintf(output, "\tkope_d3d12_descriptor_set_prepare_srv_texture(list, &set->%s);\n", get_name(get_global(d.global)->name));
+						}
 					}
 					break;
 				}
