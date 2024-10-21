@@ -1019,6 +1019,7 @@ void kope_export(char *directory, api_kind api) {
 			size_t other_count = 0;
 			size_t sampler_count = 0;
 			size_t dynamic_count = 0;
+			size_t bindless_count = 0;
 
 			for (size_t descriptor_index = 0; descriptor_index < set->definitions_count; ++descriptor_index) {
 				definition d = set->definitions[descriptor_index];
@@ -1032,17 +1033,24 @@ void kope_export(char *directory, api_kind api) {
 						other_count += 1;
 					}
 					break;
-				CASE_TEXTURE:
-					other_count += 1;
+				CASE_TEXTURE: {
+					type *t = get_type(get_global(d.global)->type);
+					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+						bindless_count += 1;
+					}
+					else {
+						other_count += 1;
+					}
 					break;
+				}
 				case DEFINITION_SAMPLER:
 					sampler_count += 1;
 					break;
 				}
 			}
 
-			fprintf(output, "\tkope_d3d12_device_create_descriptor_set(device, %" PRIu64 ", %" PRIu64 ", %" PRIu64 ", &set->set);\n", other_count,
-			        dynamic_count, sampler_count);
+			fprintf(output, "\tkope_d3d12_device_create_descriptor_set(device, %" PRIu64 ", %" PRIu64 ", %" PRIu64 ", %" PRIu64 ", &set->set);\n", other_count,
+			        dynamic_count, bindless_count, sampler_count);
 
 			size_t other_index = 0;
 			size_t sampler_index = 0;
@@ -1072,6 +1080,10 @@ void kope_export(char *directory, api_kind api) {
 						        get_name(get_global(d.global)->name));
 						fprintf(output, "\tassert(set->%s != NULL);\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
+						fprintf(output,
+						        "\t\tkope_d3d12_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
+						        "&parameters->%s[index]);\n",
+						        get_name(get_global(d.global)->name));
 						fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(get_global(d.global)->name),
 						        get_name(get_global(d.global)->name));
 						fprintf(output, "\t}\n");
@@ -1086,14 +1098,17 @@ void kope_export(char *directory, api_kind api) {
 							        get_name(get_global(d.global)->name), other_index);
 						}
 						else {
-							fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_view_srv(device, &set->set, &parameters->%s, %" PRIu64 ");\n",
-							        get_name(get_global(d.global)->name), other_index);
+							fprintf(output,
+							        "\tkope_d3d12_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %" PRIu64
+							        ", &parameters->%s);\n",
+							        other_index, get_name(get_global(d.global)->name));
 						}
 
 						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
+
+						other_index += 1;
 					}
 
-					other_index += 1;
 					break;
 				}
 				case DEFINITION_TEX2DARRAY: {

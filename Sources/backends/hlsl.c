@@ -507,6 +507,28 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 			*offset += sprintf(&hlsl[*offset], ")");
 		}
 
+		if (has_boundless) {
+			uint32_t boundless_space = 1;
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				definition *def = &set->definitions[definition_index];
+
+				switch (def->kind) {
+				case DEFINITION_TEX2D:
+				case DEFINITION_TEX2DARRAY:
+				case DEFINITION_TEXCUBE: {
+					type *t = get_type(get_global(def->global)->type);
+
+					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+						*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(SRV(t0, space = %i, numDescriptors = unbounded))", boundless_space);
+						boundless_space += 1;
+					}
+
+					break;
+				}
+				}
+			}
+		}
+
 		if (has_sampler) {
 			*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(");
 
@@ -529,28 +551,6 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 			}
 
 			*offset += sprintf(&hlsl[*offset], ")");
-		}
-
-		if (has_boundless) {
-			uint32_t boundless_space = 1;
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition *def = &set->definitions[definition_index];
-
-				switch (def->kind) {
-				case DEFINITION_TEX2D:
-				case DEFINITION_TEX2DARRAY:
-				case DEFINITION_TEXCUBE: {
-					type *t = get_type(get_global(def->global)->type);
-
-					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
-						*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(SRV(t0, space = %i, numDescriptors = unbounded))", boundless_space);
-						boundless_space += 1;
-					}
-
-					break;
-				}
-				}
-			}
 		}
 	}
 
