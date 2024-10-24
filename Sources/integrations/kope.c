@@ -469,6 +469,19 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 	fprintf(output, "\n\treturn root_signature;\n");
 }
 
+static void to_upper(char *from, char *to) {
+	size_t from_size = strlen(from);
+	for (size_t i = 0; i < from_size; ++i) {
+		if (from[i] >= 'a' && from[i] <= 'z') {
+			to[i] = from[i] + ('A' - 'a');
+		}
+		else {
+			to[i] = from[i];
+		}
+	}
+	to[from_size] = 0;
+}
+
 static int global_register_indices[512];
 
 void kope_export(char *directory, api_kind api) {
@@ -736,6 +749,65 @@ void kope_export(char *directory, api_kind api) {
 				}
 			}
 			fprintf(output, ");\n\n");
+
+			char upper_set_name[256];
+			to_upper(get_name(set->name), upper_set_name);
+
+			fprintf(output, "typedef struct %s_set_update {\n", get_name(set->name));
+			fprintf(output, "\tenum {\n");
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				definition d = set->definitions[definition_index];
+				char upper_definition_name[256];
+				to_upper(get_name(get_global(d.global)->name), upper_definition_name);
+
+				switch (d.kind) {
+				case DEFINITION_CONST_CUSTOM:
+					fprintf(output, "\t\t%s_SET_UPDATE_%s,\n", upper_set_name, upper_definition_name);
+					break;
+				case DEFINITION_BVH:
+					fprintf(output, "\t\t%s_SET_UPDATE_%s,\n", upper_set_name, upper_definition_name);
+					break;
+				CASE_TEXTURE: {
+					type *t = get_type(get_global(d.global)->type);
+					fprintf(output, "\t\t%s_SET_UPDATE_%s,\n", upper_set_name, upper_definition_name);
+					break;
+				}
+				}
+			}
+			fprintf(output, "\t} kind;\n");
+
+			fprintf(output, "\tunion {\n");
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				definition d = set->definitions[definition_index];
+				switch (d.kind) {
+				case DEFINITION_CONST_CUSTOM:
+					fprintf(output, "\t\tkope_g5_buffer *%s;\n", get_name(get_global(d.global)->name));
+					break;
+				case DEFINITION_BVH:
+					fprintf(output, "\t\tkope_g5_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
+					break;
+				CASE_TEXTURE: {
+					type *t = get_type(get_global(d.global)->type);
+					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+						fprintf(output, "\t\tstruct {\n");
+						fprintf(output, "\t\t\tkope_g5_texture_view *%s;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\t\t\tuint32_t *%s_indices;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\t\t\tsize_t %s_count;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\t\t} %s;\n", get_name(get_global(d.global)->name));
+					}
+					else {
+						fprintf(output, "\t\tkope_g5_texture_view %s;\n", get_name(get_global(d.global)->name));
+					}
+					break;
+				}
+				}
+			}
+			fprintf(output, "\t};\n");
+
+			fprintf(output, "} %s_set_update;\n\n", get_name(set->name));
+
+			fprintf(output, "void kong_update_%s_set(%s_set *set, %s_set_update *updates, uint32_t updates_count);\n", get_name(set->name), get_name(set->name),
+			        get_name(set->name));
 		}
 
 		fprintf(output, "\n");
@@ -1145,6 +1217,10 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				}
 			}
+			fprintf(output, "}\n\n");
+
+			fprintf(output, "void kong_update_%s_set(%s_set *set, %s_set_update *updates, uint32_t updates_count) {\n", get_name(set->name),
+			        get_name(set->name), get_name(set->name));
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "void kong_set_descriptor_set_%s(kope_g5_command_list *list, %s_set *set", get_name(set->name), get_name(set->name));
