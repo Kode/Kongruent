@@ -1317,7 +1317,7 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, ", dynamic_buffers, dynamic_offsets, dynamic_sizes");
 				}
 				else {
-					fprintf(output, ", NULL, NULL");
+					fprintf(output, ", NULL, NULL, NULL");
 				}
 				fprintf(output, ");\n");
 				fprintf(output, "}\n\n");
