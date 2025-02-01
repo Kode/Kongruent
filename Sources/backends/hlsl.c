@@ -1228,7 +1228,7 @@ static void hlsl_export_amplification(char *directory, function *main) {
 
 	write_functions(hlsl, &offset, SHADER_STAGE_AMPLIFICATION, main, NULL, 0);
 
-	char *output = NULL;
+	uint8_t *output = NULL;
 	size_t output_size = 0;
 	int result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_AMPLIFICATION, false);
 
@@ -1264,7 +1264,7 @@ static void hlsl_export_mesh(char *directory, function *main) {
 
 	write_functions(hlsl, &offset, SHADER_STAGE_MESH, main, NULL, 0);
 
-	char *output = NULL;
+	uint8_t *output = NULL;
 	size_t output_size = 0;
 	int result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_MESH, false);
 
