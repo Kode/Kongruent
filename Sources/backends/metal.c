@@ -262,7 +262,7 @@ static void write_functions(char *code, size_t *offset) {
 			switch (o->type) {
 			case OPCODE_LOAD_MEMBER: {
 				uint64_t global_var_index = 0;
-				for (global_id j = 0; get_global(j)->type != NO_TYPE; ++j) {
+				for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
 					global *g = get_global(j);
 					if (o->op_load_member.from.index == g->var_index) {
 						global_var_index = g->var_index;
@@ -390,7 +390,7 @@ void metal_export(char *directory) {
 
 	memset(global_register_indices, 0, sizeof(global_register_indices));
 
-	for (global_id i = 0; get_global(i)->type != NO_TYPE; ++i) {
+	for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 		global *g = get_global(i);
 		if (g->type == sampler_type_id) {
 			global_register_indices[i] = sampler_index;
