@@ -60,18 +60,34 @@ static char *type_string(type_id type) {
 	return get_name(get_type(type)->name);
 }
 
-static const char *structure_type(type_id type) {
-	if (type == float_id) {
-		return "KOPE_D3D12_VERTEX_FORMAT_FLOAT32";
+static const char *structure_type(type_id type, api_kind api) {
+	if (api == API_DIRECT3D12) {
+		if (type == float_id) {
+			return "KOPE_D3D12_VERTEX_FORMAT_FLOAT32";
+		}
+		if (type == float2_id) {
+			return "KOPE_D3D12_VERTEX_FORMAT_FLOAT32X2";
+		}
+		if (type == float3_id) {
+			return "KOPE_D3D12_VERTEX_FORMAT_FLOAT32X3";
+		}
+		if (type == float4_id) {
+			return "KOPE_D3D12_VERTEX_FORMAT_FLOAT32X4";
+		}
 	}
-	if (type == float2_id) {
-		return "KOPE_D3D12_VERTEX_FORMAT_FLOAT32X2";
-	}
-	if (type == float3_id) {
-		return "KOPE_D3D12_VERTEX_FORMAT_FLOAT32X3";
-	}
-	if (type == float4_id) {
-		return "KOPE_D3D12_VERTEX_FORMAT_FLOAT32X4";
+	else if (api == API_METAL) {
+		if (type == float_id) {
+			return "KOPE_METAL_VERTEX_FORMAT_FLOAT32";
+		}
+		if (type == float2_id) {
+			return "KOPE_METAL_VERTEX_FORMAT_FLOAT32X2";
+		}
+		if (type == float3_id) {
+			return "KOPE_METAL_VERTEX_FORMAT_FLOAT32X3";
+		}
+		if (type == float4_id) {
+			return "KOPE_METAL_VERTEX_FORMAT_FLOAT32X4";
+		}
 	}
 	debug_context context = {0};
 	error(context, "Unknown type for vertex structure");
@@ -487,6 +503,47 @@ static int global_register_indices[512];
 void kope_export(char *directory, api_kind api) {
 	memset(global_register_indices, 0, sizeof(global_register_indices));
 
+	char *api_short = NULL;
+	char *api_long = NULL;
+	char *api_caps = NULL;
+	switch (api) {
+	case API_DIRECT3D9:
+		api_short = "d3d9";
+		api_long = "direct3d9";
+		api_caps = "D3D9";
+		break;
+	case API_DIRECT3D11:
+		api_short = "d3d11";
+		api_long = "direct3d11";
+		api_caps = "D3D11";
+		break;
+	case API_DIRECT3D12:
+		api_short = "d3d12";
+		api_long = "direct3d12";
+		api_caps = "D3D12";
+		break;
+	case API_METAL:
+		api_short = "metal";
+		api_long = "metal";
+		api_caps = "METAL";
+		break;
+	case API_OPENGL:
+		api_short = "gl";
+		api_long = "opengl";
+		api_caps = "GL";
+		break;
+	case API_VULKAN:
+		api_short = "vulkan";
+		api_long = "vulkan";
+		api_caps = "VULKAN";
+		break;
+	case API_WEBGPU:
+		api_short = "webgpu";
+		api_long = "webgpu";
+		api_caps = "WEBGPU";
+		break;
+	}
+
 	if (api == API_WEBGPU) {
 		int binding_index = 0;
 
@@ -591,8 +648,8 @@ void kope_export(char *directory, api_kind api) {
 
 		fprintf(output, "#include <kope/graphics5/device.h>\n");
 		fprintf(output, "#include <kope/graphics5/sampler.h>\n");
-		fprintf(output, "#include <kope/direct3d12/descriptorset_structs.h>\n");
-		fprintf(output, "#include <kope/direct3d12/pipeline_structs.h>\n");
+		fprintf(output, "#include <kope/%s/descriptorset_structs.h>\n", api_long);
+		fprintf(output, "#include <kope/%s/pipeline_structs.h>\n", api_long);
 		fprintf(output, "#include <kinc/math/matrix.h>\n");
 		fprintf(output, "#include <kinc/math/vector.h>\n\n");
 
@@ -708,7 +765,7 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "} %s_parameters;\n\n", get_name(set->name));
 
 			fprintf(output, "typedef struct %s_set {\n", get_name(set->name));
-			fprintf(output, "\tkope_d3d12_descriptor_set set;\n\n");
+			fprintf(output, "\tkope_%s_descriptor_set set;\n\n", api_short);
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 				definition d = set->definitions[definition_index];
 				switch (d.kind) {
@@ -833,30 +890,30 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "void kong_set_vertex_buffer_%s(kope_g5_command_list *list, %s_buffer *buffer);\n\n", get_name(t->name), get_name(t->name));
 		}
 
-		fprintf(output, "void kong_set_render_pipeline(kope_g5_command_list *list, kope_d3d12_render_pipeline *pipeline);\n\n");
+		fprintf(output, "void kong_set_render_pipeline(kope_g5_command_list *list, kope_%s_render_pipeline *pipeline);\n\n", api_short);
 
-		fprintf(output, "void kong_set_compute_pipeline(kope_g5_command_list *list, kope_d3d12_compute_pipeline *pipeline);\n\n");
+		fprintf(output, "void kong_set_compute_pipeline(kope_g5_command_list *list, kope_%s_compute_pipeline *pipeline);\n\n", api_short);
 
-		fprintf(output, "void kong_set_ray_pipeline(kope_g5_command_list *list, kope_d3d12_ray_pipeline *pipeline);\n\n");
+		fprintf(output, "void kong_set_ray_pipeline(kope_g5_command_list *list, kope_%s_ray_pipeline *pipeline);\n\n", api_short);
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-				fprintf(output, "extern kope_d3d12_render_pipeline %s;\n\n", get_name(t->name));
+				fprintf(output, "extern kope_%s_render_pipeline %s;\n\n", api_short, get_name(t->name));
 			}
 		}
 
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
 			if (has_attribute(&f->attributes, add_name("compute"))) {
-				fprintf(output, "extern kope_d3d12_compute_pipeline %s;\n\n", get_name(f->name));
+				fprintf(output, "extern kope_%s_compute_pipeline %s;\n\n", api_short, get_name(f->name));
 			}
 		}
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-				fprintf(output, "extern kope_d3d12_ray_pipeline %s;\n\n", get_name(t->name));
+				fprintf(output, "extern kope_%s_ray_pipeline %s;\n\n", api_short, get_name(t->name));
 			}
 		}
 
@@ -909,11 +966,11 @@ void kope_export(char *directory, api_kind api) {
 			}
 		}
 
-		fprintf(output, "\n#include <kope/direct3d12/buffer_functions.h>\n");
-		fprintf(output, "#include <kope/direct3d12/commandlist_functions.h>\n");
-		fprintf(output, "#include <kope/direct3d12/device_functions.h>\n");
-		fprintf(output, "#include <kope/direct3d12/descriptorset_functions.h>\n");
-		fprintf(output, "#include <kope/direct3d12/pipeline_functions.h>\n");
+		fprintf(output, "\n#include <kope/%s/buffer_functions.h>\n", api_long);
+		fprintf(output, "#include <kope/%s/commandlist_functions.h>\n", api_long);
+		fprintf(output, "#include <kope/%s/device_functions.h>\n", api_long);
+		fprintf(output, "#include <kope/%s/descriptorset_functions.h>\n", api_long);
+		fprintf(output, "#include <kope/%s/pipeline_functions.h>\n", api_long);
 		fprintf(output, "#include <kope/util/align.h>\n\n");
 		fprintf(output, "#include <assert.h>\n");
 		fprintf(output, "#include <stdlib.h>\n\n");
@@ -930,47 +987,46 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "%s *kong_%s_buffer_lock(%s_buffer *buffer) {\n", get_name(t->name), get_name(t->name), get_name(t->name));
-			fprintf(output, "\treturn (%s *)kope_d3d12_buffer_lock_all(&buffer->buffer);\n", get_name(t->name));
+			fprintf(output, "\treturn (%s *)kope_%s_buffer_lock_all(&buffer->buffer);\n", get_name(t->name), api_short);
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "%s *kong_%s_buffer_try_to_lock(%s_buffer *buffer) {\n", get_name(t->name), get_name(t->name), get_name(t->name));
-			fprintf(output, "\treturn (%s *)kope_d3d12_buffer_try_to_lock_all(&buffer->buffer);\n", get_name(t->name));
+			fprintf(output, "\treturn (%s *)kope_%s_buffer_try_to_lock_all(&buffer->buffer);\n", get_name(t->name), api_short);
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "void kong_%s_buffer_unlock(%s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
-			fprintf(output, "\tkope_d3d12_buffer_unlock(&buffer->buffer);\n");
+			fprintf(output, "\tkope_%s_buffer_unlock(&buffer->buffer);\n", api_short);
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "void kong_set_vertex_buffer_%s(kope_g5_command_list *list, %s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
-			fprintf(output,
-			        "\tkope_d3d12_command_list_set_vertex_buffer(list, %" PRIu64 ", &buffer->buffer.d3d12, 0, buffer->count * sizeof(%s), sizeof(%s));\n",
-			        vertex_input_slots[i], get_name(t->name), get_name(t->name));
+			fprintf(output, "\tkope_%s_command_list_set_vertex_buffer(list, %" PRIu64 ", &buffer->buffer.%s, 0, buffer->count * sizeof(%s), sizeof(%s));\n",
+			        api_short, vertex_input_slots[i], api_short, get_name(t->name), get_name(t->name));
 			fprintf(output, "}\n\n");
 		}
 
-		fprintf(output, "void kong_set_render_pipeline(kope_g5_command_list *list, kope_d3d12_render_pipeline *pipeline) {\n");
-		fprintf(output, "\tkope_d3d12_command_list_set_render_pipeline(list, pipeline);\n");
+		fprintf(output, "void kong_set_render_pipeline(kope_g5_command_list *list, kope_%s_render_pipeline *pipeline) {\n", api_short);
+		fprintf(output, "\tkope_%s_command_list_set_render_pipeline(list, pipeline);\n", api_short);
 		fprintf(output, "}\n\n");
 
-		fprintf(output, "void kong_set_compute_pipeline(kope_g5_command_list *list, kope_d3d12_compute_pipeline *pipeline) {\n");
-		fprintf(output, "\tkope_d3d12_command_list_set_compute_pipeline(list, pipeline);\n");
+		fprintf(output, "void kong_set_compute_pipeline(kope_g5_command_list *list, kope_%s_compute_pipeline *pipeline) {\n", api_short);
+		fprintf(output, "\tkope_%s_command_list_set_compute_pipeline(list, pipeline);\n", api_short);
 		fprintf(output, "}\n\n");
 
-		fprintf(output, "void kong_set_ray_pipeline(kope_g5_command_list *list, kope_d3d12_ray_pipeline *pipeline) {\n");
-		fprintf(output, "\tkope_d3d12_command_list_set_ray_pipeline(list, pipeline);\n");
+		fprintf(output, "void kong_set_ray_pipeline(kope_g5_command_list *list, kope_%s_ray_pipeline *pipeline) {\n", api_short);
+		fprintf(output, "\tkope_%s_command_list_set_ray_pipeline(list, pipeline);\n", api_short);
 		fprintf(output, "}\n\n");
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-				fprintf(output, "kope_d3d12_render_pipeline %s;\n\n", get_name(t->name));
+				fprintf(output, "kope_%s_render_pipeline %s;\n\n", api_short, get_name(t->name));
 			}
 		}
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-				fprintf(output, "kope_d3d12_ray_pipeline %s;\n\n", get_name(t->name));
+				fprintf(output, "kope_%s_ray_pipeline %s;\n\n", api_short, get_name(t->name));
 			}
 		}
 
@@ -1034,7 +1090,7 @@ void kope_export(char *directory, api_kind api) {
 						}
 
 						if (has_matrices) {
-							fprintf(output, "\t%s *data = (%s *)buffer->d3d12.locked_data;\n", type_name, type_name);
+							fprintf(output, "\t%s *data = (%s *)buffer->%s.locked_data;\n", type_name, type_name, api_short);
 							// adjust matrices
 							for (size_t j = 0; j < t->members.size; ++j) {
 								if (t->members.m[j].type.type == float4x4_id) {
@@ -1077,7 +1133,7 @@ void kope_export(char *directory, api_kind api) {
 
 				fprintf(output, "void kong_set_root_constants_%s(kope_g5_command_list *list, %s *constants) {\n", get_name(root_constants_global->name),
 				        root_constants_type_name);
-				fprintf(output, "\tkope_d3d12_command_list_set_root_constants(list, %i, constants, %i);\n", descriptor_table_index,
+				fprintf(output, "\tkope_%s_command_list_set_root_constants(list, %i, constants, %i);\n", api_short, descriptor_table_index,
 				        struct_size(root_constants_global->type));
 				fprintf(output, "}\n\n");
 
@@ -1121,8 +1177,8 @@ void kope_export(char *directory, api_kind api) {
 				}
 			}
 
-			fprintf(output, "\tkope_d3d12_device_create_descriptor_set(device, %" PRIu64 ", %" PRIu64 ", %" PRIu64 ", %" PRIu64 ", &set->set);\n", other_count,
-			        dynamic_count, bindless_count, sampler_count);
+			fprintf(output, "\tkope_%s_device_create_descriptor_set(device, %" PRIu64 ", %" PRIu64 ", %" PRIu64 ", %" PRIu64 ", &set->set);\n", api_short,
+			        other_count, dynamic_count, bindless_count, sampler_count);
 
 			size_t other_index = 0;
 			size_t sampler_index = 0;
@@ -1133,14 +1189,14 @@ void kope_export(char *directory, api_kind api) {
 				switch (d.kind) {
 				case DEFINITION_CONST_CUSTOM:
 					if (!has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
-						fprintf(output, "\tkope_d3d12_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
+						fprintf(output, "\tkope_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %" PRIu64 ");\n", api_short,
 						        get_name(get_global(d.global)->name), other_index);
 						other_index += 1;
 					}
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
 					break;
 				case DEFINITION_BVH:
-					fprintf(output, "\tkope_d3d12_descriptor_set_set_bvh_view_srv(device, &set->set, parameters->%s, %" PRIu64 ");\n",
+					fprintf(output, "\tkope_%s_descriptor_set_set_bvh_view_srv(device, &set->set, parameters->%s, %" PRIu64 ");\n", api_short,
 					        get_name(get_global(d.global)->name), other_index);
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
 					other_index += 1;
@@ -1153,9 +1209,9 @@ void kope_export(char *directory, api_kind api) {
 						fprintf(output, "\tassert(set->%s != NULL);\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
 						fprintf(output,
-						        "\t\tkope_d3d12_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
+						        "\t\tkope_%s_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
 						        "&parameters->%s[index]);\n",
-						        get_name(get_global(d.global)->name));
+						        api_short, get_name(get_global(d.global)->name));
 						fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(get_global(d.global)->name),
 						        get_name(get_global(d.global)->name));
 						fprintf(output, "\t}\n");
@@ -1166,14 +1222,14 @@ void kope_export(char *directory, api_kind api) {
 					else {
 						attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
 						if (write_attribute != NULL) {
-							fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %" PRIu64 ");\n",
+							fprintf(output, "\tkope_%s_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %" PRIu64 ");\n", api_short,
 							        get_name(get_global(d.global)->name), other_index);
 						}
 						else {
 							fprintf(output,
-							        "\tkope_d3d12_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %" PRIu64
+							        "\tkope_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %" PRIu64
 							        ", &parameters->%s);\n",
-							        other_index, get_name(get_global(d.global)->name));
+							        api_short, other_index, get_name(get_global(d.global)->name));
 						}
 
 						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
@@ -1190,7 +1246,7 @@ void kope_export(char *directory, api_kind api) {
 						error(context, "Texture arrays can not be writable");
 					}
 
-					fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_array_view_srv(device, &set->set, &parameters->%s, %" PRIu64 ");\n",
+					fprintf(output, "\tkope_%s_descriptor_set_set_texture_array_view_srv(device, &set->set, &parameters->%s, %" PRIu64 ");\n", api_short,
 					        get_name(get_global(d.global)->name), other_index);
 
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
@@ -1203,7 +1259,7 @@ void kope_export(char *directory, api_kind api) {
 						debug_context context = {0};
 						error(context, "Cube maps can not be writable");
 					}
-					fprintf(output, "\tkope_d3d12_descriptor_set_set_texture_cube_view_srv(device, &set->set, &parameters->%s, %" PRIu64 ");\n",
+					fprintf(output, "\tkope_%s_descriptor_set_set_texture_cube_view_srv(device, &set->set, &parameters->%s, %" PRIu64 ");\n", api_short,
 					        get_name(get_global(d.global)->name), other_index);
 
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
@@ -1211,7 +1267,7 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				}
 				case DEFINITION_SAMPLER:
-					fprintf(output, "\tkope_d3d12_descriptor_set_set_sampler(device, &set->set, parameters->%s, %" PRIu64 ");\n",
+					fprintf(output, "\tkope_%s_descriptor_set_set_sampler(device, &set->set, parameters->%s, %" PRIu64 ");\n", api_short,
 					        get_name(get_global(d.global)->name), sampler_index);
 					sampler_index += 1;
 					break;
@@ -1241,14 +1297,13 @@ void kope_export(char *directory, api_kind api) {
 				switch (d.kind) {
 				case DEFINITION_CONST_CUSTOM:
 					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
-						fprintf(
-						    output,
-						    "\tkope_d3d12_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), align_pow2((int)%i, 256));\n",
-						    get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), struct_size(get_global(d.global)->type),
-						    struct_size(get_global(d.global)->type));
+						fprintf(output,
+						        "\tkope_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), align_pow2((int)%i, 256));\n",
+						        api_short, get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), struct_size(get_global(d.global)->type),
+						        struct_size(get_global(d.global)->type));
 					}
 					else {
-						fprintf(output, "\tkope_d3d12_descriptor_set_prepare_cbv_buffer(list, set->%s, 0, UINT32_MAX);\n",
+						fprintf(output, "\tkope_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short,
 						        get_name(get_global(d.global)->name));
 					}
 					break;
@@ -1256,16 +1311,17 @@ void kope_export(char *directory, api_kind api) {
 					type *t = get_type(get_global(d.global)->type);
 					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
 						fprintf(output, "\tfor (size_t index = 0; index < set->%s_count; ++index) {\n", get_name(get_global(d.global)->name));
-						fprintf(output, "\t\tkope_d3d12_descriptor_set_prepare_srv_texture(list, &set->%s[index]);\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\t\tkope_%s_descriptor_set_prepare_srv_texture(list, &set->%s[index]);\n", api_short,
+						        get_name(get_global(d.global)->name));
 						fprintf(output, "\t}\n");
 					}
 					else {
 						attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
 						if (write_attribute != NULL) {
-							fprintf(output, "\tkope_d3d12_descriptor_set_prepare_uav_texture(list, &set->%s);\n", get_name(get_global(d.global)->name));
+							fprintf(output, "\tkope_%s_descriptor_set_prepare_uav_texture(list, &set->%s);\n", api_short, get_name(get_global(d.global)->name));
 						}
 						else {
-							fprintf(output, "\tkope_d3d12_descriptor_set_prepare_srv_texture(list, &set->%s);\n", get_name(get_global(d.global)->name));
+							fprintf(output, "\tkope_%s_descriptor_set_prepare_srv_texture(list, &set->%s);\n", api_short, get_name(get_global(d.global)->name));
 						}
 					}
 					break;
@@ -1312,7 +1368,7 @@ void kope_export(char *directory, api_kind api) {
 					}
 				}
 
-				fprintf(output, "\n\tkope_d3d12_command_list_set_descriptor_table(list, %i, &set->set", descriptor_table_index);
+				fprintf(output, "\n\tkope_%s_command_list_set_descriptor_table(list, %i, &set->set", api_short, descriptor_table_index);
 				if (dynamic_count > 0) {
 					fprintf(output, ", dynamic_buffers, dynamic_offsets, dynamic_sizes");
 				}
@@ -1333,7 +1389,7 @@ void kope_export(char *directory, api_kind api) {
 					if (t->members.m[j].name == add_name("vertex") || t->members.m[j].name == add_name("fragment")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "vertex or fragment expects an identifier");
-						fprintf(output, "static kope_d3d12_shader %s;\n", get_name(t->members.m[j].value.identifier));
+						fprintf(output, "static kope_%s_shader %s;\n", api_short, get_name(t->members.m[j].value.identifier));
 					}
 				}
 			}
@@ -1342,7 +1398,7 @@ void kope_export(char *directory, api_kind api) {
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
 			if (has_attribute(&f->attributes, add_name("compute"))) {
-				fprintf(output, "kope_d3d12_compute_pipeline %s;\n", get_name(f->name));
+				fprintf(output, "kope_%s_compute_pipeline %s;\n", api_short, get_name(f->name));
 			}
 		}
 
@@ -1354,12 +1410,14 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "\nvoid kinc_g4_internal_opengl_setup_uniform_block(unsigned program, const char *name, unsigned binding);\n");
 		}
 
-		fprintf(output, "struct ID3D12RootSignature;");
+		if (api == API_DIRECT3D12) {
+			fprintf(output, "struct ID3D12RootSignature;");
 
-		for (type_id i = 0; get_type(i) != NULL; ++i) {
-			type *t = get_type(i);
-			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-				fprintf(output, "struct ID3D12RootSignature *kong_create_%s_root_signature(kope_g5_device *device);", get_name(t->name));
+			for (type_id i = 0; get_type(i) != NULL; ++i) {
+				type *t = get_type(i);
+				if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
+					fprintf(output, "struct ID3D12RootSignature *kong_create_%s_root_signature(kope_g5_device *device);", get_name(t->name));
+				}
 			}
 		}
 
@@ -1372,7 +1430,7 @@ void kope_export(char *directory, api_kind api) {
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-				fprintf(output, "\tkope_d3d12_render_pipeline_parameters %s_parameters = {0};\n\n", get_name(t->name));
+				fprintf(output, "\tkope_%s_render_pipeline_parameters %s_parameters = {0};\n\n", api_short, get_name(t->name));
 
 				name_id vertex_shader_name = NO_NAME;
 				name_id amplification_shader_name = NO_NAME;
@@ -1509,11 +1567,11 @@ void kope_export(char *directory, api_kind api) {
 							if (api == API_OPENGL) {
 								fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s_%s\", %s);\n", get_name(t->name),
 								        get_name(vertex_type->name), get_name(vertex_type->members.m[j].name),
-								        structure_type(vertex_type->members.m[j].type.type));
+								        structure_type(vertex_type->members.m[j].type.type, api));
 							}
 							else {
 								fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].attributes[%" PRIu64 "].format = %s;\n", get_name(t->name),
-								        input_index, j, structure_type(vertex_type->members.m[j].type.type));
+								        input_index, j, structure_type(vertex_type->members.m[j].type.type, api));
 								fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].attributes[%" PRIu64 "].offset = %" PRIu64 ";\n",
 								        get_name(t->name), input_index, j, offset);
 								fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].attributes[%" PRIu64 "].shader_location = %" PRIu64 ";\n",
@@ -1526,16 +1584,23 @@ void kope_export(char *directory, api_kind api) {
 						fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].attributes_count = %" PRIu64 ";\n", get_name(t->name), input_index,
 						        vertex_type->members.size);
 						fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].array_stride = %" PRIu64 ";\n", get_name(t->name), input_index, offset);
-						fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].step_mode = %s;\n", get_name(t->name), input_index,
-						        instanced[input_index] ? "KOPE_D3D12_VERTEX_STEP_MODE_INSTANCE" : "KOPE_D3D12_VERTEX_STEP_MODE_VERTEX");
+
+						char step_mode[64];
+						if (instanced[input_index]) {
+							sprintf(step_mode, "KOPE_%s_VERTEX_STEP_MODE_INSTANCE", api_caps);
+						}
+						else {
+							sprintf(step_mode, "KOPE_%s_VERTEX_STEP_MODE_VERTEX", api_caps);
+						}
+						fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].step_mode = %s;\n", get_name(t->name), input_index, step_mode);
 					}
 					fprintf(output, "\t%s_parameters.vertex.buffers_count = %" PRIu64 ";\n\n", get_name(t->name), vertex_inputs_count);
 				}
 
-				fprintf(output, "\t%s_parameters.primitive.topology = KOPE_D3D12_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;\n", get_name(t->name));
+				fprintf(output, "\t%s_parameters.primitive.topology = KOPE_%s_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;\n", get_name(t->name), api_caps);
 				fprintf(output, "\t%s_parameters.primitive.strip_index_format = KOPE_G5_INDEX_FORMAT_UINT16;\n", get_name(t->name));
-				fprintf(output, "\t%s_parameters.primitive.front_face = KOPE_D3D12_FRONT_FACE_CW;\n", get_name(t->name));
-				fprintf(output, "\t%s_parameters.primitive.cull_mode = KOPE_D3D12_CULL_MODE_NONE;\n", get_name(t->name));
+				fprintf(output, "\t%s_parameters.primitive.front_face = KOPE_%s_FRONT_FACE_CW;\n", get_name(t->name), api_caps);
+				fprintf(output, "\t%s_parameters.primitive.cull_mode = KOPE_%s_CULL_MODE_NONE;\n", get_name(t->name), api_caps);
 				fprintf(output, "\t%s_parameters.primitive.unclipped_depth = false;\n\n", get_name(t->name));
 
 				member *depth_stencil_format = find_member(t, "depth_stencil_format");
@@ -1572,14 +1637,14 @@ void kope_export(char *directory, api_kind api) {
 				}
 
 				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.compare = KOPE_G5_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.fail_op = KOPE_D3D12_STENCIL_OPERATION_KEEP;\n", get_name(t->name));
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.depth_fail_op = KOPE_D3D12_STENCIL_OPERATION_KEEP;\n", get_name(t->name));
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.pass_op = KOPE_D3D12_STENCIL_OPERATION_KEEP;\n", get_name(t->name));
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.fail_op = KOPE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.depth_fail_op = KOPE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.pass_op = KOPE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
 
 				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.compare = KOPE_G5_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.fail_op = KOPE_D3D12_STENCIL_OPERATION_KEEP;\n", get_name(t->name));
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.depth_fail_op = KOPE_D3D12_STENCIL_OPERATION_KEEP;\n", get_name(t->name));
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.pass_op = KOPE_D3D12_STENCIL_OPERATION_KEEP;\n", get_name(t->name));
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.fail_op = KOPE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.depth_fail_op = KOPE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.pass_op = KOPE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
 
 				fprintf(output, "\t%s_parameters.depth_stencil.stencil_read_mask = 0xffffffff;\n", get_name(t->name));
 				fprintf(output, "\t%s_parameters.depth_stencil.stencil_write_mask = 0xffffffff;\n", get_name(t->name));
@@ -1611,13 +1676,19 @@ void kope_export(char *directory, api_kind api) {
 							fprintf(output, "\t%s_parameters.fragment.targets[%i].format = KOPE_G5_TEXTURE_FORMAT_RGBA8_UNORM;\n", get_name(t->name), i);
 						}
 
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.operation = KOPE_D3D12_BLEND_OPERATION_ADD;\n", get_name(t->name), i);
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.src_factor = KOPE_D3D12_BLEND_FACTOR_ONE;\n", get_name(t->name), i);
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.dst_factor = KOPE_D3D12_BLEND_FACTOR_ZERO;\n", get_name(t->name), i);
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.operation = KOPE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), i,
+						        api_caps);
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.src_factor = KOPE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), i,
+						        api_caps);
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.dst_factor = KOPE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), i,
+						        api_caps);
 
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.operation = KOPE_D3D12_BLEND_OPERATION_ADD;\n", get_name(t->name), i);
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.src_factor = KOPE_D3D12_BLEND_FACTOR_ONE;\n", get_name(t->name), i);
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.dst_factor = KOPE_D3D12_BLEND_FACTOR_ZERO;\n", get_name(t->name), i);
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.operation = KOPE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), i,
+						        api_caps);
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.src_factor = KOPE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), i,
+						        api_caps);
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.dst_factor = KOPE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), i,
+						        api_caps);
 
 						fprintf(output, "\t%s_parameters.fragment.targets[%i].write_mask = 0xf;\n\n", get_name(t->name), i);
 					}
@@ -1641,18 +1712,19 @@ void kope_export(char *directory, api_kind api) {
 						fprintf(output, "\t%s_parameters.fragment.targets[0].format = KOPE_G5_TEXTURE_FORMAT_RGBA8_UNORM;\n", get_name(t->name));
 					}
 
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.operation = KOPE_D3D12_BLEND_OPERATION_ADD;\n", get_name(t->name));
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.src_factor = KOPE_D3D12_BLEND_FACTOR_ONE;\n", get_name(t->name));
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.dst_factor = KOPE_D3D12_BLEND_FACTOR_ZERO;\n", get_name(t->name));
+					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.operation = KOPE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), api_caps);
+					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.src_factor = KOPE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), api_caps);
+					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.dst_factor = KOPE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), api_caps);
 
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.operation = KOPE_D3D12_BLEND_OPERATION_ADD;\n", get_name(t->name));
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.src_factor = KOPE_D3D12_BLEND_FACTOR_ONE;\n", get_name(t->name));
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.dst_factor = KOPE_D3D12_BLEND_FACTOR_ZERO;\n", get_name(t->name));
+					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.operation = KOPE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), api_caps);
+					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.src_factor = KOPE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), api_caps);
+					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.dst_factor = KOPE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), api_caps);
 
 					fprintf(output, "\t%s_parameters.fragment.targets[0].write_mask = 0xf;\n\n", get_name(t->name));
 				}
 
-				fprintf(output, "\tkope_d3d12_render_pipeline_init(&device->d3d12, &%s, &%s_parameters);\n\n", get_name(t->name), get_name(t->name));
+				fprintf(output, "\tkope_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters);\n\n", api_short, api_short, get_name(t->name),
+				        get_name(t->name));
 
 				if (api == API_OPENGL) {
 					global_id globals[256];
@@ -1680,17 +1752,18 @@ void kope_export(char *directory, api_kind api) {
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
 			if (has_attribute(&f->attributes, add_name("compute"))) {
-				fprintf(output, "\tkope_d3d12_compute_pipeline_parameters %s_parameters;\n", get_name(f->name));
+				fprintf(output, "\tkope_%s_compute_pipeline_parameters %s_parameters;\n", api_short, get_name(f->name));
 				fprintf(output, "\t%s_parameters.shader.data = %s_code;\n", get_name(f->name), get_name(f->name));
 				fprintf(output, "\t%s_parameters.shader.size = %s_code_size;\n", get_name(f->name), get_name(f->name));
-				fprintf(output, "\tkope_d3d12_compute_pipeline_init(&device->d3d12, &%s, &%s_parameters);\n", get_name(f->name), get_name(f->name));
+				fprintf(output, "\tkope_%s_compute_pipeline_init(&device->%s, &%s, &%s_parameters);\n", api_short, api_short, get_name(f->name),
+				        get_name(f->name));
 			}
 		}
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-				fprintf(output, "\tkope_d3d12_ray_pipeline_parameters %s_parameters = {0};\n\n", get_name(t->name));
+				fprintf(output, "\tkope_%s_ray_pipeline_parameters %s_parameters = {0};\n\n", api_short, get_name(t->name));
 
 				name_id gen_shader_name = NO_NAME;
 				name_id miss_shader_name = NO_NAME;
@@ -1733,8 +1806,8 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "\t%s_parameters.any_shader_name = \"%s\";\n", get_name(t->name), get_name(any_shader_name));
 				}
 
-				fprintf(output, "\n\tkope_d3d12_ray_pipeline_init(device, &%s, &%s_parameters, kong_create_%s_root_signature(device));\n\n", get_name(t->name),
-				        get_name(t->name), get_name(t->name));
+				fprintf(output, "\n\tkope_%s_ray_pipeline_init(device, &%s, &%s_parameters, kong_create_%s_root_signature(device));\n\n", api_short,
+				        get_name(t->name), get_name(t->name), get_name(t->name));
 			}
 		}
 
@@ -1743,7 +1816,7 @@ void kope_export(char *directory, api_kind api) {
 		fclose(output);
 	}
 
-	{
+	if (api == API_DIRECT3D12) {
 		char filename[512];
 		sprintf(filename, "%s/%s", directory, "kong_ray_root_signatures.cpp");
 
