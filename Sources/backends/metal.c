@@ -209,7 +209,7 @@ static void write_functions(char *code, size_t *offset) {
 		}
 
 		if (is_vertex_function(i)) {
-			*offset += sprintf(&code[*offset], "vertex %s %s(%s _%" PRIu64 " [[stage_in]]) {\n", type_string(f->return_type.type), get_name(f->name),
+			*offset += sprintf(&code[*offset], "vertex %s %s(%s _%" PRIu64 " [[stage_in]]", type_string(f->return_type.type), get_name(f->name),
 			                   type_string(f->parameter_types[0].type), parameter_ids[0]);
 			for (uint8_t parameter_index = 1; parameter_index < f->parameters_size; ++parameter_index) {
 				*offset += sprintf(&code[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[0].type), parameter_ids[0]);
@@ -232,7 +232,7 @@ static void write_functions(char *code, size_t *offset) {
 				*offset += sprintf(&code[*offset], "%s) {\n", buffers);
 			}
 			else {
-				*offset += sprintf(&code[*offset], "fragment _kong_color_out %s(%s _%" PRIu64 " [[stage_in]]) {\n", get_name(f->name),
+				*offset += sprintf(&code[*offset], "fragment _kong_color_out %s(%s _%" PRIu64 " [[stage_in]]", get_name(f->name),
 				                   type_string(f->parameter_types[0].type), parameter_ids[0]);
 				for (uint8_t parameter_index = 1; parameter_index < f->parameters_size; ++parameter_index) {
 					*offset += sprintf(&code[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
