@@ -1189,7 +1189,7 @@ static void hlsl_export_vertex(char *directory, api_kind d3d, function *main) {
 
 	write_functions(hlsl, &offset, SHADER_STAGE_VERTEX, main, NULL, 0);
 
-	char *output = NULL;
+	uint8_t *output = NULL;
 	size_t output_size = 0;
 	int result = 1;
 	switch (d3d) {
