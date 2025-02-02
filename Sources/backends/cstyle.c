@@ -8,9 +8,9 @@
 #include <stdio.h>
 #include <string.h>
 
-static char *function_string(name_id func) {
-	return get_name(func);
-}
+//static char *function_string(name_id func) {
+//	return get_name(func);
+//}
 
 // HLSL for now
 static char *member_string(type *parent_type, name_id member_name) {
@@ -84,7 +84,7 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
 			if (is_array) {
 				if (o->op_store_member.dynamic_member[i]) {
-					*offset += sprintf(&code[*offset], "[_% " PRIu64 "]", o->op_store_member.dynamic_member_indices[i].index);
+					*offset += sprintf(&code[*offset], "[_%" PRIu64 "]", o->op_store_member.dynamic_member_indices[i].index);
 				}
 				else {
 					*offset += sprintf(&code[*offset], "[%i]", o->op_store_member.static_member_indices[i]);
@@ -115,6 +115,9 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 			break;
 		case OPCODE_MULTIPLY_AND_STORE_MEMBER:
 			*offset += sprintf(&code[*offset], " *= _%" PRIu64 ";\n", o->op_store_member.from.index);
+			break;
+		default:
+			assert(false);
 			break;
 		}
 		break;

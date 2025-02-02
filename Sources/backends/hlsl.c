@@ -431,6 +431,9 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 			case DEFINITION_SAMPLER:
 				has_sampler = true;
 				break;
+			default:
+				assert(false);
+				break;
 			}
 		}
 
@@ -475,6 +478,9 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 						srv_index += 1;
 					}
 					break;
+				default:
+					assert(false);
+					break;
 				}
 			}
 
@@ -501,6 +507,9 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 						cbv_index += 1;
 					}
 					break;
+				default:
+					assert(false);
+					break;
 				}
 			}
 
@@ -525,6 +534,9 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 
 					break;
 				}
+				default:
+					assert(false);
+					break;
 				}
 			}
 		}
@@ -546,6 +558,9 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 					}
 					*offset += sprintf(&hlsl[*offset], "Sampler(s%i)", sampler_index);
 					sampler_index += 1;
+					break;
+				default:
+					assert(false);
 					break;
 				}
 			}
@@ -618,6 +633,9 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					}
 				}
 			}
+			default:
+				assert(false);
+				break;
 			}
 			index += o->size;
 		}

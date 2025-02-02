@@ -145,7 +145,7 @@ static void write_globals(char *glsl, size_t *offset, function *main) {
 
 	for (size_t i = 0; i < globals_size; ++i) {
 		global *g = get_global(globals[i]);
-		int register_index = global_register_indices[globals[i]];
+		//int register_index = global_register_indices[globals[i]];
 
 		if (g->type == sampler_type_id) {
 		}

@@ -161,7 +161,6 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				o.type = OPCODE_XOR;
 				break;
 			default: {
-				debug_context context = {0};
 				error(context, "Unexpected operator");
 			}
 			}
@@ -200,7 +199,6 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				o.type = OPCODE_MOD;
 				break;
 			default: {
-				debug_context context = {0};
 				error(context, "Unexpected operator");
 			}
 			}
@@ -213,7 +211,6 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			return result_var;
 		}
 		case OPERATOR_NOT: {
-			debug_context context = {0};
 			error(context, "! is not a binary operator");
 		}
 		case OPERATOR_ASSIGN:
@@ -243,7 +240,6 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 					o.type = OPCODE_MULTIPLY_AND_STORE_VARIABLE;
 					break;
 				default: {
-					debug_context context = {0};
 					error(context, "Unexpected operator");
 				}
 				}
@@ -275,7 +271,6 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 					o.type = OPCODE_MULTIPLY_AND_STORE_MEMBER;
 					break;
 				default: {
-					debug_context context = {0};
 					error(context, "Unexpected operator");
 				}
 				}
@@ -413,6 +408,11 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		case OPERATOR_MOD:
 			error(context, "not implemented");
 		case OPERATOR_ASSIGN:
+			error(context, "not implemented");
+		case OPERATOR_PLUS_ASSIGN:
+		case OPERATOR_MINUS_ASSIGN:
+		case OPERATOR_MULTIPLY_ASSIGN:
+		case OPERATOR_DIVIDE_ASSIGN:
 			error(context, "not implemented");
 		}
 	}
@@ -591,6 +591,10 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	case EXPRESSION_CONSTRUCTOR: {
 		debug_context context = {0};
 		error(context, "not implemented");
+	}
+	default: {
+		debug_context context = {0};
+		 error(context, "not implemented");
 	}
 	}
 
@@ -863,7 +867,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 		o.type = OPCODE_VAR;
 		o.size = OP_SIZE(o, op_var);
 
-		variable init_var;
+		variable init_var = {0};
 		if (statement->local_variable.init != NULL) {
 			init_var = emit_expression(code, parent, statement->local_variable.init);
 		}

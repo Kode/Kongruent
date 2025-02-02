@@ -16,9 +16,9 @@ static statement *statement_allocate(void) {
 	return s;
 }
 
-static void statement_free(statement *statement) {
-	free(statement);
-}
+//static void statement_free(statement *statement) {
+//	free(statement);
+//}
 
 static void statements_init(statements *statements) {
 	statements->size = 0;
@@ -37,9 +37,9 @@ static expression *expression_allocate(void) {
 	return e;
 }
 
-static void expression_free(expression *expression) {
-	free(expression);
-}
+//static void expression_free(expression *expression) {
+//	free(expression);
+//}
 
 typedef struct state {
 	tokens *tokens;
@@ -137,14 +137,14 @@ typedef struct modifiers {
 	size_t size;
 } modifiers_t;
 
-static void modifiers_init(modifiers_t *modifiers) {
-	modifiers->size = 0;
-}
+//static void modifiers_init(modifiers_t *modifiers) {
+//	modifiers->size = 0;
+//}
 
-static void modifiers_add(modifiers_t *modifiers, modifier_t modifier) {
-	modifiers->m[modifiers->size] = modifier;
-	modifiers->size += 1;
-}
+//static void modifiers_add(modifiers_t *modifiers, modifier_t modifier) {
+//	modifiers->m[modifiers->size] = modifier;
+//	modifiers->size += 1;
+//}
 
 static definition parse_struct(state_t *state);
 static definition parse_function(state_t *state);

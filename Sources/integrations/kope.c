@@ -327,6 +327,9 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 			case DEFINITION_SAMPLER:
 				has_sampler = true;
 				break;
+			default:
+				assert(false);
+				break;
 			}
 		}
 
@@ -360,6 +363,9 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 			case DEFINITION_SAMPLER:
 				has_sampler = true;
 				break;
+			default:
+				assert(false);
+				break;
 			}
 		}
 
@@ -376,10 +382,13 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					count += 1;
 					break;
 				}
+				default:
+					assert(false);
+					break;
 				}
 			}
 
-			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%" PRIu64 "] = {};\n", table_index, count);
+			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%zu] = {};\n", table_index, count);
 
 			size_t range_index = 0;
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
@@ -387,10 +396,10 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 
 				switch (def->kind) {
 				case DEFINITION_CONST_CUSTOM:
-					fprintf(output, "\tranges%i[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;\n", table_index, range_index);
-					fprintf(output, "\tranges%i[%" PRIu64 "].BaseShaderRegister = %i;\n", table_index, range_index, cbv_index);
-					fprintf(output, "\tranges%i[%" PRIu64 "].NumDescriptors = 1;\n", table_index, range_index);
-					fprintf(output, "\tranges%i[%" PRIu64 "].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
+					fprintf(output, "\tranges%i[%zu].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;\n", table_index, range_index);
+					fprintf(output, "\tranges%i[%zu].BaseShaderRegister = %i;\n", table_index, range_index, cbv_index);
+					fprintf(output, "\tranges%i[%zu].NumDescriptors = 1;\n", table_index, range_index);
+					fprintf(output, "\tranges%i[%zu].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
 					        range_index);
 
 					cbv_index += 1;
@@ -402,19 +411,19 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					attribute *write_attribute = find_attribute(&get_global(def->global)->attributes, add_name("write"));
 
 					if (write_attribute != NULL) {
-						fprintf(output, "\tranges%i[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;\n", table_index, range_index);
-						fprintf(output, "\tranges%i[%" PRIu64 "].BaseShaderRegister = %i;\n", table_index, range_index, uav_index);
-						fprintf(output, "\tranges%i[%" PRIu64 "].NumDescriptors = 1;\n", table_index, range_index);
-						fprintf(output, "\tranges%i[%" PRIu64 "].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
+						fprintf(output, "\tranges%i[%zu].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;\n", table_index, range_index);
+						fprintf(output, "\tranges%i[%zu].BaseShaderRegister = %i;\n", table_index, range_index, uav_index);
+						fprintf(output, "\tranges%i[%zu].NumDescriptors = 1;\n", table_index, range_index);
+						fprintf(output, "\tranges%i[%zu].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
 						        range_index);
 
 						uav_index += 1;
 					}
 					else {
-						fprintf(output, "\tranges%i[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;\n", table_index, range_index);
-						fprintf(output, "\tranges%i[%" PRIu64 "].BaseShaderRegister = %i;\n", table_index, range_index, srv_index);
-						fprintf(output, "\tranges%i[%" PRIu64 "].NumDescriptors = 1;\n", table_index, range_index);
-						fprintf(output, "\tranges%i[%" PRIu64 "].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
+						fprintf(output, "\tranges%i[%zu].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;\n", table_index, range_index);
+						fprintf(output, "\tranges%i[%zu].BaseShaderRegister = %i;\n", table_index, range_index, srv_index);
+						fprintf(output, "\tranges%i[%zu].NumDescriptors = 1;\n", table_index, range_index);
+						fprintf(output, "\tranges%i[%zu].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
 						        range_index);
 
 						srv_index += 1;
@@ -423,12 +432,15 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					range_index += 1;
 
 					break;
+				default:
+					assert(false);
+					break;
 				}
 				case DEFINITION_BVH:
-					fprintf(output, "\tranges%i[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;\n", table_index, range_index);
-					fprintf(output, "\tranges%i[%" PRIu64 "].BaseShaderRegister = %i;\n", table_index, range_index, srv_index);
-					fprintf(output, "\tranges%i[%" PRIu64 "].NumDescriptors = 1;\n", table_index, range_index);
-					fprintf(output, "\tranges%i[%" PRIu64 "].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
+					fprintf(output, "\tranges%i[%zu].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;\n", table_index, range_index);
+					fprintf(output, "\tranges%i[%zu].BaseShaderRegister = %i;\n", table_index, range_index, srv_index);
+					fprintf(output, "\tranges%i[%zu].NumDescriptors = 1;\n", table_index, range_index);
+					fprintf(output, "\tranges%i[%zu].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
 					        range_index);
 
 					srv_index += 1;
@@ -440,7 +452,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 			}
 
 			fprintf(output, "\n\tparams[%i].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;\n", table_index);
-			fprintf(output, "\tparams[%i].DescriptorTable.NumDescriptorRanges = %" PRIu64 ";\n", table_index, count);
+			fprintf(output, "\tparams[%i].DescriptorTable.NumDescriptorRanges = %zu;\n", table_index, count);
 			fprintf(output, "\tparams[%i].DescriptorTable.pDescriptorRanges = ranges%i;\n", table_index, table_index);
 
 			table_index += 1;
@@ -457,10 +469,13 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					count += 1;
 					break;
 				}
+				default:
+					assert(false);
+					break;
 				}
 			}
 
-			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%" PRIu64 "] = {};\n", table_index, count);
+			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%zu] = {};\n", table_index, count);
 
 			size_t range_index = 0;
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
@@ -468,18 +483,21 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 
 				switch (def->kind) {
 				case DEFINITION_SAMPLER:
-					fprintf(output, "\tranges%i[%" PRIu64 "].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;\n", table_index, range_index);
-					fprintf(output, "\tranges%i[%" PRIu64 "].BaseShaderRegister = %i;\n", table_index, range_index, sampler_index);
-					fprintf(output, "\tranges%i[%" PRIu64 "].NumDescriptors = 1;\n", table_index, range_index);
-					fprintf(output, "\tranges%i[%" PRIu64 "].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
+					fprintf(output, "\tranges%i[%zu].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;\n", table_index, range_index);
+					fprintf(output, "\tranges%i[%zu].BaseShaderRegister = %i;\n", table_index, range_index, sampler_index);
+					fprintf(output, "\tranges%i[%zu].NumDescriptors = 1;\n", table_index, range_index);
+					fprintf(output, "\tranges%i[%zu].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
 					        range_index);
 					sampler_index += 1;
+					break;
+				default:
+					assert(false);
 					break;
 				}
 			}
 
 			fprintf(output, "\n\tparams[%i].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;\n", table_index);
-			fprintf(output, "\tparams[%i].DescriptorTable.NumDescriptorRanges = %" PRIu64 ";\n", table_index, count);
+			fprintf(output, "\tparams[%i].DescriptorTable.NumDescriptorRanges = %zu;\n", table_index, count);
 			fprintf(output, "\tparams[%i].DescriptorTable.pDescriptorRanges = ranges%i;\n", table_index, table_index);
 
 			table_index += 1;
@@ -555,6 +573,9 @@ void kope_export(char *directory, api_kind api) {
 		api_short = "webgpu";
 		api_long = "webgpu";
 		api_caps = "WEBGPU";
+		break;
+	default:
+		assert(false);
 		break;
 	}
 
@@ -696,7 +717,7 @@ void kope_export(char *directory, api_kind api) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					fprintf(output, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 					if (t->members.m[j].type.type == float3x3_id) {
-						fprintf(output, "\tfloat pad%" PRIu64 "[3];\n", j);
+						fprintf(output, "\tfloat pad%zu[3];\n", j);
 					}
 				}
 				fprintf(output, "} %s;\n\n", name);
@@ -800,6 +821,9 @@ void kope_export(char *directory, api_kind api) {
 					}
 					break;
 				}
+				default:
+					assert(false);
+					break;
 				}
 			}
 			fprintf(output, "} %s_set;\n\n", get_name(set->name));
@@ -816,6 +840,9 @@ void kope_export(char *directory, api_kind api) {
 					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
 						fprintf(output, ", uint32_t %s_index", get_name(get_global(d.global)->name));
 					}
+					break;
+				default:
+					assert(false);
 					break;
 				}
 			}
@@ -839,10 +866,13 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t%s_SET_UPDATE_%s,\n", upper_set_name, upper_definition_name);
 					break;
 				CASE_TEXTURE: {
-					type *t = get_type(get_global(d.global)->type);
+					//type *t = get_type(get_global(d.global)->type);
 					fprintf(output, "\t\t%s_SET_UPDATE_%s,\n", upper_set_name, upper_definition_name);
 					break;
 				}
+				default:
+					assert(false);
+					break;
 				}
 			}
 			fprintf(output, "\t} kind;\n");
@@ -871,6 +901,9 @@ void kope_export(char *directory, api_kind api) {
 					}
 					break;
 				}
+				default:
+					assert(false);
+					break;
 				}
 			}
 			fprintf(output, "\t};\n");
@@ -1013,7 +1046,7 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "void kong_set_vertex_buffer_%s(kope_g5_command_list *list, %s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
-			fprintf(output, "\tkope_%s_command_list_set_vertex_buffer(list, %" PRIu64 ", &buffer->buffer.%s, 0, buffer->count * sizeof(%s), sizeof(%s));\n",
+			fprintf(output, "\tkope_%s_command_list_set_vertex_buffer(list, %zu, &buffer->buffer.%s, 0, buffer->count * sizeof(%s), sizeof(%s));\n",
 			        api_short, vertex_input_slots[i], api_short, get_name(t->name), get_name(t->name));
 			fprintf(output, "}\n\n");
 		}
@@ -1184,6 +1217,9 @@ void kope_export(char *directory, api_kind api) {
 						other_count += 1;
 					}
 					break;
+				default:
+					assert(false);
+					break;
 				}
 				case DEFINITION_SAMPLER:
 					sampler_count += 1;
@@ -1191,7 +1227,7 @@ void kope_export(char *directory, api_kind api) {
 				}
 			}
 
-			fprintf(output, "\tkope_%s_device_create_descriptor_set(device, %" PRIu64 ", %" PRIu64 ", %" PRIu64 ", %" PRIu64 ", &set->set);\n", api_short,
+			fprintf(output, "\tkope_%s_device_create_descriptor_set(device, %zu, %zu, %zu, %zu, &set->set);\n", api_short,
 			        other_count, dynamic_count, bindless_count, sampler_count);
 
 			size_t other_index = 0;
@@ -1203,14 +1239,14 @@ void kope_export(char *directory, api_kind api) {
 				switch (d.kind) {
 				case DEFINITION_CONST_CUSTOM:
 					if (!has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
-						fprintf(output, "\tkope_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %" PRIu64 ");\n", api_short,
+						fprintf(output, "\tkope_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %zu);\n", api_short,
 						        get_name(get_global(d.global)->name), other_index);
 						other_index += 1;
 					}
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
 					break;
 				case DEFINITION_BVH:
-					fprintf(output, "\tkope_%s_descriptor_set_set_bvh_view_srv(device, &set->set, parameters->%s, %" PRIu64 ");\n", api_short,
+					fprintf(output, "\tkope_%s_descriptor_set_set_bvh_view_srv(device, &set->set, parameters->%s, %zu);\n", api_short,
 					        get_name(get_global(d.global)->name), other_index);
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
 					other_index += 1;
@@ -1236,13 +1272,12 @@ void kope_export(char *directory, api_kind api) {
 					else {
 						attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
 						if (write_attribute != NULL) {
-							fprintf(output, "\tkope_%s_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %" PRIu64 ");\n", api_short,
+							fprintf(output, "\tkope_%s_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %zu);\n", api_short,
 							        get_name(get_global(d.global)->name), other_index);
 						}
 						else {
 							fprintf(output,
-							        "\tkope_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %" PRIu64
-							        ", &parameters->%s);\n",
+							        "\tkope_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %zu, &parameters->%s);\n",
 							        api_short, other_index, get_name(get_global(d.global)->name));
 						}
 
@@ -1260,7 +1295,7 @@ void kope_export(char *directory, api_kind api) {
 						error(context, "Texture arrays can not be writable");
 					}
 
-					fprintf(output, "\tkope_%s_descriptor_set_set_texture_array_view_srv(device, &set->set, &parameters->%s, %" PRIu64 ");\n", api_short,
+					fprintf(output, "\tkope_%s_descriptor_set_set_texture_array_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
 					        get_name(get_global(d.global)->name), other_index);
 
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
@@ -1273,7 +1308,7 @@ void kope_export(char *directory, api_kind api) {
 						debug_context context = {0};
 						error(context, "Cube maps can not be writable");
 					}
-					fprintf(output, "\tkope_%s_descriptor_set_set_texture_cube_view_srv(device, &set->set, &parameters->%s, %" PRIu64 ");\n", api_short,
+					fprintf(output, "\tkope_%s_descriptor_set_set_texture_cube_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
 					        get_name(get_global(d.global)->name), other_index);
 
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
@@ -1281,9 +1316,12 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				}
 				case DEFINITION_SAMPLER:
-					fprintf(output, "\tkope_%s_descriptor_set_set_sampler(device, &set->set, parameters->%s, %" PRIu64 ");\n", api_short,
+					fprintf(output, "\tkope_%s_descriptor_set_set_sampler(device, &set->set, parameters->%s, %zu);\n", api_short,
 					        get_name(get_global(d.global)->name), sampler_index);
 					sampler_index += 1;
+					break;
+				default:
+					assert(false);
 					break;
 				}
 			}
@@ -1301,6 +1339,9 @@ void kope_export(char *directory, api_kind api) {
 					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
 						fprintf(output, ", uint32_t %s_index", get_name(get_global(d.global)->name));
 					}
+					break;
+				default:
+					assert(false);
 					break;
 				}
 			}
@@ -1340,6 +1381,9 @@ void kope_export(char *directory, api_kind api) {
 					}
 					break;
 				}
+				default:
+					assert(false);
+					break;
 				}
 			}
 
@@ -1354,6 +1398,9 @@ void kope_export(char *directory, api_kind api) {
 						if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
 							dynamic_count += 1;
 						}
+						break;
+					default:
+						assert(false);
 						break;
 					}
 				}
@@ -1377,6 +1424,9 @@ void kope_export(char *directory, api_kind api) {
 								fprintf(output, "\tdynamic_sizes[%i] = align_pow2((int)%i, 256);\n", dynamic_index, struct_size(get_global(d.global)->type));
 								dynamic_index += 1;
 							}
+							break;
+						default:
+							assert(false);
 							break;
 						}
 					}
@@ -1453,9 +1503,14 @@ void kope_export(char *directory, api_kind api) {
 
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("vertex")) {
-						fprintf(output, "\t%s_parameters.vertex.shader.data = %s_code;\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
-						fprintf(output, "\t%s_parameters.vertex.shader.size = %s_code_size;\n\n", get_name(t->name),
-						        get_name(t->members.m[j].value.identifier));
+						if (api == API_METAL) {
+							fprintf(output, "\t%s_parameters.vertex.shader.function_name = \"%s\";\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
+						}
+						else {
+							fprintf(output, "\t%s_parameters.vertex.shader.data = %s_code;\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
+							fprintf(output, "\t%s_parameters.vertex.shader.size = %s_code_size;\n\n", get_name(t->name),
+									get_name(t->members.m[j].value.identifier));
+						}
 						vertex_shader_name = t->members.m[j].value.identifier;
 					}
 					else if (t->members.m[j].name == add_name("amplification")) {
@@ -1465,9 +1520,14 @@ void kope_export(char *directory, api_kind api) {
 						mesh_shader_name = t->members.m[j].value.identifier;
 					}
 					else if (t->members.m[j].name == add_name("fragment")) {
-						fprintf(output, "\t%s_parameters.fragment.shader.data = %s_code;\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
-						fprintf(output, "\t%s_parameters.fragment.shader.size = %s_code_size;\n\n", get_name(t->name),
-						        get_name(t->members.m[j].value.identifier));
+						if (api == API_METAL) {
+							fprintf(output, "\t%s_parameters.fragment.shader.function_name = \"%s\";\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
+						}
+						else {
+							fprintf(output, "\t%s_parameters.fragment.shader.data = %s_code;\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
+							fprintf(output, "\t%s_parameters.fragment.shader.size = %s_code_size;\n\n", get_name(t->name),
+									get_name(t->members.m[j].value.identifier));
+						}
 						fragment_shader_name = t->members.m[j].value.identifier;
 					}
 					// else if (t->members.m[j].name == add_name("depth_write")) {
@@ -1584,20 +1644,20 @@ void kope_export(char *directory, api_kind api) {
 								        structure_type(vertex_type->members.m[j].type.type, api));
 							}
 							else {
-								fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].attributes[%" PRIu64 "].format = %s;\n", get_name(t->name),
+								fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].format = %s;\n", get_name(t->name),
 								        input_index, j, structure_type(vertex_type->members.m[j].type.type, api));
-								fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].attributes[%" PRIu64 "].offset = %" PRIu64 ";\n",
+								fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].offset = %zu;\n",
 								        get_name(t->name), input_index, j, offset);
-								fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].attributes[%" PRIu64 "].shader_location = %" PRIu64 ";\n",
+								fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].shader_location = %zu;\n",
 								        get_name(t->name), input_index, j, location);
 							}
 
 							offset += base_type_size(vertex_type->members.m[j].type.type);
 							location += 1;
 						}
-						fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].attributes_count = %" PRIu64 ";\n", get_name(t->name), input_index,
+						fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes_count = %zu;\n", get_name(t->name), input_index,
 						        vertex_type->members.size);
-						fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].array_stride = %" PRIu64 ";\n", get_name(t->name), input_index, offset);
+						fprintf(output, "\t%s_parameters.vertex.buffers[%zu].array_stride = %zu;\n", get_name(t->name), input_index, offset);
 
 						char step_mode[64];
 						if (instanced[input_index]) {
@@ -1606,9 +1666,9 @@ void kope_export(char *directory, api_kind api) {
 						else {
 							sprintf(step_mode, "KOPE_%s_VERTEX_STEP_MODE_VERTEX", api_caps);
 						}
-						fprintf(output, "\t%s_parameters.vertex.buffers[%" PRIu64 "].step_mode = %s;\n", get_name(t->name), input_index, step_mode);
+						fprintf(output, "\t%s_parameters.vertex.buffers[%zu].step_mode = %s;\n", get_name(t->name), input_index, step_mode);
 					}
-					fprintf(output, "\t%s_parameters.vertex.buffers_count = %" PRIu64 ";\n\n", get_name(t->name), vertex_inputs_count);
+					fprintf(output, "\t%s_parameters.vertex.buffers_count = %zu;\n\n", get_name(t->name), vertex_inputs_count);
 				}
 
 				fprintf(output, "\t%s_parameters.primitive.topology = KOPE_%s_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;\n", get_name(t->name), api_caps);
