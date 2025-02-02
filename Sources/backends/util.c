@@ -87,7 +87,6 @@ void find_referenced_globals(function *f, global_id *globals, size_t *globals_si
 				break;
 			}
 			default:
-				assert(false);
 				break;
 			}
 
@@ -136,7 +135,6 @@ void find_referenced_functions(function *f, function **functions, size_t *functi
 			break;
 		}
 		default:
-			assert(false);
 			break;
 		}
 

@@ -663,128 +663,138 @@ int main(int argc, char **argv) {
 	char *output = NULL;
 
 	for (int i = 1; i < argc; ++i) {
+		char *arg = argv[i];
 		switch (mode) {
 		case MODE_MODECHECK: {
-			if (argv[i][0] == '-') {
-				if (argv[i][1] == '-') {
-					if (strcmp(&argv[i][2], "in") == 0) {
+			if (arg[0] == '-') {
+				if (arg[1] == '-') {
+					if (strcmp(&arg[2], "in") == 0) {
 						mode = MODE_INPUT;
 					}
-					else if (strcmp(&argv[i][2], "out") == 0) {
+					else if (strcmp(&arg[2], "out") == 0) {
 						mode = MODE_OUTPUT;
 					}
-					else if (strcmp(&argv[i][2], "platform") == 0) {
+					else if (strcmp(&arg[2], "platform") == 0) {
 						mode = MODE_PLATFORM;
 					}
-					else if (strcmp(&argv[i][2], "api") == 0) {
+					else if (strcmp(&arg[2], "api") == 0) {
 						mode = MODE_API;
 					}
-					else if (strcmp(&argv[i][2], "integration")) {
+					else if (strcmp(&arg[2], "integration")) {
 						mode = MODE_INTEGRATION;
 					}
-					else if (strcmp(&argv[i][2], "help") == 0) {
+					else if (strcmp(&arg[2], "help") == 0) {
 						help();
 						return 0;
 					}
 					else {
-						debug_context context = {0};
-						error(context, "Unknown parameter %s", &argv[i][2]);
+						kong_log(LOG_LEVEL_WARNING, "Ignoring unknown parameter %s", arg);
 					}
 				}
 				else {
-					debug_context context = {0};
-					check(argv[i][1] != 0, context, "Borked parameter");
-					check(argv[i][2] == 0, context, "Borked parameter");
-					switch (argv[i][1]) {
-					case 'i':
-						mode = MODE_INPUT;
-						break;
-					case 'o':
-						mode = MODE_OUTPUT;
-						break;
-					case 'p':
-						mode = MODE_PLATFORM;
-						break;
-					case 'a':
-						mode = MODE_API;
-						break;
-					case 'n':
-						mode = MODE_INTEGRATION;
-						break;
-					case 'h':
-						help();
-						return 0;
-					default: {
-						debug_context context = {0};
-						error(context, "Unknown parameter %s", argv[i][1]);
+					bool ok = true;
+					
+
+					if (arg[1] == 0) {
+						kong_log(LOG_LEVEL_WARNING, "Ignoring lonely -.");
+						ok = false;
 					}
+
+					if (arg[2] != 0) {
+						kong_log(LOG_LEVEL_WARNING, "Ignoring parameter %s because the format is not right (one - implies just one letter).", arg);
+						ok = false;
+					}
+					
+					if (ok) {
+						switch (arg[1]) {
+						case 'i':
+							mode = MODE_INPUT;
+							break;
+						case 'o':
+							mode = MODE_OUTPUT;
+							break;
+						case 'p':
+							mode = MODE_PLATFORM;
+							break;
+						case 'a':
+							mode = MODE_API;
+							break;
+						case 'n':
+							mode = MODE_INTEGRATION;
+							break;
+						case 'h':
+							help();
+							return 0;
+						default: {
+							kong_log(LOG_LEVEL_WARNING, "Ignoring unknown parameter %s.", arg);
+						}
+						}
 					}
 				}
 			}
 			else {
-				debug_context context = {0};
-				error(context, "Wrong parameter syntax");
+				kong_log(LOG_LEVEL_WARNING, "Ignoring parameter %s because the syntax is off.", arg);
 			}
 			break;
 		}
 		case MODE_INPUT: {
-			inputs[inputs_size] = argv[i];
+			inputs[inputs_size] = arg;
 			inputs_size += 1;
 			mode = MODE_MODECHECK;
 			break;
 		}
 		case MODE_OUTPUT: {
-			output = argv[i];
+			output = arg;
 			mode = MODE_MODECHECK;
 			break;
 		}
 		case MODE_PLATFORM: {
-			platform = argv[i];
+			platform = arg;
 			mode = MODE_MODECHECK;
 			break;
 		}
 		case MODE_API: {
-			if (strcmp(argv[i], "direct3d9") == 0) {
+			if (strcmp(arg, "direct3d9") == 0) {
 				api = API_DIRECT3D9;
 			}
-			else if (strcmp(argv[i], "direct3d11") == 0) {
+			else if (strcmp(arg, "direct3d11") == 0) {
 				api = API_DIRECT3D11;
 			}
-			else if (strcmp(argv[i], "direct3d12") == 0) {
+			else if (strcmp(arg, "direct3d12") == 0) {
 				api = API_DIRECT3D12;
 			}
-			else if (strcmp(argv[i], "opengl") == 0) {
+			else if (strcmp(arg, "opengl") == 0) {
 				api = API_OPENGL;
 			}
-			else if (strcmp(argv[i], "metal") == 0) {
+			else if (strcmp(arg, "metal") == 0) {
 				api = API_METAL;
 			}
-			else if (strcmp(argv[i], "webgpu") == 0) {
+			else if (strcmp(arg, "webgpu") == 0) {
 				api = API_WEBGPU;
 			}
-			else if (strcmp(argv[i], "vulkan") == 0) {
+			else if (strcmp(arg, "vulkan") == 0) {
 				api = API_VULKAN;
 			}
-			else if (strcmp(argv[i], "default") == 0) {
+			else if (strcmp(arg, "default") == 0) {
 				api = API_DEFAULT;
 			}
 			else {
 				debug_context context = {0};
-				error(context, "Unknown API %s", argv[i]);
+				error(context, "Unknown API %s", arg);
 			}
 			mode = MODE_MODECHECK;
 			break;
 		}
 		case MODE_INTEGRATION: {
-			if (strcmp(argv[i], "kinc") == 0) {
+			if (strcmp(arg, "kinc") == 0) {
 				integration = INTEGRATION_KINC;
 			}
-			else if (strcmp(argv[i], "kope") == 0) {
+			else if (strcmp(arg, "kope") == 0) {
 				integration = INTEGRATION_KOPE;
 			}
 			else {
 				debug_context context = {0};
-				error(context, "Unknown integration %s", argv[i]);
+				error(context, "Unknown integration %s", arg);
 			}
 			mode = MODE_MODECHECK;
 			break;

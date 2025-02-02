@@ -1489,9 +1489,14 @@ void kope_export(char *directory, api_kind api) {
 
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("vertex")) {
-						fprintf(output, "\t%s_parameters.vertex.shader.data = %s_code;\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
-						fprintf(output, "\t%s_parameters.vertex.shader.size = %s_code_size;\n\n", get_name(t->name),
-						        get_name(t->members.m[j].value.identifier));
+						if (api == API_METAL) {
+							fprintf(output, "\t%s_parameters.vertex.shader.function_name = \"%s\";\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
+						}
+						else {
+							fprintf(output, "\t%s_parameters.vertex.shader.data = %s_code;\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
+							fprintf(output, "\t%s_parameters.vertex.shader.size = %s_code_size;\n\n", get_name(t->name),
+									get_name(t->members.m[j].value.identifier));
+						}
 						vertex_shader_name = t->members.m[j].value.identifier;
 					}
 					else if (t->members.m[j].name == add_name("amplification")) {
@@ -1501,9 +1506,14 @@ void kope_export(char *directory, api_kind api) {
 						mesh_shader_name = t->members.m[j].value.identifier;
 					}
 					else if (t->members.m[j].name == add_name("fragment")) {
-						fprintf(output, "\t%s_parameters.fragment.shader.data = %s_code;\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
-						fprintf(output, "\t%s_parameters.fragment.shader.size = %s_code_size;\n\n", get_name(t->name),
-						        get_name(t->members.m[j].value.identifier));
+						if (api == API_METAL) {
+							fprintf(output, "\t%s_parameters.fragment.shader.function_name = \"%s\";\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
+						}
+						else {
+							fprintf(output, "\t%s_parameters.fragment.shader.data = %s_code;\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
+							fprintf(output, "\t%s_parameters.fragment.shader.size = %s_code_size;\n\n", get_name(t->name),
+									get_name(t->members.m[j].value.identifier));
+						}
 						fragment_shader_name = t->members.m[j].value.identifier;
 					}
 					// else if (t->members.m[j].name == add_name("depth_write")) {
