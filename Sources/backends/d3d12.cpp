@@ -15,6 +15,7 @@
 
 #endif
 
+#ifdef _WIN32
 static const wchar_t *shader_string(shader_stage stage) {
 	switch (stage) {
 	case SHADER_STAGE_VERTEX:
@@ -36,6 +37,7 @@ static const wchar_t *shader_string(shader_stage stage) {
 	}
 	}
 }
+#endif
 
 int compile_hlsl_to_d3d12(const char *source, uint8_t **output, size_t *outputlength, shader_stage stage, bool debug) {
 #ifdef _WIN32

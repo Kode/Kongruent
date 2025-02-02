@@ -36,9 +36,9 @@ static char *type_string(type_id type) {
 	return get_name(get_type(type)->name);
 }
 
-static char *function_string(name_id func) {
-	return get_name(func);
-}
+//static char *function_string(name_id func) {
+//	return get_name(func);
+//}
 
 static void write_code(char *wgsl, char *directory, const char *filename) {
 	char full_filename[512];

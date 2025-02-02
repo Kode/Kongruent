@@ -17,6 +17,7 @@
 #include <stdint.h>
 #endif
 
+#ifdef _WIN32
 static const char *shaderString(shader_stage stage, int version) {
 	if (version == 4) {
 		switch (stage) {
@@ -26,6 +27,9 @@ static const char *shaderString(shader_stage stage, int version) {
 			return "ps_4_0";
 		case SHADER_STAGE_COMPUTE:
 			return "cs_4_0";
+		default:
+			assert(false);
+			return "";
 		}
 	}
 	else if (version == 5) {
@@ -36,6 +40,9 @@ static const char *shaderString(shader_stage stage, int version) {
 			return "ps_5_0";
 		case SHADER_STAGE_COMPUTE:
 			return "cs_5_0";
+		default:
+			assert(false);
+			return "";
 		}
 	}
 
@@ -43,10 +50,7 @@ static const char *shaderString(shader_stage stage, int version) {
 	error(context, "Unsupported shader stage/version combination");
 	return "unsupported";
 }
-
-struct map {
-	int nothing;
-};
+#endif
 
 int compile_hlsl_to_d3d11(const char *source, uint8_t **output, size_t *outputlength, shader_stage stage, bool debug) {
 #ifdef _WIN32

@@ -349,13 +349,13 @@ static spirv_id write_type_float(instructions_buffer *instructions, uint32_t wid
 	return float_type;
 }
 
-static spirv_id write_type_vector(instructions_buffer *instructions, spirv_id component_type, uint32_t component_count) {
-	spirv_id vector_type = allocate_index();
-
-	uint32_t operands[] = {vector_type.id, component_type.id, component_count};
-	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_VECTOR, operands);
-	return vector_type;
-}
+//static spirv_id write_type_vector(instructions_buffer *instructions, spirv_id component_type, uint32_t component_count) {
+//	spirv_id vector_type = allocate_index();
+//
+//	uint32_t operands[] = {vector_type.id, component_type.id, component_count};
+//	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_VECTOR, operands);
+//	return vector_type;
+//}
 
 static spirv_id write_type_vector_preallocated(instructions_buffer *instructions, spirv_id component_type, uint32_t component_count, spirv_id vector_type) {
 	uint32_t operands[] = {vector_type.id, component_type.id, component_count};
@@ -569,11 +569,11 @@ static spirv_id write_op_function_preallocated(instructions_buffer *instructions
 	return result;
 }
 
-static spirv_id write_op_function(instructions_buffer *instructions, spirv_id result_type, function_control control, spirv_id function_type) {
-	spirv_id result = allocate_index();
-	write_op_function_preallocated(instructions, result_type, control, function_type, result);
-	return result;
-}
+//static spirv_id write_op_function(instructions_buffer *instructions, spirv_id result_type, function_control control, spirv_id function_type) {
+//	spirv_id result = allocate_index();
+//	write_op_function_preallocated(instructions, result_type, control, function_type, result);
+//	return result;
+//}
 
 static spirv_id write_op_label(instructions_buffer *instructions) {
 	spirv_id result = allocate_index();
@@ -721,13 +721,13 @@ static spirv_id write_op_variable_preallocated(instructions_buffer *instructions
 	return result;
 }
 
-static spirv_id write_op_variable_with_initializer(instructions_buffer *instructions, uint32_t result_type, storage_class storage, uint32_t initializer) {
-	spirv_id result = allocate_index();
-
-	uint32_t operands[] = {result_type, result.id, (uint32_t)storage, initializer};
-	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_VARIABLE, operands);
-	return result;
-}
+//static spirv_id write_op_variable_with_initializer(instructions_buffer *instructions, uint32_t result_type, storage_class storage, uint32_t initializer) {
+//	spirv_id result = allocate_index();
+//
+//	uint32_t operands[] = {result_type, result.id, (uint32_t)storage, initializer};
+//	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_VARIABLE, operands);
+//	return result;
+//}
 
 static struct {
 	uint64_t key;

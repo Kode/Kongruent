@@ -491,7 +491,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 
 	if (e->type.type == NO_TYPE) {
 		debug_context context = {0};
-		const char *n = get_name(e->call.func_name);
+		//const char *n = get_name(e->call.func_name);
 		error(context, "Could not resolve type");
 	}
 }

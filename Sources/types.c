@@ -670,9 +670,7 @@ void types_init(void) {
 		get_type(ray_type_id)->built_in = true;
 
 		type *t = get_type(ray_type_id);
-
-		debug_context context = {0};
-
+		
 		t->members.m[t->members.size].name = add_name("origin");
 		t->members.m[t->members.size].type.type = float3_id;
 		t->members.m[t->members.size].type.array_size = 0;
@@ -759,4 +757,22 @@ type *get_type(type_id s) {
 		return NULL;
 	}
 	return &types[s];
+}
+
+bool has_attribute(attribute_list *attributes, name_id name) {
+	for (uint8_t index = 0; index < attributes->attributes_count; ++index) {
+		if (attributes->attributes[index].name == name) {
+			return true;
+		}
+	}
+	return false;
+}
+
+attribute *find_attribute(attribute_list *attributes, name_id name) {
+	for (uint8_t index = 0; index < attributes->attributes_count; ++index) {
+		if (attributes->attributes[index].name == name) {
+			return &attributes->attributes[index];
+		}
+	}
+	return NULL;
 }

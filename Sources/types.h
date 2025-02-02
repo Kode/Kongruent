@@ -42,23 +42,9 @@ typedef struct attributes {
 	uint8_t attributes_count;
 } attribute_list;
 
-static bool has_attribute(attribute_list *attributes, name_id name) {
-	for (uint8_t index = 0; index < attributes->attributes_count; ++index) {
-		if (attributes->attributes[index].name == name) {
-			return true;
-		}
-	}
-	return false;
-}
+bool has_attribute(attribute_list *attributes, name_id name);
 
-static attribute *find_attribute(attribute_list *attributes, name_id name) {
-	for (uint8_t index = 0; index < attributes->attributes_count; ++index) {
-		if (attributes->attributes[index].name == name) {
-			return &attributes->attributes[index];
-		}
-	}
-	return NULL;
-}
+attribute *find_attribute(attribute_list *attributes, name_id name);
 
 typedef struct type {
 	attribute_list attributes;

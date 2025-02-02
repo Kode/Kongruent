@@ -86,6 +86,9 @@ void find_referenced_globals(function *f, global_id *globals, size_t *globals_si
 				}
 				break;
 			}
+			default:
+				assert(false);
+				break;
 			}
 
 			index += o->size;
@@ -132,6 +135,9 @@ void find_referenced_functions(function *f, function **functions, size_t *functi
 			}
 			break;
 		}
+		default:
+			assert(false);
+			break;
 		}
 
 		index += o->size;
@@ -182,6 +188,9 @@ void find_referenced_types(function *f, type_id *types, size_t *types_size) {
 			switch (o->type) {
 			case OPCODE_VAR:
 				add_found_type(o->op_var.var.type.type, types, types_size);
+				break;
+			default:
+				assert(false);
 				break;
 			}
 
