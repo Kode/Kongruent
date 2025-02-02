@@ -89,6 +89,20 @@ static const char *structure_type(type_id type, api_kind api) {
 			return "KOPE_METAL_VERTEX_FORMAT_FLOAT32X4";
 		}
 	}
+	else if (api == API_VULKAN) {
+		if (type == float_id) {
+			return "KOPE_VULKAN_VERTEX_FORMAT_FLOAT32";
+		}
+		if (type == float2_id) {
+			return "KOPE_VULKAN_VERTEX_FORMAT_FLOAT32X2";
+		}
+		if (type == float3_id) {
+			return "KOPE_VULKAN_VERTEX_FORMAT_FLOAT32X3";
+		}
+		if (type == float4_id) {
+			return "KOPE_VULKAN_VERTEX_FORMAT_FLOAT32X4";
+		}
+	}
 	debug_context context = {0};
 	error(context, "Unknown type for vertex structure");
 	return "UNKNOWN";
