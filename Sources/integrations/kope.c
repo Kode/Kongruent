@@ -399,8 +399,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					fprintf(output, "\tranges%i[%zu].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;\n", table_index, range_index);
 					fprintf(output, "\tranges%i[%zu].BaseShaderRegister = %i;\n", table_index, range_index, cbv_index);
 					fprintf(output, "\tranges%i[%zu].NumDescriptors = 1;\n", table_index, range_index);
-					fprintf(output, "\tranges%i[%zu].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
-					        range_index);
+					fprintf(output, "\tranges%i[%zu].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index, range_index);
 
 					cbv_index += 1;
 
@@ -440,8 +439,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					fprintf(output, "\tranges%i[%zu].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;\n", table_index, range_index);
 					fprintf(output, "\tranges%i[%zu].BaseShaderRegister = %i;\n", table_index, range_index, srv_index);
 					fprintf(output, "\tranges%i[%zu].NumDescriptors = 1;\n", table_index, range_index);
-					fprintf(output, "\tranges%i[%zu].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
-					        range_index);
+					fprintf(output, "\tranges%i[%zu].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index, range_index);
 
 					srv_index += 1;
 
@@ -486,8 +484,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					fprintf(output, "\tranges%i[%zu].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;\n", table_index, range_index);
 					fprintf(output, "\tranges%i[%zu].BaseShaderRegister = %i;\n", table_index, range_index, sampler_index);
 					fprintf(output, "\tranges%i[%zu].NumDescriptors = 1;\n", table_index, range_index);
-					fprintf(output, "\tranges%i[%zu].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index,
-					        range_index);
+					fprintf(output, "\tranges%i[%zu].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index, range_index);
 					sampler_index += 1;
 					break;
 				default:
@@ -866,7 +863,7 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t%s_SET_UPDATE_%s,\n", upper_set_name, upper_definition_name);
 					break;
 				CASE_TEXTURE: {
-					//type *t = get_type(get_global(d.global)->type);
+					// type *t = get_type(get_global(d.global)->type);
 					fprintf(output, "\t\t%s_SET_UPDATE_%s,\n", upper_set_name, upper_definition_name);
 					break;
 				}
@@ -1028,7 +1025,7 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "void kong_create_buffer_%s(kope_g5_device * device, size_t count, %s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
 			fprintf(output, "\tkope_g5_buffer_parameters parameters;\n");
 			fprintf(output, "\tparameters.size = count * sizeof(%s);\n", get_name(t->name));
-			fprintf(output, "\tparameters.usage_flags = KOPE_G5_BUFFER_USAGE_CPU_WRITE;\n");
+			fprintf(output, "\tparameters.usage_flags = KOPE_G5_BUFFER_USAGE_VERTEX | KOPE_G5_BUFFER_USAGE_CPU_WRITE;\n");
 			fprintf(output, "\tkope_g5_device_create_buffer(device, &parameters, &buffer->buffer);\n");
 			fprintf(output, "\tbuffer->count = count;\n");
 			fprintf(output, "}\n\n");
@@ -1046,8 +1043,8 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "void kong_set_vertex_buffer_%s(kope_g5_command_list *list, %s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
-			fprintf(output, "\tkope_%s_command_list_set_vertex_buffer(list, %zu, &buffer->buffer.%s, 0, buffer->count * sizeof(%s), sizeof(%s));\n",
-			        api_short, vertex_input_slots[i], api_short, get_name(t->name), get_name(t->name));
+			fprintf(output, "\tkope_%s_command_list_set_vertex_buffer(list, %zu, &buffer->buffer.%s, 0, buffer->count * sizeof(%s), sizeof(%s));\n", api_short,
+			        vertex_input_slots[i], api_short, get_name(t->name), get_name(t->name));
 			fprintf(output, "}\n\n");
 		}
 
@@ -1227,8 +1224,8 @@ void kope_export(char *directory, api_kind api) {
 				}
 			}
 
-			fprintf(output, "\tkope_%s_device_create_descriptor_set(device, %zu, %zu, %zu, %zu, &set->set);\n", api_short,
-			        other_count, dynamic_count, bindless_count, sampler_count);
+			fprintf(output, "\tkope_%s_device_create_descriptor_set(device, %zu, %zu, %zu, %zu, &set->set);\n", api_short, other_count, dynamic_count,
+			        bindless_count, sampler_count);
 
 			size_t other_index = 0;
 			size_t sampler_index = 0;
@@ -1504,12 +1501,13 @@ void kope_export(char *directory, api_kind api) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("vertex")) {
 						if (api == API_METAL) {
-							fprintf(output, "\t%s_parameters.vertex.shader.function_name = \"%s\";\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
+							fprintf(output, "\t%s_parameters.vertex.shader.function_name = \"%s\";\n", get_name(t->name),
+							        get_name(t->members.m[j].value.identifier));
 						}
 						else {
 							fprintf(output, "\t%s_parameters.vertex.shader.data = %s_code;\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
 							fprintf(output, "\t%s_parameters.vertex.shader.size = %s_code_size;\n\n", get_name(t->name),
-									get_name(t->members.m[j].value.identifier));
+							        get_name(t->members.m[j].value.identifier));
 						}
 						vertex_shader_name = t->members.m[j].value.identifier;
 					}
@@ -1521,12 +1519,13 @@ void kope_export(char *directory, api_kind api) {
 					}
 					else if (t->members.m[j].name == add_name("fragment")) {
 						if (api == API_METAL) {
-							fprintf(output, "\t%s_parameters.fragment.shader.function_name = \"%s\";\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
+							fprintf(output, "\t%s_parameters.fragment.shader.function_name = \"%s\";\n", get_name(t->name),
+							        get_name(t->members.m[j].value.identifier));
 						}
 						else {
 							fprintf(output, "\t%s_parameters.fragment.shader.data = %s_code;\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
 							fprintf(output, "\t%s_parameters.fragment.shader.size = %s_code_size;\n\n", get_name(t->name),
-									get_name(t->members.m[j].value.identifier));
+							        get_name(t->members.m[j].value.identifier));
 						}
 						fragment_shader_name = t->members.m[j].value.identifier;
 					}
@@ -1644,12 +1643,12 @@ void kope_export(char *directory, api_kind api) {
 								        structure_type(vertex_type->members.m[j].type.type, api));
 							}
 							else {
-								fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].format = %s;\n", get_name(t->name),
-								        input_index, j, structure_type(vertex_type->members.m[j].type.type, api));
-								fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].offset = %zu;\n",
-								        get_name(t->name), input_index, j, offset);
-								fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].shader_location = %zu;\n",
-								        get_name(t->name), input_index, j, location);
+								fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].format = %s;\n", get_name(t->name), input_index, j,
+								        structure_type(vertex_type->members.m[j].type.type, api));
+								fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].offset = %zu;\n", get_name(t->name), input_index, j,
+								        offset);
+								fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].shader_location = %zu;\n", get_name(t->name), input_index,
+								        j, location);
 							}
 
 							offset += base_type_size(vertex_type->members.m[j].type.type);
