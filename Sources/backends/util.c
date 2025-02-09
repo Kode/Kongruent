@@ -188,7 +188,6 @@ void find_referenced_types(function *f, type_id *types, size_t *types_size) {
 				add_found_type(o->op_var.var.type.type, types, types_size);
 				break;
 			default:
-				assert(false);
 				break;
 			}
 
