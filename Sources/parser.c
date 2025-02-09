@@ -16,9 +16,9 @@ static statement *statement_allocate(void) {
 	return s;
 }
 
-//static void statement_free(statement *statement) {
+// static void statement_free(statement *statement) {
 //	free(statement);
-//}
+// }
 
 static void statements_init(statements *statements) {
 	statements->size = 0;
@@ -37,9 +37,9 @@ static expression *expression_allocate(void) {
 	return e;
 }
 
-//static void expression_free(expression *expression) {
+// static void expression_free(expression *expression) {
 //	free(expression);
-//}
+// }
 
 typedef struct state {
 	tokens *tokens;
@@ -137,14 +137,14 @@ typedef struct modifiers {
 	size_t size;
 } modifiers_t;
 
-//static void modifiers_init(modifiers_t *modifiers) {
+// static void modifiers_init(modifiers_t *modifiers) {
 //	modifiers->size = 0;
-//}
+// }
 
-//static void modifiers_add(modifiers_t *modifiers, modifier_t modifier) {
+// static void modifiers_add(modifiers_t *modifiers, modifier_t modifier) {
 //	modifiers->m[modifiers->size] = modifier;
 //	modifiers->size += 1;
-//}
+// }
 
 static definition parse_struct(state_t *state);
 static definition parse_function(state_t *state);
@@ -980,6 +980,12 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 			    current(state).kind == TOKEN_IDENTIFIER) {
 				member_values[count] = current(state);
 				advance_state(state);
+
+				if (current(state).kind == TOKEN_LEFT_PAREN) {
+					advance_state(state);
+					match_token(state, TOKEN_RIGHT_PAREN, "Expected a right paren");
+					advance_state(state);
+				}
 			}
 			else {
 				debug_context context = {0};
