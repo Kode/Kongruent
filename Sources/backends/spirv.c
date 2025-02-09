@@ -349,13 +349,13 @@ static spirv_id write_type_float(instructions_buffer *instructions, uint32_t wid
 	return float_type;
 }
 
-//static spirv_id write_type_vector(instructions_buffer *instructions, spirv_id component_type, uint32_t component_count) {
+// static spirv_id write_type_vector(instructions_buffer *instructions, spirv_id component_type, uint32_t component_count) {
 //	spirv_id vector_type = allocate_index();
 //
 //	uint32_t operands[] = {vector_type.id, component_type.id, component_count};
 //	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_VECTOR, operands);
 //	return vector_type;
-//}
+// }
 
 static spirv_id write_type_vector_preallocated(instructions_buffer *instructions, spirv_id component_type, uint32_t component_count, spirv_id vector_type) {
 	uint32_t operands[] = {vector_type.id, component_type.id, component_count};
@@ -569,11 +569,11 @@ static spirv_id write_op_function_preallocated(instructions_buffer *instructions
 	return result;
 }
 
-//static spirv_id write_op_function(instructions_buffer *instructions, spirv_id result_type, function_control control, spirv_id function_type) {
+// static spirv_id write_op_function(instructions_buffer *instructions, spirv_id result_type, function_control control, spirv_id function_type) {
 //	spirv_id result = allocate_index();
 //	write_op_function_preallocated(instructions, result_type, control, function_type, result);
 //	return result;
-//}
+// }
 
 static spirv_id write_op_label(instructions_buffer *instructions) {
 	spirv_id result = allocate_index();
@@ -721,13 +721,13 @@ static spirv_id write_op_variable_preallocated(instructions_buffer *instructions
 	return result;
 }
 
-//static spirv_id write_op_variable_with_initializer(instructions_buffer *instructions, uint32_t result_type, storage_class storage, uint32_t initializer) {
+// static spirv_id write_op_variable_with_initializer(instructions_buffer *instructions, uint32_t result_type, storage_class storage, uint32_t initializer) {
 //	spirv_id result = allocate_index();
 //
 //	uint32_t operands[] = {result_type, result.id, (uint32_t)storage, initializer};
 //	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_VARIABLE, operands);
 //	return result;
-//}
+// }
 
 static struct {
 	uint64_t key;
@@ -972,9 +972,14 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				write_op_return(instructions);
 			}
 			else if (stage == SHADER_STAGE_FRAGMENT && main) {
-				spirv_id object =
-				    write_op_load(instructions, convert_type_to_spirv_id(o->op_return.var.type.type), convert_kong_index_to_spirv_id(o->op_return.var.index));
-				write_op_store(instructions, output_var, object);
+				if (false /*TODO*/) {
+					spirv_id object = write_op_load(instructions, convert_type_to_spirv_id(o->op_return.var.type.type),
+					                                convert_kong_index_to_spirv_id(o->op_return.var.index));
+					write_op_store(instructions, output_var, object);
+				}
+				else {
+					write_op_store(instructions, output_var, convert_kong_index_to_spirv_id(o->op_return.var.index));
+				}
 				write_op_return(instructions);
 			}
 			ends_with_return = true;
@@ -1327,10 +1332,12 @@ void spirv_export(char *directory) {
 	}
 
 	for (size_t i = 0; i < vertex_shaders_size; ++i) {
+		input_vars_count = 0;
 		spirv_export_vertex(directory, vertex_shaders[i]);
 	}
 
 	for (size_t i = 0; i < fragment_shaders_size; ++i) {
+		input_vars_count = 0;
 		spirv_export_fragment(directory, fragment_shaders[i]);
 	}
 }
