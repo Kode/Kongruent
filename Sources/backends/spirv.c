@@ -143,6 +143,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_DECORATE = 71,
 	SPIRV_OPCODE_MEMBER_DECORATE = 72,
 	SPIRV_OPCODE_COMPOSITE_CONSTRUCT = 80,
+	SPIRV_OPCODE_F_MUL = 133,
 	SPIRV_OPCODE_F_ORD_LESS_THAN = 184,
 	SPIRV_OPCODE_LOOP_MERGE = 246,
 	SPIRV_OPCODE_SELECTION_MERGE = 247,
@@ -697,6 +698,16 @@ static spirv_id write_op_f_ord_less_than(instructions_buffer *instructions, spir
 	return result;
 }
 
+static spirv_id write_op_f_mul(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_F_MUL, operands);
+
+	return result;
+}
+
 static void write_op_selection_merge(instructions_buffer *instructions, spirv_id merge_block, selection_control control) {
 	uint32_t operands[] = {merge_block.id, (uint32_t)control};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_SELECTION_MERGE, operands);
@@ -988,6 +999,12 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		case OPCODE_LESS: {
 			spirv_id result = write_op_f_ord_less_than(instructions, spirv_bool_type, convert_kong_index_to_spirv_id(o->op_binary.left.index),
 			                                           convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			hmput(index_map, o->op_binary.result.index, result);
+			break;
+		}
+		case OPCODE_MULTIPLY: {
+			spirv_id result = write_op_f_mul(instructions, spirv_bool_type, convert_kong_index_to_spirv_id(o->op_binary.left.index),
+			                                 convert_kong_index_to_spirv_id(o->op_binary.right.index));
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
