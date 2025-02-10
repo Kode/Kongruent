@@ -819,7 +819,6 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				}
 				default:
-					assert(false);
 					break;
 				}
 			}
@@ -839,7 +838,6 @@ void kope_export(char *directory, api_kind api) {
 					}
 					break;
 				default:
-					assert(false);
 					break;
 				}
 			}
@@ -868,7 +866,6 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				}
 				default:
-					assert(false);
 					break;
 				}
 			}
@@ -899,7 +896,6 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				}
 				default:
-					assert(false);
 					break;
 				}
 			}
@@ -1338,7 +1334,6 @@ void kope_export(char *directory, api_kind api) {
 					}
 					break;
 				default:
-					assert(false);
 					break;
 				}
 			}
@@ -1379,7 +1374,6 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				}
 				default:
-					assert(false);
 					break;
 				}
 			}
@@ -1397,7 +1391,6 @@ void kope_export(char *directory, api_kind api) {
 						}
 						break;
 					default:
-						assert(false);
 						break;
 					}
 				}
@@ -1423,7 +1416,6 @@ void kope_export(char *directory, api_kind api) {
 							}
 							break;
 						default:
-							assert(false);
 							break;
 						}
 					}
