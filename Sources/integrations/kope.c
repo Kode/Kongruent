@@ -309,8 +309,8 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 
 	uint32_t table_count = 0;
 
-	for (size_t set_count = 0; set_count < all_descriptor_sets_count; ++set_count) {
-		descriptor_set *set = all_descriptor_sets[set_count];
+	for (size_t set_index = 0; set_index < all_descriptor_sets_count; ++set_index) {
+		descriptor_set *set = all_descriptor_sets[set_index];
 
 		bool has_sampler = false;
 		bool has_other = false;
@@ -1904,6 +1904,96 @@ void kope_export(char *directory, api_kind api) {
 				fprintf(output, "}\n");
 			}
 		}
+
+		fclose(output);
+	}
+	else if (api == API_VULKAN) {
+		char filename[512];
+		sprintf(filename, "%s/%s", directory, "kong_descriptor_sets.cpp");
+
+		FILE *output = fopen(filename, "wb");
+
+		fprintf(output, "#include <kope/vulkan/vulkanunit.h>\n");
+		fprintf(output, "#include <kope/graphics5/device.h>\n\n");
+
+		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
+			descriptor_set *set = sets[set_index];
+
+			fprintf(output, "VkDescriptorSetLayout %s_set_layout;\n", get_name(set->name));
+		}
+
+		fprintf(output, "\n");
+
+		fprintf(output, "void create_descriptor_set_layouts(kope_g5_device *device) {\n");
+
+		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
+			descriptor_set *set = sets[set_index];
+
+			fprintf(output, "\t{\n");
+
+			fprintf(output, "\t\tVkDescriptorSetLayoutBinding layout_bindings[%zu]\n", set->definitions_count);
+
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				switch (set->definitions[definition_index].kind) {
+				case DEFINITION_FUNCTION:
+					break;
+				case DEFINITION_STRUCT:
+					break;
+				case DEFINITION_TEX2D:
+					fprintf(output, "\t\tlayout_bindings[%zu] = {\n", definition_index);
+					fprintf(output, "\t\t\t.binding = %zu,\n", definition_index);
+					fprintf(output, "\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
+					fprintf(output, "\t\t\t.descriptorCount = 1,\n");
+					fprintf(output, "\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
+					fprintf(output, "\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t};\n");
+					break;
+				case DEFINITION_TEX2DARRAY:
+					break;
+				case DEFINITION_TEXCUBE:
+					break;
+				case DEFINITION_SAMPLER:
+					fprintf(output, "\t\tlayout_bindings[%zu] = {\n", definition_index);
+					fprintf(output, "\t\t\t.binding = %zu,\n", definition_index);
+					fprintf(output, "\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,\n");
+					fprintf(output, "\t\t\t.descriptorCount = 1,\n");
+					fprintf(output, "\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
+					fprintf(output, "\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t};\n");
+					break;
+				case DEFINITION_CONST_CUSTOM:
+					fprintf(output, "\t\tlayout_bindings[%zu] = {\n", definition_index);
+					fprintf(output, "\t\t\t.binding = %zu,\n", definition_index);
+					fprintf(output, "\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,\n");
+					fprintf(output, "\t\t\t.descriptorCount = 1,\n");
+					fprintf(output, "\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
+					fprintf(output, "\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t};\n");
+					break;
+				case DEFINITION_CONST_BASIC:
+					break;
+				case DEFINITION_BVH:
+					break;
+				}
+			}
+
+			fprintf(output, "\n");
+
+			fprintf(output, "\t\tVkDescriptorSetLayoutCreateInfo layout_create_info = {\n");
+			fprintf(output, "\t\t\t.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,\n");
+			fprintf(output, "\t\t\t.pNext = NULL,\n");
+			fprintf(output, "\t\t\t.bindingCount = %zu,\n", set->definitions_count);
+			fprintf(output, "\t\t\t.pBindings = layout_bindings,\n");
+			fprintf(output, "\t\t};\n");
+
+			fprintf(output, "\t\tVkResult result = vkCreateDescriptorSetLayout(device->vulkan.device, &layout_create_info, NULL, &%s_set_layout);\n",
+			        get_name(set->name));
+			fprintf(output, "\t\tassert(result == VK_SUCCESS);\n");
+
+			fprintf(output, "\t}\n");
+		}
+
+		fprintf(output, "}\n");
 
 		fclose(output);
 	}
