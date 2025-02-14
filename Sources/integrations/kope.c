@@ -1942,7 +1942,7 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_STRUCT:
 					break;
 				case DEFINITION_TEX2D:
-					fprintf(output, "\t\t\t{\n", definition_index);
+					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", definition_index);
 					fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
 					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
@@ -1955,7 +1955,7 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_TEXCUBE:
 					break;
 				case DEFINITION_SAMPLER:
-					fprintf(output, "\t\t\t{\n", definition_index);
+					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", definition_index);
 					fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,\n");
 					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
@@ -1964,7 +1964,7 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t},\n");
 					break;
 				case DEFINITION_CONST_CUSTOM:
-					fprintf(output, "\t\t\t{\n", definition_index);
+					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", definition_index);
 					fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,\n");
 					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
