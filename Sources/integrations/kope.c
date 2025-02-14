@@ -1936,7 +1936,9 @@ void kope_export(char *directory, api_kind api) {
 			fprintf(output, "\t\tVkDescriptorSetLayoutBinding layout_bindings[%zu] = {\n", set->definitions_count);
 
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				switch (set->definitions[definition_index].kind) {
+				definition def = set->definitions[definition_index];
+
+				switch (def.kind) {
 				case DEFINITION_FUNCTION:
 					break;
 				case DEFINITION_STRUCT:
@@ -1944,7 +1946,12 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_TEX2D:
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", definition_index);
-					fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
+					if (has_attribute(&get_global(def.global)->attributes, add_name("write"))) {
+						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
+					}
+					else {
+						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
+					}
 					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
 					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
 					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
@@ -1963,15 +1970,31 @@ void kope_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
 					fprintf(output, "\t\t\t},\n");
 					break;
-				case DEFINITION_CONST_CUSTOM:
+				case DEFINITION_CONST_CUSTOM: {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", definition_index);
-					fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,\n");
+					if (has_attribute(&get_global(def.global)->attributes, add_name("write"))) {
+						if (has_attribute(&get_global(def.global)->attributes, add_name("indexed"))) {
+							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,\n");
+						}
+						else {
+							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,\n");
+						}
+					}
+					else {
+						if (has_attribute(&get_global(def.global)->attributes, add_name("indexed"))) {
+							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,\n");
+						}
+						else {
+							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,\n");
+						}
+					}
 					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
 					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
 					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
 					fprintf(output, "\t\t\t},\n");
 					break;
+				}
 				case DEFINITION_CONST_BASIC:
 					break;
 				case DEFINITION_BVH:
