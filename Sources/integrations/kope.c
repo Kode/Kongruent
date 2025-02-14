@@ -1909,12 +1909,14 @@ void kope_export(char *directory, api_kind api) {
 	}
 	else if (api == API_VULKAN) {
 		char filename[512];
-		sprintf(filename, "%s/%s", directory, "kong_descriptor_sets.cpp");
+		sprintf(filename, "%s/%s", directory, "kong_descriptor_sets.c");
 
 		FILE *output = fopen(filename, "wb");
 
 		fprintf(output, "#include <kope/vulkan/vulkanunit.h>\n");
 		fprintf(output, "#include <kope/graphics5/device.h>\n\n");
+
+		fprintf(output, "#include <assert.h>\n\n");
 
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
@@ -1931,7 +1933,7 @@ void kope_export(char *directory, api_kind api) {
 
 			fprintf(output, "\t{\n");
 
-			fprintf(output, "\t\tVkDescriptorSetLayoutBinding layout_bindings[%zu]\n", set->definitions_count);
+			fprintf(output, "\t\tVkDescriptorSetLayoutBinding layout_bindings[%zu] = {\n", set->definitions_count);
 
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 				switch (set->definitions[definition_index].kind) {
@@ -1940,35 +1942,35 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_STRUCT:
 					break;
 				case DEFINITION_TEX2D:
-					fprintf(output, "\t\tlayout_bindings[%zu] = {\n", definition_index);
-					fprintf(output, "\t\t\t.binding = %zu,\n", definition_index);
-					fprintf(output, "\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
-					fprintf(output, "\t\t\t.descriptorCount = 1,\n");
-					fprintf(output, "\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
-					fprintf(output, "\t\t\t.pImmutableSamplers = NULL,\n");
-					fprintf(output, "\t\t};\n");
+					fprintf(output, "\t\t\t{\n", definition_index);
+					fprintf(output, "\t\t\t\t.binding = %zu,\n", definition_index);
+					fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
+					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
+					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
+					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t\t},\n");
 					break;
 				case DEFINITION_TEX2DARRAY:
 					break;
 				case DEFINITION_TEXCUBE:
 					break;
 				case DEFINITION_SAMPLER:
-					fprintf(output, "\t\tlayout_bindings[%zu] = {\n", definition_index);
-					fprintf(output, "\t\t\t.binding = %zu,\n", definition_index);
-					fprintf(output, "\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,\n");
-					fprintf(output, "\t\t\t.descriptorCount = 1,\n");
-					fprintf(output, "\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
-					fprintf(output, "\t\t\t.pImmutableSamplers = NULL,\n");
-					fprintf(output, "\t\t};\n");
+					fprintf(output, "\t\t\t{\n", definition_index);
+					fprintf(output, "\t\t\t\t.binding = %zu,\n", definition_index);
+					fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,\n");
+					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
+					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
+					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t\t},\n");
 					break;
 				case DEFINITION_CONST_CUSTOM:
-					fprintf(output, "\t\tlayout_bindings[%zu] = {\n", definition_index);
-					fprintf(output, "\t\t\t.binding = %zu,\n", definition_index);
-					fprintf(output, "\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,\n");
-					fprintf(output, "\t\t\t.descriptorCount = 1,\n");
-					fprintf(output, "\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
-					fprintf(output, "\t\t\t.pImmutableSamplers = NULL,\n");
-					fprintf(output, "\t\t};\n");
+					fprintf(output, "\t\t\t{\n", definition_index);
+					fprintf(output, "\t\t\t\t.binding = %zu,\n", definition_index);
+					fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,\n");
+					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
+					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
+					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t\t},\n");
 					break;
 				case DEFINITION_CONST_BASIC:
 					break;
@@ -1976,6 +1978,8 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				}
 			}
+
+			fprintf(output, "\t\t};\n");
 
 			fprintf(output, "\n");
 
