@@ -1015,6 +1015,10 @@ void kope_export(char *directory, api_kind api) {
 		fprintf(output, "#include <assert.h>\n");
 		fprintf(output, "#include <stdlib.h>\n\n");
 
+		if (api == API_VULKAN) {
+			fprintf(output, "#include <kope/vulkan/vulkanunit.h>\n\n");
+		}
+
 		for (size_t i = 0; i < vertex_inputs_size; ++i) {
 			type *t = get_type(vertex_inputs[i]);
 
@@ -1181,6 +1185,10 @@ void kope_export(char *directory, api_kind api) {
 				continue;
 			}
 
+			if (api == API_VULKAN) {
+				fprintf(output, "extern VkDescriptorSetLayout %s_set_layout;\n\n", get_name(set->name));
+			}
+
 			fprintf(output, "void kong_create_%s_set(kope_g5_device *device, const %s_parameters *parameters, %s_set *set) {\n", get_name(set->name),
 			        get_name(set->name), get_name(set->name));
 
@@ -1220,8 +1228,13 @@ void kope_export(char *directory, api_kind api) {
 				}
 			}
 
-			fprintf(output, "\tkope_%s_device_create_descriptor_set(device, %zu, %zu, %zu, %zu, &set->set);\n", api_short, other_count, dynamic_count,
-			        bindless_count, sampler_count);
+			if (api == API_VULKAN) {
+				fprintf(output, "\tkope_%s_device_create_descriptor_set(device, &%s_set_layout, &set->set);\n", api_short, get_name(set->name));
+			}
+			else {
+				fprintf(output, "\tkope_%s_device_create_descriptor_set(device, %zu, %zu, %zu, %zu, &set->set);\n", api_short, other_count, dynamic_count,
+				        bindless_count, sampler_count);
+			}
 
 			size_t other_index = 0;
 			size_t sampler_index = 0;
