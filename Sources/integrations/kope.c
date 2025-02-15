@@ -1229,7 +1229,7 @@ void kope_export(char *directory, api_kind api) {
 			}
 
 			if (api == API_VULKAN) {
-				fprintf(output, "\tkope_%s_device_create_descriptor_set(device, &%s_set_layout, &set->set);\n", api_short, get_name(set->name));
+				fprintf(output, "\tkope_vulkan_device_create_descriptor_set(device, &%s_set_layout, &set->set);\n", get_name(set->name));
 			}
 			else {
 				fprintf(output, "\tkope_%s_device_create_descriptor_set(device, %zu, %zu, %zu, %zu, &set->set);\n", api_short, other_count, dynamic_count,
@@ -1282,9 +1282,16 @@ void kope_export(char *directory, api_kind api) {
 							        get_name(get_global(d.global)->name), other_index);
 						}
 						else {
-							fprintf(output,
-							        "\tkope_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %zu, &parameters->%s);\n",
-							        api_short, other_index, get_name(get_global(d.global)->name));
+							if (api == API_VULKAN) {
+								fprintf(output, "\tkope_vulkan_descriptor_set_set_texture_view(device, &set->set, &parameters->%s, %zu);\n",
+								        get_name(get_global(d.global)->name), descriptor_index);
+							}
+							else {
+								fprintf(
+								    output,
+								    "\tkope_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %zu, &parameters->%s);\n",
+								    api_short, other_index, get_name(get_global(d.global)->name));
+							}
 						}
 
 						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
@@ -1357,10 +1364,16 @@ void kope_export(char *directory, api_kind api) {
 				switch (d.kind) {
 				case DEFINITION_CONST_CUSTOM:
 					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
-						fprintf(output,
-						        "\tkope_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), align_pow2((int)%i, 256));\n",
-						        api_short, get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), struct_size(get_global(d.global)->type),
-						        struct_size(get_global(d.global)->type));
+						if (api == API_VULKAN) {
+							fprintf(output, "\tkope_vulkan_descriptor_set_prepare_buffer(list, set->%s);\n", get_name(get_global(d.global)->name));
+						}
+						else {
+							fprintf(
+							    output,
+							    "\tkope_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), align_pow2((int)%i, 256));\n",
+							    api_short, get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), struct_size(get_global(d.global)->type),
+							    struct_size(get_global(d.global)->type));
+						}
 					}
 					else {
 						fprintf(output, "\tkope_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short,
@@ -1381,7 +1394,13 @@ void kope_export(char *directory, api_kind api) {
 							fprintf(output, "\tkope_%s_descriptor_set_prepare_uav_texture(list, &set->%s);\n", api_short, get_name(get_global(d.global)->name));
 						}
 						else {
-							fprintf(output, "\tkope_%s_descriptor_set_prepare_srv_texture(list, &set->%s);\n", api_short, get_name(get_global(d.global)->name));
+							if (api == API_VULKAN) {
+								fprintf(output, "\tkope_vulkan_descriptor_set_prepare_texture(list, &set->%s);\n", get_name(get_global(d.global)->name));
+							}
+							else {
+								fprintf(output, "\tkope_%s_descriptor_set_prepare_srv_texture(list, &set->%s);\n", api_short,
+								        get_name(get_global(d.global)->name));
+							}
 						}
 					}
 					break;
