@@ -491,7 +491,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 
 	if (e->type.type == NO_TYPE) {
 		debug_context context = {0};
-		//const char *n = get_name(e->call.func_name);
+		// const char *n = get_name(e->call.func_name);
 		error(context, "Could not resolve type");
 	}
 }
@@ -693,7 +693,6 @@ int main(int argc, char **argv) {
 				}
 				else {
 					bool ok = true;
-					
 
 					if (arg[1] == 0) {
 						kong_log(LOG_LEVEL_WARNING, "Ignoring lonely -.");
@@ -704,7 +703,7 @@ int main(int argc, char **argv) {
 						kong_log(LOG_LEVEL_WARNING, "Ignoring parameter %s because the format is not right (one - implies just one letter).", arg);
 						ok = false;
 					}
-					
+
 					if (ok) {
 						switch (arg[1]) {
 						case 'i':
@@ -867,7 +866,7 @@ int main(int argc, char **argv) {
 
 	kong_log(LOG_LEVEL_INFO, "Types:");
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
-		kong_log(LOG_LEVEL_INFO, "%s", get_name(get_type(i)->name));
+		kong_log(LOG_LEVEL_INFO, "%s (%i)", get_name(get_type(i)->name), i);
 	}
 #endif
 

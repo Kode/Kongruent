@@ -130,6 +130,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_TYPE_INT = 21,
 	SPIRV_OPCODE_TYPE_FLOAT = 22,
 	SPIRV_OPCODE_TYPE_VECTOR = 23,
+	SPIRV_OPCODE_TYPE_MATRIX = 24,
 	SPIRV_OPCODE_TYPE_STRUCT = 30,
 	SPIRV_OPCODE_TYPE_POINTER = 32,
 	SPIRV_OPCODE_TYPE_FUNCTION = 33,
@@ -215,7 +216,13 @@ typedef enum decoration { DECORATION_BLOCK = 2, DECORATION_BUILTIN = 11, DECORAT
 
 typedef enum builtin { BUILTIN_POSITION = 0 } builtin;
 
-typedef enum storage_class { STORAGE_CLASS_INPUT = 1, STORAGE_CLASS_OUTPUT = 3, STORAGE_CLASS_FUNCTION = 7, STORAGE_CLASS_NONE = 9999 } storage_class;
+typedef enum storage_class {
+	STORAGE_CLASS_INPUT = 1,
+	STORAGE_CLASS_UNIFORM = 2,
+	STORAGE_CLASS_OUTPUT = 3,
+	STORAGE_CLASS_FUNCTION = 7,
+	STORAGE_CLASS_NONE = 9999
+} storage_class;
 
 typedef enum selection_control { SELECTION_CONTROL_NONE = 0, SELCTION_CONTROL_FLATTEN = 1, SELECTION_CONTROL_DONT_FLATTEN = 2 } selection_control;
 
@@ -364,6 +371,14 @@ static spirv_id write_type_vector_preallocated(instructions_buffer *instructions
 	return vector_type;
 }
 
+static spirv_id write_type_matrix(instructions_buffer *instructions, spirv_id column_type, uint32_t column_count) {
+	spirv_id matrix_type = allocate_index();
+
+	uint32_t operands[] = {matrix_type.id, column_type.id, column_count};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_MATRIX, operands);
+	return matrix_type;
+}
+
 static spirv_id write_type_int(instructions_buffer *instructions, uint32_t width, bool signedness) {
 	spirv_id int_type = allocate_index();
 
@@ -456,31 +471,50 @@ static spirv_id convert_pointer_type_to_spirv_id(type_id type, storage_class sto
 
 static spirv_id output_struct_pointer_type = {0};
 
-static void write_base_types(instructions_buffer *constants, type_id vertex_input) {
-	void_type = write_type_void(constants);
+static void write_base_type(instructions_buffer *constants_block, type_id type, spirv_id spirv_type) {
+	complex_type ct;
+	ct.pointer = (uint16_t) false;
+	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
+	ct.type = type;
 
-	void_function_type = write_type_function(constants, void_type, NULL, 0);
+	hmput(type_map, ct, spirv_type);
+}
+
+static void write_base_types(instructions_buffer *constants_block) {
+	void_type = write_type_void(constants_block);
+
+	void_function_type = write_type_function(constants_block, void_type, NULL, 0);
 
 	complex_type ct;
 	ct.pointer = (uint16_t) false;
 	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 
-	spirv_float_type = write_type_float(constants, 32);
-	ct.type = float_id;
-	hmput(type_map, ct, spirv_float_type);
+	spirv_float_type = write_type_float(constants_block, 32);
+	write_base_type(constants_block, float_id, spirv_float_type);
 
 	spirv_float2_type = convert_type_to_spirv_id(float2_id);
-	write_type_vector_preallocated(constants, spirv_float_type, 2, spirv_float2_type);
+	write_type_vector_preallocated(constants_block, spirv_float_type, 2, spirv_float2_type);
+	write_base_type(constants_block, float2_id, spirv_float2_type);
 
 	spirv_float3_type = convert_type_to_spirv_id(float3_id);
-	write_type_vector_preallocated(constants, spirv_float_type, 3, spirv_float3_type);
+	write_type_vector_preallocated(constants_block, spirv_float_type, 3, spirv_float3_type);
+	write_base_type(constants_block, float3_id, spirv_float3_type);
 
 	spirv_float4_type = convert_type_to_spirv_id(float4_id);
-	write_type_vector_preallocated(constants, spirv_float_type, 4, spirv_float4_type);
+	write_type_vector_preallocated(constants_block, spirv_float_type, 4, spirv_float4_type);
+	write_base_type(constants_block, float4_id, spirv_float4_type);
 
-	spirv_uint_type = write_type_int(constants, 32, false);
-	spirv_int_type = write_type_int(constants, 32, true);
-	spirv_bool_type = write_type_bool(constants);
+	spirv_uint_type = write_type_int(constants_block, 32, false);
+	write_base_type(constants_block, uint_id, spirv_uint_type);
+
+	spirv_int_type = write_type_int(constants_block, 32, true);
+	write_base_type(constants_block, int_id, spirv_int_type);
+
+	spirv_bool_type = write_type_bool(constants_block);
+	write_base_type(constants_block, bool_id, spirv_bool_type);
+
+	write_base_type(constants_block, float3x3_id, write_type_matrix(constants_block, spirv_float3_type, 3));
+	write_base_type(constants_block, float4x4_id, write_type_matrix(constants_block, spirv_float4_type, 4));
 }
 
 static void write_types(instructions_buffer *constants, function *main) {
@@ -1100,6 +1134,97 @@ static void write_constants(instructions_buffer *instructions) {
 	}
 }
 
+static int global_register_indices[512];
+
+static void write_globals(instructions_buffer *instructions_block, function *main) {
+	global_id globals[256];
+	size_t globals_size = 0;
+
+	if (main != NULL) {
+		find_referenced_globals(main, globals, &globals_size);
+	}
+
+	for (size_t i = 0; i < globals_size; ++i) {
+		global *g = get_global(globals[i]);
+		int register_index = global_register_indices[globals[i]];
+
+		type *t = get_type(g->type);
+		type_id base_type = t->kind == TYPE_ARRAY ? t->array.base : g->type;
+
+		if (base_type == sampler_type_id) {
+			//*offset += sprintf(&hlsl[*offset], "SamplerState _%" PRIu64 " : register(s%i);\n\n", g->var_index, register_index);
+		}
+		else if (base_type == tex2d_type_id) {
+			if (has_attribute(&g->attributes, add_name("write"))) {
+				//*offset += sprintf(&hlsl[*offset], "RWTexture2D<float4> _%" PRIu64 " : register(u%i);\n\n", g->var_index, register_index);
+			}
+			else {
+				if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+					//*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 "[] : register(t%i, space1);\n\n", g->var_index, register_index);
+				}
+				else {
+					//*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
+				}
+			}
+		}
+		else if (base_type == tex2darray_type_id) {
+			//*offset += sprintf(&hlsl[*offset], "Texture2DArray<float4> _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
+		}
+		else if (base_type == texcube_type_id) {
+			//*offset += sprintf(&hlsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
+		}
+		else if (base_type == bvh_type_id) {
+			//*offset += sprintf(&hlsl[*offset], "RaytracingAccelerationStructure  _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
+		}
+		else if (base_type == float_id) {
+			//*offset += sprintf(&hlsl[*offset], "static const float _%" PRIu64 " = %f;\n\n", g->var_index, g->value.value.floats[0]);
+		}
+		else if (base_type == float2_id) {
+			//*offset += sprintf(&hlsl[*offset], "static const float2 _%" PRIu64 " = float2(%f, %f);\n\n", g->var_index, g->value.value.floats[0],
+			// g->value.value.floats[1]);
+		}
+		else if (base_type == float3_id) {
+			//*offset += sprintf(&hlsl[*offset], "static const float3 _%" PRIu64 " = float3(%f, %f, %f);\n\n", g->var_index, g->value.value.floats[0],
+			// g->value.value.floats[1], g->value.value.floats[2]);
+		}
+		else if (base_type == float4_id) {
+			//*offset += sprintf(&hlsl[*offset], "static const float4 _%" PRIu64 " = float4(%f, %f, %f, %f);\n\n", g->var_index, g->value.value.floats[0],
+			// g->value.value.floats[1], g->value.value.floats[2], g->value.value.floats[3]);
+		}
+		else {
+			/**offset += sprintf(&hlsl[*offset], "cbuffer _%" PRIu64 " : register(b%i) {\n", g->var_index, register_index);
+			type *t = get_type(g->type);
+			for (size_t i = 0; i < t->members.size; ++i) {
+			    *offset +=
+			        sprintf(&hlsl[*offset], "\t%s _%" PRIu64 "_%s;\n", type_string(t->members.m[i].type.type), g->var_index, get_name(t->members.m[i].name));
+			}
+			*offset += sprintf(&hlsl[*offset], "}\n\n");*/
+
+			type *t = get_type(g->type);
+
+			spirv_id member_types[256];
+			uint16_t member_types_size = 0;
+			for (size_t j = 0; j < t->members.size; ++j) {
+				member_types[member_types_size] = convert_type_to_spirv_id(t->members.m[j].type.type);
+				member_types_size += 1;
+				assert(member_types_size < 256);
+			}
+			spirv_id struct_type = write_type_struct(instructions_block, member_types, member_types_size);
+
+			complex_type ct;
+			ct.type = g->type;
+			ct.pointer = (uint16_t) false;
+			ct.storage = (uint16_t)STORAGE_CLASS_UNIFORM;
+			hmput(type_map, ct, struct_type);
+
+			spirv_id struct_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM, struct_type);
+
+			spirv_id spirv_var_id = convert_kong_index_to_spirv_id(g->var_index);
+			write_op_variable_preallocated(instructions_block, struct_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM);
+		}
+	}
+}
+
 static void init_index_map(void) {
 	spirv_id default_id = {0};
 	hmdefault(index_map, default_id);
@@ -1188,7 +1313,9 @@ static void spirv_export_vertex(char *directory, function *main) {
 
 	write_vertex_input_decorations(&decorations, input_vars, (uint32_t)input_vars_count);
 
-	write_base_types(&constants, vertex_input);
+	write_base_types(&constants);
+
+	write_globals(&constants, main);
 
 	spirv_id types[] = {spirv_float4_type};
 	spirv_id output_struct = write_type_struct(&constants, types, 1);
@@ -1280,7 +1407,7 @@ static void spirv_export_fragment(char *directory, function *main) {
 	inputs[0] = allocate_index();
 	write_vertex_input_decorations(&decorations, inputs, 1);*/
 
-	write_base_types(&constants, NO_TYPE);
+	write_base_types(&constants);
 
 	write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_OUTPUT), output_var, STORAGE_CLASS_OUTPUT);
 
@@ -1309,6 +1436,45 @@ static void spirv_export_fragment(char *directory, function *main) {
 }
 
 void spirv_export(char *directory) {
+	int register_index = 0;
+
+	memset(global_register_indices, 0, sizeof(global_register_indices));
+
+	for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
+		global *g = get_global(i);
+
+		type *t = get_type(g->type);
+		type_id base_type = t->kind == TYPE_ARRAY ? t->array.base : g->type;
+
+		if (base_type == sampler_type_id) {
+			global_register_indices[i] = register_index;
+			register_index += 1;
+		}
+		else if (base_type == tex2d_type_id) {
+			if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+				global_register_indices[i] = 0;
+			}
+			else if (has_attribute(&g->attributes, add_name("write"))) {
+				global_register_indices[i] = register_index;
+				register_index += 1;
+			}
+			else {
+				global_register_indices[i] = register_index;
+				register_index += 1;
+			}
+		}
+		else if (base_type == texcube_type_id || base_type == tex2darray_type_id || base_type == bvh_type_id) {
+			global_register_indices[i] = register_index;
+			register_index += 1;
+		}
+		else if (get_type(g->type)->built_in) {
+		}
+		else {
+			global_register_indices[i] = register_index;
+			register_index += 1;
+		}
+	}
+
 	function *vertex_shaders[256];
 	size_t vertex_shaders_size = 0;
 
