@@ -60,6 +60,7 @@ variable find_variable(block *parent, name_id name) {
 			init_type_ref(&v.type, NO_NAME);
 			v.type.type = global.g->type;
 			v.index = global.variable_id;
+			v.kind = VARIABLE_GLOBAL;
 			return v;
 		}
 		else {
@@ -594,7 +595,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	}
 	default: {
 		debug_context context = {0};
-		 error(context, "not implemented");
+		error(context, "not implemented");
 	}
 	}
 

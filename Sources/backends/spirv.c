@@ -546,7 +546,7 @@ static void write_types(instructions_buffer *constants, function *main) {
 	size_t size = hmlenu(type_map);
 	for (size_t i = 0; i < size; ++i) {
 		complex_type type = type_map[i].key;
-		if (type.pointer) {
+		if (type.pointer && type.storage != STORAGE_CLASS_UNIFORM) {
 			write_type_pointer_preallocated(constants, type.storage, convert_type_to_spirv_id(type.type), type_map[i].value);
 		}
 	}
@@ -873,12 +873,17 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				storage = STORAGE_CLASS_FUNCTION;
 			}
 			else {
-				storage = STORAGE_CLASS_INPUT;
+				if (o->op_load_member.from.kind == VARIABLE_GLOBAL) {
+					storage = STORAGE_CLASS_UNIFORM;
+				}
+				else {
+					storage = STORAGE_CLASS_INPUT;
+				}
 			}
-			spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(float_id, storage),
+			spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(o->op_load_member.from.type.type, storage),
 			                                         convert_kong_index_to_spirv_id(o->op_load_member.from.index), indices, indices_size);
 
-			spirv_id value = write_op_load(instructions, spirv_float_type, pointer);
+			spirv_id value = write_op_load(instructions, convert_type_to_spirv_id(o->op_load_member.to.type.type), pointer);
 			hmput(index_map, o->op_load_member.to.index, value);
 
 			break;
@@ -901,26 +906,26 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else {
 				if (o->op_call.func == add_name("float2")) {
 					spirv_id constituents[2];
-					for (int i = 0; i < 2; ++i) {
+					for (int i = 0; i < o->op_call.parameters_size; ++i) {
 						constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
 					}
-					spirv_id id = write_op_composite_construct(instructions, spirv_float2_type, constituents, 2);
+					spirv_id id = write_op_composite_construct(instructions, spirv_float2_type, constituents, o->op_call.parameters_size);
 					hmput(index_map, o->op_call.var.index, id);
 				}
 				else if (o->op_call.func == add_name("float3")) {
 					spirv_id constituents[3];
-					for (int i = 0; i < 3; ++i) {
+					for (int i = 0; i < o->op_call.parameters_size; ++i) {
 						constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
 					}
-					spirv_id id = write_op_composite_construct(instructions, spirv_float3_type, constituents, 3);
+					spirv_id id = write_op_composite_construct(instructions, spirv_float3_type, constituents, o->op_call.parameters_size);
 					hmput(index_map, o->op_call.var.index, id);
 				}
 				else if (o->op_call.func == add_name("float4")) {
 					spirv_id constituents[4];
-					for (int i = 0; i < 4; ++i) {
+					for (int i = 0; i < o->op_call.parameters_size; ++i) {
 						constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
 					}
-					spirv_id id = write_op_composite_construct(instructions, spirv_float4_type, constituents, 4);
+					spirv_id id = write_op_composite_construct(instructions, spirv_float4_type, constituents, o->op_call.parameters_size);
 					hmput(index_map, o->op_call.var.index, id);
 				}
 				else {
@@ -1037,8 +1042,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_MULTIPLY: {
-			spirv_id result = write_op_f_mul(instructions, spirv_bool_type, convert_kong_index_to_spirv_id(o->op_binary.left.index),
-			                                 convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			spirv_id result = write_op_f_mul(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type),
+			                                 convert_kong_index_to_spirv_id(o->op_binary.left.index), convert_kong_index_to_spirv_id(o->op_binary.right.index));
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
@@ -1214,10 +1219,15 @@ static void write_globals(instructions_buffer *instructions_block, function *mai
 			complex_type ct;
 			ct.type = g->type;
 			ct.pointer = (uint16_t) false;
-			ct.storage = (uint16_t)STORAGE_CLASS_UNIFORM;
+			ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 			hmput(type_map, ct, struct_type);
 
 			spirv_id struct_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM, struct_type);
+
+			ct.type = g->type;
+			ct.pointer = (uint16_t) true;
+			ct.storage = (uint16_t)STORAGE_CLASS_UNIFORM;
+			hmput(type_map, ct, struct_pointer_type);
 
 			spirv_id spirv_var_id = convert_kong_index_to_spirv_id(g->var_index);
 			write_op_variable_preallocated(instructions_block, struct_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM);
