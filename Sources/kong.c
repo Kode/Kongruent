@@ -1,4 +1,5 @@
 #include "compiler.h"
+#include "disasm.h"
 #include "errors.h"
 #include "functions.h"
 #include "globals.h"
@@ -868,6 +869,7 @@ int main(int argc, char **argv) {
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		kong_log(LOG_LEVEL_INFO, "%s (%i)", get_name(get_type(i)->name), i);
 	}
+	kong_log(LOG_LEVEL_INFO, "");
 #endif
 
 	resolve_types();
@@ -876,6 +878,10 @@ int main(int argc, char **argv) {
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		convert_function_block(&get_function(i)->code, get_function(i)->block);
 	}
+
+#ifndef NDEBUG
+	disassemble();
+#endif
 
 	switch (api) {
 	case API_DIRECT3D9:
