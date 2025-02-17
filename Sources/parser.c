@@ -722,12 +722,14 @@ static expression *parse_member(state_t *state, bool square) {
 
 			advance_state(state);
 
+			bool dynamic = square && current(state).kind != TOKEN_INT;
+
 			expression *var = expression_allocate();
 			var->kind = EXPRESSION_VARIABLE;
 			var->variable = token.identifier;
 
 			expression *member = expression_allocate();
-			member->kind = EXPRESSION_STATIC_MEMBER;
+			member->kind = dynamic ? EXPRESSION_DYNAMIC_MEMBER : EXPRESSION_STATIC_MEMBER;
 			member->member.left = var;
 			member->member.right = parse_member(state, square);
 
@@ -751,12 +753,14 @@ static expression *parse_member(state_t *state, bool square) {
 
 			advance_state(state);
 
+			bool dynamic = square && current(state).kind != TOKEN_INT;
+
 			expression *var = expression_allocate();
 			var->kind = EXPRESSION_INDEX;
 			var->index = index;
 
 			expression *member = expression_allocate();
-			member->kind = EXPRESSION_STATIC_MEMBER;
+			member->kind = dynamic ? EXPRESSION_DYNAMIC_MEMBER : EXPRESSION_STATIC_MEMBER;
 			member->member.left = var;
 			member->member.right = parse_member(state, square);
 
@@ -779,8 +783,10 @@ static expression *parse_member(state_t *state, bool square) {
 
 			advance_state(state);
 
+			bool dynamic = square && current(state).kind != TOKEN_INT;
+
 			expression *member = expression_allocate();
-			member->kind = EXPRESSION_DYNAMIC_MEMBER;
+			member->kind = dynamic ? EXPRESSION_DYNAMIC_MEMBER : EXPRESSION_STATIC_MEMBER;
 			member->member.left = index;
 			member->member.right = parse_member(state, square);
 
