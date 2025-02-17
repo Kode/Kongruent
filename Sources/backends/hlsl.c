@@ -479,7 +479,6 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 					}
 					break;
 				default:
-					assert(false);
 					break;
 				}
 			}
@@ -508,7 +507,6 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 					}
 					break;
 				default:
-					assert(false);
 					break;
 				}
 			}
@@ -535,7 +533,6 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 					break;
 				}
 				default:
-					assert(false);
 					break;
 				}
 			}
@@ -560,7 +557,6 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 					sampler_index += 1;
 					break;
 				default:
-					assert(false);
 					break;
 				}
 			}
@@ -634,7 +630,6 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				}
 			}
 			default:
-				assert(false);
 				break;
 			}
 			index += o->size;
