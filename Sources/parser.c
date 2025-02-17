@@ -285,9 +285,16 @@ static type_ref parse_type_ref(state_t *state) {
 	uint32_t array_size = 0;
 	if (current(state).kind == TOKEN_LEFT_SQUARE) {
 		advance_state(state);
-		match_token(state, TOKEN_INT, "Expected an integer");
-		array_size = (uint32_t)current(state).number;
-		advance_state(state);
+		if (current(state).kind == TOKEN_INT) {
+			array_size = (uint32_t)current(state).number;
+			if (array_size == 0) {
+				error(state->context, "Array size of 0 is not allowed");
+			}
+			advance_state(state);
+		}
+		else {
+			array_size = UINT32_MAX;
+		}
 		match_token(state, TOKEN_RIGHT_SQUARE, "Expected a closing square bracket");
 		advance_state(state);
 	}
@@ -948,7 +955,7 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 	advance_state(state);
 
 	token member_names[MAX_MEMBERS];
-	token type_names[MAX_MEMBERS];
+	type_ref type_refs[MAX_MEMBERS];
 	token member_values[MAX_MEMBERS];
 	size_t count = 0;
 
@@ -963,15 +970,14 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 
 		if (current(state).kind == TOKEN_COLON) {
 			advance_state(state);
-			match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
-			type_names[count] = current(state);
-			advance_state(state);
+			type_refs[count] = parse_type_ref(state);
 		}
 		else {
-			token t;
-			t.kind = TOKEN_IDENTIFIER;
-			t.identifier = NO_NAME;
-			type_names[count] = t;
+			type_ref t;
+			t.name = NO_NAME;
+			t.type = NO_TYPE;
+			t.array_size = 0;
+			type_refs[count] = t;
 		}
 
 		if (current(state).kind == TOKEN_OPERATOR && current(state).op == OPERATOR_ASSIGN) {
@@ -1042,7 +1048,7 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 			}
 		}
 		else {
-			init_type_ref(&member.type, type_names[i].identifier);
+			member.type = type_refs[i];
 		}
 
 		s->members.m[i] = member;
