@@ -1148,14 +1148,14 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 	}
 
 	bool array = false;
-	int array_size = -1;
+	uint32_t array_size = UINT32_MAX;
 
 	if (current(state).kind == TOKEN_LEFT_SQUARE) {
 		array = true;
 		advance_state(state);
 
 		if (current(state).kind == TOKEN_INT) {
-			array_size = (int)current(state).number;
+			array_size = (uint32_t)current(state).number;
 			advance_state(state);
 		}
 

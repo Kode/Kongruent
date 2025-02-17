@@ -772,7 +772,7 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				CASE_TEXTURE: {
 					type *t = get_type(get_global(d.global)->type);
-					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+					if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
 						fprintf(output, "\tkope_g5_texture_view *%s;\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\tsize_t %s_count;\n", get_name(get_global(d.global)->name));
 					}
@@ -809,7 +809,7 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				CASE_TEXTURE: {
 					type *t = get_type(get_global(d.global)->type);
-					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+					if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
 						fprintf(output, "\tkope_g5_texture_view *%s;\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\tsize_t %s_count;\n", get_name(get_global(d.global)->name));
 					}
@@ -883,7 +883,7 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				CASE_TEXTURE: {
 					type *t = get_type(get_global(d.global)->type);
-					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+					if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
 						fprintf(output, "\t\tstruct {\n");
 						fprintf(output, "\t\t\tkope_g5_texture_view *%s;\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\t\t\tuint32_t *%s_indices;\n", get_name(get_global(d.global)->name));
@@ -1211,7 +1211,7 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				CASE_TEXTURE: {
 					type *t = get_type(get_global(d.global)->type);
-					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+					if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
 						bindless_count += 1;
 					}
 					else {
@@ -1259,7 +1259,7 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				case DEFINITION_TEX2D: {
 					type *t = get_type(get_global(d.global)->type);
-					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+					if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
 						fprintf(output, "\tset->%s = (kope_g5_texture_view *)malloc(sizeof(kope_g5_texture_view) * parameters->textures_count);\n",
 						        get_name(get_global(d.global)->name));
 						fprintf(output, "\tassert(set->%s != NULL);\n", get_name(get_global(d.global)->name));
@@ -1382,7 +1382,7 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				CASE_TEXTURE: {
 					type *t = get_type(get_global(d.global)->type);
-					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+					if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
 						fprintf(output, "\tfor (size_t index = 0; index < set->%s_count; ++index) {\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\t\tkope_%s_descriptor_set_prepare_srv_texture(list, &set->%s[index]);\n", api_short,
 						        get_name(get_global(d.global)->name));

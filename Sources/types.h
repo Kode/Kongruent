@@ -56,8 +56,8 @@ typedef struct type {
 		members members;
 		struct {
 			type_id base;
-			int array_size;
-		} array;
+			uint32_t array_size;
+		} array; // just for texture arrays currently
 	};
 } type;
 

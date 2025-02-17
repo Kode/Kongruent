@@ -1164,7 +1164,7 @@ static void write_globals(instructions_buffer *instructions_block, function *mai
 				//*offset += sprintf(&hlsl[*offset], "RWTexture2D<float4> _%" PRIu64 " : register(u%i);\n\n", g->var_index, register_index);
 			}
 			else {
-				if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+				if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
 					//*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 "[] : register(t%i, space1);\n\n", g->var_index, register_index);
 				}
 				else {
@@ -1461,7 +1461,7 @@ void spirv_export(char *directory) {
 			register_index += 1;
 		}
 		else if (base_type == tex2d_type_id) {
-			if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+			if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
 				global_register_indices[i] = 0;
 			}
 			else if (has_attribute(&g->attributes, add_name("write"))) {

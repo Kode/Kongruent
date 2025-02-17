@@ -252,7 +252,7 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 				*offset += sprintf(&hlsl[*offset], "RWTexture2D<float4> _%" PRIu64 " : register(u%i);\n\n", g->var_index, register_index);
 			}
 			else {
-				if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+				if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
 					*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 "[] : register(t%i, space1);\n\n", g->var_index, register_index);
 				}
 				else {
@@ -420,7 +420,7 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 			case DEFINITION_TEX2DARRAY:
 			case DEFINITION_TEXCUBE: {
 				type *t = get_type(get_global(def->global)->type);
-				if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+				if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
 					has_boundless = true;
 				}
 				else {
@@ -525,7 +525,7 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 				case DEFINITION_TEXCUBE: {
 					type *t = get_type(get_global(def->global)->type);
 
-					if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+					if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
 						*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(SRV(t0, space = %i, numDescriptors = unbounded))", boundless_space);
 						boundless_space += 1;
 					}
@@ -991,7 +991,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
 					if (o->op_load_member.dynamic_member[i]) {
 						type *from_type = get_type(o->op_load_member.from.type.type);
-						if (from_type->kind == TYPE_ARRAY && from_type->array.base == tex2d_type_id && from_type->array.array_size == -1) {
+						if (from_type->kind == TYPE_ARRAY && from_type->array.base == tex2d_type_id && from_type->array.array_size == UINT32_MAX) {
 							*offset += sprintf(&hlsl[*offset], "[NonUniformResourceIndex(_%" PRIu64 ")]", o->op_load_member.dynamic_member_indices[i].index);
 						}
 						else {
@@ -1474,7 +1474,7 @@ void hlsl_export(char *directory, api_kind d3d) {
 			sampler_index += 1;
 		}
 		else if (base_type == tex2d_type_id) {
-			if (t->kind == TYPE_ARRAY && t->array.array_size == -1) {
+			if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
 				global_register_indices[i] = 0;
 			}
 			else if (has_attribute(&g->attributes, add_name("write"))) {
