@@ -1275,22 +1275,39 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 	}
 	else if (type_name == add_name("float4")) {
 		debug_context context = {0};
-		check(value != NULL, context, "const float4 requires an initialization value");
-		check(value->kind == EXPRESSION_CALL, context, "const float4 requires a constructor call");
-		check(value->call.func_name == add_name("float4"), context, "const float4 requires a float4 call");
-		check(value->call.parameters.size == 4, context, "const float4 construtor call requires four parameters");
+		if (!array) {
+			check(value != NULL, context, "const float4 requires an initialization value");
+			check(value->kind == EXPRESSION_CALL, context, "const float4 requires a constructor call");
+			check(value->call.func_name == add_name("float4"), context, "const float4 requires a float4 call");
+			check(value->call.parameters.size == 4, context, "const float4 construtor call requires four parameters");
+		}
+		else {
+			check(value == NULL, context, "const float4[] does not allow an initialization value");
+		}
 
 		global_value float4_value;
 		float4_value.kind = GLOBAL_VALUE_FLOAT4;
 
-		for (int i = 0; i < 4; ++i) {
-			check(value->call.parameters.e[i]->kind == EXPRESSION_FLOAT || value->call.parameters.e[i]->kind == EXPRESSION_INT, context,
-			      "const float4 construtor parameters have to be numbers");
-			float4_value.value.floats[i] = (float)value->call.parameters.e[i]->number;
+		if (!array) {
+			for (int i = 0; i < 4; ++i) {
+				check(value->call.parameters.e[i]->kind == EXPRESSION_FLOAT || value->call.parameters.e[i]->kind == EXPRESSION_INT, context,
+				      "const float4 construtor parameters have to be numbers");
+				float4_value.value.floats[i] = (float)value->call.parameters.e[i]->number;
+			}
 		}
 
 		d.kind = DEFINITION_CONST_BASIC;
-		d.global = add_global_with_value(float4_id, attributes, name.identifier, float4_value);
+		if (array) {
+			type_id array_type_id = add_type(get_type(float4_id)->name);
+			get_type(array_type_id)->kind = TYPE_ARRAY;
+			get_type(array_type_id)->array.base = float4_id;
+			get_type(array_type_id)->array.array_size = array_size;
+
+			d.global = add_global(array_type_id, attributes, name.identifier);
+		}
+		else {
+			d.global = add_global_with_value(float4_id, attributes, name.identifier, float4_value);
+		}
 	}
 	else {
 		debug_context context = {0};

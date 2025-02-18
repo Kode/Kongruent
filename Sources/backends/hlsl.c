@@ -48,6 +48,18 @@ static char *type_string(type_id type) {
 	return get_name(get_type(type)->name);
 }
 
+static void type_arr(type_ref t, char *arr) {
+	if (t.array_size == 0) {
+		arr[0] = 0;
+	}
+	else if (t.array_size == UINT32_MAX) {
+		strcpy(arr, "[]");
+	}
+	else {
+		sprintf(arr, "[%i]", t.array_size);
+	}
+}
+
 static char *function_string(name_id func) {
 	return get_name(func);
 }
@@ -288,8 +300,10 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 			*offset += sprintf(&hlsl[*offset], "cbuffer _%" PRIu64 " : register(b%i) {\n", g->var_index, register_index);
 			type *t = get_type(g->type);
 			for (size_t i = 0; i < t->members.size; ++i) {
-				*offset +=
-				    sprintf(&hlsl[*offset], "\t%s _%" PRIu64 "_%s;\n", type_string(t->members.m[i].type.type), g->var_index, get_name(t->members.m[i].name));
+				char arr[16];
+				type_arr(t->members.m[i].type, arr);
+				*offset += sprintf(&hlsl[*offset], "\t%s _%" PRIu64 "_%s%s;\n", type_string(t->members.m[i].type.type), g->var_index,
+				                   get_name(t->members.m[i].name), arr);
 			}
 			*offset += sprintf(&hlsl[*offset], "}\n\n");
 		}
@@ -432,7 +446,6 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 				has_sampler = true;
 				break;
 			default:
-				assert(false);
 				break;
 			}
 		}

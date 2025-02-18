@@ -57,7 +57,7 @@ typedef struct type {
 		struct {
 			type_id base;
 			uint32_t array_size;
-		} array; // just for texture arrays currently
+		} array; // only used for globals
 	};
 } type;
 
