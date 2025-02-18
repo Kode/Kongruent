@@ -787,6 +787,9 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_BVH:
 					fprintf(output, "\tkope_g5_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
 					break;
+				case DEFINITION_CONST_BASIC:
+					fprintf(output, "\tkope_g5_buffer *%s;\n", get_name(get_global(d.global)->name));
+					break;
 				default: {
 					debug_context context = {0};
 					error(context, "Unexpected kind of definition");
