@@ -38,7 +38,8 @@ typedef struct global {
 	uint64_t var_index;
 	global_value value;
 	attribute_list attributes;
-	struct descriptor_set *set;
+	struct descriptor_set *sets[64];
+	size_t sets_count;
 } global;
 
 void globals_init(void);

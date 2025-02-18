@@ -1745,18 +1745,18 @@ void hlsl_export(char *directory, api_kind d3d) {
 
 			for (size_t global_index = 0; global_index < all_globals_size; ++global_index) {
 				global *g = get_global(all_globals[global_index]);
-				if (g->set != NULL) {
+				for (size_t set_index = 0; set_index < g->sets_count; ++set_index) {
 					bool found = false;
 
-					for (size_t set_index = 0; set_index < all_descriptor_sets_count; ++set_index) {
-						if (all_descriptor_sets[set_index] == g->set) {
+					for (size_t all_sets_index = 0; all_sets_index < all_descriptor_sets_count; ++all_sets_index) {
+						if (all_descriptor_sets[all_sets_index] == g->sets[set_index]) {
 							found = true;
 							break;
 						}
 					}
 
 					if (!found) {
-						all_descriptor_sets[all_descriptor_sets_count] = g->set;
+						all_descriptor_sets[all_descriptor_sets_count] = g->sets[set_index];
 						all_descriptor_sets_count += 1;
 					}
 				}
@@ -1777,18 +1777,18 @@ void hlsl_export(char *directory, api_kind d3d) {
 
 			for (size_t global_index = 0; global_index < all_globals_size; ++global_index) {
 				global *g = get_global(all_globals[global_index]);
-				if (g->set != NULL) {
+				for (size_t set_index = 0; set_index < g->sets_count; ++set_index) {
 					bool found = false;
 
-					for (size_t set_index = 0; set_index < all_descriptor_sets_count; ++set_index) {
-						if (all_descriptor_sets[set_index] == g->set) {
+					for (size_t all_sets_index = 0; all_sets_index < all_descriptor_sets_count; ++all_sets_index) {
+						if (all_descriptor_sets[all_sets_index] == g->sets[set_index]) {
 							found = true;
 							break;
 						}
 					}
 
 					if (!found) {
-						all_descriptor_sets[all_descriptor_sets_count] = g->set;
+						all_descriptor_sets[all_descriptor_sets_count] = g->sets[set_index];
 						all_descriptor_sets_count += 1;
 					}
 				}

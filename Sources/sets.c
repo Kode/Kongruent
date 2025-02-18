@@ -37,8 +37,8 @@ void add_definition_to_set(descriptor_set *set, definition def) {
 		}
 	}
 
-	assert(get_global(def.global)->set == NULL);
-	get_global(def.global)->set = set;
+	get_global(def.global)->sets[get_global(def.global)->sets_count] = set;
+	get_global(def.global)->sets_count += 1;
 	set->definitions[set->definitions_count] = def;
 	set->definitions_count += 1;
 }

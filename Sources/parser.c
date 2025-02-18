@@ -167,7 +167,8 @@ static double attribute_parameter_to_number(name_id attribute_name, name_id para
 
 static definition parse_definition(state_t *state) {
 	attribute_list attributes = {0};
-	descriptor_set *current_set = NULL;
+	descriptor_set *current_sets[64];
+	size_t current_sets_count = 0;
 
 	if (current(state).kind == TOKEN_HASH) {
 		advance_state(state);
@@ -181,8 +182,9 @@ static definition parse_definition(state_t *state) {
 			current_attribute.name = current(state).identifier;
 
 			if (current_attribute.name == add_name("root_constants")) {
-				current_set = add_set(current_attribute.name);
-				current_attribute.parameters[current_attribute.paramters_count] = current_set->index;
+				current_sets[current_sets_count] = add_set(current_attribute.name);
+				current_attribute.parameters[current_attribute.paramters_count] = current_sets[current_sets_count]->index;
+				current_sets_count += 1;
 			}
 
 			advance_state(state);
@@ -197,8 +199,9 @@ static definition parse_definition(state_t *state) {
 								debug_context context = {0};
 								error(context, "Descriptor set can not be called root_constants");
 							}
-							current_set = add_set(current(state).identifier);
-							current_attribute.parameters[current_attribute.paramters_count] = current_set->index;
+							current_sets[current_sets_count] = add_set(current(state).identifier);
+							current_attribute.parameters[current_attribute.paramters_count] = current_sets[current_sets_count]->index;
+							current_sets_count += 1;
 						}
 						else {
 							current_attribute.parameters[current_attribute.paramters_count] =
@@ -238,7 +241,7 @@ static definition parse_definition(state_t *state) {
 
 	switch (current(state).kind) {
 	case TOKEN_STRUCT: {
-		if (current_set != NULL) {
+		if (current_sets_count != 0) {
 			debug_context context = {0};
 			error(context, "A struct can not be assigned to a set");
 		}
@@ -248,7 +251,7 @@ static definition parse_definition(state_t *state) {
 		return structy;
 	}
 	case TOKEN_FUNCTION: {
-		if (current_set != NULL) {
+		if (current_sets_count != 0) {
 			debug_context context = {0};
 			error(context, "A function can not be assigned to a set");
 		}
@@ -261,8 +264,8 @@ static definition parse_definition(state_t *state) {
 	case TOKEN_CONST: {
 		definition d = parse_const(state, attributes);
 
-		if (current_set != NULL) {
-			add_definition_to_set(current_set, d);
+		for (size_t set_index = 0; set_index < current_sets_count; ++set_index) {
+			add_definition_to_set(current_sets[set_index], d);
 		}
 
 		return d;

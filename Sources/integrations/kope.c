@@ -719,7 +719,15 @@ void kope_export(char *directory, api_kind api) {
 				}
 				fprintf(output, "} %s;\n\n", name);
 
-				if (g->set != NULL && g->set->name == add_name("root_constants")) {
+				bool is_root_constant = false;
+				for (size_t set_index = 0; set_index < g->sets_count; ++set_index) {
+					if (g->sets[set_index]->name == add_name("root_constants")) {
+						is_root_constant = true;
+						break;
+					}
+				}
+
+				if (is_root_constant) {
 					fprintf(output, "void kong_set_root_constants_%s(kope_g5_command_list *list, %s *constants);\n", get_name(g->name), name);
 				}
 				else {
@@ -736,23 +744,25 @@ void kope_export(char *directory, api_kind api) {
 
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
-			descriptor_set *set = g->set;
+			for (size_t set_index = 0; set_index < g->sets_count; ++set_index) {
+				descriptor_set *set = g->sets[set_index];
 
-			if (set == NULL) {
-				continue;
-			}
-
-			bool found = false;
-			for (size_t set_index = 0; set_index < sets_count; ++set_index) {
-				if (sets[set_index] == set) {
-					found = true;
-					break;
+				if (set == NULL) {
+					continue;
 				}
-			}
 
-			if (!found) {
-				sets[sets_count] = set;
-				sets_count += 1;
+				bool found = false;
+				for (size_t set_index = 0; set_index < sets_count; ++set_index) {
+					if (sets[set_index] == set) {
+						found = true;
+						break;
+					}
+				}
+
+				if (!found) {
+					sets[sets_count] = set;
+					sets_count += 1;
+				}
 			}
 		}
 
@@ -1097,7 +1107,16 @@ void kope_export(char *directory, api_kind api) {
 					strcat(type_name, "_type");
 				}
 
-				if (g->set != NULL && g->set->name == add_name("root_constants")) {
+				bool is_root_constant = false;
+
+				for (size_t set_index = 0; set_index < g->sets_count; ++set_index) {
+					if (g->sets[set_index]->name == add_name("root_constants")) {
+						is_root_constant = true;
+						break;
+					}
+				}
+
+				if (is_root_constant) {
 					root_constants_global = g;
 					strcpy(root_constants_type_name, type_name);
 				}
