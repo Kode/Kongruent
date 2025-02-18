@@ -20,6 +20,29 @@
 #include <stdlib.h>
 #include <string.h>
 
+static char *member_string(type *parent_type, name_id member_name) {
+	if (parent_type == get_type(ray_type_id)) {
+		if (member_name == add_name("origin")) {
+			return "Origin";
+		}
+		else if (member_name == add_name("direction")) {
+			return "Direction";
+		}
+		else if (member_name == add_name("min")) {
+			return "TMin";
+		}
+		else if (member_name == add_name("max")) {
+			return "TMax";
+		}
+		else {
+			return get_name(member_name);
+		}
+	}
+	else {
+		return get_name(member_name);
+	}
+}
+
 static char *type_string(type_id type) {
 	if (type == float_id) {
 		return "float";
@@ -294,8 +317,14 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 			                   g->value.value.floats[1], g->value.value.floats[2]);
 		}
 		else if (base_type == float4_id) {
-			*offset += sprintf(&hlsl[*offset], "static const float4 _%" PRIu64 " = float4(%f, %f, %f, %f);\n\n", g->var_index, g->value.value.floats[0],
-			                   g->value.value.floats[1], g->value.value.floats[2], g->value.value.floats[3]);
+			if (t->array_size > 0) {
+				*offset += sprintf(&hlsl[*offset], "struct _%llu_type { float4 data; };\n", g->var_index);
+				*offset += sprintf(&hlsl[*offset], "RWStructuredBuffer<_%llu_type> _%llu : register(u%i);\n", g->var_index, g->var_index, register_index);
+			}
+			else {
+				*offset += sprintf(&hlsl[*offset], "static const float4 _%" PRIu64 " = float4(%f, %f, %f, %f);\n\n", g->var_index, g->value.value.floats[0],
+				                   g->value.value.floats[1], g->value.value.floats[2], g->value.value.floats[3]);
+			}
 		}
 		else {
 			*offset += sprintf(&hlsl[*offset], "cbuffer _%" PRIu64 " : register(b%i) {\n", g->var_index, register_index);
@@ -446,6 +475,13 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 			case DEFINITION_SAMPLER:
 				has_sampler = true;
 				break;
+			case DEFINITION_CONST_BASIC: {
+				type *t = get_type(get_global(def->global)->type);
+				if (t->array_size > 0) {
+					has_other = true;
+				}
+				break;
+			}
 			default:
 				break;
 			}
@@ -467,6 +503,7 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 						else {
 							*offset += sprintf(&hlsl[*offset], ", ");
 						}
+
 						*offset += sprintf(&hlsl[*offset], "CBV(b%i)", cbv_index);
 						cbv_index += 1;
 					}
@@ -483,6 +520,13 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 
 					attribute *write_attribute = find_attribute(&get_global(def->global)->attributes, add_name("write"));
 
+					if (first) {
+						first = false;
+					}
+					else {
+						*offset += sprintf(&hlsl[*offset], ", ");
+					}
+
 					if (write_attribute != NULL) {
 						*offset += sprintf(&hlsl[*offset], "UAV(u%i)", uav_index);
 						uav_index += 1;
@@ -492,6 +536,20 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 						srv_index += 1;
 					}
 					break;
+				case DEFINITION_CONST_BASIC: {
+					type *t = get_type(get_global(def->global)->type);
+					if (t->array_size > 0) {
+						if (first) {
+							first = false;
+						}
+						else {
+							*offset += sprintf(&hlsl[*offset], ", ");
+						}
+
+						*offset += sprintf(&hlsl[*offset], "UAV(u%i)", uav_index);
+						uav_index += 1;
+					}
+				}
 				default:
 					break;
 				}
@@ -987,8 +1045,9 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			switch (o->type) {
 			case OPCODE_LOAD_MEMBER: {
 				uint64_t global_var_index = 0;
+				global *g = NULL;
 				for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
-					global *g = get_global(j);
+					g = get_global(j);
 					if (o->op_load_member.from.index == g->var_index) {
 						global_var_index = g->var_index;
 						if (get_type(g->type)->built_in) {
@@ -1005,7 +1064,11 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
 					if (o->op_load_member.dynamic_member[i]) {
 						type *from_type = get_type(o->op_load_member.from.type.type);
-						if (from_type->array_size == UINT32_MAX && from_type->base == tex2d_type_id) {
+
+						if (global_var_index != 0 && i == 0 && get_type(from_type->base)->built_in) {
+							*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "].data", o->op_load_member.dynamic_member_indices[i].index);
+						}
+						else if (from_type->array_size == UINT32_MAX && from_type->base == tex2d_type_id) {
 							*offset += sprintf(&hlsl[*offset], "[NonUniformResourceIndex(_%" PRIu64 ")]", o->op_load_member.dynamic_member_indices[i].index);
 						}
 						else {
@@ -1026,6 +1089,80 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					}
 				}
 				*offset += sprintf(&hlsl[*offset], ";\n");
+				break;
+			}
+			case OPCODE_STORE_MEMBER:
+			case OPCODE_SUB_AND_STORE_MEMBER:
+			case OPCODE_ADD_AND_STORE_MEMBER:
+			case OPCODE_DIVIDE_AND_STORE_MEMBER:
+			case OPCODE_MULTIPLY_AND_STORE_MEMBER: {
+				uint64_t global_var_index = 0;
+				global *g = NULL;
+				for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
+					g = get_global(j);
+					if (o->op_store_member.to.index == g->var_index) {
+						global_var_index = g->var_index;
+						if (get_type(g->type)->built_in) {
+							global_var_index = 0;
+						}
+						break;
+					}
+				}
+
+				indent(hlsl, offset, indentation);
+				*offset += sprintf(&hlsl[*offset], "_%" PRIu64, o->op_store_member.to.index);
+				type *s = get_type(o->op_store_member.member_parent_type);
+				bool is_array = o->op_store_member.member_parent_array;
+				for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
+					if (is_array) {
+						type *from_type = get_type(o->op_store_member.member_parent_type);
+
+						if (global_var_index != 0 && i == 0 && get_type(from_type->base)->built_in) {
+							if (o->op_store_member.dynamic_member[i]) {
+								*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "].data", o->op_store_member.dynamic_member_indices[i].index);
+							}
+							else {
+								*offset += sprintf(&hlsl[*offset], "[%i].data", o->op_store_member.static_member_indices[i]);
+							}
+						}
+						else if (o->op_store_member.dynamic_member[i]) {
+							*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "]", o->op_store_member.dynamic_member_indices[i].index);
+						}
+						else {
+							*offset += sprintf(&hlsl[*offset], "[%i]", o->op_store_member.static_member_indices[i]);
+						}
+						is_array = false;
+					}
+					else {
+						debug_context context = {0};
+						check(!o->op_store_member.dynamic_member[i], context, "Unexpected dynamic member");
+						check(o->op_store_member.static_member_indices[i] < s->members.size, context, "Member index out of bounds");
+						*offset += sprintf(&hlsl[*offset], ".%s", member_string(s, s->members.m[o->op_store_member.static_member_indices[i]].name));
+						is_array = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type)->array_size > 0;
+						s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
+					}
+				}
+
+				switch (o->type) {
+				case OPCODE_STORE_MEMBER:
+					*offset += sprintf(&hlsl[*offset], " = _%" PRIu64 ";\n", o->op_store_member.from.index);
+					break;
+				case OPCODE_SUB_AND_STORE_MEMBER:
+					*offset += sprintf(&hlsl[*offset], " -= _%" PRIu64 ";\n", o->op_store_member.from.index);
+					break;
+				case OPCODE_ADD_AND_STORE_MEMBER:
+					*offset += sprintf(&hlsl[*offset], " += _%" PRIu64 ";\n", o->op_store_member.from.index);
+					break;
+				case OPCODE_DIVIDE_AND_STORE_MEMBER:
+					*offset += sprintf(&hlsl[*offset], " /= _%" PRIu64 ";\n", o->op_store_member.from.index);
+					break;
+				case OPCODE_MULTIPLY_AND_STORE_MEMBER:
+					*offset += sprintf(&hlsl[*offset], " *= _%" PRIu64 ";\n", o->op_store_member.from.index);
+					break;
+				default:
+					assert(false);
+					break;
+				}
 				break;
 			}
 			case OPCODE_RETURN: {
@@ -1505,10 +1642,20 @@ void hlsl_export(char *directory, api_kind d3d) {
 			srv_index += 1;
 		}
 		else if (get_type(g->type)->built_in) {
+			if (get_type(g->type)->array_size > 0) {
+				global_register_indices[i] = uav_index;
+				uav_index += 1;
+			}
 		}
 		else {
-			global_register_indices[i] = cbv_index;
-			cbv_index += 1;
+			if (get_type(g->type)->array_size > 0) {
+				global_register_indices[i] = uav_index;
+				uav_index += 1;
+			}
+			else {
+				global_register_indices[i] = cbv_index;
+				cbv_index += 1;
+			}
 		}
 	}
 
