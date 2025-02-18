@@ -1212,6 +1212,14 @@ void kope_export(char *directory, api_kind api) {
 						other_count += 1;
 					}
 					break;
+				case DEFINITION_CONST_BASIC:
+					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
+						dynamic_count += 1;
+					}
+					else {
+						other_count += 1;
+					}
+					break;
 				CASE_TEXTURE: {
 					type *t = get_type(get_global(d.global)->type);
 					if (t->array_size == UINT32_MAX) {
@@ -1249,6 +1257,14 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_CONST_CUSTOM:
 					if (!has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
 						fprintf(output, "\tkope_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %zu);\n", api_short,
+						        get_name(get_global(d.global)->name), other_index);
+						other_index += 1;
+					}
+					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
+					break;
+				case DEFINITION_CONST_BASIC:
+					if (!has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
+						fprintf(output, "\tkope_%s_descriptor_set_set_buffer_view_uav(device, &set->set, parameters->%s, %zu);\n", api_short,
 						        get_name(get_global(d.global)->name), other_index);
 						other_index += 1;
 					}
