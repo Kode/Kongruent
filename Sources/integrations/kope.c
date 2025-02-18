@@ -694,7 +694,7 @@ void kope_export(char *directory, api_kind api) {
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
 
-			type_id base_type = get_type(g->type)->kind == TYPE_ARRAY ? get_type(g->type)->array.base : g->type;
+			type_id base_type = get_type(g->type)->array_size > 0 ? get_type(g->type)->base : g->type;
 
 			if (is_texture(base_type) || base_type == sampler_type_id) {
 			}
@@ -772,7 +772,7 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				CASE_TEXTURE: {
 					type *t = get_type(get_global(d.global)->type);
-					if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
+					if (t->array_size == UINT32_MAX) {
 						fprintf(output, "\tkope_g5_texture_view *%s;\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\tsize_t %s_count;\n", get_name(get_global(d.global)->name));
 					}
@@ -809,7 +809,7 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				CASE_TEXTURE: {
 					type *t = get_type(get_global(d.global)->type);
-					if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
+					if (t->array_size == UINT32_MAX) {
 						fprintf(output, "\tkope_g5_texture_view *%s;\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\tsize_t %s_count;\n", get_name(get_global(d.global)->name));
 					}
@@ -883,7 +883,7 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				CASE_TEXTURE: {
 					type *t = get_type(get_global(d.global)->type);
-					if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
+					if (t->array_size == UINT32_MAX) {
 						fprintf(output, "\t\tstruct {\n");
 						fprintf(output, "\t\t\tkope_g5_texture_view *%s;\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\t\t\tuint32_t *%s_indices;\n", get_name(get_global(d.global)->name));
@@ -1080,7 +1080,7 @@ void kope_export(char *directory, api_kind api) {
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
 
-			type_id base_type = get_type(g->type)->kind == TYPE_ARRAY ? get_type(g->type)->array.base : g->type;
+			type_id base_type = get_type(g->type)->array_size > 0 ? get_type(g->type)->base : g->type;
 
 			if (!get_type(base_type)->built_in) {
 				type *t = get_type(g->type);
@@ -1211,7 +1211,7 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				CASE_TEXTURE: {
 					type *t = get_type(get_global(d.global)->type);
-					if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
+					if (t->array_size == UINT32_MAX) {
 						bindless_count += 1;
 					}
 					else {
@@ -1259,7 +1259,7 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				case DEFINITION_TEX2D: {
 					type *t = get_type(get_global(d.global)->type);
-					if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
+					if (t->array_size == UINT32_MAX) {
 						fprintf(output, "\tset->%s = (kope_g5_texture_view *)malloc(sizeof(kope_g5_texture_view) * parameters->textures_count);\n",
 						        get_name(get_global(d.global)->name));
 						fprintf(output, "\tassert(set->%s != NULL);\n", get_name(get_global(d.global)->name));
@@ -1382,7 +1382,7 @@ void kope_export(char *directory, api_kind api) {
 					break;
 				CASE_TEXTURE: {
 					type *t = get_type(get_global(d.global)->type);
-					if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
+					if (t->array_size == UINT32_MAX) {
 						fprintf(output, "\tfor (size_t index = 0; index < set->%s_count; ++index) {\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\t\tkope_%s_descriptor_set_prepare_srv_texture(list, &set->%s[index]);\n", api_short,
 						        get_name(get_global(d.global)->name));
@@ -1753,9 +1753,10 @@ void kope_export(char *directory, api_kind api) {
 				fprintf(output, "\t%s_parameters.multisample.mask = 0xffffffff;\n", get_name(t->name));
 				fprintf(output, "\t%s_parameters.multisample.alpha_to_coverage_enabled = false;\n\n", get_name(t->name));
 
-				if (fragment_function->return_type.array_size > 0) {
-					fprintf(output, "\t%s_parameters.fragment.targets_count = %i;\n", get_name(t->name), fragment_function->return_type.array_size);
-					for (uint32_t i = 0; i < fragment_function->return_type.array_size; ++i) {
+				if (get_type(fragment_function->return_type.type)->array_size > 0) {
+					fprintf(output, "\t%s_parameters.fragment.targets_count = %i;\n", get_name(t->name),
+					        get_type(fragment_function->return_type.type)->array_size);
+					for (uint32_t i = 0; i < get_type(fragment_function->return_type.type)->array_size; ++i) {
 						char format_name[32];
 						sprintf(format_name, "format%i", i);
 						member *format = find_member(t, format_name);

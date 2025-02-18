@@ -10,10 +10,14 @@
 
 typedef uint32_t type_id;
 
-typedef struct type_ref {
+typedef struct unresolved_type_ref {
 	name_id name;
-	type_id type;
 	uint32_t array_size;
+} unresolved_type_ref;
+
+typedef struct type_ref {
+	type_id type;
+	unresolved_type_ref unresolved;
 } type_ref;
 
 void init_type_ref(type_ref *t, name_id name);
@@ -51,14 +55,10 @@ typedef struct type {
 	name_id name;
 	bool built_in;
 
-	enum { TYPE_OBJECT, TYPE_ARRAY } kind;
-	union {
-		members members;
-		struct {
-			type_id base;
-			uint32_t array_size;
-		} array; // only used for globals
-	};
+	members members;
+
+	type_id base;
+	uint32_t array_size;
 } type;
 
 void types_init(void);

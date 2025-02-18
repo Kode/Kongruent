@@ -301,7 +301,7 @@ static type_ref parse_type_ref(state_t *state) {
 
 	type_ref t;
 	init_type_ref(&t, type_name.identifier);
-	t.array_size = array_size;
+	t.unresolved.array_size = array_size;
 	return t;
 }
 
@@ -980,9 +980,9 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 		}
 		else {
 			type_ref t;
-			t.name = NO_NAME;
 			t.type = NO_TYPE;
-			t.array_size = 0;
+			t.unresolved.name = NO_NAME;
+			t.unresolved.array_size = 0;
 			type_refs[count] = t;
 		}
 
@@ -1198,9 +1198,8 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 		type_id t_id = tex2d_type_id;
 		if (array) {
 			type_id array_type_id = add_type(get_type(t_id)->name);
-			get_type(array_type_id)->kind = TYPE_ARRAY;
-			get_type(array_type_id)->array.base = t_id;
-			get_type(array_type_id)->array.array_size = array_size;
+			get_type(array_type_id)->base = t_id;
+			get_type(array_type_id)->array_size = array_size;
 			t_id = array_type_id;
 		}
 
@@ -1299,9 +1298,8 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 		d.kind = DEFINITION_CONST_BASIC;
 		if (array) {
 			type_id array_type_id = add_type(get_type(float4_id)->name);
-			get_type(array_type_id)->kind = TYPE_ARRAY;
-			get_type(array_type_id)->array.base = float4_id;
-			get_type(array_type_id)->array.array_size = array_size;
+			get_type(array_type_id)->base = float4_id;
+			get_type(array_type_id)->array_size = array_size;
 
 			d.global = add_global(array_type_id, attributes, name.identifier);
 		}

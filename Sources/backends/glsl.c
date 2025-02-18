@@ -145,7 +145,7 @@ static void write_globals(char *glsl, size_t *offset, function *main) {
 
 	for (size_t i = 0; i < globals_size; ++i) {
 		global *g = get_global(globals[i]);
-		//int register_index = global_register_indices[globals[i]];
+		// int register_index = global_register_indices[globals[i]];
 
 		if (g->type == sampler_type_id) {
 		}
@@ -206,8 +206,8 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 				*offset += sprintf(&code[*offset], "void main() {\n");
 			}
 			else if (stage == SHADER_STAGE_FRAGMENT) {
-				if (f->return_type.array_size > 0) {
-					*offset += sprintf(&code[*offset], "out vec4 _kong_colors[%i];\n\n", f->return_type.array_size);
+				if (get_type(f->return_type.type)->array_size > 0) {
+					*offset += sprintf(&code[*offset], "out vec4 _kong_colors[%i];\n\n", get_type(f->return_type.type)->array_size);
 					*offset += sprintf(&code[*offset], "void main() {\n");
 				}
 				else {
@@ -374,10 +374,10 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 						indent(code, offset, indentation);
 						*offset += sprintf(&code[*offset], "}\n");
 					}
-					else if (f == main && stage == SHADER_STAGE_FRAGMENT && f->return_type.array_size > 0) {
+					else if (f == main && stage == SHADER_STAGE_FRAGMENT && get_type(f->return_type.type)->array_size > 0) {
 						indent(code, offset, indentation);
 						*offset += sprintf(&code[*offset], "{\n");
-						for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
+						for (uint32_t j = 0; j < get_type(f->return_type.type)->array_size; ++j) {
 							indent(code, offset, indentation + 1);
 							*offset += sprintf(&code[*offset], "_kong_colors[%i] = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
 						}

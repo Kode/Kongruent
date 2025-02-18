@@ -99,14 +99,12 @@ void resolve_member_type(statement *parent_block, type_ref parent_type, expressi
 			init_type_ref(&e->type, NO_NAME);
 			e->type.type = float4_id;
 		}
-		else if (get_type(e->member.left->type.type)->kind == TYPE_ARRAY) {
+		else if (get_type(e->member.left->type.type)->array_size > 0) {
 			init_type_ref(&e->type, NO_NAME);
-			e->type.type = get_type(e->member.left->type.type)->array.base;
-			e->type.array_size = 0;
+			e->type.type = get_type(e->member.left->type.type)->base;
 		}
 		else {
 			e->type = e->member.left->type;
-			e->type.array_size = 0;
 		}
 	}
 	else {
@@ -524,10 +522,12 @@ void resolve_types_in_block(statement *parent, statement *block) {
 		}
 		case STATEMENT_LOCAL_VARIABLE: {
 			name_id var_name = s->local_variable.var.name;
-			name_id var_type_name = s->local_variable.var.type.name;
-			if (var_type_name != NO_NAME && s->local_variable.var.type.type == NO_TYPE) {
+			name_id var_type_name = s->local_variable.var.type.unresolved.name;
+
+			if (s->local_variable.var.type.type == NO_TYPE && var_type_name != NO_NAME) {
 				s->local_variable.var.type.type = find_type_by_name(var_type_name);
 			}
+
 			if (s->local_variable.var.type.type == NO_TYPE) {
 				debug_context context = {0};
 				error(context, "Could not find type %s for %s", get_name(var_type_name), get_name(var_name));
@@ -551,7 +551,7 @@ void resolve_types(void) {
 		type *s = get_type(i);
 		for (size_t j = 0; j < s->members.size; ++j) {
 			if (s->members.m[j].type.type == NO_TYPE) {
-				name_id name = s->members.m[j].type.name;
+				name_id name = s->members.m[j].type.unresolved.name;
 				s->members.m[j].type.type = find_type_by_name(name);
 				if (s->members.m[j].type.type == NO_TYPE) {
 					debug_context context = {0};
@@ -566,7 +566,7 @@ void resolve_types(void) {
 
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 			if (f->parameter_types[parameter_index].type == NO_TYPE) {
-				name_id parameter_type_name = f->parameter_types[parameter_index].name;
+				name_id parameter_type_name = f->parameter_types[parameter_index].unresolved.name;
 				f->parameter_types[parameter_index].type = find_type_by_name(parameter_type_name);
 				if (f->parameter_types[parameter_index].type == NO_TYPE) {
 					debug_context context = {0};
@@ -576,7 +576,7 @@ void resolve_types(void) {
 		}
 
 		if (f->return_type.type == NO_TYPE) {
-			name_id return_type_name = f->return_type.name;
+			name_id return_type_name = f->return_type.unresolved.name;
 			f->return_type.type = find_type_by_name(return_type_name);
 			if (f->return_type.type == NO_TYPE) {
 				debug_context context = {0};

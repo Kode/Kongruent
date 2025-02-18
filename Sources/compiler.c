@@ -285,7 +285,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				type_id prev_struct = left->member.left->type.type;
 				type *prev_s = get_type(prev_struct);
 				o.op_store_member.member_parent_type = prev_struct;
-				o.op_store_member.member_parent_array = left->member.left->type.array_size > 0 || left->member.left->type.type == tex2d_type_id;
+				o.op_store_member.member_parent_array = get_type(left->member.left->type.type)->array_size > 0 || left->member.left->type.type == tex2d_type_id;
 
 				bool parent_dynamic = left->kind == EXPRESSION_DYNAMIC_MEMBER;
 
@@ -517,7 +517,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		type_id prev_struct = e->member.left->type.type;
 		type *prev_s = get_type(prev_struct);
 		o.op_load_member.member_parent_type = prev_struct;
-		o.op_load_member.member_parent_array = e->member.left->type.array_size > 0 || e->member.left->type.type == tex2d_type_id;
+		o.op_load_member.member_parent_array = get_type(e->member.left->type.type)->array_size > 0 || e->member.left->type.type == tex2d_type_id;
 
 		bool parent_dynamic = e->kind == EXPRESSION_DYNAMIC_MEMBER;
 

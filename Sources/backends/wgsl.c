@@ -36,9 +36,9 @@ static char *type_string(type_id type) {
 	return get_name(get_type(type)->name);
 }
 
-//static char *function_string(name_id func) {
+// static char *function_string(name_id func) {
 //	return get_name(func);
-//}
+// }
 
 static void write_code(char *wgsl, char *directory, const char *filename) {
 	char full_filename[512];
@@ -264,9 +264,9 @@ static void write_functions(char *code, size_t *offset) {
 			*offset += sprintf(&code[*offset], ") -> %s {\n", type_string(f->return_type.type));
 		}
 		else if (is_fragment_function(i)) {
-			if (f->return_type.array_size > 0) {
+			if (get_type(f->return_type.type)->array_size > 0) {
 				*offset += sprintf(&code[*offset], "struct _kong_colors_out {\n");
-				for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
+				for (uint32_t j = 0; j < get_type(f->return_type.type)->array_size; ++j) {
 					*offset += sprintf(&code[*offset], "\t%s _%i : SV_Target%i;\n", type_string(f->return_type.type), j, j);
 				}
 				*offset += sprintf(&code[*offset], "};\n\n");
@@ -321,9 +321,9 @@ static void write_functions(char *code, size_t *offset) {
 			switch (o->type) {
 			case OPCODE_VAR:
 				indent(code, offset, indentation);
-				if (o->op_var.var.type.array_size > 0) {
+				if (get_type(o->op_var.var.type.type)->array_size > 0) {
 					*offset += sprintf(&code[*offset], "%s _%" PRIu64 "[%i];\n", type_string(o->op_var.var.type.type), o->op_var.var.index,
-					                   o->op_var.var.type.array_size);
+					                   get_type(o->op_var.var.type.type)->array_size);
 				}
 				else {
 					*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s;\n", o->op_var.var.index, type_string(o->op_var.var.type.type));
@@ -420,7 +420,7 @@ static void write_functions(char *code, size_t *offset) {
 										else {
 											*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.static_member_indices[i]].name));
 										}
-										is_array = s->members.m[o->op_store_member.static_member_indices[i]].type.array_size > 0;
+										is_array = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type)->array_size > 0;
 										s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
 									}
 								}
@@ -451,7 +451,7 @@ static void write_functions(char *code, size_t *offset) {
 						check(!o->op_store_member.dynamic_member[i], context, "Unexpected dynamic member");
 						check(o->op_store_member.static_member_indices[i] < s->members.size, context, "Member index out of bounds");
 						*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.static_member_indices[i]].name));
-						is_array = s->members.m[o->op_store_member.static_member_indices[i]].type.array_size > 0;
+						is_array = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type)->array_size > 0;
 						s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
 					}
 				}
@@ -460,12 +460,12 @@ static void write_functions(char *code, size_t *offset) {
 			}
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
-					if (is_fragment_function(i) && f->return_type.array_size > 0) {
+					if (is_fragment_function(i) && get_type(f->return_type.type)->array_size > 0) {
 						indent(code, offset, indentation);
 						*offset += sprintf(&code[*offset], "{\n");
 						indent(code, offset, indentation + 1);
 						*offset += sprintf(&code[*offset], "_kong_colors_out _kong_colors;\n");
-						for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
+						for (uint32_t j = 0; j < get_type(f->return_type.type)->array_size; ++j) {
 							indent(code, offset, indentation + 1);
 							*offset += sprintf(&code[*offset], "_kong_colors._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
 						}

@@ -76,7 +76,6 @@ static void vec2_found_f32(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -86,7 +85,6 @@ static void vec2_found_vec2(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float2_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -96,7 +94,6 @@ static void vec3_found_f32(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -106,7 +103,6 @@ static void vec3_found_vec2(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float2_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -116,7 +112,6 @@ static void vec3_found_vec3(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float3_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -126,7 +121,6 @@ static void vec4_found_f32(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -136,7 +130,6 @@ static void vec4_found_vec2(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float2_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -146,7 +139,6 @@ static void vec4_found_vec3(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float3_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -156,7 +148,6 @@ static void vec4_found_vec4(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = float4_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -166,7 +157,6 @@ static void int2_found_int(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = int_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -176,7 +166,6 @@ static void int2_found_int2(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = int2_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -186,7 +175,6 @@ static void int3_found_int(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = int_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -196,7 +184,6 @@ static void int3_found_int2(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = int2_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -206,7 +193,6 @@ static void int3_found_int3(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = int3_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -216,7 +202,6 @@ static void int4_found_int(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = int_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -226,7 +211,6 @@ static void int4_found_int2(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = int2_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -236,7 +220,6 @@ static void int4_found_int3(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = int3_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -246,7 +229,6 @@ static void int4_found_int4(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = int4_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -256,7 +238,6 @@ static void uint2_found_uint(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -266,7 +247,6 @@ static void uint2_found_uint2(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint2_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -276,7 +256,6 @@ static void uint3_found_uint(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -286,7 +265,6 @@ static void uint3_found_uint2(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint2_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -296,7 +274,6 @@ static void uint3_found_uint3(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint3_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -306,7 +283,6 @@ static void uint4_found_uint(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -316,7 +292,6 @@ static void uint4_found_uint2(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint2_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -326,7 +301,6 @@ static void uint4_found_uint3(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint3_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -336,7 +310,6 @@ static void uint4_found_uint4(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint4_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -346,7 +319,6 @@ static void bool2_found_bool(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -356,7 +328,6 @@ static void bool2_found_bool2(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool2_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -366,7 +337,6 @@ static void bool3_found_bool(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -376,7 +346,6 @@ static void bool3_found_bool2(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool2_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -386,7 +355,6 @@ static void bool3_found_bool3(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool3_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -396,7 +364,6 @@ static void bool4_found_bool(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -406,7 +373,6 @@ static void bool4_found_bool2(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool2_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -416,7 +382,6 @@ static void bool4_found_bool3(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool3_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
@@ -426,14 +391,13 @@ static void bool4_found_bool4(char *permutation) {
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
 	t->members.m[t->members.size].name = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool4_id;
-	t->members.m[t->members.size].type.array_size = 0;
 	++t->members.size;
 }
 
 void init_type_ref(type_ref *t, name_id name) {
-	t->name = name;
 	t->type = NO_TYPE;
-	t->array_size = 0;
+	t->unresolved.name = name;
+	t->unresolved.array_size = 0;
 }
 
 void types_init(void) {
@@ -670,25 +634,21 @@ void types_init(void) {
 		get_type(ray_type_id)->built_in = true;
 
 		type *t = get_type(ray_type_id);
-		
+
 		t->members.m[t->members.size].name = add_name("origin");
 		t->members.m[t->members.size].type.type = float3_id;
-		t->members.m[t->members.size].type.array_size = 0;
 		++t->members.size;
 
 		t->members.m[t->members.size].name = add_name("direction");
 		t->members.m[t->members.size].type.type = float3_id;
-		t->members.m[t->members.size].type.array_size = 0;
 		++t->members.size;
 
 		t->members.m[t->members.size].name = add_name("min");
 		t->members.m[t->members.size].type.type = float_id;
-		t->members.m[t->members.size].type.array_size = 0;
 		++t->members.size;
 
 		t->members.m[t->members.size].name = add_name("max");
 		t->members.m[t->members.size].type.type = float_id;
-		t->members.m[t->members.size].type.array_size = 0;
 		++t->members.size;
 	}
 
@@ -719,11 +679,12 @@ type_id add_type(name_id name) {
 	type_id s = next_type_index;
 	++next_type_index;
 
-	types[s].kind = TYPE_OBJECT;
 	types[s].name = name;
 	types[s].attributes.attributes_count = 0;
 	types[s].members.size = 0;
 	types[s].built_in = false;
+	types[s].array_size = 0;
+	types[s].base = NO_TYPE;
 
 	return s;
 }
@@ -741,12 +702,32 @@ type_id find_type_by_name(name_id name) {
 }
 
 type_id find_type_by_ref(type_ref *t) {
+	if (t->type != NO_TYPE) {
+		return t->type;
+	}
+
 	debug_context context = {0};
-	check(t->name != NO_NAME, context, "Attempted to find a no-name");
+	check(t->unresolved.name != NO_NAME, context, "Attempted to find a no-name");
+
+	bool found_name = false;
+
 	for (type_id i = 0; i < next_type_index; ++i) {
-		if (types[i].name == t->name) {
-			return i;
+		if (types[i].name == t->unresolved.name) {
+			found_name = true;
+			if (types[i].array_size == t->unresolved.array_size) {
+				return i;
+			}
 		}
+	}
+
+	if (found_name) {
+		type_id new_type = add_type(t->unresolved.name);
+		get_type(new_type)->array_size = t->unresolved.array_size;
+
+		type_ref no_array_type;
+		no_array_type = *t;
+		no_array_type.unresolved.array_size = 0;
+		get_type(new_type)->base = find_type_by_ref(&no_array_type);
 	}
 
 	return NO_TYPE;

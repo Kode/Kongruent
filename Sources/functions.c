@@ -604,7 +604,6 @@ void functions_init(void) {
 		function *f = get_function(func);
 		init_type_ref(&f->return_type, add_name("void"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
-		f->return_type.array_size = 1;
 
 		f->parameter_names[0] = add_name("x");
 		init_type_ref(&f->parameter_types[0], add_name("uint"));
@@ -624,7 +623,6 @@ void functions_init(void) {
 		function *f = get_function(func);
 		init_type_ref(&f->return_type, add_name("void"));
 		f->return_type.type = find_type_by_ref(&f->return_type);
-		f->return_type.array_size = 1;
 
 		f->parameter_names[0] = add_name("x");
 		init_type_ref(&f->parameter_types[0], add_name("uint"));

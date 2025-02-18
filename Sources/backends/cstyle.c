@@ -8,9 +8,9 @@
 #include <stdio.h>
 #include <string.h>
 
-//static char *function_string(name_id func) {
+// static char *function_string(name_id func) {
 //	return get_name(func);
-//}
+// }
 
 // HLSL for now
 static char *member_string(type *parent_type, name_id member_name) {
@@ -40,9 +40,9 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 	switch (o->type) {
 	case OPCODE_VAR:
 		indent(code, offset, *indentation);
-		if (o->op_var.var.type.array_size > 0) {
-			*offset +=
-			    sprintf(&code[*offset], "%s _%" PRIu64 "[%i];\n", type_string(o->op_var.var.type.type), o->op_var.var.index, o->op_var.var.type.array_size);
+		if (get_type(o->op_var.var.type.type)->array_size > 0) {
+			*offset += sprintf(&code[*offset], "%s _%" PRIu64 "[%i];\n", type_string(o->op_var.var.type.type), o->op_var.var.index,
+			                   get_type(o->op_var.var.type.type)->array_size);
 		}
 		else {
 			*offset += sprintf(&code[*offset], "%s _%" PRIu64 ";\n", type_string(o->op_var.var.type.type), o->op_var.var.index);
@@ -96,7 +96,7 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 				check(!o->op_store_member.dynamic_member[i], context, "Unexpected dynamic member");
 				check(o->op_store_member.static_member_indices[i] < s->members.size, context, "Member index out of bounds");
 				*offset += sprintf(&code[*offset], ".%s", member_string(s, s->members.m[o->op_store_member.static_member_indices[i]].name));
-				is_array = s->members.m[o->op_store_member.static_member_indices[i]].type.array_size > 0;
+				is_array = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type)->array_size > 0;
 				s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
 			}
 		}

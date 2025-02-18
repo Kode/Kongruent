@@ -1154,7 +1154,7 @@ static void write_globals(instructions_buffer *instructions_block, function *mai
 		int register_index = global_register_indices[globals[i]];
 
 		type *t = get_type(g->type);
-		type_id base_type = t->kind == TYPE_ARRAY ? t->array.base : g->type;
+		type_id base_type = t->array_size > 0 ? t->base : g->type;
 
 		if (base_type == sampler_type_id) {
 			//*offset += sprintf(&hlsl[*offset], "SamplerState _%" PRIu64 " : register(s%i);\n\n", g->var_index, register_index);
@@ -1164,7 +1164,7 @@ static void write_globals(instructions_buffer *instructions_block, function *mai
 				//*offset += sprintf(&hlsl[*offset], "RWTexture2D<float4> _%" PRIu64 " : register(u%i);\n\n", g->var_index, register_index);
 			}
 			else {
-				if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
+				if (t->array_size == UINT32_MAX) {
 					//*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 "[] : register(t%i, space1);\n\n", g->var_index, register_index);
 				}
 				else {
@@ -1454,14 +1454,14 @@ void spirv_export(char *directory) {
 		global *g = get_global(i);
 
 		type *t = get_type(g->type);
-		type_id base_type = t->kind == TYPE_ARRAY ? t->array.base : g->type;
+		type_id base_type = t->array_size > 0 ? t->base : g->type;
 
 		if (base_type == sampler_type_id) {
 			global_register_indices[i] = register_index;
 			register_index += 1;
 		}
 		else if (base_type == tex2d_type_id) {
-			if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
+			if (t->array_size == UINT32_MAX) {
 				global_register_indices[i] = 0;
 			}
 			else if (has_attribute(&g->attributes, add_name("write"))) {

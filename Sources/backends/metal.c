@@ -217,9 +217,9 @@ static void write_functions(char *code, size_t *offset) {
 			*offset += sprintf(&code[*offset], "%s) {\n", buffers);
 		}
 		else if (is_fragment_function(i)) {
-			if (f->return_type.array_size > 0) {
+			if (get_type(f->return_type.type)->array_size > 0) {
 				*offset += sprintf(&code[*offset], "struct _kong_colors_out {\n");
-				for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
+				for (uint32_t j = 0; j < get_type(f->return_type.type)->array_size; ++j) {
 					*offset += sprintf(&code[*offset], "\t%s _%i [[color(%i)]];\n", type_string(f->return_type.type), j, j);
 				}
 				*offset += sprintf(&code[*offset], "};\n\n");
@@ -283,12 +283,12 @@ static void write_functions(char *code, size_t *offset) {
 			}
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
-					if (is_fragment_function(i) && f->return_type.array_size > 0) {
+					if (is_fragment_function(i) && get_type(f->return_type.type)->array_size > 0) {
 						indent(code, offset, indentation);
 						*offset += sprintf(&code[*offset], "{\n");
 						indent(code, offset, indentation + 1);
 						*offset += sprintf(&code[*offset], "_kong_colors_out _kong_colors;\n");
-						for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
+						for (uint32_t j = 0; j < get_type(f->return_type.type)->array_size; ++j) {
 							indent(code, offset, indentation + 1);
 							*offset += sprintf(&code[*offset], "_kong_colors._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
 						}

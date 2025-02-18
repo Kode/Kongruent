@@ -48,15 +48,16 @@ static char *type_string(type_id type) {
 	return get_name(get_type(type)->name);
 }
 
-static void type_arr(type_ref t, char *arr) {
-	if (t.array_size == 0) {
+static void type_arr(type_ref t_ref, char *arr) {
+	type *t = get_type(t_ref.type);
+	if (t->array_size == 0) {
 		arr[0] = 0;
 	}
-	else if (t.array_size == UINT32_MAX) {
+	else if (t->array_size == UINT32_MAX) {
 		strcpy(arr, "[]");
 	}
 	else {
-		sprintf(arr, "[%i]", t.array_size);
+		sprintf(arr, "[%i]", t->array_size);
 	}
 }
 
@@ -254,7 +255,7 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 		int register_index = global_register_indices[globals[i]];
 
 		type *t = get_type(g->type);
-		type_id base_type = t->kind == TYPE_ARRAY ? t->array.base : g->type;
+		type_id base_type = t->array_size > 0 ? t->base : g->type;
 
 		if (base_type == sampler_type_id) {
 			*offset += sprintf(&hlsl[*offset], "SamplerState _%" PRIu64 " : register(s%i);\n\n", g->var_index, register_index);
@@ -264,7 +265,7 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 				*offset += sprintf(&hlsl[*offset], "RWTexture2D<float4> _%" PRIu64 " : register(u%i);\n\n", g->var_index, register_index);
 			}
 			else {
-				if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
+				if (t->array_size > 0 && t->array_size == UINT32_MAX) {
 					*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 "[] : register(t%i, space1);\n\n", g->var_index, register_index);
 				}
 				else {
@@ -434,7 +435,7 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 			case DEFINITION_TEX2DARRAY:
 			case DEFINITION_TEXCUBE: {
 				type *t = get_type(get_global(def->global)->type);
-				if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
+				if (t->array_size == UINT32_MAX) {
 					has_boundless = true;
 				}
 				else {
@@ -538,7 +539,7 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 				case DEFINITION_TEXCUBE: {
 					type *t = get_type(get_global(def->global)->type);
 
-					if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
+					if (t->array_size == UINT32_MAX) {
 						*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(SRV(t0, space = %i, numDescriptors = unbounded))", boundless_space);
 						boundless_space += 1;
 					}
@@ -730,9 +731,9 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				*offset += sprintf(&hlsl[*offset], ") {\n");
 			}
 			else if (stage == SHADER_STAGE_FRAGMENT) {
-				if (f->return_type.array_size > 0) {
+				if (get_type(f->return_type.type)->array_size > 0) {
 					*offset += sprintf(&hlsl[*offset], "struct _kong_colors_out {\n");
-					for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
+					for (uint32_t j = 0; j < get_type(f->return_type.type)->array_size; ++j) {
 						*offset += sprintf(&hlsl[*offset], "\t%s _%i : SV_Target%i;\n", type_string(f->return_type.type), j, j);
 					}
 					*offset += sprintf(&hlsl[*offset], "};\n\n");
@@ -1004,7 +1005,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
 					if (o->op_load_member.dynamic_member[i]) {
 						type *from_type = get_type(o->op_load_member.from.type.type);
-						if (from_type->kind == TYPE_ARRAY && from_type->array.base == tex2d_type_id && from_type->array.array_size == UINT32_MAX) {
+						if (from_type->array_size == UINT32_MAX && from_type->base == tex2d_type_id) {
 							*offset += sprintf(&hlsl[*offset], "[NonUniformResourceIndex(_%" PRIu64 ")]", o->op_load_member.dynamic_member_indices[i].index);
 						}
 						else {
@@ -1029,12 +1030,12 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			}
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
-					if (f == main && stage == SHADER_STAGE_FRAGMENT && f->return_type.array_size > 0) {
+					if (f == main && stage == SHADER_STAGE_FRAGMENT && get_type(f->return_type.type)->array_size > 0) {
 						indent(hlsl, offset, indentation);
 						*offset += sprintf(&hlsl[*offset], "{\n");
 						indent(hlsl, offset, indentation + 1);
 						*offset += sprintf(&hlsl[*offset], "_kong_colors_out _kong_colors;\n");
-						for (uint32_t j = 0; j < f->return_type.array_size; ++j) {
+						for (uint32_t j = 0; j < get_type(f->return_type.type)->array_size; ++j) {
 							*offset += sprintf(&hlsl[*offset], "\t\t_kong_colors._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
 						}
 						indent(hlsl, offset, indentation + 1);
@@ -1480,14 +1481,14 @@ void hlsl_export(char *directory, api_kind d3d) {
 		global *g = get_global(i);
 
 		type *t = get_type(g->type);
-		type_id base_type = t->kind == TYPE_ARRAY ? t->array.base : g->type;
+		type_id base_type = t->array_size > 0 ? t->base : g->type;
 
 		if (base_type == sampler_type_id) {
 			global_register_indices[i] = sampler_index;
 			sampler_index += 1;
 		}
 		else if (base_type == tex2d_type_id) {
-			if (t->kind == TYPE_ARRAY && t->array.array_size == UINT32_MAX) {
+			if (t->array_size == UINT32_MAX) {
 				global_register_indices[i] = 0;
 			}
 			else if (has_attribute(&g->attributes, add_name("write"))) {
