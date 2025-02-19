@@ -817,6 +817,9 @@ void kope_export(char *directory, api_kind api) {
 				case DEFINITION_CONST_CUSTOM:
 					fprintf(output, "\tkope_g5_buffer *%s;\n", get_name(get_global(d.global)->name));
 					break;
+				case DEFINITION_CONST_BASIC:
+					fprintf(output, "\tkope_g5_buffer *%s;\n", get_name(get_global(d.global)->name));
+					break;
 				case DEFINITION_BVH:
 					fprintf(output, "\tkope_g5_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
 					break;
@@ -1415,6 +1418,24 @@ void kope_export(char *directory, api_kind api) {
 					}
 					else {
 						fprintf(output, "\tkope_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short,
+						        get_name(get_global(d.global)->name));
+					}
+					break;
+				case DEFINITION_CONST_BASIC:
+					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
+						if (api == API_VULKAN) {
+							fprintf(output, "\tkope_vulkan_descriptor_set_prepare_buffer(list, set->%s);\n", get_name(get_global(d.global)->name));
+						}
+						else {
+							fprintf(
+							    output,
+							    "\tkope_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), align_pow2((int)%i, 256));\n",
+							    api_short, get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), struct_size(get_global(d.global)->type),
+							    struct_size(get_global(d.global)->type));
+						}
+					}
+					else {
+						fprintf(output, "\tkope_%s_descriptor_set_prepare_uav_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short,
 						        get_name(get_global(d.global)->name));
 					}
 					break;
