@@ -1,4 +1,4 @@
-#include "kinc.h"
+#include "kore3.h"
 
 #include "../backends/util.h"
 #include "../compiler.h"
@@ -529,7 +529,7 @@ static void to_upper(char *from, char *to) {
 
 static int global_register_indices[512];
 
-void kope_export(char *directory, api_kind api) {
+void kore3_export(char *directory, api_kind api) {
 	memset(global_register_indices, 0, sizeof(global_register_indices));
 
 	char *api_short = NULL;

@@ -4,4 +4,4 @@
 
 #include <stdint.h>
 
-void kinc_export(char *directory, api_kind api);
+void kore3_export(char *directory, api_kind api);

@@ -16,8 +16,7 @@
 #include "backends/spirv.h"
 #include "backends/wgsl.h"
 
-#include "integrations/kinc.h"
-#include "integrations/kope.h"
+#include "integrations/kore3.h"
 
 #include "dir.h"
 
@@ -63,7 +62,7 @@ static void read_file(char *filename) {
 	parse(filename, &tokens);
 }
 
-typedef enum integration_kind { INTEGRATION_KINC, INTEGRATION_KOPE } integration_kind;
+typedef enum integration_kind { INTEGRATION_KORE3 } integration_kind;
 
 int main(int argc, char **argv) {
 	arg_mode mode = MODE_MODECHECK;
@@ -72,7 +71,7 @@ int main(int argc, char **argv) {
 	size_t inputs_size = 0;
 	char *platform = NULL;
 	api_kind api = API_DEFAULT;
-	integration_kind integration = INTEGRATION_KINC;
+	integration_kind integration = INTEGRATION_KORE3;
 	char *output = NULL;
 
 	for (int i = 1; i < argc; ++i) {
@@ -198,11 +197,8 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case MODE_INTEGRATION: {
-			if (strcmp(arg, "kinc") == 0) {
-				integration = INTEGRATION_KINC;
-			}
-			else if (strcmp(arg, "kope") == 0) {
-				integration = INTEGRATION_KOPE;
+			if (strcmp(arg, "kore3") == 0) {
+				integration = INTEGRATION_KORE3;
 			}
 			else {
 				debug_context context = {0};
@@ -321,11 +317,8 @@ int main(int argc, char **argv) {
 	}
 
 	switch (integration) {
-	case INTEGRATION_KINC:
-		kinc_export(output, api);
-		break;
-	case INTEGRATION_KOPE:
-		kope_export(output, api);
+	case INTEGRATION_KORE3:
+		kore3_export(output, api);
 		break;
 	}
 
