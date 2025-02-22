@@ -1027,7 +1027,7 @@ void kore3_export(char *directory, api_kind api) {
 		fprintf(output, "#include <kore3/%s/device_functions.h>\n", api_long);
 		fprintf(output, "#include <kore3/%s/descriptorset_functions.h>\n", api_long);
 		fprintf(output, "#include <kore3/%s/pipeline_functions.h>\n", api_long);
-		fprintf(output, "#include <util/align.h>\n\n");
+		fprintf(output, "#include <kore3/util/align.h>\n\n");
 		fprintf(output, "#include <assert.h>\n");
 		fprintf(output, "#include <stdlib.h>\n\n");
 
