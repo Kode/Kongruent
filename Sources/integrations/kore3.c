@@ -37,25 +37,25 @@ static char *type_string(type_id type) {
 		return "int";
 	}
 	if (type == int2_id) {
-		return "kope_int2";
+		return "kore_int2";
 	}
 	if (type == int3_id) {
-		return "kope_int3";
+		return "kore_int3";
 	}
 	if (type == int4_id) {
-		return "kope_int4";
+		return "kore_int4";
 	}
 	if (type == uint_id) {
 		return "unsigned";
 	}
 	if (type == uint2_id) {
-		return "kope_uint2";
+		return "kore_uint2";
 	}
 	if (type == uint3_id) {
-		return "kope_uint3";
+		return "kore_uint3";
 	}
 	if (type == uint4_id) {
-		return "kope_uint4";
+		return "kore_uint4";
 	}
 	return get_name(get_type(type)->name);
 }
@@ -680,8 +680,8 @@ void kore3_export(char *directory, api_kind api) {
 
 		fprintf(output, "#include <kore3/gpu/device.h>\n");
 		fprintf(output, "#include <kore3/gpu/sampler.h>\n");
-		fprintf(output, "#include <kope/%s/descriptorset_structs.h>\n", api_long);
-		fprintf(output, "#include <kope/%s/pipeline_structs.h>\n", api_long);
+		fprintf(output, "#include <kore3/%s/descriptorset_structs.h>\n", api_long);
+		fprintf(output, "#include <kore3/%s/pipeline_structs.h>\n", api_long);
 		fprintf(output, "#include <kinc/math/matrix.h>\n");
 		fprintf(output, "#include <kinc/math/vector.h>\n\n");
 
@@ -1022,17 +1022,17 @@ void kore3_export(char *directory, api_kind api) {
 			}
 		}
 
-		fprintf(output, "\n#include <kope/%s/buffer_functions.h>\n", api_long);
-		fprintf(output, "#include <kope/%s/commandlist_functions.h>\n", api_long);
-		fprintf(output, "#include <kope/%s/device_functions.h>\n", api_long);
-		fprintf(output, "#include <kope/%s/descriptorset_functions.h>\n", api_long);
-		fprintf(output, "#include <kope/%s/pipeline_functions.h>\n", api_long);
+		fprintf(output, "\n#include <kore3/%s/buffer_functions.h>\n", api_long);
+		fprintf(output, "#include <kore3/%s/commandlist_functions.h>\n", api_long);
+		fprintf(output, "#include <kore3/%s/device_functions.h>\n", api_long);
+		fprintf(output, "#include <kore3/%s/descriptorset_functions.h>\n", api_long);
+		fprintf(output, "#include <kore3/%s/pipeline_functions.h>\n", api_long);
 		fprintf(output, "#include <util/align.h>\n\n");
 		fprintf(output, "#include <assert.h>\n");
 		fprintf(output, "#include <stdlib.h>\n\n");
 
 		if (api == API_VULKAN) {
-			fprintf(output, "#include <kope/vulkan/vulkanunit.h>\n\n");
+			fprintf(output, "#include <kore3/vulkan/vulkanunit.h>\n\n");
 		}
 
 		for (size_t i = 0; i < vertex_inputs_size; ++i) {
@@ -1262,7 +1262,7 @@ void kore3_export(char *directory, api_kind api) {
 			}
 
 			if (api == API_VULKAN) {
-				fprintf(output, "\tkope_vulkan_device_create_descriptor_set(device, &%s_set_layout, &set->set);\n", get_name(set->name));
+				fprintf(output, "\tkore_vulkan_device_create_descriptor_set(device, &%s_set_layout, &set->set);\n", get_name(set->name));
 			}
 			else {
 				fprintf(output, "\tkore_%s_device_create_descriptor_set(device, %zu, %zu, %zu, %zu, &set->set);\n", api_short, other_count, dynamic_count,
@@ -1324,7 +1324,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 						else {
 							if (api == API_VULKAN) {
-								fprintf(output, "\tkope_vulkan_descriptor_set_set_texture_view(device, &set->set, &parameters->%s, %zu);\n",
+								fprintf(output, "\tkore_vulkan_descriptor_set_set_texture_view(device, &set->set, &parameters->%s, %zu);\n",
 								        get_name(get_global(d.global)->name), descriptor_index);
 							}
 							else {
@@ -1406,7 +1406,7 @@ void kore3_export(char *directory, api_kind api) {
 				case DEFINITION_CONST_CUSTOM:
 					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
 						if (api == API_VULKAN) {
-							fprintf(output, "\tkope_vulkan_descriptor_set_prepare_buffer(list, set->%s);\n", get_name(get_global(d.global)->name));
+							fprintf(output, "\tkore_vulkan_descriptor_set_prepare_buffer(list, set->%s);\n", get_name(get_global(d.global)->name));
 						}
 						else {
 							fprintf(
@@ -1424,7 +1424,7 @@ void kore3_export(char *directory, api_kind api) {
 				case DEFINITION_CONST_BASIC:
 					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
 						if (api == API_VULKAN) {
-							fprintf(output, "\tkope_vulkan_descriptor_set_prepare_buffer(list, set->%s);\n", get_name(get_global(d.global)->name));
+							fprintf(output, "\tkore_vulkan_descriptor_set_prepare_buffer(list, set->%s);\n", get_name(get_global(d.global)->name));
 						}
 						else {
 							fprintf(
@@ -1454,7 +1454,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 						else {
 							if (api == API_VULKAN) {
-								fprintf(output, "\tkope_vulkan_descriptor_set_prepare_texture(list, &set->%s);\n", get_name(get_global(d.global)->name));
+								fprintf(output, "\tkore_vulkan_descriptor_set_prepare_texture(list, &set->%s);\n", get_name(get_global(d.global)->name));
 							}
 							else {
 								fprintf(output, "\tkore_%s_descriptor_set_prepare_srv_texture(list, &set->%s);\n", api_short,
@@ -1985,7 +1985,6 @@ void kore3_export(char *directory, api_kind api) {
 
 		FILE *output = fopen(filename, "wb");
 
-		fprintf(output, "#include <kope/direct3d12/d3d12unit.h>\n");
 		fprintf(output, "#include <kore3/gpu/device.h>\n\n");
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
@@ -2005,7 +2004,7 @@ void kore3_export(char *directory, api_kind api) {
 
 		FILE *output = fopen(filename, "wb");
 
-		fprintf(output, "#include <kope/vulkan/vulkanunit.h>\n");
+		fprintf(output, "#include <kore3/vulkan/vulkanunit.h>\n");
 		fprintf(output, "#include <kore3/gpu/device.h>\n\n");
 
 		fprintf(output, "#include <assert.h>\n\n");
