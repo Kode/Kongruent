@@ -63,16 +63,16 @@ static char *type_string(type_id type) {
 static const char *structure_type(type_id type, api_kind api) {
 	if (api == API_DIRECT3D12) {
 		if (type == float_id) {
-			return "KOPE_D3D12_VERTEX_FORMAT_FLOAT32";
+			return "KORE_D3D12_VERTEX_FORMAT_FLOAT32";
 		}
 		if (type == float2_id) {
-			return "KOPE_D3D12_VERTEX_FORMAT_FLOAT32X2";
+			return "KORE_D3D12_VERTEX_FORMAT_FLOAT32X2";
 		}
 		if (type == float3_id) {
-			return "KOPE_D3D12_VERTEX_FORMAT_FLOAT32X3";
+			return "KORE_D3D12_VERTEX_FORMAT_FLOAT32X3";
 		}
 		if (type == float4_id) {
-			return "KOPE_D3D12_VERTEX_FORMAT_FLOAT32X4";
+			return "KORE_D3D12_VERTEX_FORMAT_FLOAT32X4";
 		}
 	}
 	else if (api == API_METAL) {
@@ -111,21 +111,21 @@ static const char *structure_type(type_id type, api_kind api) {
 static const char *convert_compare_mode(int mode) {
 	switch (mode) {
 	case 0:
-		return "KOPE_G5_COMPARE_FUNCTION_ALWAYS";
+		return "KORE_GPU_COMPARE_FUNCTION_ALWAYS";
 	case 1:
-		return "KOPE_G5_COMPARE_FUNCTION_NEVER";
+		return "KORE_GPU_COMPARE_FUNCTION_NEVER";
 	case 2:
-		return "KOPE_G5_COMPARE_FUNCTION_EQUAL";
+		return "KORE_GPU_COMPARE_FUNCTION_EQUAL";
 	case 3:
-		return "KOPE_G5_COMPARE_FUNCTION_NOT_EQUAL";
+		return "KORE_GPU_COMPARE_FUNCTION_NOT_EQUAL";
 	case 4:
-		return "KOPE_G5_COMPARE_FUNCTION_LESS";
+		return "KORE_GPU_COMPARE_FUNCTION_LESS";
 	case 5:
-		return "KOPE_G5_COMPARE_FUNCTION_LESS_EQUAL";
+		return "KORE_GPU_COMPARE_FUNCTION_LESS_EQUAL";
 	case 6:
-		return "KOPE_G5_COMPARE_FUNCTION_GREATER";
+		return "KORE_GPU_COMPARE_FUNCTION_GREATER";
 	case 7:
-		return "KOPE_G5_COMPARE_FUNCTION_GREATER_EQUAL";
+		return "KORE_GPU_COMPARE_FUNCTION_GREATER_EQUAL";
 	default: {
 		debug_context context = {0};
 		error(context, "Unknown compare mode");
@@ -137,89 +137,89 @@ static const char *convert_compare_mode(int mode) {
 static const char *convert_texture_format(int format) {
 	switch (format) {
 	case 0:
-		return "KOPE_G5_TEXTURE_FORMAT_R8_UNORM";
+		return "KORE_GPU_TEXTURE_FORMAT_R8_UNORM";
 	case 1:
-		return "KOPE_G5_TEXTURE_FORMAT_R8_SNORM";
+		return "KORE_GPU_TEXTURE_FORMAT_R8_SNORM";
 	case 2:
-		return "KOPE_G5_TEXTURE_FORMAT_R8_UINT";
+		return "KORE_GPU_TEXTURE_FORMAT_R8_UINT";
 	case 3:
-		return "KOPE_G5_TEXTURE_FORMAT_R8_SINT";
+		return "KORE_GPU_TEXTURE_FORMAT_R8_SINT";
 	case 4:
-		return "KOPE_G5_TEXTURE_FORMAT_R16_UINT";
+		return "KORE_GPU_TEXTURE_FORMAT_R16_UINT";
 	case 5:
-		return "KOPE_G5_TEXTURE_FORMAT_R16_SINT";
+		return "KORE_GPU_TEXTURE_FORMAT_R16_SINT";
 	case 6:
-		return "KOPE_G5_TEXTURE_FORMAT_R16_FLOAT";
+		return "KORE_GPU_TEXTURE_FORMAT_R16_FLOAT";
 	case 7:
-		return "KOPE_G5_TEXTURE_FORMAT_RG8_UNORM";
+		return "KORE_GPU_TEXTURE_FORMAT_RG8_UNORM";
 	case 8:
-		return "KOPE_G5_TEXTURE_FORMAT_RG8_SNORM";
+		return "KORE_GPU_TEXTURE_FORMAT_RG8_SNORM";
 	case 9:
-		return "KOPE_G5_TEXTURE_FORMAT_RG8_UINT";
+		return "KORE_GPU_TEXTURE_FORMAT_RG8_UINT";
 	case 10:
-		return "KOPE_G5_TEXTURE_FORMAT_RG8_SINT";
+		return "KORE_GPU_TEXTURE_FORMAT_RG8_SINT";
 	case 11:
-		return "KOPE_G5_TEXTURE_FORMAT_R32_UINT";
+		return "KORE_GPU_TEXTURE_FORMAT_R32_UINT";
 	case 12:
-		return "KOPE_G5_TEXTURE_FORMAT_R32_SINT";
+		return "KORE_GPU_TEXTURE_FORMAT_R32_SINT";
 	case 13:
-		return "KOPE_G5_TEXTURE_FORMAT_R32_FLOAT";
+		return "KORE_GPU_TEXTURE_FORMAT_R32_FLOAT";
 	case 14:
-		return "KOPE_G5_TEXTURE_FORMAT_RG16_UINT";
+		return "KORE_GPU_TEXTURE_FORMAT_RG16_UINT";
 	case 15:
-		return "KOPE_G5_TEXTURE_FORMAT_RG16_SINT";
+		return "KORE_GPU_TEXTURE_FORMAT_RG16_SINT";
 	case 16:
-		return "KOPE_G5_TEXTURE_FORMAT_RG16_FLOAT";
+		return "KORE_GPU_TEXTURE_FORMAT_RG16_FLOAT";
 	case 17:
-		return "KOPE_G5_TEXTURE_FORMAT_RGBA8_UNORM";
+		return "KORE_GPU_TEXTURE_FORMAT_RGBA8_UNORM";
 	case 18:
-		return "KOPE_G5_TEXTURE_FORMAT_RGBA8_UNORM_SRGB";
+		return "KORE_GPU_TEXTURE_FORMAT_RGBA8_UNORM_SRGB";
 	case 19:
-		return "KOPE_G5_TEXTURE_FORMAT_RGBA8_SNORM";
+		return "KORE_GPU_TEXTURE_FORMAT_RGBA8_SNORM";
 	case 20:
-		return "KOPE_G5_TEXTURE_FORMAT_RGBA8_UINT";
+		return "KORE_GPU_TEXTURE_FORMAT_RGBA8_UINT";
 	case 21:
-		return "KOPE_G5_TEXTURE_FORMAT_RGBA8_SINT";
+		return "KORE_GPU_TEXTURE_FORMAT_RGBA8_SINT";
 	case 22:
-		return "KOPE_G5_TEXTURE_FORMAT_BGRA8_UNORM";
+		return "KORE_GPU_TEXTURE_FORMAT_BGRA8_UNORM";
 	case 23:
-		return "KOPE_G5_TEXTURE_FORMAT_BGRA8_UNORM_SRGB";
+		return "KORE_GPU_TEXTURE_FORMAT_BGRA8_UNORM_SRGB";
 	case 24:
-		return "KOPE_G5_TEXTURE_FORMAT_RGB9E5U_FLOAT";
+		return "KORE_GPU_TEXTURE_FORMAT_RGB9E5U_FLOAT";
 	case 25:
-		return "KOPE_G5_TEXTURE_FORMAT_RGB10A2_UINT";
+		return "KORE_GPU_TEXTURE_FORMAT_RGB10A2_UINT";
 	case 26:
-		return "KOPE_G5_TEXTURE_FORMAT_RGB10A2_UNORM";
+		return "KORE_GPU_TEXTURE_FORMAT_RGB10A2_UNORM";
 	case 27:
-		return "KOPE_G5_TEXTURE_FORMAT_RG11B10U_FLOAT";
+		return "KORE_GPU_TEXTURE_FORMAT_RG11B10U_FLOAT";
 	case 28:
-		return "KOPE_G5_TEXTURE_FORMAT_RG32_UINT";
+		return "KORE_GPU_TEXTURE_FORMAT_RG32_UINT";
 	case 29:
-		return "KOPE_G5_TEXTURE_FORMAT_RG32_SINT";
+		return "KORE_GPU_TEXTURE_FORMAT_RG32_SINT";
 	case 30:
-		return "KOPE_G5_TEXTURE_FORMAT_RG32_FLOAT";
+		return "KORE_GPU_TEXTURE_FORMAT_RG32_FLOAT";
 	case 31:
-		return "KOPE_G5_TEXTURE_FORMAT_RGBA16_UINT";
+		return "KORE_GPU_TEXTURE_FORMAT_RGBA16_UINT";
 	case 32:
-		return "KOPE_G5_TEXTURE_FORMAT_RGBA16_SINT";
+		return "KORE_GPU_TEXTURE_FORMAT_RGBA16_SINT";
 	case 33:
-		return "KOPE_G5_TEXTURE_FORMAT_RGBA16_FLOAT";
+		return "KORE_GPU_TEXTURE_FORMAT_RGBA16_FLOAT";
 	case 34:
-		return "KOPE_G5_TEXTURE_FORMAT_RGBA32_UINT";
+		return "KORE_GPU_TEXTURE_FORMAT_RGBA32_UINT";
 	case 35:
-		return "KOPE_G5_TEXTURE_FORMAT_RGBA32_SINT";
+		return "KORE_GPU_TEXTURE_FORMAT_RGBA32_SINT";
 	case 36:
-		return "KOPE_G5_TEXTURE_FORMAT_RGBA32_FLOAT";
+		return "KORE_GPU_TEXTURE_FORMAT_RGBA32_FLOAT";
 	case 37:
-		return "KOPE_G5_TEXTURE_FORMAT_DEPTH16_UNORM";
+		return "KORE_GPU_TEXTURE_FORMAT_DEPTH16_UNORM";
 	case 38:
-		return "KOPE_G5_TEXTURE_FORMAT_DEPTH24PLUS_NOTHING8";
+		return "KORE_GPU_TEXTURE_FORMAT_DEPTH24PLUS_NOTHING8";
 	case 39:
-		return "KOPE_G5_TEXTURE_FORMAT_DEPTH24PLUS_STENCIL8";
+		return "KORE_GPU_TEXTURE_FORMAT_DEPTH24PLUS_STENCIL8";
 	case 40:
-		return "KOPE_G5_TEXTURE_FORMAT_DEPTH32FLOAT";
+		return "KORE_GPU_TEXTURE_FORMAT_DEPTH32FLOAT";
 	case 41:
-		return "KOPE_G5_TEXTURE_FORMAT_DEPTH32FLOAT_STENCIL8_NOTHING24";
+		return "KORE_GPU_TEXTURE_FORMAT_DEPTH32FLOAT_STENCIL8_NOTHING24";
 	default: {
 		debug_context context = {0};
 		error(context, "Unknown texture format");
@@ -678,8 +678,8 @@ void kore3_export(char *directory, api_kind api) {
 		fprintf(output, "#ifndef KONG_INTEGRATION_HEADER\n");
 		fprintf(output, "#define KONG_INTEGRATION_HEADER\n\n");
 
-		fprintf(output, "#include <kope/graphics5/device.h>\n");
-		fprintf(output, "#include <kope/graphics5/sampler.h>\n");
+		fprintf(output, "#include <kore3/gpu/device.h>\n");
+		fprintf(output, "#include <kore3/gpu/sampler.h>\n");
 		fprintf(output, "#include <kope/%s/descriptorset_structs.h>\n", api_long);
 		fprintf(output, "#include <kope/%s/pipeline_structs.h>\n", api_long);
 		fprintf(output, "#include <kinc/math/matrix.h>\n");
@@ -689,7 +689,7 @@ void kore3_export(char *directory, api_kind api) {
 		fprintf(output, "extern \"C\" {\n");
 		fprintf(output, "#endif\n");
 
-		fprintf(output, "\nvoid kong_init(kope_g5_device *device);\n\n");
+		fprintf(output, "\nvoid kong_init(kore_gpu_device *device);\n\n");
 
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
@@ -728,14 +728,14 @@ void kore3_export(char *directory, api_kind api) {
 				}
 
 				if (is_root_constant) {
-					fprintf(output, "void kong_set_root_constants_%s(kope_g5_command_list *list, %s *constants);\n", get_name(g->name), name);
+					fprintf(output, "void kong_set_root_constants_%s(kore_gpu_command_list *list, %s *constants);\n", get_name(g->name), name);
 				}
 				else {
-					fprintf(output, "void %s_buffer_create(kope_g5_device *device, kope_g5_buffer *buffer, uint32_t count);\n", name);
-					fprintf(output, "void %s_buffer_destroy(kope_g5_buffer *buffer);\n", name);
-					fprintf(output, "%s *%s_buffer_lock(kope_g5_buffer *buffer, uint32_t index, uint32_t count);\n", name, name);
-					fprintf(output, "%s *%s_buffer_try_to_lock(kope_g5_buffer *buffer, uint32_t index, uint32_t count);\n", name, name);
-					fprintf(output, "void %s_buffer_unlock(kope_g5_buffer *buffer);\n", name);
+					fprintf(output, "void %s_buffer_create(kore_gpu_device *device, kore_gpu_buffer *buffer, uint32_t count);\n", name);
+					fprintf(output, "void %s_buffer_destroy(kore_gpu_buffer *buffer);\n", name);
+					fprintf(output, "%s *%s_buffer_lock(kore_gpu_buffer *buffer, uint32_t index, uint32_t count);\n", name, name);
+					fprintf(output, "%s *%s_buffer_try_to_lock(kore_gpu_buffer *buffer, uint32_t index, uint32_t count);\n", name, name);
+					fprintf(output, "void %s_buffer_unlock(kore_gpu_buffer *buffer);\n", name);
 				}
 			}
 		}
@@ -778,27 +778,27 @@ void kore3_export(char *directory, api_kind api) {
 				definition d = set->definitions[definition_index];
 				switch (d.kind) {
 				case DEFINITION_CONST_CUSTOM:
-					fprintf(output, "\tkope_g5_buffer *%s;\n", get_name(get_global(d.global)->name));
+					fprintf(output, "\tkore_gpu_buffer *%s;\n", get_name(get_global(d.global)->name));
 					break;
 				CASE_TEXTURE: {
 					type *t = get_type(get_global(d.global)->type);
 					if (t->array_size == UINT32_MAX) {
-						fprintf(output, "\tkope_g5_texture_view *%s;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\tkore_gpu_texture_view *%s;\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\tsize_t %s_count;\n", get_name(get_global(d.global)->name));
 					}
 					else {
-						fprintf(output, "\tkope_g5_texture_view %s;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\tkore_gpu_texture_view %s;\n", get_name(get_global(d.global)->name));
 					}
 					break;
 				}
 				case DEFINITION_SAMPLER:
-					fprintf(output, "\tkope_g5_sampler *%s;\n", get_name(get_global(d.global)->name));
+					fprintf(output, "\tkore_gpu_sampler *%s;\n", get_name(get_global(d.global)->name));
 					break;
 				case DEFINITION_BVH:
-					fprintf(output, "\tkope_g5_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
+					fprintf(output, "\tkore_gpu_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
 					break;
 				case DEFINITION_CONST_BASIC:
-					fprintf(output, "\tkope_g5_buffer *%s;\n", get_name(get_global(d.global)->name));
+					fprintf(output, "\tkore_gpu_buffer *%s;\n", get_name(get_global(d.global)->name));
 					break;
 				default: {
 					debug_context context = {0};
@@ -810,27 +810,27 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "} %s_parameters;\n\n", get_name(set->name));
 
 			fprintf(output, "typedef struct %s_set {\n", get_name(set->name));
-			fprintf(output, "\tkope_%s_descriptor_set set;\n\n", api_short);
+			fprintf(output, "\tkore_%s_descriptor_set set;\n\n", api_short);
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 				definition d = set->definitions[definition_index];
 				switch (d.kind) {
 				case DEFINITION_CONST_CUSTOM:
-					fprintf(output, "\tkope_g5_buffer *%s;\n", get_name(get_global(d.global)->name));
+					fprintf(output, "\tkore_gpu_buffer *%s;\n", get_name(get_global(d.global)->name));
 					break;
 				case DEFINITION_CONST_BASIC:
-					fprintf(output, "\tkope_g5_buffer *%s;\n", get_name(get_global(d.global)->name));
+					fprintf(output, "\tkore_gpu_buffer *%s;\n", get_name(get_global(d.global)->name));
 					break;
 				case DEFINITION_BVH:
-					fprintf(output, "\tkope_g5_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
+					fprintf(output, "\tkore_gpu_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
 					break;
 				CASE_TEXTURE: {
 					type *t = get_type(get_global(d.global)->type);
 					if (t->array_size == UINT32_MAX) {
-						fprintf(output, "\tkope_g5_texture_view *%s;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\tkore_gpu_texture_view *%s;\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\tsize_t %s_count;\n", get_name(get_global(d.global)->name));
 					}
 					else {
-						fprintf(output, "\tkope_g5_texture_view %s;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\tkore_gpu_texture_view %s;\n", get_name(get_global(d.global)->name));
 					}
 					break;
 				}
@@ -840,10 +840,10 @@ void kore3_export(char *directory, api_kind api) {
 			}
 			fprintf(output, "} %s_set;\n\n", get_name(set->name));
 
-			fprintf(output, "void kong_create_%s_set(kope_g5_device *device, const %s_parameters *parameters, %s_set *set);\n", get_name(set->name),
+			fprintf(output, "void kong_create_%s_set(kore_gpu_device *device, const %s_parameters *parameters, %s_set *set);\n", get_name(set->name),
 			        get_name(set->name), get_name(set->name));
 
-			fprintf(output, "void kong_set_descriptor_set_%s(kope_g5_command_list *list, %s_set *set", get_name(set->name), get_name(set->name));
+			fprintf(output, "void kong_set_descriptor_set_%s(kore_gpu_command_list *list, %s_set *set", get_name(set->name), get_name(set->name));
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 				definition d = set->definitions[definition_index];
 
@@ -892,22 +892,22 @@ void kore3_export(char *directory, api_kind api) {
 				definition d = set->definitions[definition_index];
 				switch (d.kind) {
 				case DEFINITION_CONST_CUSTOM:
-					fprintf(output, "\t\tkope_g5_buffer *%s;\n", get_name(get_global(d.global)->name));
+					fprintf(output, "\t\tkore_gpu_buffer *%s;\n", get_name(get_global(d.global)->name));
 					break;
 				case DEFINITION_BVH:
-					fprintf(output, "\t\tkope_g5_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
+					fprintf(output, "\t\tkore_gpu_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
 					break;
 				CASE_TEXTURE: {
 					type *t = get_type(get_global(d.global)->type);
 					if (t->array_size == UINT32_MAX) {
 						fprintf(output, "\t\tstruct {\n");
-						fprintf(output, "\t\t\tkope_g5_texture_view *%s;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\t\t\tkore_gpu_texture_view *%s;\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\t\t\tuint32_t *%s_indices;\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\t\t\tsize_t %s_count;\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\t\t} %s;\n", get_name(get_global(d.global)->name));
 					}
 					else {
-						fprintf(output, "\t\tkope_g5_texture_view %s;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\t\tkore_gpu_texture_view %s;\n", get_name(get_global(d.global)->name));
 					}
 					break;
 				}
@@ -935,41 +935,41 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "} %s;\n\n", get_name(t->name));
 
 			fprintf(output, "typedef struct %s_buffer {\n", get_name(t->name));
-			fprintf(output, "\tkope_g5_buffer buffer;\n");
+			fprintf(output, "\tkore_gpu_buffer buffer;\n");
 			fprintf(output, "\tsize_t count;\n");
 			fprintf(output, "} %s_buffer;\n\n", get_name(t->name));
 
-			fprintf(output, "void kong_create_buffer_%s(kope_g5_device * device, size_t count, %s_buffer *buffer);\n", get_name(t->name), get_name(t->name));
+			fprintf(output, "void kong_create_buffer_%s(kore_gpu_device * device, size_t count, %s_buffer *buffer);\n", get_name(t->name), get_name(t->name));
 			fprintf(output, "%s *kong_%s_buffer_lock(%s_buffer *buffer);\n", get_name(t->name), get_name(t->name), get_name(t->name));
 			fprintf(output, "%s *kong_%s_buffer_try_to_lock(%s_buffer *buffer);\n", get_name(t->name), get_name(t->name), get_name(t->name));
 			fprintf(output, "void kong_%s_buffer_unlock(%s_buffer *buffer);\n", get_name(t->name), get_name(t->name));
-			fprintf(output, "void kong_set_vertex_buffer_%s(kope_g5_command_list *list, %s_buffer *buffer);\n\n", get_name(t->name), get_name(t->name));
+			fprintf(output, "void kong_set_vertex_buffer_%s(kore_gpu_command_list *list, %s_buffer *buffer);\n\n", get_name(t->name), get_name(t->name));
 		}
 
-		fprintf(output, "void kong_set_render_pipeline(kope_g5_command_list *list, kope_%s_render_pipeline *pipeline);\n\n", api_short);
+		fprintf(output, "void kong_set_render_pipeline(kore_gpu_command_list *list, kore_%s_render_pipeline *pipeline);\n\n", api_short);
 
-		fprintf(output, "void kong_set_compute_pipeline(kope_g5_command_list *list, kope_%s_compute_pipeline *pipeline);\n\n", api_short);
+		fprintf(output, "void kong_set_compute_pipeline(kore_gpu_command_list *list, kore_%s_compute_pipeline *pipeline);\n\n", api_short);
 
-		fprintf(output, "void kong_set_ray_pipeline(kope_g5_command_list *list, kope_%s_ray_pipeline *pipeline);\n\n", api_short);
+		fprintf(output, "void kong_set_ray_pipeline(kore_gpu_command_list *list, kore_%s_ray_pipeline *pipeline);\n\n", api_short);
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-				fprintf(output, "extern kope_%s_render_pipeline %s;\n\n", api_short, get_name(t->name));
+				fprintf(output, "extern kore_%s_render_pipeline %s;\n\n", api_short, get_name(t->name));
 			}
 		}
 
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
 			if (has_attribute(&f->attributes, add_name("compute"))) {
-				fprintf(output, "extern kope_%s_compute_pipeline %s;\n\n", api_short, get_name(f->name));
+				fprintf(output, "extern kore_%s_compute_pipeline %s;\n\n", api_short, get_name(f->name));
 			}
 		}
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-				fprintf(output, "extern kope_%s_ray_pipeline %s;\n\n", api_short, get_name(t->name));
+				fprintf(output, "extern kore_%s_ray_pipeline %s;\n\n", api_short, get_name(t->name));
 			}
 		}
 
@@ -1027,7 +1027,7 @@ void kore3_export(char *directory, api_kind api) {
 		fprintf(output, "#include <kope/%s/device_functions.h>\n", api_long);
 		fprintf(output, "#include <kope/%s/descriptorset_functions.h>\n", api_long);
 		fprintf(output, "#include <kope/%s/pipeline_functions.h>\n", api_long);
-		fprintf(output, "#include <kope/util/align.h>\n\n");
+		fprintf(output, "#include <util/align.h>\n\n");
 		fprintf(output, "#include <assert.h>\n");
 		fprintf(output, "#include <stdlib.h>\n\n");
 
@@ -1038,55 +1038,55 @@ void kore3_export(char *directory, api_kind api) {
 		for (size_t i = 0; i < vertex_inputs_size; ++i) {
 			type *t = get_type(vertex_inputs[i]);
 
-			fprintf(output, "void kong_create_buffer_%s(kope_g5_device * device, size_t count, %s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
-			fprintf(output, "\tkope_g5_buffer_parameters parameters;\n");
+			fprintf(output, "void kong_create_buffer_%s(kore_gpu_device * device, size_t count, %s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
+			fprintf(output, "\tkore_gpu_buffer_parameters parameters;\n");
 			fprintf(output, "\tparameters.size = count * sizeof(%s);\n", get_name(t->name));
-			fprintf(output, "\tparameters.usage_flags = KOPE_G5_BUFFER_USAGE_VERTEX | KOPE_G5_BUFFER_USAGE_CPU_WRITE;\n");
-			fprintf(output, "\tkope_g5_device_create_buffer(device, &parameters, &buffer->buffer);\n");
+			fprintf(output, "\tparameters.usage_flags = KORE_GPU_BUFFER_USAGE_VERTEX | KORE_GPU_BUFFER_USAGE_CPU_WRITE;\n");
+			fprintf(output, "\tkore_gpu_device_create_buffer(device, &parameters, &buffer->buffer);\n");
 			fprintf(output, "\tbuffer->count = count;\n");
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "%s *kong_%s_buffer_lock(%s_buffer *buffer) {\n", get_name(t->name), get_name(t->name), get_name(t->name));
-			fprintf(output, "\treturn (%s *)kope_%s_buffer_lock_all(&buffer->buffer);\n", get_name(t->name), api_short);
+			fprintf(output, "\treturn (%s *)kore_%s_buffer_lock_all(&buffer->buffer);\n", get_name(t->name), api_short);
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "%s *kong_%s_buffer_try_to_lock(%s_buffer *buffer) {\n", get_name(t->name), get_name(t->name), get_name(t->name));
-			fprintf(output, "\treturn (%s *)kope_%s_buffer_try_to_lock_all(&buffer->buffer);\n", get_name(t->name), api_short);
+			fprintf(output, "\treturn (%s *)kore_%s_buffer_try_to_lock_all(&buffer->buffer);\n", get_name(t->name), api_short);
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "void kong_%s_buffer_unlock(%s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
-			fprintf(output, "\tkope_%s_buffer_unlock(&buffer->buffer);\n", api_short);
+			fprintf(output, "\tkore_%s_buffer_unlock(&buffer->buffer);\n", api_short);
 			fprintf(output, "}\n\n");
 
-			fprintf(output, "void kong_set_vertex_buffer_%s(kope_g5_command_list *list, %s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
-			fprintf(output, "\tkope_%s_command_list_set_vertex_buffer(list, %zu, &buffer->buffer.%s, 0, buffer->count * sizeof(%s), sizeof(%s));\n", api_short,
+			fprintf(output, "void kong_set_vertex_buffer_%s(kore_gpu_command_list *list, %s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
+			fprintf(output, "\tkore_%s_command_list_set_vertex_buffer(list, %zu, &buffer->buffer.%s, 0, buffer->count * sizeof(%s), sizeof(%s));\n", api_short,
 			        vertex_input_slots[i], api_short, get_name(t->name), get_name(t->name));
 			fprintf(output, "}\n\n");
 		}
 
-		fprintf(output, "void kong_set_render_pipeline(kope_g5_command_list *list, kope_%s_render_pipeline *pipeline) {\n", api_short);
-		fprintf(output, "\tkope_%s_command_list_set_render_pipeline(list, pipeline);\n", api_short);
+		fprintf(output, "void kong_set_render_pipeline(kore_gpu_command_list *list, kore_%s_render_pipeline *pipeline) {\n", api_short);
+		fprintf(output, "\tkore_%s_command_list_set_render_pipeline(list, pipeline);\n", api_short);
 		fprintf(output, "}\n\n");
 
-		fprintf(output, "void kong_set_compute_pipeline(kope_g5_command_list *list, kope_%s_compute_pipeline *pipeline) {\n", api_short);
-		fprintf(output, "\tkope_%s_command_list_set_compute_pipeline(list, pipeline);\n", api_short);
+		fprintf(output, "void kong_set_compute_pipeline(kore_gpu_command_list *list, kore_%s_compute_pipeline *pipeline) {\n", api_short);
+		fprintf(output, "\tkore_%s_command_list_set_compute_pipeline(list, pipeline);\n", api_short);
 		fprintf(output, "}\n\n");
 
-		fprintf(output, "void kong_set_ray_pipeline(kope_g5_command_list *list, kope_%s_ray_pipeline *pipeline) {\n", api_short);
-		fprintf(output, "\tkope_%s_command_list_set_ray_pipeline(list, pipeline);\n", api_short);
+		fprintf(output, "void kong_set_ray_pipeline(kore_gpu_command_list *list, kore_%s_ray_pipeline *pipeline) {\n", api_short);
+		fprintf(output, "\tkore_%s_command_list_set_ray_pipeline(list, pipeline);\n", api_short);
 		fprintf(output, "}\n\n");
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-				fprintf(output, "kope_%s_render_pipeline %s;\n\n", api_short, get_name(t->name));
+				fprintf(output, "kore_%s_render_pipeline %s;\n\n", api_short, get_name(t->name));
 			}
 		}
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-				fprintf(output, "kope_%s_ray_pipeline %s;\n\n", api_short, get_name(t->name));
+				fprintf(output, "kore_%s_ray_pipeline %s;\n\n", api_short, get_name(t->name));
 			}
 		}
 
@@ -1124,31 +1124,31 @@ void kore3_export(char *directory, api_kind api) {
 					strcpy(root_constants_type_name, type_name);
 				}
 				else {
-					fprintf(output, "\nvoid %s_buffer_create(kope_g5_device *device, kope_g5_buffer *buffer, uint32_t count) {\n", type_name);
-					fprintf(output, "\tkope_g5_buffer_parameters parameters;\n");
+					fprintf(output, "\nvoid %s_buffer_create(kore_gpu_device *device, kore_gpu_buffer *buffer, uint32_t count) {\n", type_name);
+					fprintf(output, "\tkore_gpu_buffer_parameters parameters;\n");
 					fprintf(output, "\tparameters.size = align_pow2(%i, 256) * count;\n", struct_size(g->type));
-					fprintf(output, "\tparameters.usage_flags = KOPE_G5_BUFFER_USAGE_CPU_WRITE;\n");
-					fprintf(output, "\tkope_g5_device_create_buffer(device, &parameters, buffer);\n");
+					fprintf(output, "\tparameters.usage_flags = KORE_GPU_BUFFER_USAGE_CPU_WRITE;\n");
+					fprintf(output, "\tkore_gpu_device_create_buffer(device, &parameters, buffer);\n");
 					fprintf(output, "}\n\n");
 
-					fprintf(output, "void %s_buffer_destroy(kope_g5_buffer *buffer) {\n", type_name);
-					fprintf(output, "\tkope_g5_buffer_destroy(buffer);\n");
+					fprintf(output, "void %s_buffer_destroy(kore_gpu_buffer *buffer) {\n", type_name);
+					fprintf(output, "\tkore_gpu_buffer_destroy(buffer);\n");
 					fprintf(output, "}\n\n");
 
-					fprintf(output, "%s *%s_buffer_lock(kope_g5_buffer *buffer, uint32_t index, uint32_t count) {\n", type_name, type_name);
+					fprintf(output, "%s *%s_buffer_lock(kore_gpu_buffer *buffer, uint32_t index, uint32_t count) {\n", type_name, type_name);
 					fprintf(output,
-					        "\treturn (%s *)kope_g5_buffer_lock(buffer, index * align_pow2((int)sizeof(%s), 256), count * align_pow2((int)sizeof(%s), 256));\n",
+					        "\treturn (%s *)kore_gpu_buffer_lock(buffer, index * align_pow2((int)sizeof(%s), 256), count * align_pow2((int)sizeof(%s), 256));\n",
 					        type_name, type_name, type_name);
 					fprintf(output, "}\n\n");
 
-					fprintf(output, "%s *%s_buffer_try_to_lock(kope_g5_buffer *buffer, uint32_t index, uint32_t count) {\n", type_name, type_name);
+					fprintf(output, "%s *%s_buffer_try_to_lock(kore_gpu_buffer *buffer, uint32_t index, uint32_t count) {\n", type_name, type_name);
 					fprintf(output,
-					        "\treturn (%s *)kope_g5_buffer_try_to_lock(buffer, index * align_pow2((int)sizeof(%s), 256), count * align_pow2((int)sizeof(%s), "
+					        "\treturn (%s *)kore_gpu_buffer_try_to_lock(buffer, index * align_pow2((int)sizeof(%s), 256), count * align_pow2((int)sizeof(%s), "
 					        "256));\n",
 					        type_name, type_name, type_name);
 					fprintf(output, "}\n\n");
 
-					fprintf(output, "void %s_buffer_unlock(kope_g5_buffer *buffer) {\n", type_name);
+					fprintf(output, "void %s_buffer_unlock(kore_gpu_buffer *buffer) {\n", type_name);
 					if (api != API_OPENGL) {
 						bool has_matrices = false;
 						for (size_t j = 0; j < t->members.size; ++j) {
@@ -1187,7 +1187,7 @@ void kore3_export(char *directory, api_kind api) {
 							}
 						}
 					}
-					fprintf(output, "\tkope_g5_buffer_unlock(buffer);\n");
+					fprintf(output, "\tkore_gpu_buffer_unlock(buffer);\n");
 					fprintf(output, "}\n\n");
 				}
 			}
@@ -1200,9 +1200,9 @@ void kore3_export(char *directory, api_kind api) {
 			if (set->name == add_name("root_constants")) {
 				assert(root_constants_global != NULL);
 
-				fprintf(output, "void kong_set_root_constants_%s(kope_g5_command_list *list, %s *constants) {\n", get_name(root_constants_global->name),
+				fprintf(output, "void kong_set_root_constants_%s(kore_gpu_command_list *list, %s *constants) {\n", get_name(root_constants_global->name),
 				        root_constants_type_name);
-				fprintf(output, "\tkope_%s_command_list_set_root_constants(list, %i, constants, %i);\n", api_short, descriptor_table_index,
+				fprintf(output, "\tkore_%s_command_list_set_root_constants(list, %i, constants, %i);\n", api_short, descriptor_table_index,
 				        struct_size(root_constants_global->type));
 				fprintf(output, "}\n\n");
 
@@ -1214,7 +1214,7 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, "extern VkDescriptorSetLayout %s_set_layout;\n\n", get_name(set->name));
 			}
 
-			fprintf(output, "void kong_create_%s_set(kope_g5_device *device, const %s_parameters *parameters, %s_set *set) {\n", get_name(set->name),
+			fprintf(output, "void kong_create_%s_set(kore_gpu_device *device, const %s_parameters *parameters, %s_set *set) {\n", get_name(set->name),
 			        get_name(set->name), get_name(set->name));
 
 			size_t other_count = 0;
@@ -1265,7 +1265,7 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, "\tkope_vulkan_device_create_descriptor_set(device, &%s_set_layout, &set->set);\n", get_name(set->name));
 			}
 			else {
-				fprintf(output, "\tkope_%s_device_create_descriptor_set(device, %zu, %zu, %zu, %zu, &set->set);\n", api_short, other_count, dynamic_count,
+				fprintf(output, "\tkore_%s_device_create_descriptor_set(device, %zu, %zu, %zu, %zu, &set->set);\n", api_short, other_count, dynamic_count,
 				        bindless_count, sampler_count);
 			}
 
@@ -1278,7 +1278,7 @@ void kore3_export(char *directory, api_kind api) {
 				switch (d.kind) {
 				case DEFINITION_CONST_CUSTOM:
 					if (!has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
-						fprintf(output, "\tkope_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %zu);\n", api_short,
+						fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %zu);\n", api_short,
 						        get_name(get_global(d.global)->name), other_index);
 						other_index += 1;
 					}
@@ -1286,14 +1286,14 @@ void kore3_export(char *directory, api_kind api) {
 					break;
 				case DEFINITION_CONST_BASIC:
 					if (!has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
-						fprintf(output, "\tkope_%s_descriptor_set_set_buffer_view_uav(device, &set->set, parameters->%s, %zu);\n", api_short,
+						fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_uav(device, &set->set, parameters->%s, %zu);\n", api_short,
 						        get_name(get_global(d.global)->name), other_index);
 						other_index += 1;
 					}
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
 					break;
 				case DEFINITION_BVH:
-					fprintf(output, "\tkope_%s_descriptor_set_set_bvh_view_srv(device, &set->set, parameters->%s, %zu);\n", api_short,
+					fprintf(output, "\tkore_%s_descriptor_set_set_bvh_view_srv(device, &set->set, parameters->%s, %zu);\n", api_short,
 					        get_name(get_global(d.global)->name), other_index);
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
 					other_index += 1;
@@ -1301,12 +1301,12 @@ void kore3_export(char *directory, api_kind api) {
 				case DEFINITION_TEX2D: {
 					type *t = get_type(get_global(d.global)->type);
 					if (t->array_size == UINT32_MAX) {
-						fprintf(output, "\tset->%s = (kope_g5_texture_view *)malloc(sizeof(kope_g5_texture_view) * parameters->textures_count);\n",
+						fprintf(output, "\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) * parameters->textures_count);\n",
 						        get_name(get_global(d.global)->name));
 						fprintf(output, "\tassert(set->%s != NULL);\n", get_name(get_global(d.global)->name));
 						fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
 						fprintf(output,
-						        "\t\tkope_%s_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
+						        "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
 						        "&parameters->%s[index]);\n",
 						        api_short, get_name(get_global(d.global)->name));
 						fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(get_global(d.global)->name),
@@ -1319,7 +1319,7 @@ void kore3_export(char *directory, api_kind api) {
 					else {
 						attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
 						if (write_attribute != NULL) {
-							fprintf(output, "\tkope_%s_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %zu);\n", api_short,
+							fprintf(output, "\tkore_%s_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %zu);\n", api_short,
 							        get_name(get_global(d.global)->name), other_index);
 						}
 						else {
@@ -1330,7 +1330,7 @@ void kore3_export(char *directory, api_kind api) {
 							else {
 								fprintf(
 								    output,
-								    "\tkope_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %zu, &parameters->%s);\n",
+								    "\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %zu, &parameters->%s);\n",
 								    api_short, other_index, get_name(get_global(d.global)->name));
 							}
 						}
@@ -1349,7 +1349,7 @@ void kore3_export(char *directory, api_kind api) {
 						error(context, "Texture arrays can not be writable");
 					}
 
-					fprintf(output, "\tkope_%s_descriptor_set_set_texture_array_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
+					fprintf(output, "\tkore_%s_descriptor_set_set_texture_array_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
 					        get_name(get_global(d.global)->name), other_index);
 
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
@@ -1362,7 +1362,7 @@ void kore3_export(char *directory, api_kind api) {
 						debug_context context = {0};
 						error(context, "Cube maps can not be writable");
 					}
-					fprintf(output, "\tkope_%s_descriptor_set_set_texture_cube_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
+					fprintf(output, "\tkore_%s_descriptor_set_set_texture_cube_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
 					        get_name(get_global(d.global)->name), other_index);
 
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
@@ -1370,7 +1370,7 @@ void kore3_export(char *directory, api_kind api) {
 					break;
 				}
 				case DEFINITION_SAMPLER:
-					fprintf(output, "\tkope_%s_descriptor_set_set_sampler(device, &set->set, parameters->%s, %zu);\n", api_short,
+					fprintf(output, "\tkore_%s_descriptor_set_set_sampler(device, &set->set, parameters->%s, %zu);\n", api_short,
 					        get_name(get_global(d.global)->name), sampler_index);
 					sampler_index += 1;
 					break;
@@ -1385,7 +1385,7 @@ void kore3_export(char *directory, api_kind api) {
 			        get_name(set->name), get_name(set->name));
 			fprintf(output, "}\n\n");
 
-			fprintf(output, "void kong_set_descriptor_set_%s(kope_g5_command_list *list, %s_set *set", get_name(set->name), get_name(set->name));
+			fprintf(output, "void kong_set_descriptor_set_%s(kore_gpu_command_list *list, %s_set *set", get_name(set->name), get_name(set->name));
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 				definition d = set->definitions[definition_index];
 				switch (d.kind) {
@@ -1411,13 +1411,13 @@ void kore3_export(char *directory, api_kind api) {
 						else {
 							fprintf(
 							    output,
-							    "\tkope_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), align_pow2((int)%i, 256));\n",
+							    "\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), align_pow2((int)%i, 256));\n",
 							    api_short, get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), struct_size(get_global(d.global)->type),
 							    struct_size(get_global(d.global)->type));
 						}
 					}
 					else {
-						fprintf(output, "\tkope_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short,
+						fprintf(output, "\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short,
 						        get_name(get_global(d.global)->name));
 					}
 					break;
@@ -1429,13 +1429,13 @@ void kore3_export(char *directory, api_kind api) {
 						else {
 							fprintf(
 							    output,
-							    "\tkope_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), align_pow2((int)%i, 256));\n",
+							    "\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), align_pow2((int)%i, 256));\n",
 							    api_short, get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), struct_size(get_global(d.global)->type),
 							    struct_size(get_global(d.global)->type));
 						}
 					}
 					else {
-						fprintf(output, "\tkope_%s_descriptor_set_prepare_uav_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short,
+						fprintf(output, "\tkore_%s_descriptor_set_prepare_uav_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short,
 						        get_name(get_global(d.global)->name));
 					}
 					break;
@@ -1443,21 +1443,21 @@ void kore3_export(char *directory, api_kind api) {
 					type *t = get_type(get_global(d.global)->type);
 					if (t->array_size == UINT32_MAX) {
 						fprintf(output, "\tfor (size_t index = 0; index < set->%s_count; ++index) {\n", get_name(get_global(d.global)->name));
-						fprintf(output, "\t\tkope_%s_descriptor_set_prepare_srv_texture(list, &set->%s[index]);\n", api_short,
+						fprintf(output, "\t\tkore_%s_descriptor_set_prepare_srv_texture(list, &set->%s[index]);\n", api_short,
 						        get_name(get_global(d.global)->name));
 						fprintf(output, "\t}\n");
 					}
 					else {
 						attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
 						if (write_attribute != NULL) {
-							fprintf(output, "\tkope_%s_descriptor_set_prepare_uav_texture(list, &set->%s);\n", api_short, get_name(get_global(d.global)->name));
+							fprintf(output, "\tkore_%s_descriptor_set_prepare_uav_texture(list, &set->%s);\n", api_short, get_name(get_global(d.global)->name));
 						}
 						else {
 							if (api == API_VULKAN) {
 								fprintf(output, "\tkope_vulkan_descriptor_set_prepare_texture(list, &set->%s);\n", get_name(get_global(d.global)->name));
 							}
 							else {
-								fprintf(output, "\tkope_%s_descriptor_set_prepare_srv_texture(list, &set->%s);\n", api_short,
+								fprintf(output, "\tkore_%s_descriptor_set_prepare_srv_texture(list, &set->%s);\n", api_short,
 								        get_name(get_global(d.global)->name));
 							}
 						}
@@ -1487,7 +1487,7 @@ void kore3_export(char *directory, api_kind api) {
 				}
 
 				if (dynamic_count > 0) {
-					fprintf(output, "\tkope_g5_buffer *dynamic_buffers[%i];\n", dynamic_count);
+					fprintf(output, "\tkore_gpu_buffer *dynamic_buffers[%i];\n", dynamic_count);
 
 					fprintf(output, "\tuint32_t dynamic_offsets[%i];\n", dynamic_count);
 
@@ -1512,7 +1512,7 @@ void kore3_export(char *directory, api_kind api) {
 					}
 				}
 
-				fprintf(output, "\n\tkope_%s_command_list_set_descriptor_table(list, %i, &set->set", api_short, descriptor_table_index);
+				fprintf(output, "\n\tkore_%s_command_list_set_descriptor_table(list, %i, &set->set", api_short, descriptor_table_index);
 				if (dynamic_count > 0) {
 					fprintf(output, ", dynamic_buffers, dynamic_offsets, dynamic_sizes");
 				}
@@ -1533,7 +1533,7 @@ void kore3_export(char *directory, api_kind api) {
 					if (t->members.m[j].name == add_name("vertex") || t->members.m[j].name == add_name("fragment")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "vertex or fragment expects an identifier");
-						fprintf(output, "static kope_%s_shader %s;\n", api_short, get_name(t->members.m[j].value.identifier));
+						fprintf(output, "static kore_%s_shader %s;\n", api_short, get_name(t->members.m[j].value.identifier));
 					}
 				}
 			}
@@ -1542,7 +1542,7 @@ void kore3_export(char *directory, api_kind api) {
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
 			if (has_attribute(&f->attributes, add_name("compute"))) {
-				fprintf(output, "kope_%s_compute_pipeline %s;\n", api_short, get_name(f->name));
+				fprintf(output, "kore_%s_compute_pipeline %s;\n", api_short, get_name(f->name));
 			}
 		}
 
@@ -1560,12 +1560,12 @@ void kore3_export(char *directory, api_kind api) {
 			for (type_id i = 0; get_type(i) != NULL; ++i) {
 				type *t = get_type(i);
 				if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-					fprintf(output, "struct ID3D12RootSignature *kong_create_%s_root_signature(kope_g5_device *device);", get_name(t->name));
+					fprintf(output, "struct ID3D12RootSignature *kong_create_%s_root_signature(kore_gpu_device *device);", get_name(t->name));
 				}
 			}
 		}
 
-		fprintf(output, "\nvoid kong_init(kope_g5_device *device) {\n");
+		fprintf(output, "\nvoid kong_init(kore_gpu_device *device) {\n");
 
 		if (api == API_WEBGPU) {
 			fprintf(output, "\tkinc_g5_internal_webgpu_create_shader_module(wgsl, wgsl_size);\n\n");
@@ -1574,7 +1574,7 @@ void kore3_export(char *directory, api_kind api) {
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-				fprintf(output, "\tkope_%s_render_pipeline_parameters %s_parameters = {0};\n\n", api_short, get_name(t->name));
+				fprintf(output, "\tkore_%s_render_pipeline_parameters %s_parameters = {0};\n\n", api_short, get_name(t->name));
 
 				name_id vertex_shader_name = NO_NAME;
 				name_id amplification_shader_name = NO_NAME;
@@ -1743,20 +1743,20 @@ void kore3_export(char *directory, api_kind api) {
 
 						char step_mode[64];
 						if (instanced[input_index]) {
-							sprintf(step_mode, "KOPE_%s_VERTEX_STEP_MODE_INSTANCE", api_caps);
+							sprintf(step_mode, "KORE_%s_VERTEX_STEP_MODE_INSTANCE", api_caps);
 						}
 						else {
-							sprintf(step_mode, "KOPE_%s_VERTEX_STEP_MODE_VERTEX", api_caps);
+							sprintf(step_mode, "KORE_%s_VERTEX_STEP_MODE_VERTEX", api_caps);
 						}
 						fprintf(output, "\t%s_parameters.vertex.buffers[%zu].step_mode = %s;\n", get_name(t->name), input_index, step_mode);
 					}
 					fprintf(output, "\t%s_parameters.vertex.buffers_count = %zu;\n\n", get_name(t->name), vertex_inputs_count);
 				}
 
-				fprintf(output, "\t%s_parameters.primitive.topology = KOPE_%s_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;\n", get_name(t->name), api_caps);
-				fprintf(output, "\t%s_parameters.primitive.strip_index_format = KOPE_G5_INDEX_FORMAT_UINT16;\n", get_name(t->name));
-				fprintf(output, "\t%s_parameters.primitive.front_face = KOPE_%s_FRONT_FACE_CW;\n", get_name(t->name), api_caps);
-				fprintf(output, "\t%s_parameters.primitive.cull_mode = KOPE_%s_CULL_MODE_NONE;\n", get_name(t->name), api_caps);
+				fprintf(output, "\t%s_parameters.primitive.topology = KORE_%s_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;\n", get_name(t->name), api_caps);
+				fprintf(output, "\t%s_parameters.primitive.strip_index_format = KORE_GPU_INDEX_FORMAT_UINT16;\n", get_name(t->name));
+				fprintf(output, "\t%s_parameters.primitive.front_face = KORE_%s_FRONT_FACE_CW;\n", get_name(t->name), api_caps);
+				fprintf(output, "\t%s_parameters.primitive.cull_mode = KORE_%s_CULL_MODE_NONE;\n", get_name(t->name), api_caps);
 				fprintf(output, "\t%s_parameters.primitive.unclipped_depth = false;\n\n", get_name(t->name));
 
 				member *depth_stencil_format = find_member(t, "depth_stencil_format");
@@ -1767,7 +1767,7 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t%s_parameters.depth_stencil.format = %s;\n", get_name(t->name), convert_texture_format(g->value.value.ints[0]));
 				}
 				else {
-					fprintf(output, "\t%s_parameters.depth_stencil.format = KOPE_G5_TEXTURE_FORMAT_DEPTH32FLOAT;\n", get_name(t->name));
+					fprintf(output, "\t%s_parameters.depth_stencil.format = KORE_GPU_TEXTURE_FORMAT_DEPTH32FLOAT;\n", get_name(t->name));
 				}
 
 				member *depth_write = find_member(t, "depth_write");
@@ -1789,18 +1789,18 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t%s_parameters.depth_stencil.depth_compare = %s;\n", get_name(t->name), convert_compare_mode(g->value.value.ints[0]));
 				}
 				else {
-					fprintf(output, "\t%s_parameters.depth_stencil.depth_compare = KOPE_G5_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
+					fprintf(output, "\t%s_parameters.depth_stencil.depth_compare = KORE_GPU_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
 				}
 
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.compare = KOPE_G5_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.fail_op = KOPE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.depth_fail_op = KOPE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.pass_op = KOPE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.compare = KORE_GPU_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.fail_op = KORE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.depth_fail_op = KORE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_front.pass_op = KORE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
 
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.compare = KOPE_G5_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.fail_op = KOPE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.depth_fail_op = KOPE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
-				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.pass_op = KOPE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.compare = KORE_GPU_COMPARE_FUNCTION_ALWAYS;\n", get_name(t->name));
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.fail_op = KORE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.depth_fail_op = KORE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
+				fprintf(output, "\t%s_parameters.depth_stencil.stencil_back.pass_op = KORE_%s_STENCIL_OPERATION_KEEP;\n", get_name(t->name), api_caps);
 
 				fprintf(output, "\t%s_parameters.depth_stencil.stencil_read_mask = 0xffffffff;\n", get_name(t->name));
 				fprintf(output, "\t%s_parameters.depth_stencil.stencil_write_mask = 0xffffffff;\n", get_name(t->name));
@@ -1830,21 +1830,21 @@ void kore3_export(char *directory, api_kind api) {
 							        convert_texture_format(g->value.value.ints[0]));
 						}
 						else {
-							fprintf(output, "\t%s_parameters.fragment.targets[%i].format = KOPE_G5_TEXTURE_FORMAT_RGBA8_UNORM;\n", get_name(t->name), i);
+							fprintf(output, "\t%s_parameters.fragment.targets[%i].format = KORE_GPU_TEXTURE_FORMAT_RGBA8_UNORM;\n", get_name(t->name), i);
 						}
 
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.operation = KOPE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), i,
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.operation = KORE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), i,
 						        api_caps);
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.src_factor = KOPE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), i,
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.src_factor = KORE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), i,
 						        api_caps);
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.dst_factor = KOPE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), i,
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.dst_factor = KORE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), i,
 						        api_caps);
 
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.operation = KOPE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), i,
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.operation = KORE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), i,
 						        api_caps);
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.src_factor = KOPE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), i,
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.src_factor = KORE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), i,
 						        api_caps);
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.dst_factor = KOPE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), i,
+						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.dst_factor = KORE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), i,
 						        api_caps);
 
 						fprintf(output, "\t%s_parameters.fragment.targets[%i].write_mask = 0xf;\n\n", get_name(t->name), i);
@@ -1863,7 +1863,7 @@ void kore3_export(char *directory, api_kind api) {
 						check(format->value.kind == TOKEN_IDENTIFIER, context, "format expects an identifier");
 
 						if (strcmp(get_name(format->value.identifier), "framebuffer_format") == 0) {
-							fprintf(output, "\t%s_parameters.fragment.targets[0].format = kope_g5_device_framebuffer_format(device);\n", get_name(t->name));
+							fprintf(output, "\t%s_parameters.fragment.targets[0].format = kore_gpu_device_framebuffer_format(device);\n", get_name(t->name));
 						}
 						else {
 							global *g = find_global(format->value.identifier);
@@ -1872,21 +1872,21 @@ void kore3_export(char *directory, api_kind api) {
 						}
 					}
 					else {
-						fprintf(output, "\t%s_parameters.fragment.targets[0].format = KOPE_G5_TEXTURE_FORMAT_RGBA8_UNORM;\n", get_name(t->name));
+						fprintf(output, "\t%s_parameters.fragment.targets[0].format = KORE_GPU_TEXTURE_FORMAT_RGBA8_UNORM;\n", get_name(t->name));
 					}
 
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.operation = KOPE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), api_caps);
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.src_factor = KOPE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), api_caps);
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.dst_factor = KOPE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), api_caps);
+					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.operation = KORE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), api_caps);
+					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.src_factor = KORE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), api_caps);
+					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.dst_factor = KORE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), api_caps);
 
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.operation = KOPE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), api_caps);
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.src_factor = KOPE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), api_caps);
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.dst_factor = KOPE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), api_caps);
+					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.operation = KORE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), api_caps);
+					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.src_factor = KORE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), api_caps);
+					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.dst_factor = KORE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), api_caps);
 
 					fprintf(output, "\t%s_parameters.fragment.targets[0].write_mask = 0xf;\n\n", get_name(t->name));
 				}
 
-				fprintf(output, "\tkope_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters);\n\n", api_short, api_short, get_name(t->name),
+				fprintf(output, "\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters);\n\n", api_short, api_short, get_name(t->name),
 				        get_name(t->name));
 
 				if (api == API_OPENGL) {
@@ -1915,10 +1915,10 @@ void kore3_export(char *directory, api_kind api) {
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
 			if (has_attribute(&f->attributes, add_name("compute"))) {
-				fprintf(output, "\tkope_%s_compute_pipeline_parameters %s_parameters;\n", api_short, get_name(f->name));
+				fprintf(output, "\tkore_%s_compute_pipeline_parameters %s_parameters;\n", api_short, get_name(f->name));
 				fprintf(output, "\t%s_parameters.shader.data = %s_code;\n", get_name(f->name), get_name(f->name));
 				fprintf(output, "\t%s_parameters.shader.size = %s_code_size;\n", get_name(f->name), get_name(f->name));
-				fprintf(output, "\tkope_%s_compute_pipeline_init(&device->%s, &%s, &%s_parameters);\n", api_short, api_short, get_name(f->name),
+				fprintf(output, "\tkore_%s_compute_pipeline_init(&device->%s, &%s, &%s_parameters);\n", api_short, api_short, get_name(f->name),
 				        get_name(f->name));
 			}
 		}
@@ -1926,7 +1926,7 @@ void kore3_export(char *directory, api_kind api) {
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-				fprintf(output, "\tkope_%s_ray_pipeline_parameters %s_parameters = {0};\n\n", api_short, get_name(t->name));
+				fprintf(output, "\tkore_%s_ray_pipeline_parameters %s_parameters = {0};\n\n", api_short, get_name(t->name));
 
 				name_id gen_shader_name = NO_NAME;
 				name_id miss_shader_name = NO_NAME;
@@ -1969,7 +1969,7 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t%s_parameters.any_shader_name = \"%s\";\n", get_name(t->name), get_name(any_shader_name));
 				}
 
-				fprintf(output, "\n\tkope_%s_ray_pipeline_init(device, &%s, &%s_parameters, kong_create_%s_root_signature(device));\n\n", api_short,
+				fprintf(output, "\n\tkore_%s_ray_pipeline_init(device, &%s, &%s_parameters, kong_create_%s_root_signature(device));\n\n", api_short,
 				        get_name(t->name), get_name(t->name), get_name(t->name));
 			}
 		}
@@ -1986,12 +1986,12 @@ void kore3_export(char *directory, api_kind api) {
 		FILE *output = fopen(filename, "wb");
 
 		fprintf(output, "#include <kope/direct3d12/d3d12unit.h>\n");
-		fprintf(output, "#include <kope/graphics5/device.h>\n\n");
+		fprintf(output, "#include <kore3/gpu/device.h>\n\n");
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-				fprintf(output, "extern \"C\" ID3D12RootSignature *kong_create_%s_root_signature(kope_g5_device *device) {\n", get_name(t->name));
+				fprintf(output, "extern \"C\" ID3D12RootSignature *kong_create_%s_root_signature(kore_gpu_device *device) {\n", get_name(t->name));
 				write_root_signature(output, sets, sets_count);
 				fprintf(output, "}\n");
 			}
@@ -2006,7 +2006,7 @@ void kore3_export(char *directory, api_kind api) {
 		FILE *output = fopen(filename, "wb");
 
 		fprintf(output, "#include <kope/vulkan/vulkanunit.h>\n");
-		fprintf(output, "#include <kope/graphics5/device.h>\n\n");
+		fprintf(output, "#include <kore3/gpu/device.h>\n\n");
 
 		fprintf(output, "#include <assert.h>\n\n");
 
@@ -2018,7 +2018,7 @@ void kore3_export(char *directory, api_kind api) {
 
 		fprintf(output, "\n");
 
-		fprintf(output, "void create_descriptor_set_layouts(kope_g5_device *device) {\n");
+		fprintf(output, "void create_descriptor_set_layouts(kore_gpu_device *device) {\n");
 
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
