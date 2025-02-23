@@ -1031,10 +1031,6 @@ void kore3_export(char *directory, api_kind api) {
 		fprintf(output, "#include <assert.h>\n");
 		fprintf(output, "#include <stdlib.h>\n\n");
 
-		if (api == API_VULKAN) {
-			fprintf(output, "#include <kore3/vulkan/vulkanunit.h>\n\n");
-		}
-
 		for (size_t i = 0; i < vertex_inputs_size; ++i) {
 			type *t = get_type(vertex_inputs[i]);
 
@@ -2004,7 +2000,6 @@ void kore3_export(char *directory, api_kind api) {
 
 		FILE *output = fopen(filename, "wb");
 
-		fprintf(output, "#include <kore3/vulkan/vulkanunit.h>\n");
 		fprintf(output, "#include <kore3/gpu/device.h>\n\n");
 
 		fprintf(output, "#include <assert.h>\n\n");
