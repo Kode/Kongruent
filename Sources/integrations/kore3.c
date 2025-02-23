@@ -19,19 +19,19 @@ static char *type_string(type_id type) {
 		return "float";
 	}
 	if (type == float2_id) {
-		return "kinc_vector2_t";
+		return "kore_float2";
 	}
 	if (type == float3_id) {
-		return "kinc_vector3_t";
+		return "kore_float3";
 	}
 	if (type == float4_id) {
-		return "kinc_vector4_t";
+		return "kore_float4";
 	}
 	if (type == float3x3_id) {
-		return "kinc_matrix3x3_t";
+		return "kore_matrix3x3";
 	}
 	if (type == float4x4_id) {
-		return "kinc_matrix4x4_t";
+		return "kore_matrix4x4";
 	}
 	if (type == int_id) {
 		return "int";
@@ -682,8 +682,8 @@ void kore3_export(char *directory, api_kind api) {
 		fprintf(output, "#include <kore3/gpu/sampler.h>\n");
 		fprintf(output, "#include <kore3/%s/descriptorset_structs.h>\n", api_long);
 		fprintf(output, "#include <kore3/%s/pipeline_structs.h>\n", api_long);
-		fprintf(output, "#include <kinc/math/matrix.h>\n");
-		fprintf(output, "#include <kinc/math/vector.h>\n\n");
+		fprintf(output, "#include <kore3/math/matrix.h>\n");
+		fprintf(output, "#include <kore3/math/vector.h>\n\n");
 
 		fprintf(output, "#ifdef __cplusplus\n");
 		fprintf(output, "extern \"C\" {\n");
@@ -1132,9 +1132,10 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "}\n\n");
 
 					fprintf(output, "%s *%s_buffer_lock(kore_gpu_buffer *buffer, uint32_t index, uint32_t count) {\n", type_name, type_name);
-					fprintf(output,
-					        "\treturn (%s *)kore_gpu_buffer_lock(buffer, index * align_pow2((int)sizeof(%s), 256), count * align_pow2((int)sizeof(%s), 256));\n",
-					        type_name, type_name, type_name);
+					fprintf(
+					    output,
+					    "\treturn (%s *)kore_gpu_buffer_lock(buffer, index * align_pow2((int)sizeof(%s), 256), count * align_pow2((int)sizeof(%s), 256));\n",
+					    type_name, type_name, type_name);
 					fprintf(output, "}\n\n");
 
 					fprintf(output, "%s *%s_buffer_try_to_lock(kore_gpu_buffer *buffer, uint32_t index, uint32_t count) {\n", type_name, type_name);
@@ -1159,12 +1160,12 @@ void kore3_export(char *directory, api_kind api) {
 							// adjust matrices
 							for (size_t j = 0; j < t->members.size; ++j) {
 								if (t->members.m[j].type.type == float4x4_id) {
-									fprintf(output, "\tkinc_matrix4x4_transpose(&data->%s);\n", get_name(t->members.m[j].name));
+									fprintf(output, "\tkore_matrix4x4_transpose(&data->%s);\n", get_name(t->members.m[j].name));
 								}
 								else if (t->members.m[j].type.type == float3x3_id) {
-									// fprintf(output, "\tkinc_matrix3x3_transpose(&data->%s);\n", get_name(t->members.m[j].name));
+									// fprintf(output, "\tkore_matrix3x3_transpose(&data->%s);\n", get_name(t->members.m[j].name));
 									fprintf(output, "\t{\n");
-									fprintf(output, "\t\tkinc_matrix3x3_t m = data->%s;\n", get_name(t->members.m[j].name));
+									fprintf(output, "\t\tkore_matrix3x3_t m = data->%s;\n", get_name(t->members.m[j].name));
 									fprintf(output, "\t\tfloat *m_data = (float *)&data->%s;\n", get_name(t->members.m[j].name));
 									fprintf(output, "\t\tm_data[0] = m.m[0];\n");
 									fprintf(output, "\t\tm_data[1] = m.m[1];\n");
