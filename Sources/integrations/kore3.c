@@ -1522,14 +1522,16 @@ void kore3_export(char *directory, api_kind api) {
 			descriptor_table_index += (sampler_count > 0) ? 2 : 1; // TODO
 		}
 
-		for (type_id i = 0; get_type(i) != NULL; ++i) {
-			type *t = get_type(i);
-			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-				for (size_t j = 0; j < t->members.size; ++j) {
-					if (t->members.m[j].name == add_name("vertex") || t->members.m[j].name == add_name("fragment")) {
-						debug_context context = {0};
-						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "vertex or fragment expects an identifier");
-						fprintf(output, "static kore_%s_shader %s;\n", api_short, get_name(t->members.m[j].value.identifier));
+		if (api != API_METAL) {
+			for (type_id i = 0; get_type(i) != NULL; ++i) {
+				type *t = get_type(i);
+				if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
+					for (size_t j = 0; j < t->members.size; ++j) {
+						if (t->members.m[j].name == add_name("vertex") || t->members.m[j].name == add_name("fragment")) {
+							debug_context context = {0};
+							check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "vertex or fragment expects an identifier");
+							fprintf(output, "static kore_%s_shader %s;\n", api_short, get_name(t->members.m[j].value.identifier));
+						}
 					}
 				}
 			}
