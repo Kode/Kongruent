@@ -1560,7 +1560,7 @@ void kore3_export(char *directory, api_kind api) {
 		}
 
 		if (api == API_WEBGPU) {
-			fprintf(output, "\nvoid kinc_g5_internal_webgpu_create_shader_module(const void *source, size_t length);\n");
+			fprintf(output, "\nvoid kore_gpu_internal_webgpu_create_shader_module(const void *source, size_t length);\n");
 		}
 
 		if (api == API_OPENGL) {
@@ -1581,7 +1581,7 @@ void kore3_export(char *directory, api_kind api) {
 		fprintf(output, "\nvoid kong_init(kore_gpu_device *device) {\n");
 
 		if (api == API_WEBGPU) {
-			fprintf(output, "\tkinc_g5_internal_webgpu_create_shader_module(wgsl, wgsl_size);\n\n");
+			fprintf(output, "\tkore_gpu_internal_webgpu_create_shader_module(wgsl, wgsl_size);\n\n");
 		}
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
@@ -1596,7 +1596,7 @@ void kore3_export(char *directory, api_kind api) {
 
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("vertex")) {
-						if (api == API_METAL) {
+						if (api == API_METAL || api == API_WEBGPU) {
 							fprintf(output, "\t%s_parameters.vertex.shader.function_name = \"%s\";\n", get_name(t->name),
 							        get_name(t->members.m[j].value.identifier));
 						}
@@ -1614,7 +1614,7 @@ void kore3_export(char *directory, api_kind api) {
 						mesh_shader_name = t->members.m[j].value.identifier;
 					}
 					else if (t->members.m[j].name == add_name("fragment")) {
-						if (api == API_METAL) {
+						if (api == API_METAL || api == API_WEBGPU) {
 							fprintf(output, "\t%s_parameters.fragment.shader.function_name = \"%s\";\n", get_name(t->name),
 							        get_name(t->members.m[j].value.identifier));
 						}
