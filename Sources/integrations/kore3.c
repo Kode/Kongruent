@@ -103,6 +103,20 @@ static const char *structure_type(type_id type, api_kind api) {
 			return "KORE_VULKAN_VERTEX_FORMAT_FLOAT32X4";
 		}
 	}
+	else if (api == API_WEBGPU) {
+		if (type == float_id) {
+			return "KORE_WEBGPU_VERTEX_FORMAT_FLOAT32";
+		}
+		if (type == float2_id) {
+			return "KORE_WEBGPU_VERTEX_FORMAT_FLOAT32X2";
+		}
+		if (type == float3_id) {
+			return "KORE_WEBGPU_VERTEX_FORMAT_FLOAT32X3";
+		}
+		if (type == float4_id) {
+			return "KORE_WEBGPU_VERTEX_FORMAT_FLOAT32X4";
+		}
+	}
 	debug_context context = {0};
 	error(context, "Unknown type for vertex structure");
 	return "UNKNOWN";
@@ -579,7 +593,7 @@ void kore3_export(char *directory, api_kind api) {
 	if (api == API_WEBGPU) {
 		int binding_index = 0;
 
-		for (global_id i = 0; get_global(i)->type != NO_TYPE; ++i) {
+		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
 			if (g->type == sampler_type_id) {
 				global_register_indices[i] = binding_index;
