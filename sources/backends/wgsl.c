@@ -186,6 +186,8 @@ static void write_globals(char *wgsl, size_t *offset) {
 		}
 		else if (g->type == float_id) {
 		}
+		else if (g->type == uint_id) {
+		}
 		else {
 			type *t = get_type(g->type);
 			char type_name[256];
