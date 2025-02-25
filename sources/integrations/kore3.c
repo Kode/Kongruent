@@ -1559,10 +1559,6 @@ void kore3_export(char *directory, api_kind api) {
 			}
 		}
 
-		if (api == API_WEBGPU) {
-			fprintf(output, "\nvoid kore_gpu_internal_webgpu_create_shader_module(const void *source, size_t length);\n");
-		}
-
 		if (api == API_OPENGL) {
 			fprintf(output, "\nvoid kinc_g4_internal_opengl_setup_uniform_block(unsigned program, const char *name, unsigned binding);\n");
 		}
@@ -1579,10 +1575,6 @@ void kore3_export(char *directory, api_kind api) {
 		}
 
 		fprintf(output, "\nvoid kong_init(kore_gpu_device *device) {\n");
-
-		if (api == API_WEBGPU) {
-			fprintf(output, "\tkore_gpu_internal_webgpu_create_shader_module(wgsl, wgsl_size);\n\n");
-		}
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
