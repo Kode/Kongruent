@@ -585,9 +585,9 @@ void kore3_export(char *directory, api_kind api) {
 		api_caps = "METAL";
 		break;
 	case API_OPENGL:
-		api_short = "gl";
+		api_short = "opengl";
 		api_long = "opengl";
-		api_caps = "GL";
+		api_caps = "OPENGL";
 		break;
 	case API_VULKAN:
 		api_short = "vulkan";
