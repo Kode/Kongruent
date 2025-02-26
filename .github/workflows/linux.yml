@@ -40,7 +40,7 @@ jobs:
     - name: Get KincTools_linux_x64
       run: git clone https://github.com/Kode/KincTools_linux_x64.git
     - name: Copy binary
-      run: cp /home/runner/work/Kongruent/Kongruent/build/Release/kongruent KincTools_linux_x64/kongruent
+      run: cp /home/runner/work/Kongruent/Kongruent/build/release/kongruent KincTools_linux_x64/kongruent
     - name: Set name
       run: git config --global user.name "Robbot"
     - name: Set email
@@ -101,7 +101,7 @@ jobs:
     - name: Get KincTools_linux_arm64
       run: git clone https://github.com/Kode/KincTools_linux_arm64.git --depth 1
     - name: Copy binary
-      run: cp /home/runner/work/Kongruent/Kongruent/build/Release/kongruent KincTools_linux_arm64/kongruent
+      run: cp /home/runner/work/Kongruent/Kongruent/build/release/kongruent KincTools_linux_arm64/kongruent
     - name: Set name
       run: git config --global user.name "Robbot"
     - name: Set email
@@ -164,7 +164,7 @@ jobs:
     - name: Get KincTools_linux_arm
       run: git clone https://github.com/Kode/KincTools_linux_arm.git --depth 1
     - name: Copy binary
-      run: cp /home/runner/work/Kongruent/Kongruent/build/Release/kongruent KincTools_linux_arm/kongruent
+      run: cp /home/runner/work/Kongruent/Kongruent/build/release/kongruent KincTools_linux_arm/kongruent
     - name: Set name
       run: git config --global user.name "Robbot"
     - name: Set email
