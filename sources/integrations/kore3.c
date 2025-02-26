@@ -1739,16 +1739,14 @@ void kore3_export(char *directory, api_kind api) {
 						size_t offset = 0;
 
 						for (size_t j = 0; j < vertex_type->members.size; ++j) {
+							fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].format = %s;\n", get_name(t->name), input_index, j,
+							        structure_type(vertex_type->members.m[j].type.type, api));
+							fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].offset = %zu;\n", get_name(t->name), input_index, j, offset);
 							if (api == API_OPENGL) {
-								fprintf(output, "\tkinc_g4_vertex_structure_add(&%s_structure, \"%s_%s\", %s);\n", get_name(t->name),
-								        get_name(vertex_type->name), get_name(vertex_type->members.m[j].name),
-								        structure_type(vertex_type->members.m[j].type.type, api));
+								fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].name = \"%s_%s\";\n", get_name(t->name), input_index, j,
+								        get_name(vertex_type->name), get_name(vertex_type->members.m[j].name));
 							}
 							else {
-								fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].format = %s;\n", get_name(t->name), input_index, j,
-								        structure_type(vertex_type->members.m[j].type.type, api));
-								fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].offset = %zu;\n", get_name(t->name), input_index, j,
-								        offset);
 								fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].shader_location = %zu;\n", get_name(t->name), input_index,
 								        j, location);
 							}
