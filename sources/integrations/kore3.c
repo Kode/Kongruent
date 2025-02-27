@@ -61,7 +61,21 @@ static char *type_string(type_id type) {
 }
 
 static const char *structure_type(type_id type, api_kind api) {
-	if (api == API_DIRECT3D12) {
+	if (api == API_DIRECT3D11) {
+		if (type == float_id) {
+			return "KORE_D3D11_VERTEX_FORMAT_FLOAT32";
+		}
+		if (type == float2_id) {
+			return "KORE_D3D11_VERTEX_FORMAT_FLOAT32X2";
+		}
+		if (type == float3_id) {
+			return "KORE_D3D11_VERTEX_FORMAT_FLOAT32X3";
+		}
+		if (type == float4_id) {
+			return "KORE_D3D11_VERTEX_FORMAT_FLOAT32X4";
+		}
+	}
+	else if (api == API_DIRECT3D12) {
 		if (type == float_id) {
 			return "KORE_D3D12_VERTEX_FORMAT_FLOAT32";
 		}
