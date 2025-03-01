@@ -356,10 +356,11 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 						indent(code, offset, indentation + 1);
 						*offset += sprintf(&code[*offset], "gl_Position.x = _%" PRIu64 ".%s.x;\n", o->op_return.var.index, get_name(t->members.m[0].name));
 						indent(code, offset, indentation + 1);
-						*offset += sprintf(&code[*offset], "gl_Position.y = _%" PRIu64 ".%s.y;\n", o->op_return.var.index, get_name(t->members.m[0].name));
+						*offset +=
+						    sprintf(&code[*offset], "gl_Position.y = 1.0 - _%" PRIu64 ".%s.y;\n", o->op_return.var.index, get_name(t->members.m[0].name));
 						indent(code, offset, indentation + 1);
 						*offset +=
-						    sprintf(&code[*offset], "gl_Position.z = (_%" PRIu64 ".%s.z * 2.0) - _%" PRIu64 ".%s.w; // OpenGL clip space z is from -1 to 1\n",
+						    sprintf(&code[*offset], "gl_Position.z = (_%" PRIu64 ".%s.z * 2.0) - _%" PRIu64 ".%s.w; // OpenGL clip space z is from -w to w\n",
 						            o->op_return.var.index, get_name(t->members.m[0].name), o->op_return.var.index, get_name(t->members.m[0].name));
 						indent(code, offset, indentation + 1);
 						*offset += sprintf(&code[*offset], "gl_Position.w = _%" PRIu64 ".%s.w;\n", o->op_return.var.index, get_name(t->members.m[0].name));
