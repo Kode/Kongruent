@@ -255,16 +255,18 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 					debug_context context = {0};
 					check(o->op_call.parameters_size == 3, context, "sample requires three parameters");
 					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = texture(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
-					                   o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[2].index);
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = texture(_%" PRIu64 ", vec2(_%" PRIu64 ".x, -1.0 * _%" PRIu64 ".y));\n",
+					                   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index,
+					                   o->op_call.parameters[2].index, o->op_call.parameters[2].index);
 				}
 				else if (o->op_call.func == add_name("sample_lod")) {
 					debug_context context = {0};
 					check(o->op_call.parameters_size == 4, context, "sample_lod requires four parameters");
 					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = textureLod(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
-					                   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index,
-					                   o->op_call.parameters[2].index, o->op_call.parameters[3].index);
+					*offset +=
+					    sprintf(&code[*offset], "%s _%" PRIu64 " = textureLod(_%" PRIu64 ", vec2(_%" PRIu64 ".x, -1.0 * _%" PRIu64 ".y), _%" PRIu64 ");\n",
+					            type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[2].index,
+					            o->op_call.parameters[2].index, o->op_call.parameters[3].index);
 				}
 				else if (o->op_call.func == add_name("group_id")) {
 					check(o->op_call.parameters_size == 0, context, "group_id can not have a parameter");
@@ -356,8 +358,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 						indent(code, offset, indentation + 1);
 						*offset += sprintf(&code[*offset], "gl_Position.x = _%" PRIu64 ".%s.x;\n", o->op_return.var.index, get_name(t->members.m[0].name));
 						indent(code, offset, indentation + 1);
-						*offset +=
-						    sprintf(&code[*offset], "gl_Position.y = -1.0 * _%" PRIu64 ".%s.y;\n", o->op_return.var.index, get_name(t->members.m[0].name));
+						*offset += sprintf(&code[*offset], "gl_Position.y = _%" PRIu64 ".%s.y;\n", o->op_return.var.index, get_name(t->members.m[0].name));
 						indent(code, offset, indentation + 1);
 						*offset +=
 						    sprintf(&code[*offset], "gl_Position.z = (_%" PRIu64 ".%s.z * 2.0) - _%" PRIu64 ".%s.w; // OpenGL clip space z is from -w to w\n",
