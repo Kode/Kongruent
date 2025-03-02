@@ -1047,6 +1047,9 @@ void kore3_export(char *directory, api_kind api) {
 						if (t->members.m[j].name == add_name("vertex")) {
 							check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "vertex expects an identifier");
 							fprintf(output, "#include \"kong_%s.h\"\n", get_name(t->members.m[j].value.identifier));
+							if (api == API_OPENGL) {
+								fprintf(output, "#include \"kong_%s_flip.h\"\n", get_name(t->members.m[j].value.identifier));
+							}
 						}
 						else if (t->members.m[j].name == add_name("fragment")) {
 							check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "fragment expects an identifier");
@@ -1565,7 +1568,7 @@ void kore3_export(char *directory, api_kind api) {
 			descriptor_table_index += (sampler_count > 0) ? 2 : 1; // TODO
 		}
 
-		if (api != API_METAL) {
+		if (api != API_METAL && api != API_OPENGL) {
 			for (type_id i = 0; get_type(i) != NULL; ++i) {
 				type *t = get_type(i);
 				if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
@@ -1624,6 +1627,12 @@ void kore3_export(char *directory, api_kind api) {
 							fprintf(output, "\t%s_parameters.vertex.shader.data = %s_code;\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
 							fprintf(output, "\t%s_parameters.vertex.shader.size = %s_code_size;\n\n", get_name(t->name),
 							        get_name(t->members.m[j].value.identifier));
+							if (api == API_OPENGL) {
+								fprintf(output, "\t%s_parameters.vertex.shader.flip_data = %s_flip_code;\n", get_name(t->name),
+								        get_name(t->members.m[j].value.identifier));
+								fprintf(output, "\t%s_parameters.vertex.shader.flip_size = %s_flip_code_size;\n\n", get_name(t->name),
+								        get_name(t->members.m[j].value.identifier));
+							}
 						}
 						vertex_shader_name = t->members.m[j].value.identifier;
 					}
@@ -1642,6 +1651,10 @@ void kore3_export(char *directory, api_kind api) {
 							fprintf(output, "\t%s_parameters.fragment.shader.data = %s_code;\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
 							fprintf(output, "\t%s_parameters.fragment.shader.size = %s_code_size;\n\n", get_name(t->name),
 							        get_name(t->members.m[j].value.identifier));
+							if (api == API_OPENGL) {
+								fprintf(output, "\t%s_parameters.fragment.shader.flip_data = NULL;\n", get_name(t->name));
+								fprintf(output, "\t%s_parameters.fragment.shader.flip_size = 0;\n\n", get_name(t->name));
+							}
 						}
 						fragment_shader_name = t->members.m[j].value.identifier;
 					}

@@ -169,7 +169,7 @@ static void write_globals(char *glsl, size_t *offset, function *main) {
 	}
 }
 
-static void write_functions(char *code, size_t *offset, shader_stage stage, type_id input, type_id output, function *main) {
+static void write_functions(char *code, size_t *offset, shader_stage stage, type_id input, type_id output, function *main, bool flip) {
 	function *functions[256];
 	size_t functions_size = 0;
 
@@ -356,8 +356,13 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 						indent(code, offset, indentation + 1);
 						*offset += sprintf(&code[*offset], "gl_Position.x = _%" PRIu64 ".%s.x;\n", o->op_return.var.index, get_name(t->members.m[0].name));
 						indent(code, offset, indentation + 1);
-						*offset +=
-						    sprintf(&code[*offset], "gl_Position.y = -1.0 * _%" PRIu64 ".%s.y;\n", o->op_return.var.index, get_name(t->members.m[0].name));
+						if (flip) {
+							*offset +=
+							    sprintf(&code[*offset], "gl_Position.y = -1.0 * _%" PRIu64 ".%s.y;\n", o->op_return.var.index, get_name(t->members.m[0].name));
+						}
+						else {
+							*offset += sprintf(&code[*offset], "gl_Position.y = _%" PRIu64 ".%s.y;\n", o->op_return.var.index, get_name(t->members.m[0].name));
+						}
 						indent(code, offset, indentation + 1);
 						*offset +=
 						    sprintf(&code[*offset], "gl_Position.z = (_%" PRIu64 ".%s.z * 2.0) - _%" PRIu64 ".%s.w; // OpenGL clip space z is from -w to w\n",
@@ -421,7 +426,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 	}
 }
 
-static void glsl_export_vertex(char *directory, function *main) {
+static void glsl_export_vertex(char *directory, function *main, bool flip) {
 	char *glsl = (char *)calloc(1024 * 1024, 1);
 	debug_context context = {0};
 	check(glsl != NULL, context, "Could not allocate glsl string");
@@ -441,15 +446,25 @@ static void glsl_export_vertex(char *directory, function *main) {
 
 	write_globals(glsl, &offset, main);
 
-	write_functions(glsl, &offset, SHADER_STAGE_VERTEX, vertex_input, vertex_output, main);
+	write_functions(glsl, &offset, SHADER_STAGE_VERTEX, vertex_input, vertex_output, main, flip);
 
 	char *name = get_name(main->name);
 
 	char filename[512];
-	sprintf(filename, "kong_%s", name);
+	if (flip) {
+		sprintf(filename, "kong_%s_flip", name);
+	}
+	else {
+		sprintf(filename, "kong_%s", name);
+	}
 
 	char var_name[256];
-	sprintf(var_name, "%s_code", name);
+	if (flip) {
+		sprintf(var_name, "%s_flip_code", name);
+	}
+	else {
+		sprintf(var_name, "%s_code", name);
+	}
 
 	write_code(glsl, directory, filename, var_name);
 }
@@ -472,7 +487,7 @@ static void glsl_export_fragment(char *directory, function *main) {
 
 	write_globals(glsl, &offset, main);
 
-	write_functions(glsl, &offset, SHADER_STAGE_FRAGMENT, pixel_input, NO_TYPE, main);
+	write_functions(glsl, &offset, SHADER_STAGE_FRAGMENT, pixel_input, NO_TYPE, main, false);
 
 	char *name = get_name(main->name);
 
@@ -500,7 +515,7 @@ static void glsl_export_compute(char *directory, function *main) {
 
 	write_globals(glsl, &offset, main);
 
-	write_functions(glsl, &offset, SHADER_STAGE_COMPUTE, NO_TYPE, NO_TYPE, main);
+	write_functions(glsl, &offset, SHADER_STAGE_COMPUTE, NO_TYPE, NO_TYPE, main, false);
 
 	char *name = get_name(main->name);
 
@@ -589,7 +604,8 @@ void glsl_export(char *directory) {
 	}
 
 	for (size_t i = 0; i < vertex_shaders_size; ++i) {
-		glsl_export_vertex(directory, vertex_shaders[i]);
+		glsl_export_vertex(directory, vertex_shaders[i], false);
+		glsl_export_vertex(directory, vertex_shaders[i], true);
 	}
 
 	for (size_t i = 0; i < fragment_shaders_size; ++i) {
