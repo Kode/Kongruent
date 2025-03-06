@@ -5,7 +5,7 @@
 static descriptor_set sets[MAX_SETS];
 static size_t sets_count = 0;
 
-descriptor_set *add_set(name_id name) {
+descriptor_set *create_set(name_id name) {
 	for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 		if (sets[set_index].name == name) {
 			return &sets[set_index];

@@ -95,6 +95,73 @@ void find_referenced_globals(function *f, global_id *globals, size_t *globals_si
 	}
 }
 
+static bool has_set(descriptor_set **sets, size_t *sets_size, descriptor_set *set) {
+	for (size_t set_index = 0; set_index < *sets_size; ++set_index) {
+		if (sets[set_index] == set) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static void add_set(descriptor_set **sets, size_t *sets_size, descriptor_set *set) {
+	if (has_set(sets, sets_size, set)) {
+		return;
+	}
+
+	sets[*sets_size] = set;
+	*sets_size += 1;
+}
+
+void find_referenced_sets(function *f, descriptor_set **sets, size_t *sets_size) {
+	if (f->block == NULL) {
+		// built-in
+		return;
+	}
+
+	global_id globals[256];
+	size_t globals_size = 0;
+	find_referenced_globals(f, globals, &globals_size);
+
+	for (size_t global_index = 0; global_index < globals_size; ++global_index) {
+		global *g = get_global(globals[global_index]);
+
+		if (g->sets_count == 0) {
+			continue;
+		}
+
+		if (g->sets_count == 1) {
+			add_set(sets, sets_size, g->sets[0]);
+			continue;
+		}
+	}
+
+	for (size_t global_index = 0; global_index < globals_size; ++global_index) {
+		global *g = get_global(globals[global_index]);
+
+		if (g->sets_count < 2) {
+			continue;
+		}
+
+		bool found = false;
+
+		for (size_t set_index = 0; set_index < g->sets_count; ++set_index) {
+			descriptor_set *set = g->sets[set_index];
+
+			if (has_set(sets, sets_size, set)) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			debug_context context = {0};
+			error(context, "Global %s could be used from multiple descriptor sets.", get_name(g->name));
+		}
+	}
+}
+
 void find_referenced_functions(function *f, function **functions, size_t *functions_size) {
 	if (f->block == NULL) {
 		// built-in

@@ -182,7 +182,7 @@ static definition parse_definition(state_t *state) {
 			current_attribute.name = current(state).identifier;
 
 			if (current_attribute.name == add_name("root_constants")) {
-				current_sets[current_sets_count] = add_set(current_attribute.name);
+				current_sets[current_sets_count] = create_set(current_attribute.name);
 				current_attribute.parameters[current_attribute.paramters_count] = current_sets[current_sets_count]->index;
 				current_sets_count += 1;
 			}
@@ -199,7 +199,7 @@ static definition parse_definition(state_t *state) {
 								debug_context context = {0};
 								error(context, "Descriptor set can not be called root_constants");
 							}
-							current_sets[current_sets_count] = add_set(current(state).identifier);
+							current_sets[current_sets_count] = create_set(current(state).identifier);
 							current_attribute.parameters[current_attribute.paramters_count] = current_sets[current_sets_count]->index;
 							current_sets_count += 1;
 						}
