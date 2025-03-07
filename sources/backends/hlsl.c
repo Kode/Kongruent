@@ -1,5 +1,6 @@
 #include "hlsl.h"
 
+#include "../array.h"
 #include "../compiler.h"
 #include "../errors.h"
 #include "../functions.h"
@@ -1659,17 +1660,14 @@ void hlsl_export(char *directory, api_kind d3d) {
 		}
 	}
 
-	function *vertex_shaders[256];
-	size_t vertex_shaders_size = 0;
+	struct bla {
+		int a;
+	};
 
-	function *amplification_shaders[256];
-	size_t amplification_shaders_size = 0;
-
-	function *mesh_shaders[256];
-	size_t mesh_shaders_size = 0;
-
-	function *fragment_shaders[256];
-	size_t fragment_shaders_size = 0;
+	static_array(function *, vertex_shaders, 256);
+	static_array(function *, amplification_shaders, 256);
+	static_array(function *, mesh_shaders, 256);
+	static_array(function *, fragment_shaders, 256);
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
@@ -1707,23 +1705,19 @@ void hlsl_export(char *directory, api_kind d3d) {
 				function *f = get_function(i);
 				if (vertex_shader_name != NO_NAME && f->name == vertex_shader_name) {
 					vertex_shader = f;
-					vertex_shaders[vertex_shaders_size] = f;
-					vertex_shaders_size += 1;
+					static_array_push(vertex_shaders, f);
 				}
 				if (amplification_shader_name != NO_NAME && f->name == amplification_shader_name) {
 					amplification_shader = f;
-					amplification_shaders[amplification_shaders_size] = f;
-					amplification_shaders_size += 1;
+					static_array_push(amplification_shaders, f);
 				}
 				if (mesh_shader_name != NO_NAME && f->name == mesh_shader_name) {
 					mesh_shader = f;
-					mesh_shaders[mesh_shaders_size] = f;
-					mesh_shaders_size += 1;
+					static_array_push(mesh_shaders, f);
 				}
 				if (f->name == fragment_shader_name) {
 					fragment_shader = f;
-					fragment_shaders[fragment_shaders_size] = f;
-					fragment_shaders_size += 1;
+					static_array_push(fragment_shaders, f);
 				}
 			}
 
@@ -1862,22 +1856,22 @@ void hlsl_export(char *directory, api_kind d3d) {
 		}
 	}
 
-	for (size_t i = 0; i < vertex_shaders_size; ++i) {
-		hlsl_export_vertex(directory, d3d, vertex_shaders[i]);
+	for (size_t i = 0; i < vertex_shaders.size; ++i) {
+		hlsl_export_vertex(directory, d3d, vertex_shaders.values[i]);
 	}
 
 	if (d3d == API_DIRECT3D12) {
-		for (size_t i = 0; i < amplification_shaders_size; ++i) {
-			hlsl_export_amplification(directory, amplification_shaders[i]);
+		for (size_t i = 0; i < amplification_shaders.size; ++i) {
+			hlsl_export_amplification(directory, amplification_shaders.values[i]);
 		}
 
-		for (size_t i = 0; i < mesh_shaders_size; ++i) {
-			hlsl_export_mesh(directory, mesh_shaders[i]);
+		for (size_t i = 0; i < mesh_shaders.size; ++i) {
+			hlsl_export_mesh(directory, mesh_shaders.values[i]);
 		}
 	}
 
-	for (size_t i = 0; i < fragment_shaders_size; ++i) {
-		hlsl_export_fragment(directory, d3d, fragment_shaders[i]);
+	for (size_t i = 0; i < fragment_shaders.size; ++i) {
+		hlsl_export_fragment(directory, d3d, fragment_shaders.values[i]);
 	}
 
 	for (size_t i = 0; i < compute_shaders_size; ++i) {
