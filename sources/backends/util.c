@@ -1,5 +1,6 @@
 #include "util.h"
 
+#include "../array.h"
 #include "../errors.h"
 
 #include <string.h>
@@ -159,6 +160,120 @@ void find_referenced_sets(function *f, descriptor_set **sets, size_t *sets_size)
 			debug_context context = {0};
 			error(context, "Global %s could be used from multiple descriptor sets.", get_name(g->name));
 		}
+	}
+}
+
+void find_pipeline_buckets(void) {
+	typedef struct render_pipeline {
+		function *vertex_shader;
+		function *amplification_shader;
+		function *mesh_shader;
+		function *fragment_shader;
+	} render_pipeline;
+
+	static_array(render_pipeline, render_pipelines, 256);
+
+	render_pipelines all_render_pipelines;
+	static_array_init(all_render_pipelines);
+
+	for (type_id i = 0; get_type(i) != NULL; ++i) {
+		type *t = get_type(i);
+		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
+			name_id vertex_shader_name = NO_NAME;
+			name_id amplification_shader_name = NO_NAME;
+			name_id mesh_shader_name = NO_NAME;
+			name_id fragment_shader_name = NO_NAME;
+
+			for (size_t j = 0; j < t->members.size; ++j) {
+				if (t->members.m[j].name == add_name("vertex")) {
+					vertex_shader_name = t->members.m[j].value.identifier;
+				}
+				else if (t->members.m[j].name == add_name("amplification")) {
+					amplification_shader_name = t->members.m[j].value.identifier;
+				}
+				else if (t->members.m[j].name == add_name("mesh")) {
+					mesh_shader_name = t->members.m[j].value.identifier;
+				}
+				else if (t->members.m[j].name == add_name("fragment")) {
+					fragment_shader_name = t->members.m[j].value.identifier;
+				}
+			}
+
+			debug_context context = {0};
+			check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "vertex or mesh shader missing");
+			check(fragment_shader_name != NO_NAME, context, "fragment shader missing");
+
+			render_pipeline pipeline = {0};
+
+			for (function_id i = 0; get_function(i) != NULL; ++i) {
+				function *f = get_function(i);
+				if (vertex_shader_name != NO_NAME && f->name == vertex_shader_name) {
+					pipeline.vertex_shader = f;
+				}
+				if (amplification_shader_name != NO_NAME && f->name == amplification_shader_name) {
+					pipeline.amplification_shader = f;
+				}
+				if (mesh_shader_name != NO_NAME && f->name == mesh_shader_name) {
+					pipeline.mesh_shader = f;
+				}
+				if (f->name == fragment_shader_name) {
+					pipeline.fragment_shader = f;
+				}
+			}
+
+			static_array_push(all_render_pipelines, pipeline);
+		}
+	}
+
+	static_array(uint32_t, pipeline_indices, 256);
+
+	static_array(pipeline_indices, pipeline_buckets, 64);
+
+	pipeline_buckets buckets;
+	static_array_init(buckets);
+
+	pipeline_indices remaining_pipelines;
+	static_array_init(remaining_pipelines);
+
+	for (uint32_t index = 0; index < all_render_pipelines.size; ++index) {
+		static_array_push(remaining_pipelines, index);
+	}
+
+	while (remaining_pipelines.size > 0) {
+		pipeline_indices next_remaining_pipelines;
+		static_array_init(next_remaining_pipelines);
+
+		pipeline_indices bucket;
+		static_array_init(bucket);
+
+		static_array_push(bucket, remaining_pipelines.values[0]);
+
+		for (size_t index = 1; index < remaining_pipelines.size; ++index) {
+			uint32_t pipeline_index = remaining_pipelines.values[index];
+			render_pipeline *pipeline = &all_render_pipelines.values[pipeline_index];
+
+			bool found = false;
+
+			for (size_t index_in_bucket = 0; index_in_bucket < bucket.size; ++index_in_bucket) {
+				render_pipeline *pipeline_in_bucket = &all_render_pipelines.values[bucket.values[index_in_bucket]];
+				if (pipeline->vertex_shader == pipeline_in_bucket->vertex_shader ||
+				    pipeline->amplification_shader == pipeline_in_bucket->amplification_shader || pipeline->mesh_shader == pipeline_in_bucket->mesh_shader ||
+				    pipeline->fragment_shader == pipeline_in_bucket->fragment_shader) {
+					found = true;
+					break;
+				}
+			}
+
+			if (found) {
+				static_array_push(bucket, pipeline_index);
+			}
+			else {
+				static_array_push(next_remaining_pipelines, pipeline_index);
+			}
+		}
+
+		remaining_pipelines = next_remaining_pipelines;
+		static_array_push(buckets, bucket);
 	}
 }
 

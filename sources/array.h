@@ -2,13 +2,24 @@
 #define KONG_ARRAY_HEADER
 
 #define static_array(type, name, max_size)                                                                                                                     \
-	struct {                                                                                                                                                   \
+	typedef struct name {                                                                                                                                      \
 		type values[max_size];                                                                                                                                 \
 		size_t size;                                                                                                                                           \
 		size_t max;                                                                                                                                            \
-	} name;                                                                                                                                                    \
-	name.size = 0;                                                                                                                                             \
-	name.max = max_size;
+	} name;
+
+/*#define static_array_with_init(type, name, max_size) \
+    struct {                                                                                                                                                   \
+        type values[max_size];                                                                                                                                 \
+        size_t size;                                                                                                                                           \
+        size_t max;                                                                                                                                            \
+    } name;                                                                                                                                                    \
+    name.size = 0;                                                                                                                                             \
+    name.max = max_size;*/
+
+#define static_array_init(array)                                                                                                                               \
+	array.size = 0;                                                                                                                                            \
+	array.max = sizeof(array.values) / sizeof(array.values[0])
 
 #define static_array_push(array, value)                                                                                                                        \
 	if (array.size >= array.max) {                                                                                                                             \

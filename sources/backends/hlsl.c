@@ -1660,14 +1660,19 @@ void hlsl_export(char *directory, api_kind d3d) {
 		}
 	}
 
-	struct bla {
-		int a;
-	};
+	find_pipeline_buckets();
 
-	static_array(function *, vertex_shaders, 256);
-	static_array(function *, amplification_shaders, 256);
-	static_array(function *, mesh_shaders, 256);
-	static_array(function *, fragment_shaders, 256);
+	static_array(function *, shaders, 256);
+
+	shaders vertex_shaders;
+	shaders amplification_shaders;
+	shaders mesh_shaders;
+	shaders fragment_shaders;
+
+	static_array_init(vertex_shaders);
+	static_array_init(amplification_shaders);
+	static_array_init(mesh_shaders);
+	static_array_init(fragment_shaders);
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
