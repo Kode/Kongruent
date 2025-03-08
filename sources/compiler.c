@@ -902,7 +902,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 	return ids;
 }
 
-void convert_globals(void) {
+void allocate_globals(void) {
 	for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 		global *g = get_global(i);
 
@@ -918,7 +918,7 @@ void convert_globals(void) {
 	}
 }
 
-void convert_function_block(opcodes *code, struct statement *block) {
+void compile_function_block(opcodes *code, struct statement *block) {
 	if (block == NULL) {
 		// built-in
 		return;

@@ -1661,16 +1661,6 @@ void hlsl_export(char *directory, api_kind d3d) {
 		}
 	}
 
-	render_pipelines all_render_pipelines;
-	static_array_init(all_render_pipelines);
-
-	find_all_render_pipelines(&all_render_pipelines);
-
-	pipeline_buckets buckets;
-	static_array_init(buckets);
-
-	find_pipeline_buckets(&all_render_pipelines, &buckets);
-
 	static_array(function *, shaders, 256);
 
 	shaders vertex_shaders;

@@ -5,6 +5,9 @@
 
 #include <string.h>
 
+static render_pipelines all_render_pipelines;
+static pipeline_buckets all_buckets;
+
 static void find_referenced_global_for_var(variable v, global_id *globals, size_t *globals_size) {
 	for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
 		global *g = get_global(j);
@@ -155,7 +158,7 @@ void find_referenced_sets(function *f, descriptor_set **sets, size_t *sets_size)
 	}
 }
 
-void find_all_render_pipelines(render_pipelines *all_render_pipelines) {
+static void find_all_render_pipelines(void) {
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
@@ -201,16 +204,18 @@ void find_all_render_pipelines(render_pipelines *all_render_pipelines) {
 				}
 			}
 
-			static_array_push_p(all_render_pipelines, pipeline);
+			static_array_push(all_render_pipelines, pipeline);
 		}
 	}
 }
 
-void find_pipeline_buckets(render_pipelines *all_render_pipelines, pipeline_buckets *buckets) {
+static void find_pipeline_buckets(void) {
+	static_array_init(all_buckets);
+
 	pipeline_indices remaining_pipelines;
 	static_array_init(remaining_pipelines);
 
-	for (uint32_t index = 0; index < all_render_pipelines->size; ++index) {
+	for (uint32_t index = 0; index < all_render_pipelines.size; ++index) {
 		static_array_push(remaining_pipelines, index);
 	}
 
@@ -225,12 +230,12 @@ void find_pipeline_buckets(render_pipelines *all_render_pipelines, pipeline_buck
 
 		for (size_t index = 1; index < remaining_pipelines.size; ++index) {
 			uint32_t pipeline_index = remaining_pipelines.values[index];
-			render_pipeline *pipeline = &all_render_pipelines->values[pipeline_index];
+			render_pipeline *pipeline = &all_render_pipelines.values[pipeline_index];
 
 			bool found = false;
 
 			for (size_t index_in_bucket = 0; index_in_bucket < bucket.size; ++index_in_bucket) {
-				render_pipeline *pipeline_in_bucket = &all_render_pipelines->values[bucket.values[index_in_bucket]];
+				render_pipeline *pipeline_in_bucket = &all_render_pipelines.values[bucket.values[index_in_bucket]];
 				if (pipeline->vertex_shader == pipeline_in_bucket->vertex_shader ||
 				    pipeline->amplification_shader == pipeline_in_bucket->amplification_shader || pipeline->mesh_shader == pipeline_in_bucket->mesh_shader ||
 				    pipeline->fragment_shader == pipeline_in_bucket->fragment_shader) {
@@ -248,7 +253,7 @@ void find_pipeline_buckets(render_pipelines *all_render_pipelines, pipeline_buck
 		}
 
 		remaining_pipelines = next_remaining_pipelines;
-		static_array_push_p(buckets, bucket);
+		static_array_push(all_buckets, bucket);
 	}
 }
 
@@ -351,4 +356,9 @@ void find_referenced_types(function *f, type_id *types, size_t *types_size) {
 			index += o->size;
 		}
 	}
+}
+
+void analyze(void) {
+	find_all_render_pipelines();
+	find_pipeline_buckets();
 }

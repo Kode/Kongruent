@@ -73,14 +73,14 @@ typedef struct opcode {
 		struct {
 			variable from;
 			variable to;
-			
+
 			bool dynamic_member[64];
 			variable dynamic_member_indices[64];
 
 			uint32_t static_member_indices[64];
 			type_id member_parent_type;
 			bool member_parent_array;
-			
+
 			uint8_t member_indices_size;
 		} op_store_member;
 		struct {
@@ -105,7 +105,7 @@ typedef struct opcode {
 			uint32_t static_member_indices[64];
 			type_id member_parent_type;
 			bool member_parent_array;
-			
+
 			uint8_t member_indices_size;
 		} op_load_member;
 		struct {
@@ -157,8 +157,8 @@ typedef struct opcodes {
 	size_t size;
 } opcodes;
 
-void convert_globals(void);
+void allocate_globals(void);
 
 struct statement;
 
-void convert_function_block(opcodes *code, struct statement *block);
+void compile_function_block(opcodes *code, struct statement *block);

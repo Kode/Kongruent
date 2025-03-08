@@ -1,3 +1,4 @@
+#include "analyzer.h"
 #include "compiler.h"
 #include "disasm.h"
 #include "errors.h"
@@ -282,9 +283,11 @@ int main(int argc, char **argv) {
 
 	resolve_types();
 
-	convert_globals();
+	analyze();
+
+	allocate_globals();
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
-		convert_function_block(&get_function(i)->code, get_function(i)->block);
+		compile_function_block(&get_function(i)->code, get_function(i)->block);
 	}
 
 #ifndef NDEBUG
