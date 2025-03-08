@@ -155,19 +155,7 @@ void find_referenced_sets(function *f, descriptor_set **sets, size_t *sets_size)
 	}
 }
 
-void find_pipeline_buckets(void) {
-	typedef struct render_pipeline {
-		function *vertex_shader;
-		function *amplification_shader;
-		function *mesh_shader;
-		function *fragment_shader;
-	} render_pipeline;
-
-	static_array(render_pipeline, render_pipelines, 256);
-
-	render_pipelines all_render_pipelines;
-	static_array_init(all_render_pipelines);
-
+void find_all_render_pipelines(render_pipelines *all_render_pipelines) {
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
@@ -213,21 +201,16 @@ void find_pipeline_buckets(void) {
 				}
 			}
 
-			static_array_push(all_render_pipelines, pipeline);
+			static_array_push_p(all_render_pipelines, pipeline);
 		}
 	}
+}
 
-	static_array(uint32_t, pipeline_indices, 256);
-
-	static_array(pipeline_indices, pipeline_buckets, 64);
-
-	pipeline_buckets buckets;
-	static_array_init(buckets);
-
+void find_pipeline_buckets(render_pipelines *all_render_pipelines, pipeline_buckets *buckets) {
 	pipeline_indices remaining_pipelines;
 	static_array_init(remaining_pipelines);
 
-	for (uint32_t index = 0; index < all_render_pipelines.size; ++index) {
+	for (uint32_t index = 0; index < all_render_pipelines->size; ++index) {
 		static_array_push(remaining_pipelines, index);
 	}
 
@@ -242,12 +225,12 @@ void find_pipeline_buckets(void) {
 
 		for (size_t index = 1; index < remaining_pipelines.size; ++index) {
 			uint32_t pipeline_index = remaining_pipelines.values[index];
-			render_pipeline *pipeline = &all_render_pipelines.values[pipeline_index];
+			render_pipeline *pipeline = &all_render_pipelines->values[pipeline_index];
 
 			bool found = false;
 
 			for (size_t index_in_bucket = 0; index_in_bucket < bucket.size; ++index_in_bucket) {
-				render_pipeline *pipeline_in_bucket = &all_render_pipelines.values[bucket.values[index_in_bucket]];
+				render_pipeline *pipeline_in_bucket = &all_render_pipelines->values[bucket.values[index_in_bucket]];
 				if (pipeline->vertex_shader == pipeline_in_bucket->vertex_shader ||
 				    pipeline->amplification_shader == pipeline_in_bucket->amplification_shader || pipeline->mesh_shader == pipeline_in_bucket->mesh_shader ||
 				    pipeline->fragment_shader == pipeline_in_bucket->fragment_shader) {
@@ -265,7 +248,7 @@ void find_pipeline_buckets(void) {
 		}
 
 		remaining_pipelines = next_remaining_pipelines;
-		static_array_push(buckets, bucket);
+		static_array_push_p(buckets, bucket);
 	}
 }
 

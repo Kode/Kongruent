@@ -28,4 +28,11 @@
 	}                                                                                                                                                          \
 	array.values[array.size++] = value;
 
+#define static_array_push_p(array, value)                                                                                                                      \
+	if (array->size >= array->max) {                                                                                                                           \
+		debug_context context = {0};                                                                                                                           \
+		error(context, "Array overflow");                                                                                                                      \
+	}                                                                                                                                                          \
+	array->values[array->size++] = value;
+
 #endif
