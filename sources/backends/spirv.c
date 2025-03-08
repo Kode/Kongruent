@@ -1,5 +1,6 @@
 #include "spirv.h"
 
+#include "../analyzer.h"
 #include "../compiler.h"
 #include "../errors.h"
 #include "../functions.h"

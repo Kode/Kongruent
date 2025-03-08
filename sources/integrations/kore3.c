@@ -1,5 +1,6 @@
 #include "kore3.h"
 
+#include "../analyzer.h"
 #include "../backends/util.h"
 #include "../compiler.h"
 #include "../errors.h"

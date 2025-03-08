@@ -1,5 +1,6 @@
 #include "hlsl.h"
 
+#include "../analyzer.h"
 #include "../array.h"
 #include "../compiler.h"
 #include "../errors.h"
