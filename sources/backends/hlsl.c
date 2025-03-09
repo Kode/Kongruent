@@ -1768,11 +1768,6 @@ void hlsl_export(char *directory, api_kind d3d) {
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
 		if (has_attribute(&f->attributes, add_name("compute"))) {
-			descriptor_set *all_sets[256];
-			size_t all_sets_size = 0;
-
-			find_referenced_sets(f, all_sets, &all_sets_size);
-
 			global_id all_globals[256];
 			size_t all_globals_size = 0;
 

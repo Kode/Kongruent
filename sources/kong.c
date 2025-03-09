@@ -283,12 +283,12 @@ int main(int argc, char **argv) {
 
 	resolve_types();
 
-	analyze();
-
 	allocate_globals();
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		compile_function_block(&get_function(i)->code, get_function(i)->block);
 	}
+
+	analyze();
 
 #ifndef NDEBUG
 	disassemble();

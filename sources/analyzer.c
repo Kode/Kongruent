@@ -6,6 +6,7 @@
 #include <string.h>
 
 static render_pipelines all_render_pipelines;
+// a bucket is a collection of buckets that share shaders
 static pipeline_buckets all_buckets;
 
 static void find_referenced_global_for_var(variable v, global_id *globals, size_t *globals_size) {
@@ -88,172 +89,6 @@ void find_referenced_globals(function *f, global_id *globals, size_t *globals_si
 
 			index += o->size;
 		}
-	}
-}
-
-static bool has_set(descriptor_set **sets, size_t *sets_size, descriptor_set *set) {
-	for (size_t set_index = 0; set_index < *sets_size; ++set_index) {
-		if (sets[set_index] == set) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-static void add_set(descriptor_set **sets, size_t *sets_size, descriptor_set *set) {
-	if (has_set(sets, sets_size, set)) {
-		return;
-	}
-
-	sets[*sets_size] = set;
-	*sets_size += 1;
-}
-
-void find_referenced_sets(function *f, descriptor_set **sets, size_t *sets_size) {
-	if (f->block == NULL) {
-		// built-in
-		return;
-	}
-
-	global_id globals[256];
-	size_t globals_size = 0;
-	find_referenced_globals(f, globals, &globals_size);
-
-	for (size_t global_index = 0; global_index < globals_size; ++global_index) {
-		global *g = get_global(globals[global_index]);
-
-		if (g->sets_count == 0) {
-			continue;
-		}
-
-		if (g->sets_count == 1) {
-			add_set(sets, sets_size, g->sets[0]);
-			continue;
-		}
-	}
-
-	for (size_t global_index = 0; global_index < globals_size; ++global_index) {
-		global *g = get_global(globals[global_index]);
-
-		if (g->sets_count < 2) {
-			continue;
-		}
-
-		bool found = false;
-
-		for (size_t set_index = 0; set_index < g->sets_count; ++set_index) {
-			descriptor_set *set = g->sets[set_index];
-
-			if (has_set(sets, sets_size, set)) {
-				found = true;
-				break;
-			}
-		}
-
-		if (!found) {
-			debug_context context = {0};
-			error(context, "Global %s could be used from multiple descriptor sets.", get_name(g->name));
-		}
-	}
-}
-
-static void find_all_render_pipelines(void) {
-	for (type_id i = 0; get_type(i) != NULL; ++i) {
-		type *t = get_type(i);
-		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-			name_id vertex_shader_name = NO_NAME;
-			name_id amplification_shader_name = NO_NAME;
-			name_id mesh_shader_name = NO_NAME;
-			name_id fragment_shader_name = NO_NAME;
-
-			for (size_t j = 0; j < t->members.size; ++j) {
-				if (t->members.m[j].name == add_name("vertex")) {
-					vertex_shader_name = t->members.m[j].value.identifier;
-				}
-				else if (t->members.m[j].name == add_name("amplification")) {
-					amplification_shader_name = t->members.m[j].value.identifier;
-				}
-				else if (t->members.m[j].name == add_name("mesh")) {
-					mesh_shader_name = t->members.m[j].value.identifier;
-				}
-				else if (t->members.m[j].name == add_name("fragment")) {
-					fragment_shader_name = t->members.m[j].value.identifier;
-				}
-			}
-
-			debug_context context = {0};
-			check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "vertex or mesh shader missing");
-			check(fragment_shader_name != NO_NAME, context, "fragment shader missing");
-
-			render_pipeline pipeline = {0};
-
-			for (function_id i = 0; get_function(i) != NULL; ++i) {
-				function *f = get_function(i);
-				if (vertex_shader_name != NO_NAME && f->name == vertex_shader_name) {
-					pipeline.vertex_shader = f;
-				}
-				if (amplification_shader_name != NO_NAME && f->name == amplification_shader_name) {
-					pipeline.amplification_shader = f;
-				}
-				if (mesh_shader_name != NO_NAME && f->name == mesh_shader_name) {
-					pipeline.mesh_shader = f;
-				}
-				if (f->name == fragment_shader_name) {
-					pipeline.fragment_shader = f;
-				}
-			}
-
-			static_array_push(all_render_pipelines, pipeline);
-		}
-	}
-}
-
-static void find_pipeline_buckets(void) {
-	static_array_init(all_buckets);
-
-	pipeline_indices remaining_pipelines;
-	static_array_init(remaining_pipelines);
-
-	for (uint32_t index = 0; index < all_render_pipelines.size; ++index) {
-		static_array_push(remaining_pipelines, index);
-	}
-
-	while (remaining_pipelines.size > 0) {
-		pipeline_indices next_remaining_pipelines;
-		static_array_init(next_remaining_pipelines);
-
-		pipeline_indices bucket;
-		static_array_init(bucket);
-
-		static_array_push(bucket, remaining_pipelines.values[0]);
-
-		for (size_t index = 1; index < remaining_pipelines.size; ++index) {
-			uint32_t pipeline_index = remaining_pipelines.values[index];
-			render_pipeline *pipeline = &all_render_pipelines.values[pipeline_index];
-
-			bool found = false;
-
-			for (size_t index_in_bucket = 0; index_in_bucket < bucket.size; ++index_in_bucket) {
-				render_pipeline *pipeline_in_bucket = &all_render_pipelines.values[bucket.values[index_in_bucket]];
-				if (pipeline->vertex_shader == pipeline_in_bucket->vertex_shader ||
-				    pipeline->amplification_shader == pipeline_in_bucket->amplification_shader || pipeline->mesh_shader == pipeline_in_bucket->mesh_shader ||
-				    pipeline->fragment_shader == pipeline_in_bucket->fragment_shader) {
-					found = true;
-					break;
-				}
-			}
-
-			if (found) {
-				static_array_push(bucket, pipeline_index);
-			}
-			else {
-				static_array_push(next_remaining_pipelines, pipeline_index);
-			}
-		}
-
-		remaining_pipelines = next_remaining_pipelines;
-		static_array_push(all_buckets, bucket);
 	}
 }
 
@@ -358,7 +193,217 @@ void find_referenced_types(function *f, type_id *types, size_t *types_size) {
 	}
 }
 
+static_array(descriptor_set *, descriptor_sets, 256);
+
+static bool has_set(descriptor_sets *sets, descriptor_set *set) {
+	for (size_t set_index = 0; set_index < sets->size; ++set_index) {
+		if (sets->values[set_index] == set) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static void add_set(descriptor_sets *sets, descriptor_set *set) {
+	if (has_set(sets, set)) {
+		return;
+	}
+
+	static_array_push_p(sets, set);
+}
+
+static void find_referenced_sets(global_id *globals, size_t globals_size, descriptor_sets *sets) {
+	for (size_t global_index = 0; global_index < globals_size; ++global_index) {
+		global *g = get_global(globals[global_index]);
+
+		if (g->sets_count == 0) {
+			continue;
+		}
+
+		if (g->sets_count == 1) {
+			add_set(sets, g->sets[0]);
+			continue;
+		}
+	}
+
+	for (size_t global_index = 0; global_index < globals_size; ++global_index) {
+		global *g = get_global(globals[global_index]);
+
+		if (g->sets_count < 2) {
+			continue;
+		}
+
+		bool found = false;
+
+		for (size_t set_index = 0; set_index < g->sets_count; ++set_index) {
+			descriptor_set *set = g->sets[set_index];
+
+			if (has_set(sets, set)) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			debug_context context = {0};
+			error(context, "Global %s could be used from multiple descriptor sets.", get_name(g->name));
+		}
+	}
+
+	for (size_t global_index = 0; global_index < globals_size; ++global_index) {
+		global *g = get_global(globals[global_index]);
+
+		if (g->sets_count < 2) {
+			continue;
+		}
+
+		bool found = false;
+
+		for (size_t set_index = 0; set_index < g->sets_count; ++set_index) {
+			descriptor_set *set = g->sets[set_index];
+
+			if (has_set(sets, set)) {
+				if (found) {
+					debug_context context = {0};
+					error(context, "Global %s is used from multiple descriptor sets.", get_name(g->name));
+				}
+				found = true;
+			}
+		}
+	}
+}
+
+static void find_all_render_pipelines(void) {
+	static_array_init(all_render_pipelines);
+
+	for (type_id i = 0; get_type(i) != NULL; ++i) {
+		type *t = get_type(i);
+		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
+			name_id vertex_shader_name = NO_NAME;
+			name_id amplification_shader_name = NO_NAME;
+			name_id mesh_shader_name = NO_NAME;
+			name_id fragment_shader_name = NO_NAME;
+
+			for (size_t j = 0; j < t->members.size; ++j) {
+				if (t->members.m[j].name == add_name("vertex")) {
+					vertex_shader_name = t->members.m[j].value.identifier;
+				}
+				else if (t->members.m[j].name == add_name("amplification")) {
+					amplification_shader_name = t->members.m[j].value.identifier;
+				}
+				else if (t->members.m[j].name == add_name("mesh")) {
+					mesh_shader_name = t->members.m[j].value.identifier;
+				}
+				else if (t->members.m[j].name == add_name("fragment")) {
+					fragment_shader_name = t->members.m[j].value.identifier;
+				}
+			}
+
+			debug_context context = {0};
+			check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "vertex or mesh shader missing");
+			check(fragment_shader_name != NO_NAME, context, "fragment shader missing");
+
+			render_pipeline pipeline = {0};
+
+			for (function_id i = 0; get_function(i) != NULL; ++i) {
+				function *f = get_function(i);
+				if (vertex_shader_name != NO_NAME && f->name == vertex_shader_name) {
+					pipeline.vertex_shader = f;
+				}
+				if (amplification_shader_name != NO_NAME && f->name == amplification_shader_name) {
+					pipeline.amplification_shader = f;
+				}
+				if (mesh_shader_name != NO_NAME && f->name == mesh_shader_name) {
+					pipeline.mesh_shader = f;
+				}
+				if (f->name == fragment_shader_name) {
+					pipeline.fragment_shader = f;
+				}
+			}
+
+			static_array_push(all_render_pipelines, pipeline);
+		}
+	}
+}
+
+static void find_pipeline_buckets(void) {
+	static_array_init(all_buckets);
+
+	pipeline_indices remaining_pipelines;
+	static_array_init(remaining_pipelines);
+
+	for (uint32_t index = 0; index < all_render_pipelines.size; ++index) {
+		static_array_push(remaining_pipelines, index);
+	}
+
+	while (remaining_pipelines.size > 0) {
+		pipeline_indices next_remaining_pipelines;
+		static_array_init(next_remaining_pipelines);
+
+		pipeline_indices bucket;
+		static_array_init(bucket);
+
+		static_array_push(bucket, remaining_pipelines.values[0]);
+
+		for (size_t index = 1; index < remaining_pipelines.size; ++index) {
+			uint32_t pipeline_index = remaining_pipelines.values[index];
+			render_pipeline *pipeline = &all_render_pipelines.values[pipeline_index];
+
+			bool found = false;
+
+			for (size_t index_in_bucket = 0; index_in_bucket < bucket.size; ++index_in_bucket) {
+				render_pipeline *pipeline_in_bucket = &all_render_pipelines.values[bucket.values[index_in_bucket]];
+				if (pipeline->vertex_shader == pipeline_in_bucket->vertex_shader ||
+				    pipeline->amplification_shader == pipeline_in_bucket->amplification_shader || pipeline->mesh_shader == pipeline_in_bucket->mesh_shader ||
+				    pipeline->fragment_shader == pipeline_in_bucket->fragment_shader) {
+					found = true;
+					break;
+				}
+			}
+
+			if (found) {
+				static_array_push(bucket, pipeline_index);
+			}
+			else {
+				static_array_push(next_remaining_pipelines, pipeline_index);
+			}
+		}
+
+		remaining_pipelines = next_remaining_pipelines;
+		static_array_push(all_buckets, bucket);
+	}
+}
+
 void analyze(void) {
 	find_all_render_pipelines();
 	find_pipeline_buckets();
+
+	for (size_t bucket_index = 0; bucket_index < all_buckets.size; ++bucket_index) {
+		descriptor_sets bucket_sets;
+		static_array_init(bucket_sets);
+
+		global_id globals[256];
+		size_t globals_size = 0;
+
+		pipeline_indices *bucket = &all_buckets.values[bucket_index];
+		for (size_t pipeline_index = 0; pipeline_index < bucket->size; ++pipeline_index) {
+			render_pipeline *pipeline = &all_render_pipelines.values[bucket->values[pipeline_index]];
+
+			if (pipeline->vertex_shader != NULL) {
+				find_referenced_globals(pipeline->vertex_shader, globals, &globals_size);
+			}
+			if (pipeline->amplification_shader != NULL) {
+				find_referenced_globals(pipeline->amplification_shader, globals, &globals_size);
+			}
+			if (pipeline->mesh_shader != NULL) {
+				find_referenced_globals(pipeline->mesh_shader, globals, &globals_size);
+			}
+			if (pipeline->fragment_shader != NULL) {
+				find_referenced_globals(pipeline->fragment_shader, globals, &globals_size);
+			}
+		}
+
+		find_referenced_sets(globals, globals_size, &bucket_sets);
+	}
 }

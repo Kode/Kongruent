@@ -24,7 +24,6 @@ static_array(pipeline_indices, pipeline_buckets, 64);
 void find_referenced_functions(function *f, function **functions, size_t *functions_size);
 void find_referenced_types(function *f, type_id *types, size_t *types_size);
 void find_referenced_globals(function *f, global_id *globals, size_t *globals_size);
-void find_referenced_sets(function *f, descriptor_set **sets, size_t *sets_size);
 
 void analyze(void);
 
