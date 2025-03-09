@@ -256,55 +256,59 @@ static void find_referenced_sets(global_id *globals, size_t globals_size, descri
 	}
 }
 
+static render_pipeline extract_render_pipeline_from_type(type *t) {
+	name_id vertex_shader_name = NO_NAME;
+	name_id amplification_shader_name = NO_NAME;
+	name_id mesh_shader_name = NO_NAME;
+	name_id fragment_shader_name = NO_NAME;
+
+	for (size_t j = 0; j < t->members.size; ++j) {
+		if (t->members.m[j].name == add_name("vertex")) {
+			vertex_shader_name = t->members.m[j].value.identifier;
+		}
+		else if (t->members.m[j].name == add_name("amplification")) {
+			amplification_shader_name = t->members.m[j].value.identifier;
+		}
+		else if (t->members.m[j].name == add_name("mesh")) {
+			mesh_shader_name = t->members.m[j].value.identifier;
+		}
+		else if (t->members.m[j].name == add_name("fragment")) {
+			fragment_shader_name = t->members.m[j].value.identifier;
+		}
+	}
+
+	debug_context context = {0};
+	check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "vertex or mesh shader missing");
+	check(fragment_shader_name != NO_NAME, context, "fragment shader missing");
+
+	render_pipeline pipeline = {0};
+
+	for (function_id i = 0; get_function(i) != NULL; ++i) {
+		function *f = get_function(i);
+		if (vertex_shader_name != NO_NAME && f->name == vertex_shader_name) {
+			pipeline.vertex_shader = f;
+		}
+		if (amplification_shader_name != NO_NAME && f->name == amplification_shader_name) {
+			pipeline.amplification_shader = f;
+		}
+		if (mesh_shader_name != NO_NAME && f->name == mesh_shader_name) {
+			pipeline.mesh_shader = f;
+		}
+		if (f->name == fragment_shader_name) {
+			pipeline.fragment_shader = f;
+		}
+	}
+
+	return pipeline;
+}
+
 static void find_all_render_pipelines(void) {
 	static_array_init(all_render_pipelines);
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-			name_id vertex_shader_name = NO_NAME;
-			name_id amplification_shader_name = NO_NAME;
-			name_id mesh_shader_name = NO_NAME;
-			name_id fragment_shader_name = NO_NAME;
-
-			for (size_t j = 0; j < t->members.size; ++j) {
-				if (t->members.m[j].name == add_name("vertex")) {
-					vertex_shader_name = t->members.m[j].value.identifier;
-				}
-				else if (t->members.m[j].name == add_name("amplification")) {
-					amplification_shader_name = t->members.m[j].value.identifier;
-				}
-				else if (t->members.m[j].name == add_name("mesh")) {
-					mesh_shader_name = t->members.m[j].value.identifier;
-				}
-				else if (t->members.m[j].name == add_name("fragment")) {
-					fragment_shader_name = t->members.m[j].value.identifier;
-				}
-			}
-
-			debug_context context = {0};
-			check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "vertex or mesh shader missing");
-			check(fragment_shader_name != NO_NAME, context, "fragment shader missing");
-
-			render_pipeline pipeline = {0};
-
-			for (function_id i = 0; get_function(i) != NULL; ++i) {
-				function *f = get_function(i);
-				if (vertex_shader_name != NO_NAME && f->name == vertex_shader_name) {
-					pipeline.vertex_shader = f;
-				}
-				if (amplification_shader_name != NO_NAME && f->name == amplification_shader_name) {
-					pipeline.amplification_shader = f;
-				}
-				if (mesh_shader_name != NO_NAME && f->name == mesh_shader_name) {
-					pipeline.mesh_shader = f;
-				}
-				if (f->name == fragment_shader_name) {
-					pipeline.fragment_shader = f;
-				}
-			}
-
-			static_array_push(all_render_pipelines, pipeline);
+			static_array_push(all_render_pipelines, extract_render_pipeline_from_type(t));
 		}
 	}
 }
@@ -367,58 +371,63 @@ static void find_all_compute_shaders(void) {
 	}
 }
 
+static raytracing_pipeline extract_raytracing_pipeline_from_type(type *t) {
+	name_id gen_shader_name = NO_NAME;
+	name_id miss_shader_name = NO_NAME;
+	name_id closest_shader_name = NO_NAME;
+	name_id intersection_shader_name = NO_NAME;
+	name_id any_shader_name = NO_NAME;
+
+	for (size_t j = 0; j < t->members.size; ++j) {
+		if (t->members.m[j].name == add_name("gen")) {
+			gen_shader_name = t->members.m[j].value.identifier;
+		}
+		else if (t->members.m[j].name == add_name("miss")) {
+			miss_shader_name = t->members.m[j].value.identifier;
+		}
+		else if (t->members.m[j].name == add_name("closest")) {
+			closest_shader_name = t->members.m[j].value.identifier;
+		}
+		else if (t->members.m[j].name == add_name("intersection")) {
+			intersection_shader_name = t->members.m[j].value.identifier;
+		}
+		else if (t->members.m[j].name == add_name("any")) {
+			any_shader_name = t->members.m[j].value.identifier;
+		}
+	}
+
+	raytracing_pipeline pipeline = {0};
+
+	for (function_id i = 0; get_function(i) != NULL; ++i) {
+		function *f = get_function(i);
+		if (gen_shader_name != NO_NAME && f->name == gen_shader_name) {
+			pipeline.gen_shader = f;
+		}
+		if (miss_shader_name != NO_NAME && f->name == miss_shader_name) {
+			pipeline.miss_shader = f;
+		}
+		if (closest_shader_name != NO_NAME && f->name == closest_shader_name) {
+			pipeline.closest_shader = f;
+		}
+		if (intersection_shader_name != NO_NAME && f->name == intersection_shader_name) {
+			pipeline.intersection_shader = f;
+		}
+		if (any_shader_name != NO_NAME && f->name == any_shader_name) {
+			pipeline.any_shader = f;
+		}
+	}
+
+	return pipeline;
+}
+
 static void find_all_raytracing_pipelines(void) {
 	static_array_init(all_raytracing_pipelines);
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 		if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-			name_id gen_shader_name = NO_NAME;
-			name_id miss_shader_name = NO_NAME;
-			name_id closest_shader_name = NO_NAME;
-			name_id intersection_shader_name = NO_NAME;
-			name_id any_shader_name = NO_NAME;
 
-			for (size_t j = 0; j < t->members.size; ++j) {
-				if (t->members.m[j].name == add_name("gen")) {
-					gen_shader_name = t->members.m[j].value.identifier;
-				}
-				else if (t->members.m[j].name == add_name("miss")) {
-					miss_shader_name = t->members.m[j].value.identifier;
-				}
-				else if (t->members.m[j].name == add_name("closest")) {
-					closest_shader_name = t->members.m[j].value.identifier;
-				}
-				else if (t->members.m[j].name == add_name("intersection")) {
-					intersection_shader_name = t->members.m[j].value.identifier;
-				}
-				else if (t->members.m[j].name == add_name("any")) {
-					any_shader_name = t->members.m[j].value.identifier;
-				}
-			}
-
-			raytracing_pipeline pipeline = {0};
-
-			for (function_id i = 0; get_function(i) != NULL; ++i) {
-				function *f = get_function(i);
-				if (gen_shader_name != NO_NAME && f->name == gen_shader_name) {
-					pipeline.gen_shader = f;
-				}
-				if (miss_shader_name != NO_NAME && f->name == miss_shader_name) {
-					pipeline.miss_shader = f;
-				}
-				if (closest_shader_name != NO_NAME && f->name == closest_shader_name) {
-					pipeline.closest_shader = f;
-				}
-				if (intersection_shader_name != NO_NAME && f->name == intersection_shader_name) {
-					pipeline.intersection_shader = f;
-				}
-				if (any_shader_name != NO_NAME && f->name == any_shader_name) {
-					pipeline.any_shader = f;
-				}
-			}
-
-			static_array_push(all_raytracing_pipelines, pipeline);
+			static_array_push(all_raytracing_pipelines, extract_raytracing_pipeline_from_type(t));
 		}
 	}
 }
@@ -634,6 +643,67 @@ static void find_descriptor_set_groups(void) {
 				assign_descriptor_set_group_index(pipeline->any_shader, descriptor_set_group_index);
 			}
 		}
+	}
+}
+
+descriptor_set_group *find_descriptor_set_group_for_type(type *t) {
+	if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
+		render_pipeline pipeline = extract_render_pipeline_from_type(t);
+
+		if (pipeline.vertex_shader->descriptor_set_group_index != UINT32_MAX) {
+			return &all_descriptor_set_groups.values[pipeline.vertex_shader->descriptor_set_group_index];
+		}
+
+		if (pipeline.amplification_shader->descriptor_set_group_index != UINT32_MAX) {
+			return &all_descriptor_set_groups.values[pipeline.amplification_shader->descriptor_set_group_index];
+		}
+
+		if (pipeline.mesh_shader->descriptor_set_group_index != UINT32_MAX) {
+			return &all_descriptor_set_groups.values[pipeline.mesh_shader->descriptor_set_group_index];
+		}
+
+		if (pipeline.fragment_shader->descriptor_set_group_index != UINT32_MAX) {
+			return &all_descriptor_set_groups.values[pipeline.fragment_shader->descriptor_set_group_index];
+		}
+
+		return NULL;
+	}
+
+	if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
+		raytracing_pipeline pipeline = extract_raytracing_pipeline_from_type(t);
+
+		if (pipeline.gen_shader->descriptor_set_group_index != UINT32_MAX) {
+			return &all_descriptor_set_groups.values[pipeline.gen_shader->descriptor_set_group_index];
+		}
+
+		if (pipeline.miss_shader->descriptor_set_group_index != UINT32_MAX) {
+			return &all_descriptor_set_groups.values[pipeline.miss_shader->descriptor_set_group_index];
+		}
+
+		if (pipeline.closest_shader->descriptor_set_group_index != UINT32_MAX) {
+			return &all_descriptor_set_groups.values[pipeline.closest_shader->descriptor_set_group_index];
+		}
+
+		if (pipeline.intersection_shader->descriptor_set_group_index != UINT32_MAX) {
+			return &all_descriptor_set_groups.values[pipeline.intersection_shader->descriptor_set_group_index];
+		}
+
+		if (pipeline.any_shader->descriptor_set_group_index != UINT32_MAX) {
+			return &all_descriptor_set_groups.values[pipeline.any_shader->descriptor_set_group_index];
+		}
+
+		return NULL;
+	}
+
+	return NULL;
+}
+
+descriptor_set_group *find_descriptor_set_group_for_function(function *f) {
+	if (f->descriptor_set_group_index != UINT32_MAX) {
+		return &all_descriptor_set_groups.values[f->descriptor_set_group_index];
+	}
+	else {
+		return NULL;
 	}
 }
 

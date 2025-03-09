@@ -989,30 +989,24 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "void kong_set_vertex_buffer_%s(kore_gpu_command_list *list, %s_buffer *buffer);\n\n", get_name(t->name), get_name(t->name));
 		}
 
-		fprintf(output, "void kong_set_render_pipeline(kore_gpu_command_list *list, kore_%s_render_pipeline *pipeline);\n\n", api_short);
-
-		fprintf(output, "void kong_set_compute_pipeline(kore_gpu_command_list *list, kore_%s_compute_pipeline *pipeline);\n\n", api_short);
-
-		fprintf(output, "void kong_set_ray_pipeline(kore_gpu_command_list *list, kore_%s_ray_pipeline *pipeline);\n\n", api_short);
-
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-				fprintf(output, "extern kore_%s_render_pipeline %s;\n\n", api_short, get_name(t->name));
+				fprintf(output, "void kong_set_render_pipeline_%s(kore_gpu_command_list *list);\n\n", get_name(t->name));
 			}
 		}
 
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
 			if (has_attribute(&f->attributes, add_name("compute"))) {
-				fprintf(output, "extern kore_%s_compute_pipeline %s;\n\n", api_short, get_name(f->name));
+				fprintf(output, "void kong_set_compute_shader_%s(kore_gpu_command_list *list);\n\n", get_name(f->name));
 			}
 		}
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-				fprintf(output, "extern kore_%s_ray_pipeline %s;\n\n", api_short, get_name(t->name));
+				fprintf(output, "void kore_set_ray_pipeline_%s(kore_gpu_command_list *list);\n\n", get_name(t->name));
 			}
 		}
 
@@ -1106,29 +1100,40 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "}\n\n");
 		}
 
-		fprintf(output, "void kong_set_render_pipeline(kore_gpu_command_list *list, kore_%s_render_pipeline *pipeline) {\n", api_short);
-		fprintf(output, "\tkore_%s_command_list_set_render_pipeline(list, pipeline);\n", api_short);
-		fprintf(output, "}\n\n");
-
-		fprintf(output, "void kong_set_compute_pipeline(kore_gpu_command_list *list, kore_%s_compute_pipeline *pipeline) {\n", api_short);
-		fprintf(output, "\tkore_%s_command_list_set_compute_pipeline(list, pipeline);\n", api_short);
-		fprintf(output, "}\n\n");
-
-		fprintf(output, "void kong_set_ray_pipeline(kore_gpu_command_list *list, kore_%s_ray_pipeline *pipeline) {\n", api_short);
-		fprintf(output, "\tkore_%s_command_list_set_ray_pipeline(list, pipeline);\n", api_short);
-		fprintf(output, "}\n\n");
+		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
+			descriptor_set *set = sets[set_index];
+			fprintf(output, "static uint32_t %s_table_index = UINT32_MAX;\n\n", get_name(set->name));
+		}
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-				fprintf(output, "kore_%s_render_pipeline %s;\n\n", api_short, get_name(t->name));
+				fprintf(output, "static kore_%s_render_pipeline %s;\n\n", api_short, get_name(t->name));
+				fprintf(output, "void kong_set_render_pipeline_%s(kore_gpu_command_list *list) {\n", get_name(t->name));
+				fprintf(output, "\tkore_d3d12_command_list_set_render_pipeline(list, &%s);\n", get_name(t->name));
+
+				descriptor_set_group *group = find_descriptor_set_group_for_type(t);
+				for (size_t group_index = 0; group_index < group->size; ++group_index) {
+					fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+				}
+
+				fprintf(output, "}\n\n");
 			}
 		}
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-				fprintf(output, "kore_%s_ray_pipeline %s;\n\n", api_short, get_name(t->name));
+				fprintf(output, "static_%s_ray_pipeline %s;\n\n", api_short, get_name(t->name));
+				fprintf(output, "void kong_set_ray_pipeline_%s(kore_gpu_command_list *list) {\n", get_name(t->name));
+				fprintf(output, "\tkore_d3d12_command_list_set_ray_pipeline(list, &%s);\n", get_name(t->name));
+
+				descriptor_set_group *group = find_descriptor_set_group_for_type(t);
+				for (size_t group_index = 0; group_index < group->size; ++group_index) {
+					fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+				}
+
+				fprintf(output, "}\n\n");
 			}
 		}
 
@@ -1236,7 +1241,6 @@ void kore3_export(char *directory, api_kind api) {
 			}
 		}
 
-		uint32_t descriptor_table_index = 0;
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
 
@@ -1245,11 +1249,10 @@ void kore3_export(char *directory, api_kind api) {
 
 				fprintf(output, "void kong_set_root_constants_%s(kore_gpu_command_list *list, %s *constants) {\n", get_name(root_constants_global->name),
 				        root_constants_type_name);
-				fprintf(output, "\tkore_%s_command_list_set_root_constants(list, %i, constants, %i);\n", api_short, descriptor_table_index,
+				fprintf(output, "\tkore_%s_command_list_set_root_constants(list, %s_table_index, constants, %i);\n", api_short, get_name(set->name),
 				        struct_size(root_constants_global->type));
 				fprintf(output, "}\n\n");
 
-				descriptor_table_index += 1;
 				continue;
 			}
 
@@ -1555,7 +1558,7 @@ void kore3_export(char *directory, api_kind api) {
 					}
 				}
 
-				fprintf(output, "\n\tkore_%s_command_list_set_descriptor_table(list, %i, &set->set", api_short, descriptor_table_index);
+				fprintf(output, "\n\tkore_%s_command_list_set_descriptor_table(list, %s_table_index, &set->set", api_short, get_name(set->name));
 				if (dynamic_count > 0) {
 					fprintf(output, ", dynamic_buffers, dynamic_offsets, dynamic_sizes");
 				}
@@ -1565,8 +1568,6 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, ");\n");
 				fprintf(output, "}\n\n");
 			}
-
-			descriptor_table_index += (sampler_count > 0) ? 2 : 1; // TODO
 		}
 
 		if (api != API_METAL && api != API_OPENGL) {
@@ -1587,7 +1588,16 @@ void kore3_export(char *directory, api_kind api) {
 		for (function_id i = 0; get_function(i) != NULL; ++i) {
 			function *f = get_function(i);
 			if (has_attribute(&f->attributes, add_name("compute"))) {
-				fprintf(output, "kore_%s_compute_pipeline %s;\n", api_short, get_name(f->name));
+				fprintf(output, "static kore_%s_compute_pipeline %s;\n", api_short, get_name(f->name));
+				fprintf(output, "void kong_set_compute_shader_%s(kore_gpu_command_list *list) {\n", get_name(f->name));
+				fprintf(output, "\tkore_d3d12_command_list_set_compute_pipeline(list, &%s);\n", get_name(f->name));
+
+				descriptor_set_group *group = find_descriptor_set_group_for_function(f);
+				for (size_t group_index = 0; group_index < group->size; ++group_index) {
+					fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+				}
+
+				fprintf(output, "}\n\n");
 			}
 		}
 
