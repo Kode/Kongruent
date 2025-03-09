@@ -250,28 +250,6 @@ static void find_referenced_sets(global_id *globals, size_t globals_size, descri
 			error(context, "Global %s could be used from multiple descriptor sets.", get_name(g->name));
 		}
 	}
-
-	for (size_t global_index = 0; global_index < globals_size; ++global_index) {
-		global *g = get_global(globals[global_index]);
-
-		if (g->sets_count < 2) {
-			continue;
-		}
-
-		bool found = false;
-
-		for (size_t set_index = 0; set_index < g->sets_count; ++set_index) {
-			descriptor_set *set = g->sets[set_index];
-
-			if (has_set(sets, set)) {
-				if (found) {
-					debug_context context = {0};
-					error(context, "Global %s is used from multiple descriptor sets.", get_name(g->name));
-				}
-				found = true;
-			}
-		}
-	}
 }
 
 static void find_all_render_pipelines(void) {
@@ -383,27 +361,48 @@ void analyze(void) {
 		descriptor_sets bucket_sets;
 		static_array_init(bucket_sets);
 
-		global_id globals[256];
-		size_t globals_size = 0;
+		global_id function_globals[256];
+		size_t function_globals_size = 0;
 
 		pipeline_indices *bucket = &all_buckets.values[bucket_index];
 		for (size_t pipeline_index = 0; pipeline_index < bucket->size; ++pipeline_index) {
 			render_pipeline *pipeline = &all_render_pipelines.values[bucket->values[pipeline_index]];
 
 			if (pipeline->vertex_shader != NULL) {
-				find_referenced_globals(pipeline->vertex_shader, globals, &globals_size);
+				find_referenced_globals(pipeline->vertex_shader, function_globals, &function_globals_size);
 			}
 			if (pipeline->amplification_shader != NULL) {
-				find_referenced_globals(pipeline->amplification_shader, globals, &globals_size);
+				find_referenced_globals(pipeline->amplification_shader, function_globals, &function_globals_size);
 			}
 			if (pipeline->mesh_shader != NULL) {
-				find_referenced_globals(pipeline->mesh_shader, globals, &globals_size);
+				find_referenced_globals(pipeline->mesh_shader, function_globals, &function_globals_size);
 			}
 			if (pipeline->fragment_shader != NULL) {
-				find_referenced_globals(pipeline->fragment_shader, globals, &globals_size);
+				find_referenced_globals(pipeline->fragment_shader, function_globals, &function_globals_size);
 			}
 		}
 
-		find_referenced_sets(globals, globals_size, &bucket_sets);
+		find_referenced_sets(function_globals, function_globals_size, &bucket_sets);
+
+		static_array(global_id, globals, 256);
+
+		globals set_globals;
+		static_array_init(set_globals);
+
+		for (size_t set_index = 0; set_index < bucket_sets.size; ++set_index) {
+			descriptor_set *set = bucket_sets.values[set_index];
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				global_id g = set->definitions[definition_index].global;
+
+				for (size_t global_index = 0; global_index < set_globals.size; ++global_index) {
+					if (set_globals.values[global_index] == g) {
+						debug_context context = {0};
+						error(context, "Global used from more than one descriptor set in one shader bucket");
+					}
+				}
+
+				static_array_push(set_globals, g);
+			}
+		}
 	}
 }
