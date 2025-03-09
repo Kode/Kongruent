@@ -263,9 +263,100 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 	}
 }
 
-static int global_register_indices[512];
+static void assign_register_indices(uint32_t *register_indices, function *shader) {
+	uint32_t cbv_index = 0;
+	uint32_t srv_index = 0;
+	uint32_t uav_index = 0;
+	uint32_t sampler_index = 0;
+
+	descriptor_set_group *set_group = get_descriptor_set_group(shader->descriptor_set_group_index);
+
+	for (size_t group_index = 0; group_index < set_group->size; ++group_index) {
+		descriptor_set *set = set_group->values[group_index];
+
+		if (set->name == add_name("root_constants")) {
+			if (set->definitions_count != 1) {
+				debug_context context = {0};
+				error(context, "More than one root constants struct found");
+			}
+
+			uint32_t size = 0;
+			global_id g = UINT32_MAX;
+			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+				definition *def = &set->definitions[definition_index];
+
+				switch (def->kind) {
+				case DEFINITION_CONST_CUSTOM:
+					size += struct_size(get_global(def->global)->type);
+					g = def->global;
+					break;
+				default: {
+					debug_context context = {0};
+					error(context, "Unsupported type for a root constant");
+					break;
+				}
+				}
+			}
+
+			register_indices[g] = srv_index;
+			srv_index += 1;
+
+			continue;
+		}
+
+		for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+			global_id global_index = set->definitions[definition_index].global;
+
+			global *g = get_global(global_index);
+
+			type *t = get_type(g->type);
+			type_id base_type = t->array_size > 0 ? t->base : g->type;
+
+			if (base_type == sampler_type_id) {
+				register_indices[global_index] = sampler_index;
+				sampler_index += 1;
+			}
+			else if (base_type == tex2d_type_id) {
+				if (t->array_size == UINT32_MAX) {
+					register_indices[global_index] = 0;
+				}
+				else if (has_attribute(&g->attributes, add_name("write"))) {
+					register_indices[global_index] = uav_index;
+					uav_index += 1;
+				}
+				else {
+					register_indices[global_index] = srv_index;
+					srv_index += 1;
+				}
+			}
+			else if (base_type == texcube_type_id || base_type == tex2darray_type_id || base_type == bvh_type_id) {
+				register_indices[global_index] = srv_index;
+				srv_index += 1;
+			}
+			else if (get_type(g->type)->built_in) {
+				if (get_type(g->type)->array_size > 0) {
+					register_indices[global_index] = uav_index;
+					uav_index += 1;
+				}
+			}
+			else {
+				if (get_type(g->type)->array_size > 0) {
+					register_indices[global_index] = uav_index;
+					uav_index += 1;
+				}
+				else {
+					register_indices[global_index] = cbv_index;
+					cbv_index += 1;
+				}
+			}
+		}
+	}
+}
 
 static void write_globals(char *hlsl, size_t *offset, function *main, function **rayshaders, size_t rayshaders_count) {
+	uint32_t register_indices[512] = {0};
+	assign_register_indices(register_indices, main);
+
 	global_id globals[256];
 	size_t globals_size = 0;
 	if (main != NULL) {
@@ -277,7 +368,7 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 
 	for (size_t i = 0; i < globals_size; ++i) {
 		global *g = get_global(globals[i]);
-		int register_index = global_register_indices[globals[i]];
+		int register_index = register_indices[globals[i]];
 
 		type *t = get_type(g->type);
 		type_id base_type = t->array_size > 0 ? t->base : g->type;
@@ -405,16 +496,16 @@ static bool is_rayanyhit_shader(function *f) {
 static descriptor_set *all_descriptor_sets[256];
 static size_t all_descriptor_sets_count = 0;
 
-static void write_root_signature(char *hlsl, size_t *offset) {
-	uint32_t cbv_index = 0;
-	uint32_t srv_index = 0;
-	uint32_t uav_index = 0;
-	uint32_t sampler_index = 0;
+static void write_root_signature(function *main, char *hlsl, size_t *offset) {
+	uint32_t register_indices[512] = {0};
+	assign_register_indices(register_indices, main);
 
 	*offset += sprintf(&hlsl[*offset], "[RootSignature(\"RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)");
 
-	for (size_t set_count = 0; set_count < all_descriptor_sets_count; ++set_count) {
-		descriptor_set *set = all_descriptor_sets[set_count];
+	descriptor_set_group *set_group = get_descriptor_set_group(main->descriptor_set_group_index);
+
+	for (size_t group_index = 0; group_index < set_group->size; ++group_index) {
+		descriptor_set *set = set_group->values[group_index];
 
 		if (set->name == add_name("root_constants")) {
 			if (set->definitions_count != 1) {
@@ -423,12 +514,14 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 			}
 
 			uint32_t size = 0;
+			global_id g = UINT32_MAX;
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 				definition *def = &set->definitions[definition_index];
 
 				switch (def->kind) {
 				case DEFINITION_CONST_CUSTOM:
 					size += struct_size(get_global(def->global)->type);
+					g = def->global;
 					break;
 				default: {
 					debug_context context = {0};
@@ -438,8 +531,7 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 				}
 			}
 
-			*offset += sprintf(&hlsl[*offset], "\\\n, RootConstants(num32BitConstants=%i, b%i)", size / 4, cbv_index);
-			cbv_index += 1;
+			*offset += sprintf(&hlsl[*offset], "\\\n, RootConstants(num32BitConstants=%i, b%i)", size / 4, register_indices[g]);
 
 			continue;
 		}
@@ -506,8 +598,7 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 							*offset += sprintf(&hlsl[*offset], ", ");
 						}
 
-						*offset += sprintf(&hlsl[*offset], "CBV(b%i)", cbv_index);
-						cbv_index += 1;
+						*offset += sprintf(&hlsl[*offset], "CBV(b%i)", register_indices[def->global]);
 					}
 					break;
 				case DEFINITION_TEX2D:
@@ -530,12 +621,10 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 					}
 
 					if (write_attribute != NULL) {
-						*offset += sprintf(&hlsl[*offset], "UAV(u%i)", uav_index);
-						uav_index += 1;
+						*offset += sprintf(&hlsl[*offset], "UAV(u%i)", register_indices[def->global]);
 					}
 					else {
-						*offset += sprintf(&hlsl[*offset], "SRV(t%i)", srv_index);
-						srv_index += 1;
+						*offset += sprintf(&hlsl[*offset], "SRV(t%i)", register_indices[def->global]);
 					}
 					break;
 				case DEFINITION_CONST_BASIC: {
@@ -548,8 +637,7 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 							*offset += sprintf(&hlsl[*offset], ", ");
 						}
 
-						*offset += sprintf(&hlsl[*offset], "UAV(u%i)", uav_index);
-						uav_index += 1;
+						*offset += sprintf(&hlsl[*offset], "UAV(u%i)", register_indices[def->global]);
 					}
 				}
 				default:
@@ -576,8 +664,7 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 						else {
 							*offset += sprintf(&hlsl[*offset], ", ");
 						}
-						*offset += sprintf(&hlsl[*offset], "CBV(b%i)", cbv_index);
-						cbv_index += 1;
+						*offset += sprintf(&hlsl[*offset], "CBV(b%i)", register_indices[def->global]);
 					}
 					break;
 				default:
@@ -627,8 +714,7 @@ static void write_root_signature(char *hlsl, size_t *offset) {
 					else {
 						*offset += sprintf(&hlsl[*offset], ", ");
 					}
-					*offset += sprintf(&hlsl[*offset], "Sampler(s%i)", sampler_index);
-					sampler_index += 1;
+					*offset += sprintf(&hlsl[*offset], "Sampler(s%i)", register_indices[def->global]);
 					break;
 				default:
 					break;
@@ -776,7 +862,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 
 		if (f == main) {
 			if (stage == SHADER_STAGE_VERTEX) {
-				write_root_signature(hlsl, offset);
+				write_root_signature(f, hlsl, offset);
 				*offset += sprintf(&hlsl[*offset], "%s main(", type_string(f->return_type.type));
 				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 					if (parameter_index == 0) {
@@ -798,7 +884,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					}
 					*offset += sprintf(&hlsl[*offset], "};\n\n");
 
-					write_root_signature(hlsl, offset);
+					write_root_signature(f, hlsl, offset);
 					*offset += sprintf(&hlsl[*offset], "_kong_colors_out main(");
 					for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 						if (parameter_index == 0) {
@@ -813,7 +899,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					*offset += sprintf(&hlsl[*offset], ") {\n");
 				}
 				else {
-					write_root_signature(hlsl, offset);
+					write_root_signature(f, hlsl, offset);
 					*offset += sprintf(&hlsl[*offset], "%s main(", type_string(f->return_type.type));
 					for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 						if (parameter_index == 0) {
@@ -835,7 +921,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					error(context, "Compute function requires a threads attribute with three parameters");
 				}
 
-				write_root_signature(hlsl, offset);
+				write_root_signature(f, hlsl, offset);
 				*offset += sprintf(&hlsl[*offset], "[numthreads(%i, %i, %i)]\n%s main(", (int)threads_attribute->parameters[0],
 				                   (int)threads_attribute->parameters[1], (int)threads_attribute->parameters[2], type_string(f->return_type.type));
 				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
@@ -1609,58 +1695,6 @@ static void hlsl_export_all_ray_shaders(char *directory) {
 }
 
 void hlsl_export(char *directory, api_kind d3d) {
-	int cbv_index = 0;
-	int srv_index = 0;
-	int uav_index = 0;
-	int sampler_index = 0;
-
-	memset(global_register_indices, 0, sizeof(global_register_indices));
-
-	for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
-		global *g = get_global(i);
-
-		type *t = get_type(g->type);
-		type_id base_type = t->array_size > 0 ? t->base : g->type;
-
-		if (base_type == sampler_type_id) {
-			global_register_indices[i] = sampler_index;
-			sampler_index += 1;
-		}
-		else if (base_type == tex2d_type_id) {
-			if (t->array_size == UINT32_MAX) {
-				global_register_indices[i] = 0;
-			}
-			else if (has_attribute(&g->attributes, add_name("write"))) {
-				global_register_indices[i] = uav_index;
-				uav_index += 1;
-			}
-			else {
-				global_register_indices[i] = srv_index;
-				srv_index += 1;
-			}
-		}
-		else if (base_type == texcube_type_id || base_type == tex2darray_type_id || base_type == bvh_type_id) {
-			global_register_indices[i] = srv_index;
-			srv_index += 1;
-		}
-		else if (get_type(g->type)->built_in) {
-			if (get_type(g->type)->array_size > 0) {
-				global_register_indices[i] = uav_index;
-				uav_index += 1;
-			}
-		}
-		else {
-			if (get_type(g->type)->array_size > 0) {
-				global_register_indices[i] = uav_index;
-				uav_index += 1;
-			}
-			else {
-				global_register_indices[i] = cbv_index;
-				cbv_index += 1;
-			}
-		}
-	}
-
 	static_array(function *, shaders, 256);
 
 	shaders vertex_shaders;

@@ -53,6 +53,8 @@ void find_referenced_functions(function *f, function **functions, size_t *functi
 void find_referenced_types(function *f, type_id *types, size_t *types_size);
 void find_referenced_globals(function *f, global_id *globals, size_t *globals_size);
 
+descriptor_set_group *get_descriptor_set_group(uint32_t descriptor_set_group_index);
+
 void analyze(void);
 
 #endif

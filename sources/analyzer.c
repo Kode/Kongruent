@@ -496,6 +496,11 @@ static void check_globals_in_descriptor_set_group(descriptor_set_group *group) {
 
 static descriptor_set_groups all_descriptor_set_groups;
 
+descriptor_set_group *get_descriptor_set_group(uint32_t descriptor_set_group_index) {
+	assert(descriptor_set_group_index < all_descriptor_set_groups.size);
+	return &all_descriptor_set_groups.values[descriptor_set_group_index];
+}
+
 static void assign_descriptor_set_group_index(function *f, uint32_t descriptor_set_group_index) {
 	assert(f->descriptor_set_group_index == UINT32_MAX || f->descriptor_set_group_index == descriptor_set_group_index);
 	f->descriptor_set_group_index = descriptor_set_group_index;
