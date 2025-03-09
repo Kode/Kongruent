@@ -6,8 +6,12 @@
 #include <string.h>
 
 static render_pipelines all_render_pipelines;
-// a bucket is a collection of buckets that share shaders
-static pipeline_buckets all_buckets;
+// a pipeline group is a collection of pipelines that share shaders
+static render_pipeline_groups all_render_pipeline_groups;
+
+static raytracing_pipelines all_raytracing_pipelines;
+// a pipeline group is a collection of pipelines that share shaders
+static raytracing_pipeline_groups all_raytracing_pipeline_groups;
 
 static void find_referenced_global_for_var(variable v, global_id *globals, size_t *globals_size) {
 	for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
@@ -305,10 +309,10 @@ static void find_all_render_pipelines(void) {
 	}
 }
 
-static void find_pipeline_buckets(void) {
-	static_array_init(all_buckets);
+static void find_render_pipeline_groups(void) {
+	static_array_init(all_render_pipeline_groups);
 
-	pipeline_indices remaining_pipelines;
+	render_pipeline_indices remaining_pipelines;
 	static_array_init(remaining_pipelines);
 
 	for (uint32_t index = 0; index < all_render_pipelines.size; ++index) {
@@ -316,13 +320,13 @@ static void find_pipeline_buckets(void) {
 	}
 
 	while (remaining_pipelines.size > 0) {
-		pipeline_indices next_remaining_pipelines;
+		render_pipeline_indices next_remaining_pipelines;
 		static_array_init(next_remaining_pipelines);
 
-		pipeline_indices bucket;
-		static_array_init(bucket);
+		render_pipeline_group group;
+		static_array_init(group);
 
-		static_array_push(bucket, remaining_pipelines.values[0]);
+		static_array_push(group, remaining_pipelines.values[0]);
 
 		for (size_t index = 1; index < remaining_pipelines.size; ++index) {
 			uint32_t pipeline_index = remaining_pipelines.values[index];
@@ -330,18 +334,17 @@ static void find_pipeline_buckets(void) {
 
 			bool found = false;
 
-			for (size_t index_in_bucket = 0; index_in_bucket < bucket.size; ++index_in_bucket) {
-				render_pipeline *pipeline_in_bucket = &all_render_pipelines.values[bucket.values[index_in_bucket]];
-				if (pipeline->vertex_shader == pipeline_in_bucket->vertex_shader ||
-				    pipeline->amplification_shader == pipeline_in_bucket->amplification_shader || pipeline->mesh_shader == pipeline_in_bucket->mesh_shader ||
-				    pipeline->fragment_shader == pipeline_in_bucket->fragment_shader) {
+			for (size_t index_in_bucket = 0; index_in_bucket < group.size; ++index_in_bucket) {
+				render_pipeline *pipeline_in_group = &all_render_pipelines.values[group.values[index_in_bucket]];
+				if (pipeline->vertex_shader == pipeline_in_group->vertex_shader || pipeline->amplification_shader == pipeline_in_group->amplification_shader ||
+				    pipeline->mesh_shader == pipeline_in_group->mesh_shader || pipeline->fragment_shader == pipeline_in_group->fragment_shader) {
 					found = true;
 					break;
 				}
 			}
 
 			if (found) {
-				static_array_push(bucket, pipeline_index);
+				static_array_push(group, pipeline_index);
 			}
 			else {
 				static_array_push(next_remaining_pipelines, pipeline_index);
@@ -349,22 +352,129 @@ static void find_pipeline_buckets(void) {
 		}
 
 		remaining_pipelines = next_remaining_pipelines;
-		static_array_push(all_buckets, bucket);
+		static_array_push(all_render_pipeline_groups, group);
+	}
+}
+
+static void find_all_raytracing_pipelines(void) {
+	static_array_init(all_raytracing_pipelines);
+
+	for (type_id i = 0; get_type(i) != NULL; ++i) {
+		type *t = get_type(i);
+		if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
+			name_id gen_shader_name = NO_NAME;
+			name_id miss_shader_name = NO_NAME;
+			name_id closest_shader_name = NO_NAME;
+			name_id intersection_shader_name = NO_NAME;
+			name_id any_shader_name = NO_NAME;
+
+			for (size_t j = 0; j < t->members.size; ++j) {
+				if (t->members.m[j].name == add_name("gen")) {
+					gen_shader_name = t->members.m[j].value.identifier;
+				}
+				else if (t->members.m[j].name == add_name("miss")) {
+					miss_shader_name = t->members.m[j].value.identifier;
+				}
+				else if (t->members.m[j].name == add_name("closest")) {
+					closest_shader_name = t->members.m[j].value.identifier;
+				}
+				else if (t->members.m[j].name == add_name("intersection")) {
+					intersection_shader_name = t->members.m[j].value.identifier;
+				}
+				else if (t->members.m[j].name == add_name("any")) {
+					any_shader_name = t->members.m[j].value.identifier;
+				}
+			}
+
+			raytracing_pipeline pipeline = {0};
+
+			for (function_id i = 0; get_function(i) != NULL; ++i) {
+				function *f = get_function(i);
+				if (gen_shader_name != NO_NAME && f->name == gen_shader_name) {
+					pipeline.gen_shader = f;
+				}
+				if (miss_shader_name != NO_NAME && f->name == miss_shader_name) {
+					pipeline.miss_shader = f;
+				}
+				if (closest_shader_name != NO_NAME && f->name == closest_shader_name) {
+					pipeline.closest_shader = f;
+				}
+				if (intersection_shader_name != NO_NAME && f->name == intersection_shader_name) {
+					pipeline.intersection_shader = f;
+				}
+				if (any_shader_name != NO_NAME && f->name == any_shader_name) {
+					pipeline.any_shader = f;
+				}
+			}
+
+			static_array_push(all_raytracing_pipelines, pipeline);
+		}
+	}
+}
+
+static void find_raytracing_pipeline_groups(void) {
+	static_array_init(all_raytracing_pipeline_groups);
+
+	raytracing_pipeline_indices remaining_pipelines;
+	static_array_init(remaining_pipelines);
+
+	for (uint32_t index = 0; index < all_raytracing_pipelines.size; ++index) {
+		static_array_push(remaining_pipelines, index);
+	}
+
+	while (remaining_pipelines.size > 0) {
+		raytracing_pipeline_indices next_remaining_pipelines;
+		static_array_init(next_remaining_pipelines);
+
+		raytracing_pipeline_group group;
+		static_array_init(group);
+
+		static_array_push(group, remaining_pipelines.values[0]);
+
+		for (size_t index = 1; index < remaining_pipelines.size; ++index) {
+			uint32_t pipeline_index = remaining_pipelines.values[index];
+			raytracing_pipeline *pipeline = &all_raytracing_pipelines.values[pipeline_index];
+
+			bool found = false;
+
+			for (size_t index_in_bucket = 0; index_in_bucket < group.size; ++index_in_bucket) {
+				raytracing_pipeline *pipeline_in_group = &all_raytracing_pipelines.values[group.values[index_in_bucket]];
+				if (pipeline->gen_shader == pipeline_in_group->gen_shader || pipeline->miss_shader == pipeline_in_group->miss_shader ||
+				    pipeline->closest_shader == pipeline_in_group->closest_shader || pipeline->intersection_shader == pipeline_in_group->intersection_shader ||
+				    pipeline->any_shader == pipeline_in_group->any_shader) {
+					found = true;
+					break;
+				}
+			}
+
+			if (found) {
+				static_array_push(group, pipeline_index);
+			}
+			else {
+				static_array_push(next_remaining_pipelines, pipeline_index);
+			}
+		}
+
+		remaining_pipelines = next_remaining_pipelines;
+		static_array_push(all_raytracing_pipeline_groups, group);
 	}
 }
 
 void analyze(void) {
 	find_all_render_pipelines();
-	find_pipeline_buckets();
+	find_render_pipeline_groups();
 
-	for (size_t bucket_index = 0; bucket_index < all_buckets.size; ++bucket_index) {
+	find_all_raytracing_pipelines();
+	find_raytracing_pipeline_groups();
+
+	for (size_t bucket_index = 0; bucket_index < all_render_pipeline_groups.size; ++bucket_index) {
 		descriptor_sets bucket_sets;
 		static_array_init(bucket_sets);
 
 		global_id function_globals[256];
 		size_t function_globals_size = 0;
 
-		pipeline_indices *bucket = &all_buckets.values[bucket_index];
+		render_pipeline_indices *bucket = &all_render_pipeline_groups.values[bucket_index];
 		for (size_t pipeline_index = 0; pipeline_index < bucket->size; ++pipeline_index) {
 			render_pipeline *pipeline = &all_render_pipelines.values[bucket->values[pipeline_index]];
 

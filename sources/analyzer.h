@@ -17,9 +17,27 @@ typedef struct render_pipeline {
 
 static_array(render_pipeline, render_pipelines, 256);
 
-static_array(uint32_t, pipeline_indices, 256);
+static_array(uint32_t, render_pipeline_indices, 256);
 
-static_array(pipeline_indices, pipeline_buckets, 64);
+typedef render_pipeline_indices render_pipeline_group;
+
+static_array(render_pipeline_group, render_pipeline_groups, 64);
+
+typedef struct raytracing_pipeline {
+	function *gen_shader;
+	function *miss_shader;
+	function *closest_shader;
+	function *intersection_shader;
+	function *any_shader;
+} raytracing_pipeline;
+
+static_array(raytracing_pipeline, raytracing_pipelines, 256);
+
+static_array(uint32_t, raytracing_pipeline_indices, 256);
+
+typedef raytracing_pipeline_indices raytracing_pipeline_group;
+
+static_array(raytracing_pipeline_group, raytracing_pipeline_groups, 64);
 
 void find_referenced_functions(function *f, function **functions, size_t *functions_size);
 void find_referenced_types(function *f, type_id *types, size_t *types_size);
