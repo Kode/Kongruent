@@ -1211,7 +1211,7 @@ void kore3_export(char *directory, api_kind api) {
 								else if (t->members.m[j].type.type == float3x3_id) {
 									// fprintf(output, "\tkore_matrix3x3_transpose(&data->%s);\n", get_name(t->members.m[j].name));
 									fprintf(output, "\t{\n");
-									fprintf(output, "\t\tkore_matrix3x3_t m = data->%s;\n", get_name(t->members.m[j].name));
+									fprintf(output, "\t\tkore_matrix3x3 m = data->%s;\n", get_name(t->members.m[j].name));
 									fprintf(output, "\t\tfloat *m_data = (float *)&data->%s;\n", get_name(t->members.m[j].name));
 									fprintf(output, "\t\tm_data[0] = m.m[0];\n");
 									fprintf(output, "\t\tm_data[1] = m.m[1];\n");
