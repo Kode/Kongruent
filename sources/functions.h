@@ -20,6 +20,8 @@ typedef struct function {
 	uint8_t parameters_size;
 	struct statement *block;
 
+	uint32_t descriptor_set_group_index;
+
 	opcodes code;
 } function;
 

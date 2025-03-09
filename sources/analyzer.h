@@ -23,6 +23,10 @@ typedef render_pipeline_indices render_pipeline_group;
 
 static_array(render_pipeline_group, render_pipeline_groups, 64);
 
+static_array(function *, compute_shaders, 256);
+
+static_array(uint32_t, compute_shader_indices, 256);
+
 typedef struct raytracing_pipeline {
 	function *gen_shader;
 	function *miss_shader;
@@ -38,6 +42,12 @@ static_array(uint32_t, raytracing_pipeline_indices, 256);
 typedef raytracing_pipeline_indices raytracing_pipeline_group;
 
 static_array(raytracing_pipeline_group, raytracing_pipeline_groups, 64);
+
+static_array(descriptor_set *, descriptor_sets, 256);
+
+typedef descriptor_sets descriptor_set_group;
+
+static_array(descriptor_set_group, descriptor_set_groups, 256);
 
 void find_referenced_functions(function *f, function **functions, size_t *functions_size);
 void find_referenced_types(function *f, type_id *types, size_t *types_size);

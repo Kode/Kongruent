@@ -9,6 +9,8 @@ static render_pipelines all_render_pipelines;
 // a pipeline group is a collection of pipelines that share shaders
 static render_pipeline_groups all_render_pipeline_groups;
 
+static compute_shaders all_compute_shaders;
+
 static raytracing_pipelines all_raytracing_pipelines;
 // a pipeline group is a collection of pipelines that share shaders
 static raytracing_pipeline_groups all_raytracing_pipeline_groups;
@@ -197,8 +199,6 @@ void find_referenced_types(function *f, type_id *types, size_t *types_size) {
 	}
 }
 
-static_array(descriptor_set *, descriptor_sets, 256);
-
 static bool has_set(descriptor_sets *sets, descriptor_set *set) {
 	for (size_t set_index = 0; set_index < sets->size; ++set_index) {
 		if (sets->values[set_index] == set) {
@@ -356,6 +356,17 @@ static void find_render_pipeline_groups(void) {
 	}
 }
 
+static void find_all_compute_shaders(void) {
+	static_array_init(all_compute_shaders);
+
+	for (function_id i = 0; get_function(i) != NULL; ++i) {
+		function *f = get_function(i);
+		if (has_attribute(&f->attributes, add_name("compute"))) {
+			static_array_push(all_compute_shaders, f);
+		}
+	}
+}
+
 static void find_all_raytracing_pipelines(void) {
 	static_array_init(all_raytracing_pipelines);
 
@@ -460,23 +471,49 @@ static void find_raytracing_pipeline_groups(void) {
 	}
 }
 
-void analyze(void) {
-	find_all_render_pipelines();
-	find_render_pipeline_groups();
+static void check_globals_in_descriptor_set_group(descriptor_set_group *group) {
+	static_array(global_id, globals, 256);
 
-	find_all_raytracing_pipelines();
-	find_raytracing_pipeline_groups();
+	globals set_globals;
+	static_array_init(set_globals);
 
-	for (size_t bucket_index = 0; bucket_index < all_render_pipeline_groups.size; ++bucket_index) {
-		descriptor_sets bucket_sets;
-		static_array_init(bucket_sets);
+	for (size_t set_index = 0; set_index < group->size; ++set_index) {
+		descriptor_set *set = group->values[set_index];
+		for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
+			global_id g = set->definitions[definition_index].global;
+
+			for (size_t global_index = 0; global_index < set_globals.size; ++global_index) {
+				if (set_globals.values[global_index] == g) {
+					debug_context context = {0};
+					error(context, "Global used from more than one descriptor set in one descriptor set group");
+				}
+			}
+
+			static_array_push(set_globals, g);
+		}
+	}
+}
+
+static descriptor_set_groups all_descriptor_set_groups;
+
+static void assign_descriptor_set_group_index(function *f, uint32_t descriptor_set_group_index) {
+	assert(f->descriptor_set_group_index == UINT32_MAX || f->descriptor_set_group_index == descriptor_set_group_index);
+	f->descriptor_set_group_index = descriptor_set_group_index;
+}
+
+static void find_descriptor_set_groups(void) {
+	static_array_init(all_descriptor_set_groups);
+
+	for (size_t pipeline_group_index = 0; pipeline_group_index < all_render_pipeline_groups.size; ++pipeline_group_index) {
+		descriptor_set_group group;
+		static_array_init(group);
 
 		global_id function_globals[256];
 		size_t function_globals_size = 0;
 
-		render_pipeline_indices *bucket = &all_render_pipeline_groups.values[bucket_index];
-		for (size_t pipeline_index = 0; pipeline_index < bucket->size; ++pipeline_index) {
-			render_pipeline *pipeline = &all_render_pipelines.values[bucket->values[pipeline_index]];
+		render_pipeline_group *pipeline_group = &all_render_pipeline_groups.values[pipeline_group_index];
+		for (size_t pipeline_index = 0; pipeline_index < pipeline_group->size; ++pipeline_index) {
+			render_pipeline *pipeline = &all_render_pipelines.values[pipeline_group->values[pipeline_index]];
 
 			if (pipeline->vertex_shader != NULL) {
 				find_referenced_globals(pipeline->vertex_shader, function_globals, &function_globals_size);
@@ -492,27 +529,117 @@ void analyze(void) {
 			}
 		}
 
-		find_referenced_sets(function_globals, function_globals_size, &bucket_sets);
+		find_referenced_sets(function_globals, function_globals_size, &group);
 
-		static_array(global_id, globals, 256);
+		check_globals_in_descriptor_set_group(&group);
 
-		globals set_globals;
-		static_array_init(set_globals);
+		uint32_t descriptor_set_group_index = (uint32_t)all_descriptor_set_groups.size;
+		static_array_push(all_descriptor_set_groups, group);
 
-		for (size_t set_index = 0; set_index < bucket_sets.size; ++set_index) {
-			descriptor_set *set = bucket_sets.values[set_index];
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				global_id g = set->definitions[definition_index].global;
+		for (size_t pipeline_index = 0; pipeline_index < pipeline_group->size; ++pipeline_index) {
+			render_pipeline *pipeline = &all_render_pipelines.values[pipeline_group->values[pipeline_index]];
 
-				for (size_t global_index = 0; global_index < set_globals.size; ++global_index) {
-					if (set_globals.values[global_index] == g) {
-						debug_context context = {0};
-						error(context, "Global used from more than one descriptor set in one shader bucket");
-					}
-				}
-
-				static_array_push(set_globals, g);
+			if (pipeline->vertex_shader != NULL) {
+				assign_descriptor_set_group_index(pipeline->vertex_shader, descriptor_set_group_index);
+			}
+			if (pipeline->amplification_shader != NULL) {
+				assign_descriptor_set_group_index(pipeline->amplification_shader, descriptor_set_group_index);
+			}
+			if (pipeline->mesh_shader != NULL) {
+				assign_descriptor_set_group_index(pipeline->mesh_shader, descriptor_set_group_index);
+			}
+			if (pipeline->fragment_shader != NULL) {
+				assign_descriptor_set_group_index(pipeline->fragment_shader, descriptor_set_group_index);
 			}
 		}
 	}
+
+	for (size_t compute_shader_index = 0; compute_shader_index < all_compute_shaders.size; ++compute_shader_index) {
+		descriptor_set_group group;
+		static_array_init(group);
+
+		global_id function_globals[256];
+		size_t function_globals_size = 0;
+
+		find_referenced_globals(all_compute_shaders.values[compute_shader_index], function_globals, &function_globals_size);
+
+		find_referenced_sets(function_globals, function_globals_size, &group);
+
+		check_globals_in_descriptor_set_group(&group);
+
+		uint32_t descriptor_set_group_index = (uint32_t)all_descriptor_set_groups.size;
+		static_array_push(all_descriptor_set_groups, group);
+
+		for (size_t compute_shader_index = 0; compute_shader_index < all_compute_shaders.size; ++compute_shader_index) {
+			assign_descriptor_set_group_index(all_compute_shaders.values[compute_shader_index], descriptor_set_group_index);
+		}
+	}
+
+	for (size_t pipeline_group_index = 0; pipeline_group_index < all_raytracing_pipeline_groups.size; ++pipeline_group_index) {
+		descriptor_set_group group;
+		static_array_init(group);
+
+		global_id function_globals[256];
+		size_t function_globals_size = 0;
+
+		raytracing_pipeline_group *pipeline_group = &all_raytracing_pipeline_groups.values[pipeline_group_index];
+		for (size_t pipeline_index = 0; pipeline_index < pipeline_group->size; ++pipeline_index) {
+			raytracing_pipeline *pipeline = &all_raytracing_pipelines.values[pipeline_group->values[pipeline_index]];
+
+			if (pipeline->gen_shader != NULL) {
+				find_referenced_globals(pipeline->gen_shader, function_globals, &function_globals_size);
+			}
+			if (pipeline->miss_shader != NULL) {
+				find_referenced_globals(pipeline->miss_shader, function_globals, &function_globals_size);
+			}
+			if (pipeline->closest_shader != NULL) {
+				find_referenced_globals(pipeline->closest_shader, function_globals, &function_globals_size);
+			}
+			if (pipeline->intersection_shader != NULL) {
+				find_referenced_globals(pipeline->intersection_shader, function_globals, &function_globals_size);
+			}
+			if (pipeline->any_shader != NULL) {
+				find_referenced_globals(pipeline->any_shader, function_globals, &function_globals_size);
+			}
+		}
+
+		find_referenced_sets(function_globals, function_globals_size, &group);
+
+		check_globals_in_descriptor_set_group(&group);
+
+		uint32_t descriptor_set_group_index = (uint32_t)all_descriptor_set_groups.size;
+		static_array_push(all_descriptor_set_groups, group);
+
+		for (size_t pipeline_index = 0; pipeline_index < pipeline_group->size; ++pipeline_index) {
+			raytracing_pipeline *pipeline = &all_raytracing_pipelines.values[pipeline_group->values[pipeline_index]];
+
+			if (pipeline->gen_shader != NULL) {
+				assign_descriptor_set_group_index(pipeline->gen_shader, descriptor_set_group_index);
+			}
+			if (pipeline->miss_shader != NULL) {
+				assign_descriptor_set_group_index(pipeline->miss_shader, descriptor_set_group_index);
+			}
+			if (pipeline->closest_shader != NULL) {
+				assign_descriptor_set_group_index(pipeline->closest_shader, descriptor_set_group_index);
+			}
+			if (pipeline->intersection_shader != NULL) {
+				assign_descriptor_set_group_index(pipeline->intersection_shader, descriptor_set_group_index);
+			}
+			if (pipeline->any_shader != NULL) {
+				assign_descriptor_set_group_index(pipeline->any_shader, descriptor_set_group_index);
+			}
+		}
+	}
+}
+
+void analyze(void) {
+	find_all_render_pipelines();
+	find_render_pipeline_groups();
+
+	find_all_compute_shaders();
+
+	find_all_raytracing_pipelines();
+	find_raytracing_pipeline_groups();
+
+	find_descriptor_set_groups();
 }
