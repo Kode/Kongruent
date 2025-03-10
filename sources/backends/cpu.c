@@ -33,18 +33,38 @@ static char *type_string(type_id type) {
 	if (type == float4x4_id) {
 		return "kore_matrix4x4";
 	}
+	if (type == int2_id) {
+		return "kore_int2";
+	}
+	if (type == int3_id) {
+		return "kore_int3";
+	}
+	if (type == int4_id) {
+		return "kore_int4";
+	}
+	if (type == uint_id) {
+		return "uint32_t";
+	}
+	if (type == uint2_id) {
+		return "kore_uint2";
+	}
+	if (type == uint3_id) {
+		return "kore_uint3";
+	}
+	if (type == uint4_id) {
+		return "kore_uint4";
+	}
 	return get_name(get_type(type)->name);
 }
 
-static void write_code(char *glsl, char *directory, const char *filename, const char *name) {
+static void write_code(char *code, char *directory, const char *filename, const char *name) {
 	char full_filename[512];
 
 	{
 		sprintf(full_filename, "%s/%s.h", directory, filename);
 		FILE *file = fopen(full_filename, "wb");
 		fprintf(file, "#include <stddef.h>\n\n");
-		fprintf(file, "extern const char *%s;\n", name);
-		fprintf(file, "extern size_t %s_size;\n", name);
+		fprintf(file, "void %s(uint32_t workgroup_count_x, uint32_t workgroup_count_y, uint32_t workgroup_count_z);\n", name);
 		fclose(file);
 	}
 
@@ -54,39 +74,16 @@ static void write_code(char *glsl, char *directory, const char *filename, const 
 		FILE *file = fopen(full_filename, "wb");
 		fprintf(file, "#include \"%s.h\"\n\n", filename);
 
-		fprintf(file, "const char *%s = \"", name);
+		fprintf(file, "#include <kore3/math/vector.h>\n");
+		fprintf(file, "#include <kore3/util/cpucompute.h>\n\n");
 
-		size_t length = strlen(glsl);
-
-		for (size_t i = 0; i < length; ++i) {
-			if (glsl[i] == '\n') {
-				fprintf(file, "\\n");
-			}
-			else if (glsl[i] == '\r') {
-				fprintf(file, "\\r");
-			}
-			else if (glsl[i] == '\t') {
-				fprintf(file, "\\t");
-			}
-			else if (glsl[i] == '"') {
-				fprintf(file, "\\\"");
-			}
-			else {
-				fprintf(file, "%c", glsl[i]);
-			}
-		}
-
-		fprintf(file, "\";\n\n");
-
-		fprintf(file, "size_t %s_size = %zu;\n\n", name, length);
-
-		fprintf(file, "/*\n%s*/\n", glsl);
+		fprintf(file, "%s", code);
 
 		fclose(file);
 	}
 }
 
-static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id input, type_id output, function *main) {
+static void write_types(char *code, size_t *offset, shader_stage stage, type_id input, type_id output, function *main) {
 	type_id types[256];
 	size_t types_size = 0;
 	find_referenced_types(main, types, &types_size);
@@ -95,82 +92,45 @@ static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id 
 		type *t = get_type(types[i]);
 
 		if (!t->built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
-			if (stage == SHADER_STAGE_VERTEX && types[i] == input) {
-				for (size_t j = 0; j < t->members.size; ++j) {
-					*offset += sprintf(&glsl[*offset], "layout(location = %zu) in %s %s_%s;\n", j, type_string(t->members.m[j].type.type), get_name(t->name),
-					                   get_name(t->members.m[j].name));
-				}
-			}
-			else if (stage == SHADER_STAGE_VERTEX && types[i] == output) {
-				for (size_t j = 0; j < t->members.size; ++j) {
-					if (j != 0) {
-						*offset += sprintf(&glsl[*offset], "out %s %s_%s;\n", type_string(t->members.m[j].type.type), get_name(t->name),
-						                   get_name(t->members.m[j].name));
-					}
-				}
-			}
-			else if (stage == SHADER_STAGE_FRAGMENT && types[i] == input) {
-				for (size_t j = 0; j < t->members.size; ++j) {
-					if (j != 0) {
-						*offset += sprintf(&glsl[*offset], "in %s %s_%s;\n", type_string(t->members.m[j].type.type), get_name(t->name),
-						                   get_name(t->members.m[j].name));
-					}
-				}
-			}
-		}
-	}
-
-	*offset += sprintf(&glsl[*offset], "\n");
-
-	for (size_t i = 0; i < types_size; ++i) {
-		type *t = get_type(types[i]);
-
-		if (!t->built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
-			*offset += sprintf(&glsl[*offset], "struct %s {\n", get_name(t->name));
+			*offset += sprintf(&code[*offset], "struct %s {\n", get_name(t->name));
 
 			for (size_t j = 0; j < t->members.size; ++j) {
-				*offset += sprintf(&glsl[*offset], "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+				*offset += sprintf(&code[*offset], "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 			}
 
-			*offset += sprintf(&glsl[*offset], "};\n\n");
+			*offset += sprintf(&code[*offset], "};\n\n");
 		}
 	}
 }
 
-static int global_register_indices[512];
-
-static void write_globals(char *glsl, size_t *offset, function *main) {
+static void write_globals(char *code, size_t *offset, function *main) {
 	global_id globals[256];
 	size_t globals_size = 0;
 	find_referenced_globals(main, globals, &globals_size);
 
 	for (size_t i = 0; i < globals_size; ++i) {
 		global *g = get_global(globals[i]);
-		// int register_index = global_register_indices[globals[i]];
 
 		if (g->type == sampler_type_id) {
 		}
 		else if (g->type == tex2d_type_id) {
-			*offset += sprintf(&glsl[*offset], "uniform sampler2D _%" PRIu64 ";\n\n", g->var_index);
 		}
 		else if (g->type == texcube_type_id) {
-			*offset += sprintf(&glsl[*offset], "uniform samplerCube _%" PRIu64 ";\n\n", g->var_index);
 		}
 		else if (g->type == float_id) {
 		}
 		else {
-			*offset += sprintf(&glsl[*offset], "layout(std140) uniform _%" PRIu64 " {\n", g->var_index);
+			*offset += sprintf(&code[*offset], "typedef struct _%" PRIu64 " {\n", g->var_index);
 			type *t = get_type(g->type);
 			for (size_t i = 0; i < t->members.size; ++i) {
-				*offset +=
-				    sprintf(&glsl[*offset], "\t%s _%" PRIu64 "_%s;\n", type_string(t->members.m[i].type.type), g->var_index, get_name(t->members.m[i].name));
+				*offset += sprintf(&code[*offset], "\t%s %s;\n", type_string(t->members.m[i].type.type), get_name(t->members.m[i].name));
 			}
-			*offset += sprintf(&glsl[*offset], "};\n\n");
+			*offset += sprintf(&code[*offset], "} _%" PRIu64 ";\n\n", g->var_index);
 		}
 	}
 }
 
-static void write_functions(char *code, size_t *offset, shader_stage stage, type_id input, type_id output, function *main, bool flip) {
+static void write_functions(char *code, const char *name, size_t *offset, shader_stage stage, type_id input, type_id output, function *main, bool flip) {
 	function *functions[256];
 	size_t functions_size = 0;
 
@@ -203,29 +163,20 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 		}
 
 		if (f == main) {
-			if (stage == SHADER_STAGE_VERTEX) {
-				*offset += sprintf(&code[*offset], "void main() {\n");
-			}
-			else if (stage == SHADER_STAGE_FRAGMENT) {
-				if (get_type(f->return_type.type)->array_size > 0) {
-					*offset += sprintf(&code[*offset], "out vec4 _kong_colors[%i];\n\n", get_type(f->return_type.type)->array_size);
-					*offset += sprintf(&code[*offset], "void main() {\n");
-				}
-				else {
-					*offset += sprintf(&code[*offset], "out vec4 _kong_color;\n\n");
-					*offset += sprintf(&code[*offset], "void main() {\n");
-				}
-			}
-			else if (stage == SHADER_STAGE_COMPUTE) {
+			if (stage == SHADER_STAGE_COMPUTE) {
 				attribute *threads_attribute = find_attribute(&f->attributes, add_name("threads"));
 				if (threads_attribute == NULL || threads_attribute->paramters_count != 3) {
 					debug_context context = {0};
 					error(context, "Compute function requires a threads attribute with three parameters");
 				}
 
-				*offset += sprintf(&code[*offset], "layout (local_size_x = %i, local_size_y = %i, local_size_z = %i) in;\n\n",
+				*offset += sprintf(&code[*offset], "void %s(uint32_t workgroup_count_x, uint32_t workgroup_count_y, uint32_t workgroup_count_z) {\n", name);
+
+				*offset += sprintf(&code[*offset], "\tuint32_t local_size_x = %i; uint32_t local_size_y = %i; uint32_t local_size_z = %i;\n",
 				                   (int)threads_attribute->parameters[0], (int)threads_attribute->parameters[1], (int)threads_attribute->parameters[2]);
-				*offset += sprintf(&code[*offset], "void main() {\n");
+
+				*offset += sprintf(&code[*offset],
+				                   "\tuint32_t group_id = 0; uint32_t group_thread_id = 0; uint32_t dispatch_thread_id = 0; uint32_t group_index = 0;\n\n");
 			}
 			else {
 				debug_context context = {0};
@@ -252,54 +203,89 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 			opcode *o = (opcode *)&data[index];
 			switch (o->type) {
 			case OPCODE_CALL: {
-				if (o->op_call.func == add_name("sample")) {
-					debug_context context = {0};
-					check(o->op_call.parameters_size == 3, context, "sample requires three parameters");
-					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = texture(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
-					                   o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[2].index);
-				}
-				else if (o->op_call.func == add_name("sample_lod")) {
-					debug_context context = {0};
-					check(o->op_call.parameters_size == 4, context, "sample_lod requires four parameters");
-					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = textureLod(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
-					                   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index,
-					                   o->op_call.parameters[2].index, o->op_call.parameters[3].index);
-				}
-				else if (o->op_call.func == add_name("group_id")) {
+				if (o->op_call.func == add_name("group_id")) {
 					check(o->op_call.parameters_size == 0, context, "group_id can not have a parameter");
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = gl_WorkGroupID;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = group_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else if (o->op_call.func == add_name("group_thread_id")) {
 					check(o->op_call.parameters_size == 0, context, "group_thread_id can not have a parameter");
-					*offset +=
-					    sprintf(&code[*offset], "%s _%" PRIu64 " = gl_LocalInvocationID;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = group_thread_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else if (o->op_call.func == add_name("dispatch_thread_id")) {
 					check(o->op_call.parameters_size == 0, context, "dispatch_thread_id can not have a parameter");
 					*offset +=
-					    sprintf(&code[*offset], "%s _%" PRIu64 " = gl_GlobalInvocationID;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+					    sprintf(&code[*offset], "\t%s _%" PRIu64 " = dispatch_thread_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else if (o->op_call.func == add_name("group_index")) {
 					check(o->op_call.parameters_size == 0, context, "group_index can not have a parameter");
-					*offset +=
-					    sprintf(&code[*offset], "%s _%" PRIu64 " = gl_LocalInvocationIndex;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = group_index;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else {
 					const char *function_name = get_name(o->op_call.func);
-					if (o->op_call.func == add_name("float2")) {
-						function_name = "vec2";
+					if (o->op_call.func == add_name("float")) {
+						function_name = "create_float";
+					}
+					else if (o->op_call.func == add_name("float2")) {
+						function_name = "create_float2";
 					}
 					else if (o->op_call.func == add_name("float3")) {
-						function_name = "vec3";
+						function_name = "create_float3";
 					}
 					else if (o->op_call.func == add_name("float4")) {
-						function_name = "vec4";
+						function_name = "create_float4";
 					}
 
 					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index, function_name);
+
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_%s", type_string(o->op_call.var.type.type), o->op_call.var.index,
+					                   function_name);
+
+					for (uint8_t parameter_index = 0; parameter_index < o->op_call.parameters_size; ++parameter_index) {
+						variable v = o->op_call.parameters[parameter_index];
+						if (v.type.type == int_id) {
+							*offset += sprintf(&code[*offset], "_i1");
+						}
+						else if (v.type.type == int2_id) {
+							*offset += sprintf(&code[*offset], "_i2");
+						}
+						else if (v.type.type == int3_id) {
+							*offset += sprintf(&code[*offset], "_i3");
+						}
+						else if (v.type.type == int4_id) {
+							*offset += sprintf(&code[*offset], "_i4");
+						}
+						else if (v.type.type == uint_id) {
+							*offset += sprintf(&code[*offset], "_u1");
+						}
+						else if (v.type.type == uint2_id) {
+							*offset += sprintf(&code[*offset], "_u2");
+						}
+						else if (v.type.type == uint3_id) {
+							*offset += sprintf(&code[*offset], "_u3");
+						}
+						else if (v.type.type == uint4_id) {
+							*offset += sprintf(&code[*offset], "_u4");
+						}
+						else if (v.type.type == float_id) {
+							*offset += sprintf(&code[*offset], "_f1");
+						}
+						else if (v.type.type == float2_id) {
+							*offset += sprintf(&code[*offset], "_f2");
+						}
+						else if (v.type.type == float3_id) {
+							*offset += sprintf(&code[*offset], "_f3");
+						}
+						else if (v.type.type == float4_id) {
+							*offset += sprintf(&code[*offset], "_f4");
+						}
+						else {
+							debug_context context = {0};
+							error(context, "Unknown parameter type");
+						}
+					}
+
+					*offset += sprintf(&code[*offset], "(");
+
 					if (o->op_call.parameters_size > 0) {
 						*offset += sprintf(&code[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
 						for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
@@ -333,10 +319,10 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 				type *s = get_type(o->op_load_member.member_parent_type);
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
 					if (f == main && o->op_load_member.member_parent_type == input && i == 0) {
-						*offset += sprintf(&code[*offset], "_%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
+						*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
 					}
 					else if (global_var_index != 0) {
-						*offset += sprintf(&code[*offset], "_%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
+						*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
 					}
 					else {
 						*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
@@ -348,66 +334,8 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 			}
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
-					if (f == main && stage == SHADER_STAGE_VERTEX) {
-						indent(code, offset, indentation);
-						*offset += sprintf(&code[*offset], "{\n");
-
-						type *t = get_type(f->return_type.type);
-
-						indent(code, offset, indentation + 1);
-						*offset += sprintf(&code[*offset], "gl_Position.x = _%" PRIu64 ".%s.x;\n", o->op_return.var.index, get_name(t->members.m[0].name));
-						indent(code, offset, indentation + 1);
-						if (flip) {
-							*offset +=
-							    sprintf(&code[*offset], "gl_Position.y = -1.0 * _%" PRIu64 ".%s.y;\n", o->op_return.var.index, get_name(t->members.m[0].name));
-						}
-						else {
-							*offset += sprintf(&code[*offset], "gl_Position.y = _%" PRIu64 ".%s.y;\n", o->op_return.var.index, get_name(t->members.m[0].name));
-						}
-						indent(code, offset, indentation + 1);
-						*offset +=
-						    sprintf(&code[*offset], "gl_Position.z = (_%" PRIu64 ".%s.z * 2.0) - _%" PRIu64 ".%s.w; // OpenGL clip space z is from -w to w\n",
-						            o->op_return.var.index, get_name(t->members.m[0].name), o->op_return.var.index, get_name(t->members.m[0].name));
-						indent(code, offset, indentation + 1);
-						*offset += sprintf(&code[*offset], "gl_Position.w = _%" PRIu64 ".%s.w;\n", o->op_return.var.index, get_name(t->members.m[0].name));
-
-						for (size_t j = 1; j < t->members.size; ++j) {
-							indent(code, offset, indentation + 1);
-							*offset += sprintf(&code[*offset], "%s_%s = _%" PRIu64 ".%s;\n", get_name(t->name), get_name(t->members.m[j].name),
-							                   o->op_return.var.index, get_name(t->members.m[j].name));
-						}
-
-						indent(code, offset, indentation + 1);
-						*offset += sprintf(&code[*offset], "return;\n");
-						indent(code, offset, indentation);
-						*offset += sprintf(&code[*offset], "}\n");
-					}
-					else if (f == main && stage == SHADER_STAGE_FRAGMENT && get_type(f->return_type.type)->array_size > 0) {
-						indent(code, offset, indentation);
-						*offset += sprintf(&code[*offset], "{\n");
-						for (uint32_t j = 0; j < get_type(f->return_type.type)->array_size; ++j) {
-							indent(code, offset, indentation + 1);
-							*offset += sprintf(&code[*offset], "_kong_colors[%i] = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
-						}
-						indent(code, offset, indentation + 1);
-						*offset += sprintf(&code[*offset], "return;\n");
-						indent(code, offset, indentation);
-						*offset += sprintf(&code[*offset], "}\n");
-					}
-					else if (f == main && stage == SHADER_STAGE_FRAGMENT) {
-						indent(code, offset, indentation);
-						*offset += sprintf(&code[*offset], "{\n");
-						indent(code, offset, indentation + 1);
-						*offset += sprintf(&code[*offset], "_kong_color = _%" PRIu64 ";\n", o->op_return.var.index);
-						indent(code, offset, indentation + 1);
-						*offset += sprintf(&code[*offset], "return;\n");
-						indent(code, offset, indentation);
-						*offset += sprintf(&code[*offset], "}\n");
-					}
-					else {
-						indent(code, offset, indentation);
-						*offset += sprintf(&code[*offset], "return _%" PRIu64 ";\n", o->op_return.var.index);
-					}
+					indent(code, offset, indentation);
+					*offset += sprintf(&code[*offset], "return _%" PRIu64 ";\n", o->op_return.var.index);
 				}
 				else {
 					indent(code, offset, indentation);
@@ -428,58 +356,32 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 }
 
 static void cpu_export_compute(char *directory, function *main) {
-	char *glsl = (char *)calloc(1024 * 1024, 1);
+	char *code = (char *)calloc(1024 * 1024, 1);
 	debug_context context = {0};
-	check(glsl != NULL, context, "Could not allocate glsl string");
+	check(code != NULL, context, "Could not allocate code string");
 
 	size_t offset = 0;
 
 	assert(main->parameters_size == 0);
 
-	offset += sprintf(&glsl[offset], "#version 330\n\n");
+	write_types(code, &offset, SHADER_STAGE_COMPUTE, NO_TYPE, NO_TYPE, main);
 
-	write_types(glsl, &offset, SHADER_STAGE_COMPUTE, NO_TYPE, NO_TYPE, main);
-
-	write_globals(glsl, &offset, main);
-
-	write_functions(glsl, &offset, SHADER_STAGE_COMPUTE, NO_TYPE, NO_TYPE, main, false);
+	write_globals(code, &offset, main);
 
 	char *name = get_name(main->name);
 
+	char func_name[256];
+	sprintf(func_name, "%s_on_cpu", name);
+
+	write_functions(code, func_name, &offset, SHADER_STAGE_COMPUTE, NO_TYPE, NO_TYPE, main, false);
+
 	char filename[512];
-	sprintf(filename, "kong_%s", name);
+	sprintf(filename, "kong_cpu_%s", name);
 
-	char var_name[256];
-	sprintf(var_name, "%s_code", name);
-
-	write_code(glsl, directory, filename, var_name);
+	write_code(code, directory, filename, func_name);
 }
 
 void cpu_export(char *directory) {
-	int cbuffer_index = 0;
-	int texture_index = 0;
-	int sampler_index = 0;
-
-	memset(global_register_indices, 0, sizeof(global_register_indices));
-
-	for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
-		global *g = get_global(i);
-		if (g->type == sampler_type_id) {
-			global_register_indices[i] = sampler_index;
-			sampler_index += 1;
-		}
-		else if (g->type == tex2d_type_id || g->type == texcube_type_id) {
-			global_register_indices[i] = texture_index;
-			texture_index += 1;
-		}
-		else if (g->type == float_id) {
-		}
-		else {
-			global_register_indices[i] = cbuffer_index;
-			cbuffer_index += 1;
-		}
-	}
-
 	function *compute_shaders[256];
 	size_t compute_shaders_size = 0;
 
