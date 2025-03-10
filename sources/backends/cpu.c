@@ -57,15 +57,20 @@ static char *type_string(type_id type) {
 	return get_name(get_type(type)->name);
 }
 
-static void write_code(char *code, char *directory, const char *filename, const char *name) {
+static void write_code(char *code, char *header_code, char *directory, const char *filename, const char *name) {
 	char full_filename[512];
 
 	{
 		sprintf(full_filename, "%s/%s.h", directory, filename);
 		FILE *file = fopen(full_filename, "wb");
+		fprintf(file, "#include <kong.h>\n\n");
 		fprintf(file, "#include <stddef.h>\n");
 		fprintf(file, "#include <stdint.h>\n\n");
-		fprintf(file, "void %s(uint32_t workgroup_count_x, uint32_t workgroup_count_y, uint32_t workgroup_count_z);\n", name);
+
+		fprintf(file, "%s", header_code);
+
+		fprintf(file, "void %s(uint32_t workgroup_count_x, uint32_t workgroup_count_y, uint32_t workgroup_count_z);\n\n", name);
+
 		fclose(file);
 	}
 
@@ -104,7 +109,7 @@ static void write_types(char *code, size_t *offset, function *main) {
 	}
 }
 
-static void write_globals(char *code, size_t *offset, function *main) {
+static void write_globals(char *code, size_t *offset, char *header_code, size_t *header_offset, function *main) {
 	global_id globals[256];
 	size_t globals_size = 0;
 	find_referenced_globals(main, globals, &globals_size);
@@ -153,7 +158,12 @@ static void write_globals(char *code, size_t *offset, function *main) {
 		}
 		else if (base_type == float4_id) {
 			if (t->array_size > 0) {
+				*header_offset += sprintf(&header_code[*header_offset], "void set_%s(kore_float4 *value);\n\n", get_name(g->name));
+
 				*offset += sprintf(&code[*offset], "static kore_float4 *_%llu;\n\n", g->var_index);
+				*offset += sprintf(&code[*offset], "void set_%s(kore_float4 *value) {\n", get_name(g->name));
+				*offset += sprintf(&code[*offset], "\t_%" PRIu64 " = value;\n", g->var_index);
+				*offset += sprintf(&code[*offset], "}\n\n");
 			}
 			else {
 				*offset += sprintf(&code[*offset], "static const float4 _%" PRIu64 " = float4(%f, %f, %f, %f);\n\n", g->var_index, g->value.value.floats[0],
@@ -161,13 +171,12 @@ static void write_globals(char *code, size_t *offset, function *main) {
 			}
 		}
 		else {
-			*offset += sprintf(&code[*offset], "typedef struct _%" PRIu64 "_type {\n", g->var_index);
-			type *t = get_type(g->type);
-			for (size_t i = 0; i < t->members.size; ++i) {
-				*offset += sprintf(&code[*offset], "\t%s %s;\n", type_string(t->members.m[i].type.type), get_name(t->members.m[i].name));
-			}
-			*offset += sprintf(&code[*offset], "} _%" PRIu64 "_type;\n\n", g->var_index);
-			*offset += sprintf(&code[*offset], "static _%" PRIu64 "_type _%" PRIu64 ";\n\n", g->var_index, g->var_index);
+			*header_offset += sprintf(&header_code[*header_offset], "void set_%s(%s_type *value);\n\n", get_name(g->name), get_name(g->name));
+
+			*offset += sprintf(&code[*offset], "static %s_type *_%" PRIu64 ";\n\n", get_name(g->name), g->var_index);
+			*offset += sprintf(&code[*offset], "void set_%s(%s_type *value) {\n", get_name(g->name), get_name(g->name));
+			*offset += sprintf(&code[*offset], "\t_%" PRIu64 " = value;\n", g->var_index);
+			*offset += sprintf(&code[*offset], "}\n\n");
 		}
 	}
 }
@@ -248,6 +257,8 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 			check(parameter_ids[parameter_index] != 0, context, "Parameter not found");
 		}
 
+		int indentation = 1;
+
 		if (f == main) {
 			attribute *threads_attribute = find_attribute(&f->attributes, add_name("threads"));
 			if (threads_attribute == NULL || threads_attribute->paramters_count != 3) {
@@ -260,9 +271,69 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 			*offset += sprintf(&code[*offset], "\tuint32_t local_size_x = %i;\n\tuint32_t local_size_y = %i;\n\tuint32_t local_size_z = %i;\n",
 			                   (int)threads_attribute->parameters[0], (int)threads_attribute->parameters[1], (int)threads_attribute->parameters[2]);
 
-			*offset += sprintf(
-			    &code[*offset],
-			    "\tkore_uint3 group_id = {0};\n\tkore_uint3 group_thread_id = {0};\n\tkore_uint3 dispatch_thread_id = {0};\n\tuint32_t group_index = 0;\n\n");
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "for (uint32_t workgroup_index_z = 0; workgroup_index_z < workgroup_count_z; ++workgroup_index_z) {\n");
+			++indentation;
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "for (uint32_t workgroup_index_y = 0; workgroup_index_y < workgroup_count_y; ++workgroup_index_y) {\n");
+			++indentation;
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "for (uint32_t workgroup_index_x = 0; workgroup_index_x < workgroup_count_x; ++workgroup_index_x) {\n");
+			++indentation;
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "for (uint32_t local_index_z = 0; local_index_z < local_size_z; ++local_index_z) {\n");
+			++indentation;
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "for (uint32_t local_index_y = 0; local_index_y < local_size_y; ++local_index_y) {\n");
+			++indentation;
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "for (uint32_t local_index_x = 0; local_index_x < local_size_x; ++local_index_x) {\n");
+			++indentation;
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "kore_uint3 group_id;\n");
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "group_id.x = workgroup_index_x;\n");
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "group_id.y = workgroup_index_y;\n");
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "group_id.z = workgroup_index_z;\n\n");
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "kore_uint3 group_thread_id;\n");
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "group_thread_id.x = local_index_x;\n");
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "group_thread_id.y = local_index_y;\n");
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "group_thread_id.z = local_index_z;\n\n");
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "kore_uint3 dispatch_thread_id;\n");
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "dispatch_thread_id.x = group_id.x * workgroup_count_x + group_thread_id.x;\n");
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "dispatch_thread_id.y = group_id.y * workgroup_count_y + group_thread_id.y;\n");
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "dispatch_thread_id.z = group_id.z * workgroup_count_z + group_thread_id.z;\n\n");
+
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "uint32_t group_index = group_thread_id.z * workgroup_count_x * workgroup_count_y + group_thread_id.y * "
+			                                   "workgroup_count_x + group_thread_id.x;\n\n");
 		}
 		else {
 			*offset += sprintf(&code[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
@@ -277,65 +348,71 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 			*offset += sprintf(&code[*offset], ") {\n");
 		}
 
-		int indentation = 1;
-
 		size_t index = 0;
 		while (index < size) {
 			opcode *o = (opcode *)&data[index];
 			switch (o->type) {
 			case OPCODE_ADD: {
+				indent(code, offset, indentation);
 				*offset +=
-				    sprintf(&code[*offset], "\t%s _%" PRIu64 " = kore_cpu_compute_add", type_string(o->op_binary.result.type.type), o->op_binary.result.index);
+				    sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_add", type_string(o->op_binary.result.type.type), o->op_binary.result.index);
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.left.type));
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.right.type));
 				*offset += sprintf(&code[*offset], "(_%" PRIu64 ", _%" PRIu64 ");\n", o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_SUB: {
+				indent(code, offset, indentation);
 				*offset +=
-				    sprintf(&code[*offset], "\t%s _%" PRIu64 " = kore_cpu_compute_sub", type_string(o->op_binary.result.type.type), o->op_binary.result.index);
+				    sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_sub", type_string(o->op_binary.result.type.type), o->op_binary.result.index);
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.left.type));
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.right.type));
 				*offset += sprintf(&code[*offset], "(_%" PRIu64 ", _%" PRIu64 ");\n", o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_MULTIPLY: {
+				indent(code, offset, indentation);
 				*offset +=
-				    sprintf(&code[*offset], "\t%s _%" PRIu64 " = kore_cpu_compute_mult", type_string(o->op_binary.result.type.type), o->op_binary.result.index);
+				    sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_mult", type_string(o->op_binary.result.type.type), o->op_binary.result.index);
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.left.type));
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.right.type));
 				*offset += sprintf(&code[*offset], "(_%" PRIu64 ", _%" PRIu64 ");\n", o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_DIVIDE: {
+				indent(code, offset, indentation);
 				*offset +=
-				    sprintf(&code[*offset], "\t%s _%" PRIu64 " = kore_cpu_compute_div", type_string(o->op_binary.result.type.type), o->op_binary.result.index);
+				    sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_div", type_string(o->op_binary.result.type.type), o->op_binary.result.index);
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.left.type));
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.right.type));
 				*offset += sprintf(&code[*offset], "(_%" PRIu64 ", _%" PRIu64 ");\n", o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_LOAD_FLOAT_CONSTANT:
-				*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = %ff;\n", type_string(o->op_load_float_constant.to.type.type),
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %ff;\n", type_string(o->op_load_float_constant.to.type.type),
 				                   o->op_load_float_constant.to.index, o->op_load_float_constant.number);
 				break;
 			case OPCODE_CALL: {
 				if (o->op_call.func == add_name("group_id")) {
 					check(o->op_call.parameters_size == 0, context, "group_id can not have a parameter");
-					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = group_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+					indent(code, offset, indentation);
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = group_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else if (o->op_call.func == add_name("group_thread_id")) {
 					check(o->op_call.parameters_size == 0, context, "group_thread_id can not have a parameter");
-					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = group_thread_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+					indent(code, offset, indentation);
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = group_thread_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else if (o->op_call.func == add_name("dispatch_thread_id")) {
 					check(o->op_call.parameters_size == 0, context, "dispatch_thread_id can not have a parameter");
-					*offset +=
-					    sprintf(&code[*offset], "\t%s _%" PRIu64 " = dispatch_thread_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+					indent(code, offset, indentation);
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = dispatch_thread_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else if (o->op_call.func == add_name("group_index")) {
 					check(o->op_call.parameters_size == 0, context, "group_index can not have a parameter");
-					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = group_index;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+					indent(code, offset, indentation);
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = group_index;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else {
 					const char *function_name = get_name(o->op_call.func);
@@ -431,7 +508,7 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 					type *s = get_type(o->op_load_member.member_parent_type);
 					for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
 						if (global_var_index != 0) {
-							*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
+							*offset += sprintf(&code[*offset], "->%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
 						}
 						else {
 							*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
@@ -463,22 +540,39 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 			index += o->size;
 		}
 
-		*offset += sprintf(&code[*offset], "}\n\n");
+		if (f == main) {
+			for (int i = 0; i < 6; ++i) {
+				--indentation;
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "}\n");
+			}
+
+			*offset += sprintf(&code[*offset], "}\n\n");
+		}
+		else {
+			*offset += sprintf(&code[*offset], "}\n\n");
+		}
 	}
 }
 
 static void cpu_export_compute(char *directory, function *main) {
-	char *code = (char *)calloc(1024 * 1024, 1);
 	debug_context context = {0};
+
+	char *code = (char *)calloc(1024 * 1024, 1);
 	check(code != NULL, context, "Could not allocate code string");
 
 	size_t offset = 0;
+
+	char *header_code = (char *)calloc(1024 * 1024, 1);
+	check(header_code != NULL, context, "Could not allocate code string");
+
+	size_t header_offset = 0;
 
 	assert(main->parameters_size == 0);
 
 	write_types(code, &offset, main);
 
-	write_globals(code, &offset, main);
+	write_globals(code, &offset, header_code, &header_offset, main);
 
 	char *name = get_name(main->name);
 
@@ -490,7 +584,7 @@ static void cpu_export_compute(char *directory, function *main) {
 	char filename[512];
 	sprintf(filename, "kong_cpu_%s", name);
 
-	write_code(code, directory, filename, func_name);
+	write_code(code, header_code, directory, filename, func_name);
 }
 
 void cpu_export(char *directory) {
