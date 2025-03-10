@@ -11,6 +11,7 @@
 #include "typer.h"
 #include "types.h"
 
+#include "backends/cpu.h"
 #include "backends/glsl.h"
 #include "backends/hlsl.h"
 #include "backends/metal.h"
@@ -318,6 +319,8 @@ int main(int argc, char **argv) {
 		error(context, "Unknown API");
 	}
 	}
+
+	cpu_export(output);
 
 	switch (integration) {
 	case INTEGRATION_KORE3:
