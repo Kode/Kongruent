@@ -1110,7 +1110,7 @@ void kore3_export(char *directory, api_kind api) {
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 				fprintf(output, "static kore_%s_render_pipeline %s;\n\n", api_short, get_name(t->name));
 				fprintf(output, "void kong_set_render_pipeline_%s(kore_gpu_command_list *list) {\n", get_name(t->name));
-				fprintf(output, "\tkore_d3d12_command_list_set_render_pipeline(list, &%s);\n", get_name(t->name));
+				fprintf(output, "\tkore_%s_command_list_set_render_pipeline(list, &%s);\n", api_short, get_name(t->name));
 
 				descriptor_set_group *group = find_descriptor_set_group_for_type(t);
 				for (size_t group_index = 0; group_index < group->size; ++group_index) {
