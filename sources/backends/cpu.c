@@ -341,7 +341,6 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 			++indentation;
 
 			if (simd_width == 4) {
-
 				indent(code, offset, indentation);
 				*offset += sprintf(&code[*offset], "for (uint32_t local_index_z = 0; local_index_z < local_size_z; ++local_index_z) {\n");
 				++indentation;
@@ -371,7 +370,7 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 
 				indent(code, offset, indentation);
 				*offset += sprintf(&code[*offset],
-				                   "group_thread_id.x = kore_uint32x4_load_values(local_index_x, local_index_x + 1, local_index_x + 2, local_index_x + 3);\n");
+				                   "group_thread_id.x = kore_uint32x4_load(local_index_x, local_index_x + 1, local_index_x + 2, local_index_x + 3);\n");
 
 				indent(code, offset, indentation);
 				*offset += sprintf(&code[*offset], "group_thread_id.y = kore_uint32x4_load_all(local_index_y);\n");
@@ -482,7 +481,7 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 				                   o->op_binary.result.index);
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.left.type));
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.right.type));
-				*offset += sprintf(&code[*offset], "_%ix(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
+				*offset += sprintf(&code[*offset], "_x%i(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_SUB: {
@@ -491,7 +490,7 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 				                   o->op_binary.result.index);
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.left.type));
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.right.type));
-				*offset += sprintf(&code[*offset], "_%ix(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
+				*offset += sprintf(&code[*offset], "_x%i(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_MULTIPLY: {
@@ -500,7 +499,7 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 				                   o->op_binary.result.index);
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.left.type));
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.right.type));
-				*offset += sprintf(&code[*offset], "_%ix(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
+				*offset += sprintf(&code[*offset], "_x%i(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_DIVIDE: {
@@ -509,7 +508,7 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 				                   o->op_binary.result.index);
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.left.type));
 				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.right.type));
-				*offset += sprintf(&code[*offset], "_%ix(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
+				*offset += sprintf(&code[*offset], "_x%i(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_LOAD_FLOAT_CONSTANT:
@@ -562,33 +561,17 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 				}
 				else {
 					const char *function_name = get_name(o->op_call.func);
-					if (simd_width == 1) {
-						if (o->op_call.func == add_name("float")) {
-							function_name = "create_floatx1";
-						}
-						else if (o->op_call.func == add_name("float2")) {
-							function_name = "create_float2x1";
-						}
-						else if (o->op_call.func == add_name("float3")) {
-							function_name = "create_float3x1";
-						}
-						else if (o->op_call.func == add_name("float4")) {
-							function_name = "create_float4x1";
-						}
+					if (o->op_call.func == add_name("float")) {
+						function_name = "create_float";
 					}
-					else if (simd_width == 4) {
-						if (o->op_call.func == add_name("float")) {
-							function_name = "create_floatx4";
-						}
-						else if (o->op_call.func == add_name("float2")) {
-							function_name = "create_float2x4";
-						}
-						else if (o->op_call.func == add_name("float3")) {
-							function_name = "create_float3x4";
-						}
-						else if (o->op_call.func == add_name("float4")) {
-							function_name = "create_float4x4";
-						}
+					else if (o->op_call.func == add_name("float2")) {
+						function_name = "create_float2";
+					}
+					else if (o->op_call.func == add_name("float3")) {
+						function_name = "create_float3";
+					}
+					else if (o->op_call.func == add_name("float4")) {
+						function_name = "create_float4";
 					}
 
 					indent(code, offset, indentation);
@@ -601,7 +584,7 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 						*offset += sprintf(&code[*offset], type_to_mini(v.type));
 					}
 
-					*offset += sprintf(&code[*offset], "(");
+					*offset += sprintf(&code[*offset], "_x%i(", simd_width);
 
 					if (o->op_call.parameters_size > 0) {
 						*offset += sprintf(&code[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
