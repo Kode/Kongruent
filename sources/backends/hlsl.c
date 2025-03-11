@@ -97,6 +97,11 @@ static void write_bytecode(char *hlsl, char *directory, const char *filename, co
 		sprintf(full_filename, "%s/%s.h", directory, filename);
 		FILE *file = fopen(full_filename, "wb");
 
+		if (file == NULL) {
+			debug_context context = {0};
+			error(context, "Could not open file %s.", full_filename);
+		}
+
 		fprintf(file, "#ifndef KONG_%s_HEADER\n", name);
 		fprintf(file, "#define KONG_%s_HEADER\n\n", name);
 
@@ -123,6 +128,12 @@ static void write_bytecode(char *hlsl, char *directory, const char *filename, co
 		sprintf(full_filename, "%s/%s.c", directory, filename);
 
 		FILE *file = fopen(full_filename, "wb");
+
+		if (file == NULL) {
+			debug_context context = {0};
+			error(context, "Could not open file %s.", full_filename);
+		}
+
 		fprintf(file, "#include \"%s.h\"\n\n", filename);
 
 		fprintf(file, "uint8_t *%s = \"", name);
@@ -603,14 +614,7 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 					break;
 				case DEFINITION_TEX2D:
 				case DEFINITION_TEX2DARRAY:
-				case DEFINITION_TEXCUBE:
-					if (first) {
-						first = false;
-					}
-					else {
-						*offset += sprintf(&hlsl[*offset], ", ");
-					}
-
+				case DEFINITION_TEXCUBE: {
 					attribute *write_attribute = find_attribute(&get_global(def->global)->attributes, add_name("write"));
 
 					if (first) {
@@ -627,6 +631,7 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 						*offset += sprintf(&hlsl[*offset], "SRV(t%i)", register_indices[def->global]);
 					}
 					break;
+				}
 				case DEFINITION_CONST_BASIC: {
 					type *t = get_type(get_global(def->global)->type);
 					if (t->array_size > 0) {
