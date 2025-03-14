@@ -12,11 +12,11 @@ void MetalVertexInStruct::padToOffset(unsigned offset) {
 
 void MetalStageInTranslator::outputCode(const Target &target, const MetalStageInTranslatorRenderContext &renderContext, std::ostream &output,
                                         std::map<std::string, int> &attributes) {
-	out = &output;
+	out             = &output;
 	_pRenderContext = (MetalStageInTranslatorRenderContext *)&renderContext;
 
-	tempNameIndex = bound;
-	_nextMTLBufferIndex = 0;
+	tempNameIndex        = bound;
+	_nextMTLBufferIndex  = 0;
 	_nextMTLTextureIndex = 0;
 	_nextMTLSamplerIndex = 0;
 	_vertexInStructs.clear();
@@ -24,7 +24,7 @@ void MetalStageInTranslator::outputCode(const Target &target, const MetalStageIn
 	outputHeader();
 
 	for (unsigned i = 0; i < instructions.size(); ++i) {
-		outputting = false;
+		outputting        = false;
 		Instruction &inst = instructions[i];
 		outputInstruction(target, attributes, inst);
 		if (outputting) {
@@ -50,24 +50,24 @@ void MetalStageInTranslator::outputInstruction(const Target &target, std::map<st
 	switch (inst.opcode) {
 
 	case OpEntryPoint: {
-		stage = stageFromSPIRVExecutionModel((ExecutionModel)inst.operands[0]);
+		stage      = stageFromSPIRVExecutionModel((ExecutionModel)inst.operands[0]);
 		entryPoint = inst.operands[1];
-		name = std::string(inst.string);
-		name = cleanMSLFuncName(name);
+		name       = std::string(inst.string);
+		name       = cleanMSLFuncName(name);
 		break;
 	}
 
 	case OpVariable: {
-		unsigned id = inst.operands[1];
-		Variable &v = variables[id];
-		v.id = id;
-		v.type = inst.operands[0];
-		v.storage = (StorageClass)inst.operands[2];
-		v.declared = (v.storage == StorageClassInput || v.storage == StorageClassOutput || v.storage == StorageClassUniform ||
-		              v.storage == StorageClassUniformConstant || v.storage == StorageClassPushConstant);
+		unsigned  id = inst.operands[1];
+		Variable &v  = variables[id];
+		v.id         = id;
+		v.type       = inst.operands[0];
+		v.storage    = (StorageClass)inst.operands[2];
+		v.declared   = (v.storage == StorageClassInput || v.storage == StorageClassOutput || v.storage == StorageClassUniform ||
+                      v.storage == StorageClassUniformConstant || v.storage == StorageClassPushConstant);
 
 		std::string varName = getVariableName(id);
-		Type &t = getBaseType(v.type);
+		Type       &t       = getBaseType(v.type);
 
 		if (v.storage == StorageClassInput) {
 			std::string vPfx;
@@ -76,10 +76,10 @@ void MetalStageInTranslator::outputInstruction(const Target &target, std::map<st
 
 					// Set attribute parameters of this variable
 					MetalVertexAttribute &vtxAttr = _pRenderContext->vertexAttributesByLocation[v.location];
-					v.offset = vtxAttr.offset;
-					v.stride = vtxAttr.stride;
-					v.isPerInstance = vtxAttr.isPerInstance;
-					v.binding = vtxAttr.binding;
+					v.offset                      = vtxAttr.offset;
+					v.stride                      = vtxAttr.stride;
+					v.isPerInstance               = vtxAttr.isPerInstance;
+					v.binding                     = vtxAttr.binding;
 
 					vtxAttr.isUsedByShader = true;
 
@@ -124,14 +124,14 @@ void MetalStageInTranslator::outputInstruction(const Target &target, std::map<st
 		firstLabel = true;
 		parameters.clear();
 
-		unsigned result = inst.operands[1];
-		_isEntryFunction = (result == entryPoint);
-		funcName = cleanMSLFuncName(getFunctionName(result));
+		unsigned result    = inst.operands[1];
+		_isEntryFunction   = (result == entryPoint);
+		funcName           = cleanMSLFuncName(getFunctionName(result));
 		references[result] = funcName;
 
 		Type &resultType = types[inst.operands[0]];
-		types[result] = resultType;
-		funcType = resultType.name;
+		types[result]    = resultType;
+		funcType         = resultType.name;
 
 		break;
 	}
@@ -182,11 +182,11 @@ void MetalStageInTranslator::outputInstruction(const Target &target, std::map<st
 		break;
 
 	case OpCompositeConstruct: {
-		Type &resultType = types[inst.operands[0]];
-		unsigned result = inst.operands[1];
-		types[result] = resultType;
+		Type    &resultType = types[inst.operands[0]];
+		unsigned result     = inst.operands[1];
+		types[result]       = resultType;
 
-		bool needsComma = false;
+		bool              needsComma = false;
 		std::stringstream tmpOut;
 		tmpOut << resultType.name << "(";
 		for (unsigned i = 2; i < inst.length; ++i) {
@@ -199,11 +199,11 @@ void MetalStageInTranslator::outputInstruction(const Target &target, std::map<st
 	}
 
 	case OpMatrixTimesMatrix: {
-		Type &resultType = types[inst.operands[0]];
-		unsigned result = inst.operands[1];
-		types[result] = resultType;
-		unsigned operand1 = inst.operands[2];
-		unsigned operand2 = inst.operands[3];
+		Type    &resultType        = types[inst.operands[0]];
+		unsigned result            = inst.operands[1];
+		types[result]              = resultType;
+		unsigned          operand1 = inst.operands[2];
+		unsigned          operand2 = inst.operands[3];
 		std::stringstream tmpOut;
 		tmpOut << "(" << getReference(operand1) << " * " << getReference(operand2) << ")";
 		references[result] = outputTempVar(out, resultType.name, tmpOut.str());
@@ -211,11 +211,11 @@ void MetalStageInTranslator::outputInstruction(const Target &target, std::map<st
 	}
 
 	case OpMatrixTimesVector: {
-		Type &resultType = types[inst.operands[0]];
-		unsigned result = inst.operands[1];
-		types[result] = resultType;
-		unsigned matrix = inst.operands[2];
-		unsigned vector = inst.operands[3];
+		Type    &resultType      = types[inst.operands[0]];
+		unsigned result          = inst.operands[1];
+		types[result]            = resultType;
+		unsigned          matrix = inst.operands[2];
+		unsigned          vector = inst.operands[3];
 		std::stringstream tmpOut;
 		tmpOut << "(" << getReference(matrix) << " * " << getReference(vector) << ")";
 		references[result] = outputTempVar(out, resultType.name, tmpOut.str());
@@ -223,11 +223,11 @@ void MetalStageInTranslator::outputInstruction(const Target &target, std::map<st
 	}
 
 	case OpVectorTimesMatrix: {
-		Type &resultType = types[inst.operands[0]];
-		unsigned result = inst.operands[1];
-		types[result] = resultType;
-		unsigned vector = inst.operands[2];
-		unsigned matrix = inst.operands[3];
+		Type    &resultType      = types[inst.operands[0]];
+		unsigned result          = inst.operands[1];
+		types[result]            = resultType;
+		unsigned          vector = inst.operands[2];
+		unsigned          matrix = inst.operands[3];
 		std::stringstream tmpOut;
 		tmpOut << "(" << getReference(vector) << " * " << getReference(matrix) << ")";
 		references[result] = outputTempVar(out, resultType.name, tmpOut.str());
@@ -264,7 +264,7 @@ void MetalStageInTranslator::outputEntryFunctionSignature(bool asDeclaration) {
 		_hasLooseUniforms = outputLooseUniformStruct();
 		outputUniformBuffers();
 		outputVertexInStructs();
-		_hasStageIn = outputStageInStruct();
+		_hasStageIn  = outputStageInStruct();
 		_hasStageOut = outputStageOutStruct();
 	}
 
@@ -300,10 +300,10 @@ void MetalStageInTranslator::outputEntryFunctionSignature(bool asDeclaration) {
 	}
 
 	for (auto iter = _vertexInStructs.begin(); iter != _vertexInStructs.end(); iter++) {
-		unsigned binding = iter->first;
+		unsigned             binding  = iter->first;
 		MetalVertexInStruct &inStruct = iter->second;
-		needsComma = paramComma(out, needsComma);
-		const std::string &varName = inStruct.name;
+		needsComma                    = paramComma(out, needsComma);
+		const std::string &varName    = inStruct.name;
 		(*out) << "device " << funcName << "_" << varName << "* " << varName << " [[buffer(" << binding << ")]]";
 	}
 
@@ -313,15 +313,15 @@ void MetalStageInTranslator::outputEntryFunctionSignature(bool asDeclaration) {
 	}
 
 	// Remember what the resource indices at this point
-	unsigned origMTLBufferIndex = _nextMTLBufferIndex;
+	unsigned origMTLBufferIndex  = _nextMTLBufferIndex;
 	unsigned origMTLTextureIndex = _nextMTLTextureIndex;
 	unsigned origMTLSamplerIndex = _nextMTLSamplerIndex;
 
 	for (auto v = variables.begin(); v != variables.end(); ++v) {
-		unsigned id = v->first;
+		unsigned  id       = v->first;
 		Variable &variable = v->second;
 
-		Type &t = getBaseType(variable.type);
+		Type       &t       = getBaseType(variable.type);
 		std::string varName = getVariableName(id);
 
 		if (variable.storage == StorageClassUniform || variable.storage == StorageClassUniformConstant || variable.storage == StorageClassPushConstant) {
@@ -356,7 +356,7 @@ void MetalStageInTranslator::outputEntryFunctionSignature(bool asDeclaration) {
 	// If this is the function declaration, restore the resource indices
 	// so the same indices will be used for the function definition.
 	if (asDeclaration) {
-		_nextMTLBufferIndex = origMTLBufferIndex;
+		_nextMTLBufferIndex  = origMTLBufferIndex;
 		_nextMTLTextureIndex = origMTLTextureIndex;
 		_nextMTLSamplerIndex = origMTLSamplerIndex;
 	}
@@ -398,7 +398,7 @@ bool MetalStageInTranslator::outputLooseUniformStruct() {
 	tmpOut << "struct " << funcName << "_uniforms {\n";
 	++indentation;
 	for (auto v = variables.begin(); v != variables.end(); ++v) {
-		unsigned id = v->first;
+		unsigned  id       = v->first;
 		Variable &variable = v->second;
 
 		Type &t = getBaseType(variable.type);
@@ -431,16 +431,16 @@ void MetalStageInTranslator::outputUniformBuffers() {
 		Variable &variable = v->second;
 
 		unsigned typeId = getBaseTypeID(variable.type);
-		Type &t = types[typeId];
+		Type    &t      = types[typeId];
 
 		if ((t.opcode == OpTypeStruct) && (variable.storage != StorageClassOutput)) {
 			indent(out);
 			(*out) << "struct " << t.name << " {\n";
 			++indentation;
 			for (unsigned mbrIdx = 0; mbrIdx < t.length; mbrIdx++) {
-				unsigned mbrId = getMemberId(typeId, mbrIdx);
-				Member member = members[mbrId];
-				Type &mbrType = types[member.type];
+				unsigned mbrId   = getMemberId(typeId, mbrIdx);
+				Member   member  = members[mbrId];
+				Type    &mbrType = types[member.type];
 				indent(out);
 				(*out) << mbrType.name << " " << member.name;
 				if (mbrType.isarray) {
@@ -479,9 +479,9 @@ void MetalStageInTranslator::outputVertexInStructs() {
 	// Divide the input variables into separate structs according to their bindings.
 	++indentation;
 	for (unsigned varIdx = 0; varIdx < varCnt; varIdx++) {
-		auto pVar = inVars[varIdx];
-		unsigned id = pVar->first;
-		Variable &variable = pVar->second;
+		auto                 pVar     = inVars[varIdx];
+		unsigned             id       = pVar->first;
+		Variable            &variable = pVar->second;
 		MetalVertexInStruct &inStruct = _vertexInStructs[variable.binding];
 		if (inStruct.body.str().empty()) {
 			inStruct.body << "struct " << funcName << "_" << inStruct.name << " {\n";
@@ -535,9 +535,9 @@ bool MetalStageInTranslator::outputStageInStruct() {
 	(*out) << "struct " << funcName << "_in {\n";
 	++indentation;
 	for (unsigned varIdx = 0; varIdx < varCnt; varIdx++) {
-		auto pVar = inVars[varIdx];
-		unsigned id = pVar->first;
-		Variable &var = pVar->second;
+		auto      pVar = inVars[varIdx];
+		unsigned  id   = pVar->first;
+		Variable &var  = pVar->second;
 
 		Type &t = types[var.type];
 
@@ -574,20 +574,20 @@ bool MetalStageInTranslator::outputStageOutStruct() {
 	tmpOut << "struct " << funcName << "_out {\n";
 	++indentation;
 	for (auto v = variables.begin(); v != variables.end(); ++v) {
-		unsigned id = v->first;
+		unsigned  id  = v->first;
 		Variable &var = v->second;
 
 		if (var.storage == StorageClassOutput) {
-			unsigned typeId = getBaseTypeID(var.type);
-			Type &t = types[typeId];
+			unsigned    typeId  = getBaseTypeID(var.type);
+			Type       &t       = types[typeId];
 			std::string varName = getVariableName(id);
 
 			if (t.opcode == OpTypeStruct) {
 				// Extract struct members and add them to stage-out struct
 				for (unsigned mbrIdx = 0; mbrIdx < t.length; mbrIdx++) {
-					unsigned mbrId = getMemberId(typeId, mbrIdx);
-					Member member = members[mbrId];
-					Type &mbrType = types[member.type];
+					unsigned mbrId   = getMemberId(typeId, mbrIdx);
+					Member   member  = members[mbrId];
+					Type    &mbrType = types[member.type];
 					indent(&tmpOut);
 					tmpOut << mbrType.name << " " << member.name;
 					if (mbrType.isarray) {
@@ -669,11 +669,11 @@ bool MetalStageInTranslator::outputStageOutStruct() {
 
 /** Builds and adds a reference for a sampler, based on the specified instruction. */
 void MetalStageInTranslator::addSamplerReference(Instruction &inst) {
-	unsigned result = inst.operands[1];
-	unsigned sampler = inst.operands[2];
-	unsigned coordinate = inst.operands[3];
-	Type &sType = types[sampler];
-	std::string tcRef = getReference(coordinate);
+	unsigned    result     = inst.operands[1];
+	unsigned    sampler    = inst.operands[2];
+	unsigned    coordinate = inst.operands[3];
+	Type       &sType      = types[sampler];
+	std::string tcRef      = getReference(coordinate);
 	if (_pRenderContext->shouldFlipFragmentY) {
 		switch (sType.imageDim) {
 		case Dim2D:
@@ -691,7 +691,7 @@ void MetalStageInTranslator::addSamplerReference(Instruction &inst) {
 	refStrm << getReference(sampler) << ".sample(" << getReference(sampler) << "Sampler, " << tcRef;
 
 	// Add any image sampling qualifiers derived from the image operands in the instruction
-	std::string imgOpRef;
+	std::string        imgOpRef;
 	ImageOperandsArray imageOperands;
 	extractImageOperands(imageOperands, inst, 4);
 

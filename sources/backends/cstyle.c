@@ -55,8 +55,8 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 	case OPCODE_MULTIPLY_AND_STORE_MEMBER:
 		indent(code, offset, *indentation);
 		*offset += sprintf(&code[*offset], "_%" PRIu64, o->op_store_member.to.index);
-		type *s = get_type(o->op_store_member.member_parent_type);
-		bool is_array = o->op_store_member.member_parent_array;
+		type *s        = get_type(o->op_store_member.member_parent_type);
+		bool  is_array = o->op_store_member.member_parent_array;
 		for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
 			if (is_array) {
 				if (o->op_store_member.dynamic_member[i]) {
@@ -73,7 +73,7 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 				check(o->op_store_member.static_member_indices[i] < s->members.size, context, "Member index out of bounds");
 				*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.static_member_indices[i]].name));
 				is_array = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type)->array_size > 0;
-				s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
+				s        = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
 			}
 		}
 		switch (o->type) {

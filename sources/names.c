@@ -6,20 +6,20 @@
 
 #include <assert.h>
 
-static char *names = NULL;
-static size_t names_size = 1024 * 1024;
+static char   *names       = NULL;
+static size_t  names_size  = 1024 * 1024;
 static name_id names_index = 1;
 
 static struct {
-	char *key;
+	char   *key;
 	name_id value;
 } *hash = NULL;
 
 void names_init(void) {
-	char *new_names = realloc(names, names_size);
-	debug_context context = {0};
+	char         *new_names = realloc(names, names_size);
+	debug_context context   = {0};
 	check(new_names != NULL, context, "Could not allocate names");
-	names = new_names;
+	names    = new_names;
 	names[0] = 0; // make NO_NAME a proper string
 
 	sh_new_arena(hash); // TODO: Get rid of this by using indices internally in the hash-map so it can survive grow_if_needed
@@ -28,8 +28,8 @@ void names_init(void) {
 static void grow_if_needed(size_t size) {
 	while (size >= names_size) {
 		names_size *= 2;
-		char *new_names = realloc(names, names_size);
-		debug_context context = {0};
+		char         *new_names = realloc(names, names_size);
+		debug_context context   = {0};
 		check(new_names != NULL, context, "Could not allocate names");
 		names = new_names;
 	}

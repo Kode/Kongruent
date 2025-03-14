@@ -12,5 +12,5 @@ typedef struct file {
 } file;
 
 directory open_dir(const char *dirname);
-file read_next_file(directory* dir);
-void close_dir(directory* dir);
+file      read_next_file(directory *dir);
+void      close_dir(directory *dir);

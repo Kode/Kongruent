@@ -37,24 +37,24 @@ typedef enum mode {
 
 typedef struct tokenizer_state {
 	const char *iterator;
-	char next;
-	char next_next;
-	int line, column;
-	bool line_end;
+	char        next;
+	char        next_next;
+	int         line, column;
+	bool        line_end;
 } tokenizer_state;
 
 static void tokenizer_state_init(debug_context *context, tokenizer_state *state, const char *source) {
 	state->line = state->column = 0;
-	state->iterator = source;
-	state->next = *state->iterator;
+	state->iterator             = source;
+	state->next                 = *state->iterator;
 	if (*state->iterator != 0) {
 		state->iterator += 1;
 	}
 	state->next_next = *state->iterator;
-	state->line_end = false;
+	state->line_end  = false;
 
 	context->column = 0;
-	context->line = 0;
+	context->line   = 0;
 }
 
 static void tokenizer_state_advance(debug_context *context, tokenizer_state *state) {
@@ -78,27 +78,27 @@ static void tokenizer_state_advance(debug_context *context, tokenizer_state *sta
 	}
 
 	context->column = state->column;
-	context->line = state->line;
+	context->line   = state->line;
 }
 
 typedef struct tokenizer_buffer {
-	char *buf;
+	char  *buf;
 	size_t current_size;
 	size_t max_size;
-	int column, line;
+	int    column, line;
 } tokenizer_buffer;
 
 static void tokenizer_buffer_init(tokenizer_buffer *buffer) {
-	buffer->max_size = 1024 * 1024;
-	buffer->buf = (char *)malloc(buffer->max_size);
+	buffer->max_size     = 1024 * 1024;
+	buffer->buf          = (char *)malloc(buffer->max_size);
 	buffer->current_size = 0;
 	buffer->column = buffer->line = 0;
 }
 
 static void tokenizer_buffer_reset(tokenizer_buffer *buffer, tokenizer_state *state) {
 	buffer->current_size = 0;
-	buffer->column = state->column;
-	buffer->line = state->line;
+	buffer->column       = state->column;
+	buffer->line         = state->line;
 }
 
 static void tokenizer_buffer_add(tokenizer_buffer *buffer, char ch) {
@@ -128,15 +128,15 @@ static double tokenizer_buffer_parse_number(tokenizer_buffer *buffer) {
 
 token token_create(int kind, tokenizer_state *state) {
 	token token;
-	token.kind = kind;
+	token.kind   = kind;
 	token.column = state->column;
-	token.line = state->line;
+	token.line   = state->line;
 	return token;
 }
 
 static void tokens_init(tokens *tokens) {
-	tokens->max_size = 1024 * 1024;
-	tokens->t = malloc(tokens->max_size * sizeof(token));
+	tokens->max_size     = 1024 * 1024;
+	tokens->t            = malloc(tokens->max_size * sizeof(token));
 	tokens->current_size = 0;
 }
 
@@ -151,11 +151,11 @@ static void tokens_add_identifier(tokenizer_state *state, tokens *tokens, tokeni
 	token token;
 
 	if (tokenizer_buffer_equals(buffer, "true")) {
-		token = token_create(TOKEN_BOOLEAN, state);
+		token         = token_create(TOKEN_BOOLEAN, state);
 		token.boolean = true;
 	}
 	else if (tokenizer_buffer_equals(buffer, "false")) {
-		token = token_create(TOKEN_BOOLEAN, state);
+		token         = token_create(TOKEN_BOOLEAN, state);
 		token.boolean = false;
 	}
 	else if (tokenizer_buffer_equals(buffer, "if")) {
@@ -192,24 +192,24 @@ static void tokens_add_identifier(tokenizer_state *state, tokens *tokens, tokeni
 		token = token_create(TOKEN_RETURN, state);
 	}
 	else {
-		token = token_create(TOKEN_IDENTIFIER, state);
+		token            = token_create(TOKEN_IDENTIFIER, state);
 		token.identifier = tokenizer_buffer_to_name(buffer);
 	}
 
 	token.column = buffer->column;
-	token.line = buffer->line;
+	token.line   = buffer->line;
 	tokens_add(tokens, token);
 }
 
 tokens tokenize(const char *filename, const char *source) {
-	mode mode = MODE_SELECT;
+	mode mode           = MODE_SELECT;
 	bool number_has_dot = false;
 
 	tokens tokens;
 	tokens_init(&tokens);
 
 	debug_context context = {0};
-	context.filename = filename;
+	context.filename      = filename;
 
 	tokenizer_state state;
 	tokenizer_state_init(&context, &state, source);
@@ -224,7 +224,7 @@ tokens tokenize(const char *filename, const char *source) {
 				tokens_add_identifier(&state, &tokens, &buffer);
 				break;
 			case MODE_NUMBER: {
-				token token = token_create(number_has_dot ? TOKEN_FLOAT : TOKEN_INT, &state);
+				token token  = token_create(number_has_dot ? TOKEN_FLOAT : TOKEN_INT, &state);
 				token.number = tokenizer_buffer_parse_number(&buffer);
 				tokens_add(&tokens, token);
 				break;
@@ -265,7 +265,7 @@ tokens tokenize(const char *filename, const char *source) {
 					}
 				}
 				else if (is_num(ch, state.next_next)) {
-					mode = MODE_NUMBER;
+					mode           = MODE_NUMBER;
 					number_has_dot = false;
 					tokenizer_buffer_reset(&buffer, &state);
 					tokenizer_buffer_add(&buffer, ch);
@@ -352,7 +352,7 @@ tokens tokenize(const char *filename, const char *source) {
 					tokenizer_state_advance(&context, &state);
 				}
 				else {
-					token token = token_create(number_has_dot ? TOKEN_FLOAT : TOKEN_INT, &state);
+					token token  = token_create(number_has_dot ? TOKEN_FLOAT : TOKEN_INT, &state);
 					token.number = tokenizer_buffer_parse_number(&buffer);
 					tokens_add(&tokens, token);
 					mode = MODE_SELECT;
@@ -377,102 +377,102 @@ tokens tokenize(const char *filename, const char *source) {
 
 				if (tokenizer_buffer_equals(&buffer, "==")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_EQUALS;
+					token.op    = OPERATOR_EQUALS;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "!=")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_NOT_EQUALS;
+					token.op    = OPERATOR_NOT_EQUALS;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, ">")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_GREATER;
+					token.op    = OPERATOR_GREATER;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, ">=")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_GREATER_EQUAL;
+					token.op    = OPERATOR_GREATER_EQUAL;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "<")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_LESS;
+					token.op    = OPERATOR_LESS;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "<=")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_LESS_EQUAL;
+					token.op    = OPERATOR_LESS_EQUAL;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "-=")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_MINUS_ASSIGN;
+					token.op    = OPERATOR_MINUS_ASSIGN;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "+=")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_PLUS_ASSIGN;
+					token.op    = OPERATOR_PLUS_ASSIGN;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "/=")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_DIVIDE_ASSIGN;
+					token.op    = OPERATOR_DIVIDE_ASSIGN;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "*=")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_MULTIPLY_ASSIGN;
+					token.op    = OPERATOR_MULTIPLY_ASSIGN;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "-")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_MINUS;
+					token.op    = OPERATOR_MINUS;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "+")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_PLUS;
+					token.op    = OPERATOR_PLUS;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "/")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_DIVIDE;
+					token.op    = OPERATOR_DIVIDE;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "*")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_MULTIPLY;
+					token.op    = OPERATOR_MULTIPLY;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "!")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_NOT;
+					token.op    = OPERATOR_NOT;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "||")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_OR;
+					token.op    = OPERATOR_OR;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "^")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_XOR;
+					token.op    = OPERATOR_XOR;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "&&")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_AND;
+					token.op    = OPERATOR_AND;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "%")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_MOD;
+					token.op    = OPERATOR_MOD;
 					tokens_add(&tokens, token);
 				}
 				else if (tokenizer_buffer_equals(&buffer, "=")) {
 					token token = token_create(TOKEN_OPERATOR, &state);
-					token.op = OPERATOR_ASSIGN;
+					token.op    = OPERATOR_ASSIGN;
 					tokens_add(&tokens, token);
 				}
 				else {

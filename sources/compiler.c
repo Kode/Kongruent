@@ -8,12 +8,12 @@
 #include <string.h>
 
 typedef struct allocated_global {
-	global *g;
+	global  *g;
 	uint64_t variable_id;
 } allocated_global;
 
 static allocated_global allocated_globals[1024];
-static size_t allocated_globals_size = 0;
+static size_t           allocated_globals_size = 0;
 
 allocated_global find_allocated_global(name_id name) {
 	for (size_t i = 0; i < allocated_globals_size; ++i) {
@@ -23,7 +23,7 @@ allocated_global find_allocated_global(name_id name) {
 	}
 
 	allocated_global a;
-	a.g = NULL;
+	a.g           = NULL;
 	a.variable_id = 0;
 	return a;
 }
@@ -42,8 +42,8 @@ variable find_local_var(block *b, name_id name) {
 			check(b->vars.v[i].type.type != NO_TYPE, context, "Local variable does not have a type");
 			variable var;
 			var.index = b->vars.v[i].variable_id;
-			var.type = b->vars.v[i].type;
-			var.kind = VARIABLE_LOCAL;
+			var.type  = b->vars.v[i].type;
+			var.kind  = VARIABLE_LOCAL;
 			return var;
 		}
 	}
@@ -59,8 +59,8 @@ variable find_variable(block *parent, name_id name) {
 			variable v;
 			init_type_ref(&v.type, NO_NAME);
 			v.type.type = global.g->type;
-			v.index = global.variable_id;
-			v.kind = VARIABLE_GLOBAL;
+			v.index     = global.variable_id;
+			v.kind      = VARIABLE_GLOBAL;
 			return v;
 		}
 		else {
@@ -85,9 +85,9 @@ variable all_variables[1024 * 1024];
 
 variable allocate_variable(type_ref type, variable_kind kind) {
 	variable v;
-	v.index = next_variable_id;
-	v.type = type;
-	v.kind = kind;
+	v.index                = next_variable_id;
+	v.type                 = type;
+	v.kind                 = kind;
 	all_variables[v.index] = v;
 	++next_variable_id;
 	return v;
@@ -110,7 +110,7 @@ opcode *emit_op(opcodes *code, opcode *o) {
 variable emit_expression(opcodes *code, block *parent, expression *e) {
 	switch (e->kind) {
 	case EXPRESSION_BINARY: {
-		expression *left = e->binary.left;
+		expression *left  = e->binary.left;
 		expression *right = e->binary.right;
 
 		debug_context context = {0};
@@ -126,10 +126,10 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		case OPERATOR_OR:
 		case OPERATOR_XOR: {
 			variable right_var = emit_expression(code, parent, right);
-			variable left_var = emit_expression(code, parent, left);
+			variable left_var  = emit_expression(code, parent, left);
 			type_ref t;
 			init_type_ref(&t, NO_NAME);
-			t.type = bool_id;
+			t.type              = bool_id;
 			variable result_var = allocate_variable(t, VARIABLE_LOCAL);
 
 			opcode o;
@@ -165,9 +165,9 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				error(context, "Unexpected operator");
 			}
 			}
-			o.size = OP_SIZE(o, op_binary);
-			o.op_binary.right = right_var;
-			o.op_binary.left = left_var;
+			o.size             = OP_SIZE(o, op_binary);
+			o.op_binary.right  = right_var;
+			o.op_binary.left   = left_var;
 			o.op_binary.result = result_var;
 			emit_op(code, &o);
 
@@ -178,8 +178,8 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		case OPERATOR_DIVIDE:
 		case OPERATOR_MULTIPLY:
 		case OPERATOR_MOD: {
-			variable right_var = emit_expression(code, parent, right);
-			variable left_var = emit_expression(code, parent, left);
+			variable right_var  = emit_expression(code, parent, right);
+			variable left_var   = emit_expression(code, parent, left);
 			variable result_var = allocate_variable(e->type, VARIABLE_LOCAL);
 
 			opcode o;
@@ -203,9 +203,9 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				error(context, "Unexpected operator");
 			}
 			}
-			o.size = OP_SIZE(o, op_binary);
-			o.op_binary.right = right_var;
-			o.op_binary.left = left_var;
+			o.size             = OP_SIZE(o, op_binary);
+			o.op_binary.right  = right_var;
+			o.op_binary.left   = left_var;
 			o.op_binary.result = result_var;
 			emit_op(code, &o);
 
@@ -244,9 +244,9 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 					error(context, "Unexpected operator");
 				}
 				}
-				o.size = OP_SIZE(o, op_store_var);
+				o.size              = OP_SIZE(o, op_store_var);
 				o.op_store_var.from = v;
-				o.op_store_var.to = find_variable(parent, left->variable);
+				o.op_store_var.to   = find_variable(parent, left->variable);
 				emit_op(code, &o);
 				break;
 			}
@@ -275,16 +275,16 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 					error(context, "Unexpected operator");
 				}
 				}
-				o.size = OP_SIZE(o, op_store_member);
+				o.size                 = OP_SIZE(o, op_store_member);
 				o.op_store_member.from = v;
-				o.op_store_member.to = member_var;
+				o.op_store_member.to   = member_var;
 				// o.op_store_member.member = left->member.right;
 
 				o.op_store_member.member_indices_size = 0;
-				expression *right = left->member.right;
-				type_id prev_struct = left->member.left->type.type;
-				type *prev_s = get_type(prev_struct);
-				o.op_store_member.member_parent_type = prev_struct;
+				expression *right                     = left->member.right;
+				type_id     prev_struct               = left->member.left->type.type;
+				type       *prev_s                    = get_type(prev_struct);
+				o.op_store_member.member_parent_type  = prev_struct;
 				o.op_store_member.member_parent_array = get_type(left->member.left->type.type)->array_size > 0 || left->member.left->type.type == tex2d_type_id;
 
 				bool parent_dynamic = left->kind == EXPRESSION_DYNAMIC_MEMBER;
@@ -297,7 +297,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 						bool found = false;
 						for (size_t i = 0; i < prev_s->members.size; ++i) {
 							if (prev_s->members.m[i].name == right->member.left->variable) {
-								o.op_store_member.dynamic_member[o.op_store_member.member_indices_size] = false;
+								o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
 								o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)i;
 								++o.op_store_member.member_indices_size;
 								found = true;
@@ -307,21 +307,21 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 						check(found, context, "Variable for a member not found");
 					}
 					else if (right->member.left->kind == EXPRESSION_INDEX) {
-						o.op_store_member.dynamic_member[o.op_store_member.member_indices_size] = false;
+						o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
 						o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)right->member.left->index;
 						++o.op_store_member.member_indices_size;
 					}
 					else {
-						variable sub_expression = emit_expression(code, parent, right->member.left);
-						o.op_store_member.dynamic_member[o.op_store_member.member_indices_size] = true;
+						variable sub_expression                                                         = emit_expression(code, parent, right->member.left);
+						o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]         = true;
 						o.op_store_member.dynamic_member_indices[o.op_store_member.member_indices_size] = sub_expression;
 						++o.op_store_member.member_indices_size;
 					}
 
-					prev_struct = right->member.left->type.type;
-					prev_s = get_type(prev_struct);
+					prev_struct    = right->member.left->type.type;
+					prev_s         = get_type(prev_struct);
 					parent_dynamic = right->kind == EXPRESSION_DYNAMIC_MEMBER;
-					right = right->member.right;
+					right          = right->member.right;
 				}
 
 				{
@@ -331,7 +331,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 						bool found = false;
 						for (size_t i = 0; i < prev_s->members.size; ++i) {
 							if (prev_s->members.m[i].name == right->variable) {
-								o.op_store_member.dynamic_member[o.op_store_member.member_indices_size] = false;
+								o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
 								o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)i;
 								++o.op_store_member.member_indices_size;
 								found = true;
@@ -341,13 +341,13 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 						check(found, context, "Member not found");
 					}
 					else if (right->kind == EXPRESSION_INDEX) {
-						o.op_store_member.dynamic_member[o.op_store_member.member_indices_size] = false;
+						o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
 						o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)right->index;
 						++o.op_store_member.member_indices_size;
 					}
 					else {
-						variable sub_expression = emit_expression(code, parent, right);
-						o.op_store_member.dynamic_member[o.op_store_member.member_indices_size] = true;
+						variable sub_expression                                                         = emit_expression(code, parent, right);
+						o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]         = true;
 						o.op_store_member.dynamic_member_indices[o.op_store_member.member_indices_size] = sub_expression;
 						++o.op_store_member.member_indices_size;
 					}
@@ -392,11 +392,11 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			error(context, "not implemented");
 		case OPERATOR_NOT: {
 			variable v = emit_expression(code, parent, e->unary.right);
-			opcode o;
-			o.type = OPCODE_NOT;
-			o.size = OP_SIZE(o, op_not);
+			opcode   o;
+			o.type        = OPCODE_NOT;
+			o.size        = OP_SIZE(o, op_not);
 			o.op_not.from = v;
-			o.op_not.to = allocate_variable(v.type, VARIABLE_LOCAL);
+			o.op_not.to   = allocate_variable(v.type, VARIABLE_LOCAL);
 			emit_op(code, &o);
 			return o.op_not.to;
 		}
@@ -420,14 +420,14 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	case EXPRESSION_BOOLEAN: {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
-		t.type = float_id;
+		t.type     = float_id;
 		variable v = allocate_variable(t, VARIABLE_LOCAL);
 
 		opcode o;
-		o.type = OPCODE_LOAD_BOOL_CONSTANT;
-		o.size = OP_SIZE(o, op_load_bool_constant);
+		o.type                          = OPCODE_LOAD_BOOL_CONSTANT;
+		o.size                          = OP_SIZE(o, op_load_bool_constant);
 		o.op_load_bool_constant.boolean = e->boolean;
-		o.op_load_bool_constant.to = v;
+		o.op_load_bool_constant.to      = v;
 		emit_op(code, &o);
 
 		return v;
@@ -435,14 +435,14 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	case EXPRESSION_FLOAT: {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
-		t.type = float_id;
+		t.type     = float_id;
 		variable v = allocate_variable(t, VARIABLE_LOCAL);
 
 		opcode o;
-		o.type = OPCODE_LOAD_FLOAT_CONSTANT;
-		o.size = OP_SIZE(o, op_load_float_constant);
+		o.type                          = OPCODE_LOAD_FLOAT_CONSTANT;
+		o.size                          = OP_SIZE(o, op_load_float_constant);
 		o.op_load_float_constant.number = (float)e->number;
-		o.op_load_float_constant.to = v;
+		o.op_load_float_constant.to     = v;
 		emit_op(code, &o);
 
 		return v;
@@ -450,14 +450,14 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	case EXPRESSION_INT: {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
-		t.type = int_id;
+		t.type     = int_id;
 		variable v = allocate_variable(t, VARIABLE_LOCAL);
 
 		opcode o;
-		o.type = OPCODE_LOAD_INT_CONSTANT;
-		o.size = OP_SIZE(o, op_load_float_constant);
+		o.type                        = OPCODE_LOAD_INT_CONSTANT;
+		o.size                        = OP_SIZE(o, op_load_float_constant);
 		o.op_load_int_constant.number = (int)e->number;
-		o.op_load_int_constant.to = v;
+		o.op_load_int_constant.to     = v;
 		emit_op(code, &o);
 
 		return v;
@@ -473,14 +473,14 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	case EXPRESSION_CALL: {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
-		t.type = e->type.type;
+		t.type     = e->type.type;
 		variable v = allocate_variable(t, VARIABLE_LOCAL);
 
 		opcode o;
-		o.type = OPCODE_CALL;
-		o.size = OP_SIZE(o, op_call);
+		o.type         = OPCODE_CALL;
+		o.size         = OP_SIZE(o, op_call);
 		o.op_call.func = e->call.func_name;
-		o.op_call.var = v;
+		o.op_call.var  = v;
 
 		debug_context context = {0};
 		check(e->call.parameters.size <= sizeof(o.op_call.parameters) / sizeof(variable), context, "Call parameters missized");
@@ -513,10 +513,10 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		o.op_load_member.to = v;
 
 		o.op_load_member.member_indices_size = 0;
-		expression *right = e->member.right;
-		type_id prev_struct = e->member.left->type.type;
-		type *prev_s = get_type(prev_struct);
-		o.op_load_member.member_parent_type = prev_struct;
+		expression *right                    = e->member.right;
+		type_id     prev_struct              = e->member.left->type.type;
+		type       *prev_s                   = get_type(prev_struct);
+		o.op_load_member.member_parent_type  = prev_struct;
 		o.op_load_member.member_parent_array = get_type(e->member.left->type.type)->array_size > 0 || e->member.left->type.type == tex2d_type_id;
 
 		bool parent_dynamic = e->kind == EXPRESSION_DYNAMIC_MEMBER;
@@ -529,7 +529,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				bool found = false;
 				for (size_t i = 0; i < prev_s->members.size; ++i) {
 					if (prev_s->members.m[i].name == right->member.left->variable) {
-						o.op_load_member.dynamic_member[o.op_load_member.member_indices_size] = false;
+						o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
 						o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)i;
 						++o.op_load_member.member_indices_size;
 						found = true;
@@ -539,21 +539,21 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				check(found, context, "Variable for a member not found");
 			}
 			else if (right->member.left->kind == EXPRESSION_INDEX) {
-				o.op_load_member.dynamic_member[o.op_load_member.member_indices_size] = false;
+				o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
 				o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)right->member.left->index;
 				++o.op_load_member.member_indices_size;
 			}
 			else {
-				variable sub_expression = emit_expression(code, parent, right->member.left);
-				o.op_load_member.dynamic_member[o.op_load_member.member_indices_size] = true;
+				variable sub_expression                                                       = emit_expression(code, parent, right->member.left);
+				o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]         = true;
 				o.op_load_member.dynamic_member_indices[o.op_load_member.member_indices_size] = sub_expression;
 				++o.op_load_member.member_indices_size;
 			}
 
-			prev_struct = right->member.left->type.type;
-			prev_s = get_type(prev_struct);
+			prev_struct    = right->member.left->type.type;
+			prev_s         = get_type(prev_struct);
 			parent_dynamic = right->kind == EXPRESSION_DYNAMIC_MEMBER;
-			right = right->member.right;
+			right          = right->member.right;
 		}
 
 		{
@@ -563,7 +563,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				bool found = false;
 				for (size_t i = 0; i < prev_s->members.size; ++i) {
 					if (prev_s->members.m[i].name == right->variable) {
-						o.op_load_member.dynamic_member[o.op_load_member.member_indices_size] = false;
+						o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
 						o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)i;
 						++o.op_load_member.member_indices_size;
 						found = true;
@@ -573,13 +573,13 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				check(found, context, "Member not found");
 			}
 			else if (right->kind == EXPRESSION_INDEX) {
-				o.op_load_member.dynamic_member[o.op_load_member.member_indices_size] = false;
+				o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
 				o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)right->index;
 				++o.op_load_member.member_indices_size;
 			}
 			else {
-				variable sub_expression = emit_expression(code, parent, right);
-				o.op_load_member.dynamic_member[o.op_load_member.member_indices_size] = true;
+				variable sub_expression                                                       = emit_expression(code, parent, right);
+				o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]         = true;
 				o.op_load_member.dynamic_member_indices[o.op_load_member.member_indices_size] = sub_expression;
 				++o.op_load_member.member_indices_size;
 			}
@@ -620,13 +620,13 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 		break;
 	case STATEMENT_RETURN_EXPRESSION: {
 		opcode o;
-		o.type = OPCODE_RETURN;
+		o.type     = OPCODE_RETURN;
 		variable v = emit_expression(code, parent, statement->expression);
 		if (v.index == 0) {
 			o.size = offsetof(opcode, op_return);
 		}
 		else {
-			o.size = OP_SIZE(o, op_return);
+			o.size          = OP_SIZE(o, op_return);
 			o.op_return.var = v;
 		}
 		emit_op(code, &o);
@@ -637,8 +637,8 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			variable condition;
 			variable summed_condition;
 		};
-		struct previous_condition previous_conditions[64] = {0};
-		uint8_t previous_conditions_size = 0;
+		struct previous_condition previous_conditions[64]  = {0};
+		uint8_t                   previous_conditions_size = 0;
 
 		{
 			opcode o;
@@ -657,21 +657,21 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			block_ids ids = emit_statement(code, parent, statement->iffy.if_block);
 
 			written_opcode->op_if.start_id = ids.start;
-			written_opcode->op_if.end_id = ids.end;
+			written_opcode->op_if.end_id   = ids.end;
 		}
 
 		for (uint16_t i = 0; i < statement->iffy.else_size; ++i) {
 			variable current_condition;
 			{
 				opcode o;
-				o.type = OPCODE_NOT;
-				o.size = OP_SIZE(o, op_not);
+				o.type        = OPCODE_NOT;
+				o.size        = OP_SIZE(o, op_not);
 				o.op_not.from = previous_conditions[previous_conditions_size - 1].condition;
 				type_ref t;
 				init_type_ref(&t, NO_NAME);
-				t.type = bool_id;
+				t.type            = bool_id;
 				current_condition = allocate_variable(t, VARIABLE_LOCAL);
-				o.op_not.to = current_condition;
+				o.op_not.to       = current_condition;
 				emit_op(code, &o);
 			}
 
@@ -681,14 +681,14 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			}
 			else {
 				opcode o;
-				o.type = OPCODE_AND;
-				o.size = OP_SIZE(o, op_binary);
-				o.op_binary.left = previous_conditions[previous_conditions_size - 2].summed_condition;
+				o.type            = OPCODE_AND;
+				o.size            = OP_SIZE(o, op_binary);
+				o.op_binary.left  = previous_conditions[previous_conditions_size - 2].summed_condition;
 				o.op_binary.right = current_condition;
 				type_ref t;
 				init_type_ref(&t, NO_NAME);
-				t.type = bool_id;
-				summed_condition = allocate_variable(t, VARIABLE_LOCAL);
+				t.type             = bool_id;
+				summed_condition   = allocate_variable(t, VARIABLE_LOCAL);
 				o.op_binary.result = summed_condition;
 				emit_op(code, &o);
 			}
@@ -703,14 +703,14 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 				variable else_test;
 				{
 					opcode o;
-					o.type = OPCODE_AND;
-					o.size = OP_SIZE(o, op_binary);
-					o.op_binary.left = summed_condition;
+					o.type            = OPCODE_AND;
+					o.size            = OP_SIZE(o, op_binary);
+					o.op_binary.left  = summed_condition;
 					o.op_binary.right = v;
 					type_ref t;
 					init_type_ref(&t, NO_NAME);
-					t.type = bool_id;
-					else_test = allocate_variable(t, VARIABLE_LOCAL);
+					t.type             = bool_id;
+					else_test          = allocate_variable(t, VARIABLE_LOCAL);
 					o.op_binary.result = else_test;
 					emit_op(code, &o);
 				}
@@ -730,7 +730,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 				block_ids ids = emit_statement(code, parent, statement->iffy.else_blocks[i]);
 
 				written_opcode->op_if.start_id = ids.start;
-				written_opcode->op_if.end_id = ids.end;
+				written_opcode->op_if.end_id   = ids.end;
 			}
 		}
 
@@ -746,11 +746,11 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 
 		{
 			opcode o;
-			o.type = OPCODE_WHILE_START;
-			o.op_while_start.start_id = start_id;
+			o.type                       = OPCODE_WHILE_START;
+			o.op_while_start.start_id    = start_id;
 			o.op_while_start.continue_id = continue_id;
-			o.op_while_start.end_id = end_id;
-			o.size = OP_SIZE(o, op_while_start);
+			o.op_while_start.end_id      = end_id;
+			o.size                       = OP_SIZE(o, op_while_start);
 			emit_op(code, &o);
 		}
 
@@ -762,7 +762,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			variable v = emit_expression(code, parent, statement->whiley.test);
 
 			o.op_while.condition = v;
-			o.op_while.end_id = end_id;
+			o.op_while.end_id    = end_id;
 
 			emit_op(code, &o);
 		}
@@ -771,11 +771,11 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 
 		{
 			opcode o;
-			o.type = OPCODE_WHILE_END;
-			o.op_while_end.start_id = start_id;
+			o.type                     = OPCODE_WHILE_END;
+			o.op_while_end.start_id    = start_id;
 			o.op_while_end.continue_id = continue_id;
-			o.op_while_end.end_id = end_id;
-			o.size = OP_SIZE(o, op_while_end);
+			o.op_while_end.end_id      = end_id;
+			o.size                     = OP_SIZE(o, op_while_end);
 			emit_op(code, &o);
 		}
 
@@ -791,11 +791,11 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 
 		{
 			opcode o;
-			o.type = OPCODE_WHILE_START;
-			o.op_while_start.start_id = start_id;
+			o.type                       = OPCODE_WHILE_START;
+			o.op_while_start.start_id    = start_id;
 			o.op_while_start.continue_id = continue_id;
-			o.op_while_start.end_id = end_id;
-			o.size = OP_SIZE(o, op_while_start);
+			o.op_while_start.end_id      = end_id;
+			o.size                       = OP_SIZE(o, op_while_start);
 			emit_op(code, &o);
 		}
 
@@ -809,18 +809,18 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			variable v = emit_expression(code, parent, statement->whiley.test);
 
 			o.op_while.condition = v;
-			o.op_while.end_id = end_id;
+			o.op_while.end_id    = end_id;
 
 			emit_op(code, &o);
 		}
 
 		{
 			opcode o;
-			o.type = OPCODE_WHILE_END;
-			o.op_while_end.start_id = start_id;
+			o.type                     = OPCODE_WHILE_END;
+			o.op_while_end.start_id    = start_id;
 			o.op_while_end.continue_id = continue_id;
-			o.op_while_end.end_id = end_id;
-			o.size = OP_SIZE(o, op_while_end);
+			o.op_while_end.end_id      = end_id;
+			o.size                     = OP_SIZE(o, op_while_end);
 			emit_op(code, &o);
 		}
 
@@ -828,7 +828,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 	}
 	case STATEMENT_BLOCK: {
 		for (size_t i = 0; i < statement->block.vars.size; ++i) {
-			variable var = allocate_variable(statement->block.vars.v[i].type, VARIABLE_LOCAL);
+			variable var                           = allocate_variable(statement->block.vars.v[i].type, VARIABLE_LOCAL);
 			statement->block.vars.v[i].variable_id = var.index;
 		}
 
@@ -840,9 +840,9 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 
 		{
 			opcode o;
-			o.type = OPCODE_BLOCK_START;
+			o.type        = OPCODE_BLOCK_START;
 			o.op_block.id = start_block_id;
-			o.size = OP_SIZE(o, op_block);
+			o.size        = OP_SIZE(o, op_block);
 			emit_op(code, &o);
 		}
 
@@ -852,15 +852,15 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 
 		{
 			opcode o;
-			o.type = OPCODE_BLOCK_END;
+			o.type        = OPCODE_BLOCK_END;
 			o.op_block.id = end_block_id;
-			o.size = OP_SIZE(o, op_block);
+			o.size        = OP_SIZE(o, op_block);
 			emit_op(code, &o);
 		}
 
 		block_ids ids;
 		ids.start = start_block_id;
-		ids.end = end_block_id;
+		ids.end   = end_block_id;
 		return ids;
 	}
 	case STATEMENT_LOCAL_VARIABLE: {
@@ -873,10 +873,10 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			init_var = emit_expression(code, parent, statement->local_variable.init);
 		}
 
-		variable local_var = find_local_var(parent, statement->local_variable.var.name);
+		variable local_var                        = find_local_var(parent, statement->local_variable.var.name);
 		statement->local_variable.var.variable_id = local_var.index;
-		o.op_var.var.index = statement->local_variable.var.variable_id;
-		debug_context context = {0};
+		o.op_var.var.index                        = statement->local_variable.var.variable_id;
+		debug_context context                     = {0};
 		check(statement->local_variable.var.type.type != NO_TYPE, context, "Local var has no type");
 		o.op_var.var.type = statement->local_variable.var.type;
 		emit_op(code, &o);
@@ -887,7 +887,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			o.size = OP_SIZE(o, op_store_var);
 
 			o.op_store_var.from = init_var;
-			o.op_store_var.to = local_var;
+			o.op_store_var.to   = local_var;
 
 			emit_op(code, &o);
 		}
@@ -898,7 +898,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 
 	block_ids ids;
 	ids.start = 0;
-	ids.end = 0;
+	ids.end   = 0;
 	return ids;
 }
 
@@ -908,9 +908,9 @@ void allocate_globals(void) {
 
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
-		t.type = g->type;
-		variable v = allocate_variable(t, VARIABLE_GLOBAL);
-		allocated_globals[allocated_globals_size].g = g;
+		t.type                                                = g->type;
+		variable v                                            = allocate_variable(t, VARIABLE_GLOBAL);
+		allocated_globals[allocated_globals_size].g           = g;
 		allocated_globals[allocated_globals_size].variable_id = v.index;
 		allocated_globals_size += 1;
 
@@ -929,7 +929,7 @@ void compile_function_block(opcodes *code, struct statement *block) {
 		error(context, "Expected a block");
 	}
 	for (size_t i = 0; i < block->block.vars.size; ++i) {
-		variable var = allocate_variable(block->block.vars.v[i].type, VARIABLE_LOCAL);
+		variable var                       = allocate_variable(block->block.vars.v[i].type, VARIABLE_LOCAL);
 		block->block.vars.v[i].variable_id = var.index;
 	}
 	for (size_t i = 0; i < block->block.statements.size; ++i) {

@@ -25,19 +25,22 @@ int compileHLSLToD3D9(const char *from, const char *to, const char *source, char
                       EShLanguage stage) {
 #ifdef _WIN32
 	HMODULE lib = LoadLibraryA("d3dx9_43.dll");
-	if (lib != nullptr) CompileShaderFromFileA = (D3DXCompileShaderFromFileAType)GetProcAddress(lib, "D3DXCompileShaderFromFileA");
+	if (lib != nullptr)
+		CompileShaderFromFileA = (D3DXCompileShaderFromFileAType)GetProcAddress(lib, "D3DXCompileShaderFromFileA");
 
 	if (CompileShaderFromFileA == nullptr) {
 		std::cerr << "d3dx9_43.dll could not be loaded, please install dxwebsetup." << std::endl;
 		return 1;
 	}
 
-	LPD3DXBUFFER errors;
-	LPD3DXBUFFER shader;
+	LPD3DXBUFFER        errors;
+	LPD3DXBUFFER        shader;
 	LPD3DXCONSTANTTABLE table;
-	HRESULT hr = CompileShaderFromFileA(from, nullptr, nullptr, "main", stage == EShLangVertex ? "vs_2_0" : "ps_2_0", 0, &shader, &errors, &table);
-	if (FAILED(hr)) hr = CompileShaderFromFileA(from, nullptr, nullptr, "main", stage == EShLangVertex ? "vs_3_0" : "ps_3_0", 0, &shader, &errors, &table);
-	if (errors != nullptr) std::cerr << (char *)errors->GetBufferPointer();
+	HRESULT             hr = CompileShaderFromFileA(from, nullptr, nullptr, "main", stage == EShLangVertex ? "vs_2_0" : "ps_2_0", 0, &shader, &errors, &table);
+	if (FAILED(hr))
+		hr = CompileShaderFromFileA(from, nullptr, nullptr, "main", stage == EShLangVertex ? "vs_3_0" : "ps_3_0", 0, &shader, &errors, &table);
+	if (errors != nullptr)
+		std::cerr << (char *)errors->GetBufferPointer();
 	if (!FAILED(hr)) {
 		std::ofstream file(to, std::ios_base::binary);
 
@@ -52,11 +55,12 @@ int compileHLSLToD3D9(const char *from, const char *to, const char *source, char
 		table->GetDesc(&desc);
 		file.put(desc.Constants);
 		for (UINT i = 0; i < desc.Constants; ++i) {
-			D3DXHANDLE handle = table->GetConstant(nullptr, i);
+			D3DXHANDLE        handle = table->GetConstant(nullptr, i);
 			D3DXCONSTANT_DESC descriptions[10];
-			UINT count = 10;
+			UINT              count = 10;
 			table->GetConstantDesc(handle, descriptions, &count);
-			if (count > 1) std::cerr << "Error: Number of descriptors for one constant is greater than one." << std::endl;
+			if (count > 1)
+				std::cerr << "Error: Number of descriptors for one constant is greater than one." << std::endl;
 			for (UINT i2 = 0; i2 < count; ++i2) {
 				char regtype;
 				switch (descriptions[i2].RegisterSet) {

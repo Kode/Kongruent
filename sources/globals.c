@@ -4,7 +4,7 @@
 
 #include <assert.h>
 
-static global globals[1024];
+static global    globals[1024];
 static global_id globals_size = 0;
 
 void globals_init(void) {
@@ -156,10 +156,10 @@ void globals_init(void) {
 }
 
 global_id add_global(type_id type, attribute_list attributes, name_id name) {
-	uint32_t index = globals_size;
-	globals[index].name = name;
-	globals[index].type = type;
-	globals[index].var_index = 0;
+	uint32_t index            = globals_size;
+	globals[index].name       = name;
+	globals[index].type       = type;
+	globals[index].var_index  = 0;
 	globals[index].value.kind = GLOBAL_VALUE_NONE;
 	globals[index].attributes = attributes;
 	globals[index].sets_count = 0;
@@ -168,11 +168,11 @@ global_id add_global(type_id type, attribute_list attributes, name_id name) {
 }
 
 global_id add_global_with_value(type_id type, attribute_list attributes, name_id name, global_value value) {
-	uint32_t index = globals_size;
-	globals[index].name = name;
-	globals[index].type = type;
-	globals[index].var_index = 0;
-	globals[index].value = value;
+	uint32_t index            = globals_size;
+	globals[index].name       = name;
+	globals[index].type       = type;
+	globals[index].var_index  = 0;
+	globals[index].value      = value;
 	globals[index].attributes = attributes;
 	globals[index].sets_count = 0;
 	globals_size += 1;

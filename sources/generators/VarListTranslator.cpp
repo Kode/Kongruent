@@ -15,9 +15,9 @@ namespace {
 	};
 
 	struct Type {
-		char name[256];
+		char     name[256];
 		unsigned length;
-		bool isarray;
+		bool     isarray;
 
 		Type() : length(1), isarray(false) {
 			strcpy(name, "unknown");
@@ -25,10 +25,10 @@ namespace {
 	};
 
 	struct Variable {
-		unsigned id;
-		unsigned type;
+		unsigned     id;
+		unsigned     type;
 		StorageClass storage;
-		bool builtin;
+		bool         builtin;
 
 		Variable() : builtin(false) {}
 	};
@@ -36,40 +36,40 @@ namespace {
 	void namesAndTypes(Instruction &inst, std::map<unsigned, Name> &names, std::map<unsigned, Type> &types) {
 		switch (inst.opcode) {
 		case OpTypePointer: {
-			Type t;
-			unsigned id = inst.operands[0];
-			Type subtype = types[inst.operands[2]];
+			Type     t;
+			unsigned id      = inst.operands[0];
+			Type     subtype = types[inst.operands[2]];
 			strcpy(t.name, subtype.name);
 			t.isarray = subtype.isarray;
-			t.length = subtype.length;
+			t.length  = subtype.length;
 			types[id] = t;
 			break;
 		}
 		case OpTypeFloat: {
-			Type t;
+			Type     t;
 			unsigned id = inst.operands[0];
 			strcpy(t.name, "float");
 			types[id] = t;
 			break;
 		}
 		case OpTypeInt: {
-			Type t;
+			Type     t;
 			unsigned id = inst.operands[0];
 			strcpy(t.name, "int");
 			types[id] = t;
 			break;
 		}
 		case OpTypeBool: {
-			Type t;
+			Type     t;
 			unsigned id = inst.operands[0];
 			strcpy(t.name, "bool");
 			types[id] = t;
 			break;
 		}
 		case OpTypeStruct: {
-			Type t;
+			Type     t;
 			unsigned id = inst.operands[0];
-			Name n = names[id];
+			Name     n  = names[id];
 			strcpy(t.name, n.name);
 			types[id] = t;
 			break;
@@ -77,9 +77,9 @@ namespace {
 		case OpTypeArray: {
 			Type t;
 			strcpy(t.name, "[]");
-			t.isarray = true;
-			unsigned id = inst.operands[0];
-			Type subtype = types[inst.operands[1]];
+			t.isarray        = true;
+			unsigned id      = inst.operands[0];
+			Type     subtype = types[inst.operands[1]];
 			if (subtype.name != NULL) {
 				strcpy(t.name, subtype.name);
 				strcat(t.name, "[]");
@@ -88,7 +88,7 @@ namespace {
 			break;
 		}
 		case OpTypeVector: {
-			Type t;
+			Type     t;
 			unsigned id = inst.operands[0];
 			strcpy(t.name, "vec?");
 			Type subtype = types[inst.operands[1]];
@@ -110,31 +110,31 @@ namespace {
 			break;
 		}
 		case OpTypeMatrix: {
-			Type t;
+			Type     t;
 			unsigned id = inst.operands[0];
 			strcpy(t.name, "mat?");
 			Type subtype = types[inst.operands[1]];
 			if (subtype.name != NULL) {
 				if (strcmp(subtype.name, "vec3") == 0 && inst.operands[2] == 3) {
 					strcpy(t.name, "mat3");
-					t.length = 4;
+					t.length  = 4;
 					types[id] = t;
 				}
 				else if (strcmp(subtype.name, "vec4") == 0 && inst.operands[2] == 4) {
 					strcpy(t.name, "mat4");
-					t.length = 4;
+					t.length  = 4;
 					types[id] = t;
 				}
 			}
 			break;
 		}
 		case OpTypeImage: {
-			Type t;
-			unsigned id = inst.operands[0];
-			int dim = inst.operands[2] + 1;
-			bool depth = inst.operands[3] != 0;
-			bool arrayed = inst.operands[4] != 0;
-			bool video = inst.length >= 8 && inst.operands[8] == 1;
+			Type     t;
+			unsigned id      = inst.operands[0];
+			int      dim     = inst.operands[2] + 1;
+			bool     depth   = inst.operands[3] != 0;
+			bool     arrayed = inst.operands[4] != 0;
+			bool     video   = inst.length >= 8 && inst.operands[8] == 1;
 			if (video) {
 				strcpy(t.name, "samplerVideo");
 			}
@@ -165,17 +165,17 @@ namespace {
 			break;
 		}
 		case OpTypeSampledImage: {
-			Type t;
-			unsigned id = inst.operands[0];
+			Type     t;
+			unsigned id    = inst.operands[0];
 			unsigned image = inst.operands[1];
-			types[id] = types[image];
+			types[id]      = types[image];
 			break;
 		}
 		case OpName: {
 			unsigned id = inst.operands[0];
 			if (strcmp(inst.string, "") != 0) {
 				Name n;
-				n.name = inst.string;
+				n.name    = inst.string;
 				names[id] = n;
 			}
 			break;
@@ -186,13 +186,13 @@ namespace {
 
 void VarListTranslator::outputCode(const Target &target, const char *sourcefilename, const char *filename, char *output,
                                    std::map<std::string, int> &attributes) {
-	std::map<unsigned, Name> names;
-	std::map<unsigned, Variable> variables;
-	std::map<unsigned, Type> types;
+	std::map<unsigned, Name>                      names;
+	std::map<unsigned, Variable>                  variables;
+	std::map<unsigned, Type>                      types;
 	std::map<unsigned, std::vector<std::string> > memberNames;
 
 	std::streambuf *buf;
-	std::ofstream of;
+	std::ofstream   of;
 
 	if (strcmp(filename, "--") != 0) {
 		of.open(filename, std::ios::binary | std::ios::out);
@@ -232,9 +232,9 @@ void VarListTranslator::outputCode(const Target &target, const char *sourcefilen
 			namesAndTypes(inst, names, types);
 			break;
 		case OpTypeStruct: {
-			Type t;
+			Type     t;
 			unsigned id = inst.operands[0];
-			Name n = names[id];
+			Name     n  = names[id];
 			strcpy(t.name, n.name);
 			types[id] = t;
 			out << "type " << n.name;
@@ -246,9 +246,9 @@ void VarListTranslator::outputCode(const Target &target, const char *sourcefilen
 			break;
 		}
 		case OpMemberName: {
-			unsigned id = inst.operands[0];
+			unsigned id     = inst.operands[0];
 			unsigned number = inst.operands[1];
-			char name[256];
+			char     name[256];
 			strcpy(name, (char *)&inst.operands[2]);
 			while (memberNames[id].size() <= number) {
 				memberNames[id].push_back("");
@@ -258,12 +258,12 @@ void VarListTranslator::outputCode(const Target &target, const char *sourcefilen
 		}
 		case OpVariable: {
 			Type resultType = types[inst.operands[0]];
-			id result = inst.operands[1];
-			types[result] = resultType;
-			Variable &v = variables[result];
-			v.id = result;
-			v.type = inst.operands[0];
-			v.storage = (StorageClass)inst.operands[2];
+			id   result     = inst.operands[1];
+			types[result]   = resultType;
+			Variable &v     = variables[result];
+			v.id            = result;
+			v.type          = inst.operands[0];
+			v.storage       = (StorageClass)inst.operands[2];
 
 			if (names.find(result) != names.end()) {
 				if (v.storage == StorageClassUniformConstant) {
@@ -292,9 +292,9 @@ void VarListTranslator::outputCode(const Target &target, const char *sourcefilen
 }
 
 void VarListTranslator::print() {
-	std::map<unsigned, Name> names;
-	std::map<unsigned, Variable> variables;
-	std::map<unsigned, Type> types;
+	std::map<unsigned, Name>                      names;
+	std::map<unsigned, Variable>                  variables;
+	std::map<unsigned, Type>                      types;
 	std::map<unsigned, std::vector<std::string> > memberNames;
 
 	switch (stage) {
@@ -325,24 +325,25 @@ void VarListTranslator::print() {
 			namesAndTypes(inst, names, types);
 			break;
 		case OpTypeStruct: {
-			Type t;
+			Type     t;
 			unsigned id = inst.operands[0];
-			Name n = names[id];
+			Name     n  = names[id];
 			strcpy(t.name, n.name);
 			types[id] = t;
 			std::cerr << "#type:" << n.name << ":{";
 			for (unsigned i = 1; i < inst.length; i++) {
 				Type &type = types[inst.operands[i]];
 				std::cerr << memberNames[id][i - 1] << ":" << type.name;
-				if (i < inst.length - 1) std::cerr << ",";
+				if (i < inst.length - 1)
+					std::cerr << ",";
 			}
 			std::cerr << "}" << std::endl;
 			break;
 		}
 		case OpMemberName: {
-			unsigned id = inst.operands[0];
+			unsigned id     = inst.operands[0];
 			unsigned number = inst.operands[1];
-			char name[256];
+			char     name[256];
 			strcpy(name, (char *)&inst.operands[2]);
 			while (memberNames[id].size() <= number) {
 				memberNames[id].push_back("");
@@ -352,12 +353,12 @@ void VarListTranslator::print() {
 		}
 		case OpVariable: {
 			Type resultType = types[inst.operands[0]];
-			id result = inst.operands[1];
-			types[result] = resultType;
-			Variable &v = variables[result];
-			v.id = result;
-			v.type = inst.operands[0];
-			v.storage = (StorageClass)inst.operands[2];
+			id   result     = inst.operands[1];
+			types[result]   = resultType;
+			Variable &v     = variables[result];
+			v.id            = result;
+			v.type          = inst.operands[0];
+			v.storage       = (StorageClass)inst.operands[2];
 
 			if (names.find(result) != names.end()) {
 				std::string storage;

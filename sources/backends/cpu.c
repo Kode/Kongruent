@@ -148,7 +148,7 @@ static void write_code(char *code, char *header_code, char *directory, const cha
 
 static void write_types(char *code, size_t *offset, function *main, uint8_t simd_width) {
 	type_id types[256];
-	size_t types_size = 0;
+	size_t  types_size = 0;
 	find_referenced_types(main, types, &types_size);
 
 	for (size_t i = 0; i < types_size; ++i) {
@@ -168,13 +168,13 @@ static void write_types(char *code, size_t *offset, function *main, uint8_t simd
 
 static void write_globals(char *code, size_t *offset, char *header_code, size_t *header_offset, function *main) {
 	global_id globals[256];
-	size_t globals_size = 0;
+	size_t    globals_size = 0;
 	find_referenced_globals(main, globals, &globals_size);
 
 	for (size_t i = 0; i < globals_size; ++i) {
 		global *g = get_global(globals[i]);
 
-		type *t = get_type(g->type);
+		type   *t         = get_type(g->type);
 		type_id base_type = t->array_size > 0 ? t->base : g->type;
 
 		if (base_type == sampler_type_id) {
@@ -284,7 +284,7 @@ static const char *type_to_mini(type_ref t) {
 
 static void write_functions(char *code, const char *name, size_t *offset, function *main, uint8_t simd_width) {
 	function *functions[256];
-	size_t functions_size = 0;
+	size_t    functions_size = 0;
 
 	functions[functions_size] = main;
 	functions_size += 1;
@@ -298,7 +298,7 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 		check(f->block != NULL, context, "Function has no block");
 
 		uint8_t *data = f->code.o;
-		size_t size = f->code.size;
+		size_t   size = f->code.size;
 
 		uint64_t parameter_ids[256] = {0};
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
@@ -702,8 +702,8 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 					for (int simd_index = 0; simd_index < 4; ++simd_index) {
 						indent(code, offset, indentation);
 						*offset += sprintf(&code[*offset], "_%" PRIu64, o->op_store_member.to.index);
-						type *s = get_type(o->op_store_member.member_parent_type);
-						bool is_array = o->op_store_member.member_parent_array;
+						type *s        = get_type(o->op_store_member.member_parent_type);
+						bool  is_array = o->op_store_member.member_parent_array;
 						for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
 							if (is_array) {
 								if (o->op_store_member.dynamic_member[i]) {
@@ -721,7 +721,7 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 								check(o->op_store_member.static_member_indices[i] < s->members.size, context, "Member index out of bounds");
 								*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.static_member_indices[i]].name));
 								is_array = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type)->array_size > 0;
-								s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
+								s        = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
 							}
 						}
 
@@ -827,7 +827,7 @@ static void cpu_export_compute(char *directory, function *main) {
 
 void cpu_export(char *directory) {
 	function *compute_shaders[256];
-	size_t compute_shaders_size = 0;
+	size_t    compute_shaders_size = 0;
 
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);

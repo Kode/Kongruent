@@ -7,7 +7,7 @@
 
 void error_args(debug_context context, const char *message, va_list args) {
 	char buffer[4096];
-	int offset;
+	int  offset;
 	if (context.filename != NULL) {
 		offset = sprintf(buffer, "In column %i at line %i in %s: ", context.column + 1, context.line + 1, context.filename);
 	}

@@ -4,10 +4,10 @@ using namespace krafix;
 
 Instruction::Instruction(std::vector<unsigned> &spirv, unsigned &index) {
 	int wordCount = spirv[index] >> 16;
-	opcode = (Opcode)(spirv[index] & 0xffff);
+	opcode        = (Opcode)(spirv[index] & 0xffff);
 
 	operands = wordCount > 1 ? &spirv[index + 1] : NULL;
-	length = wordCount - 1;
+	length   = wordCount - 1;
 
 	switch (opcode) {
 	case OpString:
@@ -41,11 +41,11 @@ Translator::Translator(std::vector<unsigned> &spirv, ShaderStage stage) : stage(
 	}
 
 	unsigned index = 0;
-	magicNumber = spirv[index++];
-	version = spirv[index++];
-	generator = spirv[index++];
-	bound = spirv[index++];
-	schema = spirv[index++];
+	magicNumber    = spirv[index++];
+	version        = spirv[index++];
+	generator      = spirv[index++];
+	bound          = spirv[index++];
+	schema         = spirv[index++];
 
 	while (index < spirv.size()) {
 		instructions.push_back(Instruction(spirv, index));

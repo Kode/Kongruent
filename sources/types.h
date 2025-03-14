@@ -11,21 +11,21 @@
 typedef uint32_t type_id;
 
 typedef struct unresolved_type_ref {
-	name_id name;
+	name_id  name;
 	uint32_t array_size;
 } unresolved_type_ref;
 
 typedef struct type_ref {
-	type_id type;
+	type_id             type;
 	unresolved_type_ref unresolved;
 } type_ref;
 
 void init_type_ref(type_ref *t, name_id name);
 
 typedef struct member {
-	name_id name;
+	name_id  name;
 	type_ref type;
-	token value;
+	token    value;
 } member;
 
 #define MAX_MEMBERS 1024
@@ -37,13 +37,13 @@ typedef struct members {
 
 typedef struct attribute {
 	name_id name;
-	double parameters[16];
+	double  parameters[16];
 	uint8_t paramters_count;
 } attribute;
 
 typedef struct attributes {
 	attribute attributes[64];
-	uint8_t attributes_count;
+	uint8_t   attributes_count;
 } attribute_list;
 
 bool has_attribute(attribute_list *attributes, name_id name);
@@ -52,12 +52,12 @@ attribute *find_attribute(attribute_list *attributes, name_id name);
 
 typedef struct type {
 	attribute_list attributes;
-	name_id name;
-	bool built_in;
+	name_id        name;
+	bool           built_in;
 
 	members members;
 
-	type_id base;
+	type_id  base;
 	uint32_t array_size;
 } type;
 

@@ -186,7 +186,7 @@ static bool types_compatible(type_id left, type_id right) {
 }
 
 static type_ref upgrade_type(type_ref left_type, type_ref right_type) {
-	type_id left = left_type.type;
+	type_id left  = left_type.type;
 	type_id right = right_type.type;
 
 	if (left == right) {
@@ -332,7 +332,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		}
 		case OPERATOR_MULTIPLY:
 		case OPERATOR_MULTIPLY_ASSIGN: {
-			type_id left_type = e->binary.left->type.type;
+			type_id left_type  = e->binary.left->type.type;
 			type_id right_type = e->binary.right->type.type;
 			if ((left_type == float4x4_id && right_type == float4_id) || (left_type == float3x3_id && right_type == float3_id)) {
 				e->type = e->binary.right->type;
@@ -353,7 +353,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		case OPERATOR_PLUS:
 		case OPERATOR_DIVIDE:
 		case OPERATOR_MOD: {
-			type_id left_type = e->binary.left->type.type;
+			type_id left_type  = e->binary.left->type.type;
 			type_id right_type = e->binary.right->type.type;
 			if (!types_compatible(left_type, right_type)) {
 				debug_context context = {0};
@@ -366,7 +366,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		case OPERATOR_DIVIDE_ASSIGN:
 		case OPERATOR_MINUS_ASSIGN:
 		case OPERATOR_PLUS_ASSIGN: {
-			type_id left_type = e->binary.left->type.type;
+			type_id left_type  = e->binary.left->type.type;
 			type_id right_type = e->binary.right->type.type;
 			if (!types_compatible(left_type, right_type)) {
 				debug_context context = {0};
@@ -436,7 +436,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		else {
 			type_ref type = find_local_var_type(&parent->block, e->variable);
 			if (type.type == NO_TYPE) {
-				type = find_local_var_type(&parent->block, e->variable);
+				type                  = find_local_var_type(&parent->block, e->variable);
 				debug_context context = {0};
 				error(context, "Variable %s not found", get_name(e->variable));
 			}
@@ -521,7 +521,7 @@ void resolve_types_in_block(statement *parent, statement *block) {
 			break;
 		}
 		case STATEMENT_LOCAL_VARIABLE: {
-			name_id var_name = s->local_variable.var.name;
+			name_id var_name      = s->local_variable.var.name;
 			name_id var_type_name = s->local_variable.var.type.unresolved.name;
 
 			if (s->local_variable.var.type.type == NO_TYPE && var_type_name != NO_NAME) {
@@ -551,7 +551,7 @@ void resolve_types(void) {
 		type *s = get_type(i);
 		for (size_t j = 0; j < s->members.size; ++j) {
 			if (s->members.m[j].type.type == NO_TYPE) {
-				name_id name = s->members.m[j].type.unresolved.name;
+				name_id name              = s->members.m[j].type.unresolved.name;
 				s->members.m[j].type.type = find_type_by_name(name);
 				if (s->members.m[j].type.type == NO_TYPE) {
 					debug_context context = {0};
@@ -566,7 +566,7 @@ void resolve_types(void) {
 
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 			if (f->parameter_types[parameter_index].type == NO_TYPE) {
-				name_id parameter_type_name = f->parameter_types[parameter_index].unresolved.name;
+				name_id parameter_type_name              = f->parameter_types[parameter_index].unresolved.name;
 				f->parameter_types[parameter_index].type = find_type_by_name(parameter_type_name);
 				if (f->parameter_types[parameter_index].type == NO_TYPE) {
 					debug_context context = {0};
@@ -577,7 +577,7 @@ void resolve_types(void) {
 
 		if (f->return_type.type == NO_TYPE) {
 			name_id return_type_name = f->return_type.unresolved.name;
-			f->return_type.type = find_type_by_name(return_type_name);
+			f->return_type.type      = find_type_by_name(return_type_name);
 			if (f->return_type.type == NO_TYPE) {
 				debug_context context = {0};
 				error(context, "Could not find type %s for %s", get_name(return_type_name), get_name(f->name));
@@ -594,8 +594,8 @@ void resolve_types(void) {
 		}
 
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
-			f->block->block.vars.v[f->block->block.vars.size].name = f->parameter_names[parameter_index];
-			f->block->block.vars.v[f->block->block.vars.size].type = f->parameter_types[parameter_index];
+			f->block->block.vars.v[f->block->block.vars.size].name        = f->parameter_names[parameter_index];
+			f->block->block.vars.v[f->block->block.vars.size].type        = f->parameter_types[parameter_index];
 			f->block->block.vars.v[f->block->block.vars.size].variable_id = 0;
 			++f->block->block.vars.size;
 		}

@@ -12,62 +12,62 @@ namespace krafix {
 
 	typedef enum {
 		kSampledImageUnknown = 0,
-		kSampledImageYes = 1,
-		kSampledImageNo = 2,
+		kSampledImageYes     = 1,
+		kSampledImageNo      = 2,
 	} SampledImage;
 
 	struct Variable {
-		unsigned id;
-		unsigned type;
-		BuiltIn builtinType;
+		unsigned     id;
+		unsigned     type;
+		BuiltIn      builtinType;
 		StorageClass storage;
-		signed location;
-		unsigned descriptorSet;
-		unsigned binding;
-		unsigned offset;
-		unsigned stride;
-		bool isPerInstance;
-		bool builtin;
-		bool declared;
+		signed       location;
+		unsigned     descriptorSet;
+		unsigned     binding;
+		unsigned     offset;
+		unsigned     stride;
+		bool         isPerInstance;
+		bool         builtin;
+		bool         declared;
 
 		Variable() : id(0), type(0), builtin(false), location(-1), descriptorSet(0), binding(0), offset(0), stride(0), isPerInstance(false) {}
 	};
 
 	struct Type {
-		int opcode;
-		std::string name;
-		unsigned baseType;
-		unsigned length;
-		unsigned byteSize;
-		SampledImage sampledImage;
-		Dim imageDim;
-		bool isDepthImage;
-		bool isMultiSampledImage;
-		bool isarray;
-		bool ispointer;
+		int                                               opcode;
+		std::string                                       name;
+		unsigned                                          baseType;
+		unsigned                                          length;
+		unsigned                                          byteSize;
+		SampledImage                                      sampledImage;
+		Dim                                               imageDim;
+		bool                                              isDepthImage;
+		bool                                              isMultiSampledImage;
+		bool                                              isarray;
+		bool                                              ispointer;
 		std::map<unsigned, std::pair<std::string, Type> > members;
 
 		Type() {
-			opcode = OpNop;
-			name = "unknown";
-			baseType = 0;
-			length = 1;
-			byteSize = 0;
-			isarray = false;
-			ispointer = false;
-			sampledImage = kSampledImageUnknown;
-			imageDim = Dim2D;
-			isDepthImage = false;
+			opcode              = OpNop;
+			name                = "unknown";
+			baseType            = 0;
+			length              = 1;
+			byteSize            = 0;
+			isarray             = false;
+			ispointer           = false;
+			sampledImage        = kSampledImageUnknown;
+			imageDim            = Dim2D;
+			isDepthImage        = false;
 			isMultiSampledImage = false;
 		}
 	};
 
 	struct Member {
-		unsigned type;
+		unsigned    type;
 		const char *name;
-		BuiltIn builtinType;
-		bool builtin;
-		bool isColumnMajor;
+		BuiltIn     builtinType;
+		bool        builtin;
+		bool        isColumnMajor;
 
 		Member() : name("unknown"), isColumnMajor(true) {}
 	};
@@ -77,12 +77,12 @@ namespace krafix {
 	};
 
 	struct Parameter {
-		Type type;
+		Type     type;
 		unsigned id;
 	};
 
 	struct Function {
-		std::string name;
+		std::string       name;
 		std::stringstream text;
 	};
 
@@ -90,43 +90,43 @@ namespace krafix {
 		bool loop;
 	};
 
-#define ExecutionModeDefault ((ExecutionMode)-1)
+#define ExecutionModeDefault ((ExecutionMode) - 1)
 
 	struct ExecutionModes {
-		unsigned invocationCount;
+		unsigned      invocationCount;
 		ExecutionMode spacingType;
 		ExecutionMode vertexOrder;
 		ExecutionMode originOrientation;
 		ExecutionMode depthModificationType;
 		ExecutionMode primitiveType;
 		ExecutionMode outputPrimitiveType;
-		unsigned localSize[3];
-		unsigned localSizeHint[3];
-		unsigned maxVertexCount;
-		unsigned vectorTypeHint;
-		bool usePixelCenterInteger;
-		bool useEarlyFragmentTests;
-		bool useTessellationPoints;
-		bool useTransformFeedback;
-		bool useDepthModification;
-		bool disallowContractions;
+		unsigned      localSize[3];
+		unsigned      localSizeHint[3];
+		unsigned      maxVertexCount;
+		unsigned      vectorTypeHint;
+		bool          usePixelCenterInteger;
+		bool          useEarlyFragmentTests;
+		bool          useTessellationPoints;
+		bool          useTransformFeedback;
+		bool          useDepthModification;
+		bool          disallowContractions;
 
 		ExecutionModes() : localSize{0, 0, 0}, localSizeHint{0, 0, 0} {
-			invocationCount = 1;
-			spacingType = ExecutionModeDefault;
-			vertexOrder = ExecutionModeDefault;
-			originOrientation = ExecutionModeDefault;
+			invocationCount       = 1;
+			spacingType           = ExecutionModeDefault;
+			vertexOrder           = ExecutionModeDefault;
+			originOrientation     = ExecutionModeDefault;
 			depthModificationType = ExecutionModeDefault;
-			primitiveType = ExecutionModeDefault;
-			outputPrimitiveType = ExecutionModeDefault;
-			maxVertexCount = 0;
-			vectorTypeHint = 0;
+			primitiveType         = ExecutionModeDefault;
+			outputPrimitiveType   = ExecutionModeDefault;
+			maxVertexCount        = 0;
+			vectorTypeHint        = 0;
 			usePixelCenterInteger = false;
 			useEarlyFragmentTests = false;
 			useTessellationPoints = false;
-			useTransformFeedback = false;
-			useDepthModification = false;
-			disallowContractions = false;
+			useTransformFeedback  = false;
+			useDepthModification  = false;
+			disallowContractions  = false;
 		}
 	};
 
@@ -136,65 +136,65 @@ namespace krafix {
 		virtual ~CStyleTranslator();
 		virtual void outputInstruction(const Target &target, std::map<std::string, int> &attributes, Instruction &inst);
 		virtual void outputLibraryInstruction(const Target &target, std::map<std::string, int> &attributes, Instruction &inst, GLSLstd450 entrypoint);
-		void startFunction(std::string name);
-		void endFunction();
+		void         startFunction(std::string name);
+		void         endFunction();
 
 	protected:
-		std::ostream *out;
-		std::map<unsigned, Name> names;
-		std::map<unsigned, std::string> uniqueNames;
-		std::map<unsigned, Type> types;
-		std::map<unsigned, Variable> variables;
-		std::map<unsigned, Member> members;
-		std::map<unsigned, std::string> labelStarts;
-		std::map<unsigned, Merge> merges;
-		std::map<unsigned, std::string> references;
+		std::ostream                              *out;
+		std::map<unsigned, Name>                   names;
+		std::map<unsigned, std::string>            uniqueNames;
+		std::map<unsigned, Type>                   types;
+		std::map<unsigned, Variable>               variables;
+		std::map<unsigned, Member>                 members;
+		std::map<unsigned, std::string>            labelStarts;
+		std::map<unsigned, Merge>                  merges;
+		std::map<unsigned, std::string>            references;
 		std::map<unsigned, std::vector<unsigned> > compositeInserts;
-		std::vector<Parameter> parameters;
-		std::vector<unsigned> callParameters;
-		std::string tempNamePrefix = "kfxT";
-		ExecutionModes executionModes;
-		int indentation = 0;
-		bool outputting = false;
-		bool firstFunction = true;
-		std::string funcName;
-		std::string funcType;
-		bool firstLabel = true;
-		unsigned entryPoint = -1;
-		unsigned vtxIdVarId = -1;
-		unsigned instIdVarId = -1;
-		unsigned tempNameIndex;
-		std::vector<Function *> functions;
-		std::ostream *tempout = NULL;
+		std::vector<Parameter>                     parameters;
+		std::vector<unsigned>                      callParameters;
+		std::string                                tempNamePrefix = "kfxT";
+		ExecutionModes                             executionModes;
+		int                                        indentation   = 0;
+		bool                                       outputting    = false;
+		bool                                       firstFunction = true;
+		std::string                                funcName;
+		std::string                                funcType;
+		bool                                       firstLabel  = true;
+		unsigned                                   entryPoint  = -1;
+		unsigned                                   vtxIdVarId  = -1;
+		unsigned                                   instIdVarId = -1;
+		unsigned                                   tempNameIndex;
+		std::vector<Function *>                    functions;
+		std::ostream                              *tempout = NULL;
 
-		void preprocessInstruction(ShaderStage stage, Instruction &inst);
+		void                preprocessInstruction(ShaderStage stage, Instruction &inst);
 		virtual std::string indexName(Type &type, const std::vector<std::string> &indices);
-		std::string indexName(Type &type, const std::vector<unsigned> &indices);
-		void indent(std::ostream *out);
-		void output(std::ostream *out);
+		std::string         indexName(Type &type, const std::vector<unsigned> &indices);
+		void                indent(std::ostream *out);
+		void                output(std::ostream *out);
 		virtual std::string getReference(unsigned _id);
-		inline unsigned getMemberId(unsigned typeId, unsigned member) {
-			return (typeId << 16) + member;
+		inline unsigned     getMemberId(unsigned typeId, unsigned member) {
+            return (typeId << 16) + member;
 		}
-		void addUniqueName(unsigned id, const char *name);
+		void         addUniqueName(unsigned id, const char *name);
 		virtual void extractImageOperands(ImageOperandsArray &imageOperands, Instruction &inst, unsigned opIdxStart);
 		std::string &getUniqueName(unsigned id, const char *prefix);
 		std::string &getVariableName(unsigned id);
 		std::string &getFunctionName(unsigned id);
-		std::string makeTempName(unsigned id);
-		std::string getNextTempName();
-		unsigned getBaseTypeID(unsigned typeID);
-		Type &getBaseType(unsigned typeID);
-		std::string outputTempVar(std::ostream *out, std::string &tmpTypeName, const std::string &rhs);
+		std::string  makeTempName(unsigned id);
+		std::string  getNextTempName();
+		unsigned     getBaseTypeID(unsigned typeID);
+		Type        &getBaseType(unsigned typeID);
+		std::string  outputTempVar(std::ostream *out, std::string &tmpTypeName, const std::string &rhs);
 
 		// Preprocessed
-		bool isFragDepthUsed = false;
-		bool isFragDataUsed = false;
-		int fragDataNameId = -1;
+		bool                  isFragDepthUsed = false;
+		bool                  isFragDataUsed  = false;
+		int                   fragDataNameId  = -1;
 		std::vector<unsigned> fragDataIndexIds;
-		bool isTextureLodUsed = false;
-		bool isDerivativesUsed = false;
-		bool isTransposeUsed = false;
-		bool isMatrixInverseUsed = false;
+		bool                  isTextureLodUsed    = false;
+		bool                  isDerivativesUsed   = false;
+		bool                  isTransposeUsed     = false;
+		bool                  isMatrixInverseUsed = false;
 	};
 }

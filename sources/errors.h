@@ -17,15 +17,15 @@ extern "C" {
 
 typedef struct debug_context {
 	const char *filename;
-	uint32_t column;
-	uint32_t line;
+	uint32_t    column;
+	uint32_t    line;
 } debug_context;
 
 noreturn void error(debug_context context, const char *message, ...);
 noreturn void error_args(debug_context context, const char *message, va_list args);
-void check_function(bool test, debug_context context, const char *message, ...);
-#define check(test, context, message, ...)                                                                                                                     \
-	assert(test);                                                                                                                                              \
+void          check_function(bool test, debug_context context, const char *message, ...);
+#define check(test, context, message, ...) \
+	assert(test);                          \
 	check_function(test, context, message, ##__VA_ARGS__)
 void check_args(bool test, debug_context context, const char *message, va_list args);
 

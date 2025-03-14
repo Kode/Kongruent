@@ -57,8 +57,8 @@ int compile_hlsl_to_d3d12(const char *source, uint8_t **output, size_t *outputle
 	};
 
 	DxcBuffer source_buffer;
-	source_buffer.Ptr = source;
-	source_buffer.Size = strlen(source);
+	source_buffer.Ptr      = source;
+	source_buffer.Size     = strlen(source);
 	source_buffer.Encoding = DXC_CP_ACP; // assume BOM says UTF8 or UTF16 or this is ANSI text
 
 	CComPtr<IDxcResult> compiler_result;
@@ -81,15 +81,15 @@ int compile_hlsl_to_d3d12(const char *source, uint8_t **output, size_t *outputle
 	compiler_result->GetStatus(&result);
 
 	if (result == S_OK) {
-		CComPtr<IDxcBlob> shader_buffer = nullptr;
-		CComPtr<IDxcBlobUtf16> shader_name = nullptr;
+		CComPtr<IDxcBlob>      shader_buffer = nullptr;
+		CComPtr<IDxcBlobUtf16> shader_name   = nullptr;
 		compiler_result->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shader_buffer), &shader_name);
 		if (shader_buffer == nullptr) {
 			return 1;
 		}
 		else {
 			*outputlength = shader_buffer->GetBufferSize();
-			*output = (uint8_t *)malloc(*outputlength);
+			*output       = (uint8_t *)malloc(*outputlength);
 			memcpy(*output, shader_buffer->GetBufferPointer(), shader_buffer->GetBufferSize());
 		}
 

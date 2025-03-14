@@ -15,7 +15,7 @@ directory open_dir(const char *dirname) {
 	strcat(pattern, "\\*");
 
 	WIN32_FIND_DATAA data;
-	directory dir;
+	directory        dir;
 	dir.handle = FindFirstFileA(pattern, &data);
 	if (dir.handle == INVALID_HANDLE_VALUE) {
 		kong_log(LOG_LEVEL_ERROR, "FindFirstFile failed (%d)\n", GetLastError());
@@ -27,7 +27,7 @@ directory open_dir(const char *dirname) {
 
 file read_next_file(directory *dir) {
 	WIN32_FIND_DATAA data;
-	file file;
+	file             file;
 	file.valid = FindNextFileA(dir->handle, &data) != 0;
 	if (file.valid) {
 		strcpy(file.name, data.cFileName);

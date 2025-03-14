@@ -113,8 +113,8 @@ void CStyleTranslator::addUniqueName(unsigned id, const char *name) {
 			if (iter->first != id) { // If BOTH ID and name are same, leave it
 				char idStr[32];
 				_itoa(id, idStr, 10);
-				uqName = uqName + idStr;  // Otherwise make the name unique...
-				uniqueNames[id] = uqName; // ...and add it
+				uqName          = uqName + idStr; // Otherwise make the name unique...
+				uniqueNames[id] = uqName;         // ...and add it
 			}
 			return;
 		}
@@ -132,7 +132,7 @@ std::string &CStyleTranslator::getUniqueName(unsigned id, const char *prefix) {
 	if (uqName == "") {
 		char idStr[32];
 		_itoa(id, idStr, 10);
-		uqName = uqName + idStr; // Otherwise make the name unique...
+		uqName          = uqName + idStr; // Otherwise make the name unique...
 		uniqueNames[id] = uqName;
 	}
 	return uqName;
@@ -145,9 +145,9 @@ std::string &CStyleTranslator::getVariableName(unsigned id) {
 
 std::string &CStyleTranslator::getFunctionName(unsigned id) {
 	std::string &funcName = getUniqueName(id, "func");
-	size_t endPos = funcName.find_first_of('(');
+	size_t       endPos   = funcName.find_first_of('(');
 	if (endPos != std::string::npos) {
-		funcName = funcName.substr(0, endPos);
+		funcName        = funcName.substr(0, endPos);
 		uniqueNames[id] = funcName;
 	}
 	return funcName;
@@ -196,9 +196,11 @@ std::string CStyleTranslator::indexName(Type &type, const std::vector<std::strin
 	std::stringstream str;
 	for (unsigned i = 0; i < indices.size(); ++i) {
 		int numindex = -1;
-		if (indices[i][0] >= '0' && indices[i][0] <= '9') numindex = atoi(indices[i].c_str());
+		if (indices[i][0] >= '0' && indices[i][0] <= '9')
+			numindex = atoi(indices[i].c_str());
 		if (numindex >= 0 && (!type.isarray || i > 0) && type.members.find(numindex) != type.members.end()) {
-			if (strncmp(type.name.c_str(), "gl_", 3) != 0 || i > 0) str << ".";
+			if (strncmp(type.name.c_str(), "gl_", 3) != 0 || i > 0)
+				str << ".";
 			str << std::get<0>(type.members[numindex]);
 		}
 		else {
@@ -233,9 +235,9 @@ std::string CStyleTranslator::getReference(id _id) {
 }
 
 void CStyleTranslator::startFunction(std::string name) {
-	tempout = out;
+	tempout        = out;
 	Function *func = new Function;
-	func->name = name;
+	func->name     = name;
 	functions.push_back(func);
 	out = &func->text;
 }
@@ -243,7 +245,7 @@ void CStyleTranslator::startFunction(std::string name) {
 void CStyleTranslator::endFunction() {
 	// guard against an end func not matched to a previous start func
 	if (tempout) {
-		out = tempout;
+		out     = tempout;
 		tempout = NULL;
 	}
 }
@@ -263,9 +265,9 @@ void CStyleTranslator::extractImageOperands(ImageOperandsArray &imageOperands, I
 	// and add the reference string derived from the cooresponding operand ID.
 	// Operand ID's are pulled from the list of instruction operands in the order
 	// of the active bit mask bit positions.
-	unsigned opIdx = opIdxStart;
-	unsigned imgOps = inst.operands[opIdx++];
-	unsigned opShCnt = (unsigned)imageOperands.size();
+	unsigned    opIdx   = opIdxStart;
+	unsigned    imgOps  = inst.operands[opIdx++];
+	unsigned    opShCnt = (unsigned)imageOperands.size();
 	std::string imgOpArgs;
 	for (unsigned opShIdx = 0; opShIdx < opShCnt; opShIdx++) {
 		imgOpArgs.clear();
@@ -302,24 +304,24 @@ void CStyleTranslator::outputLibraryInstruction(const Target &target, std::map<s
 		break;
 	}
 	case GLSLstd450FClamp: {
-		id x = inst.operands[4];
-		id minVal = inst.operands[5];
-		id maxVal = inst.operands[6];
+		id                x      = inst.operands[4];
+		id                minVal = inst.operands[5];
+		id                maxVal = inst.operands[6];
 		std::stringstream str;
 		str << "clamp(" << getReference(x) << ", " << getReference(minVal) << ", " << getReference(maxVal) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Pow: {
-		id x = inst.operands[4];
-		id y = inst.operands[5];
+		id                x = inst.operands[4];
+		id                y = inst.operands[5];
 		std::stringstream str;
 		str << "pow(" << getReference(x) << ", " << getReference(y) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450InverseSqrt: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "inversesqrt(" << getReference(x) << ")";
 		references[result] = str.str();
@@ -332,50 +334,50 @@ void CStyleTranslator::outputLibraryInstruction(const Target &target, std::map<s
 		break;
 	}
 	case GLSLstd450Cross: {
-		id x = inst.operands[4];
-		id y = inst.operands[5];
+		id                x = inst.operands[4];
+		id                y = inst.operands[5];
 		std::stringstream str;
 		str << "cross(" << getReference(x) << ", " << getReference(y) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Sin: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "sin(" << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Cos: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "cos(" << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Tan: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "tan(" << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Asin: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "asin(" << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Sqrt: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "sqrt(" << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Length: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "length(" << getReference(x) << ")"; // TODO
 		references[result] = str.str();
@@ -389,58 +391,58 @@ void CStyleTranslator::outputLibraryInstruction(const Target &target, std::map<s
 	}
 	case GLSLstd450Distance: {
 		std::stringstream str;
-		id p0 = inst.operands[4];
-		id p1 = inst.operands[5];
+		id                p0 = inst.operands[4];
+		id                p1 = inst.operands[5];
 		str << "distance(" << getReference(p0) << ", " << getReference(p1) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450FMix: {
 		std::stringstream str;
-		id x = inst.operands[4];
-		id y = inst.operands[5];
-		id a = inst.operands[6];
+		id                x = inst.operands[4];
+		id                y = inst.operands[5];
+		id                a = inst.operands[6];
 		str << "mix(" << getReference(x) << ", " << getReference(y) << ", " << getReference(a) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Floor: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "floor(" << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Exp: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "exp(" << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Log2: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "log2(" << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450FSign: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "sign(" << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Ceil: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "ceil(" << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Fract: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "fract(" << getReference(x) << ")";
 		references[result] = str.str();
@@ -448,77 +450,77 @@ void CStyleTranslator::outputLibraryInstruction(const Target &target, std::map<s
 	}
 	case GLSLstd450FMax: {
 		std::stringstream str;
-		id p0 = inst.operands[4];
-		id p1 = inst.operands[5];
+		id                p0 = inst.operands[4];
+		id                p1 = inst.operands[5];
 		str << "max(" << getReference(p0) << ", " << getReference(p1) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Step: {
 		std::stringstream str;
-		id edge = inst.operands[4];
-		id x = inst.operands[5];
+		id                edge = inst.operands[4];
+		id                x    = inst.operands[5];
 		str << "step(" << getReference(edge) << ", " << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450SmoothStep: {
 		std::stringstream str;
-		id edge0 = inst.operands[4];
-		id edge1 = inst.operands[5];
-		id x = inst.operands[6];
+		id                edge0 = inst.operands[4];
+		id                edge1 = inst.operands[5];
+		id                x     = inst.operands[6];
 		str << "smoothstep(" << getReference(edge0) << ", " << getReference(edge1) << ", " << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Reflect: {
 		std::stringstream str;
-		id I = inst.operands[4];
-		id N = inst.operands[5];
+		id                I = inst.operands[4];
+		id                N = inst.operands[5];
 		str << "reflect(" << getReference(I) << ", " << getReference(N) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Refract: {
 		std::stringstream str;
-		id I = inst.operands[4];
-		id N = inst.operands[5];
-		id eta = inst.operands[6];
+		id                I   = inst.operands[4];
+		id                N   = inst.operands[5];
+		id                eta = inst.operands[6];
 		str << "refract(" << getReference(I) << ", " << getReference(N) << ", " << getReference(eta) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Acos: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "acos(" << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Atan: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "atan(" << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Atan2: {
-		id y = inst.operands[4];
-		id x = inst.operands[5];
+		id                y = inst.operands[4];
+		id                x = inst.operands[5];
 		std::stringstream str;
 		str << "atan(" << getReference(y) << ", " << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450MatrixInverse: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "inverse(" << getReference(x) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case GLSLstd450Determinant: {
-		id x = inst.operands[4];
+		id                x = inst.operands[4];
 		std::stringstream str;
 		str << "determinant(" << getReference(x) << ")";
 		references[result] = str.str();
@@ -535,7 +537,7 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 	switch (inst.opcode) {
 
 	case OpName: {
-		unsigned id = inst.operands[0];
+		unsigned    id   = inst.operands[0];
 		const char *name = inst.string;
 
 		Name n;
@@ -553,90 +555,90 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		break;
 	}
 	case OpTypePointer: {
-		unsigned id = inst.operands[0];
+		unsigned id      = inst.operands[0];
 		unsigned reftype = inst.operands[2];
-		Type t = types[reftype]; // Pass through referenced type
-		t.opcode = inst.opcode;  // ...except OpCode...
-		t.baseType = reftype;    // ...and base type
-		t.ispointer = true;      // ...and pointer indicator
-		types[id] = t;
-		names[id] = names[inst.operands[2]];
+		Type     t       = types[reftype]; // Pass through referenced type
+		t.opcode         = inst.opcode;    // ...except OpCode...
+		t.baseType       = reftype;        // ...and base type
+		t.ispointer      = true;           // ...and pointer indicator
+		types[id]        = t;
+		names[id]        = names[inst.operands[2]];
 		break;
 	}
 	case OpTypeVoid: {
 		unsigned id = inst.operands[0];
-		Type &t = types[id];
-		t.opcode = inst.opcode;
-		t.name = "void";
+		Type    &t  = types[id];
+		t.opcode    = inst.opcode;
+		t.name      = "void";
 		break;
 	}
 	case OpTypeFloat: {
 		unsigned id = inst.operands[0];
-		Type &t = types[id];
-		t.opcode = inst.opcode;
-		t.name = "float";
-		t.byteSize = 4;
+		Type    &t  = types[id];
+		t.opcode    = inst.opcode;
+		t.name      = "float";
+		t.byteSize  = 4;
 		break;
 	}
 	case OpTypeInt: {
 		unsigned id = inst.operands[0];
-		Type &t = types[id];
-		t.opcode = inst.opcode;
-		t.name = "int";
-		t.byteSize = 4;
+		Type    &t  = types[id];
+		t.opcode    = inst.opcode;
+		t.name      = "int";
+		t.byteSize  = 4;
 		break;
 	}
 	case OpTypeBool: {
 		unsigned id = inst.operands[0];
-		Type &t = types[id];
-		t.opcode = inst.opcode;
-		t.name = "bool";
-		t.byteSize = 1;
+		Type    &t  = types[id];
+		t.opcode    = inst.opcode;
+		t.name      = "bool";
+		t.byteSize  = 1;
 		break;
 	}
 	case OpTypeStruct: {
 		unsigned typeId = inst.operands[0];
-		Type &t = types[typeId];
-		t.opcode = inst.opcode;
-		t.name = names[typeId].name;
+		Type    &t      = types[typeId];
+		t.opcode        = inst.opcode;
+		t.name          = names[typeId].name;
 		unsigned mbrCnt = inst.length - 1;
-		t.length = mbrCnt;
+		t.length        = mbrCnt;
 		for (unsigned mbrIdx = 0, opIdx = 1; mbrIdx < mbrCnt; mbrIdx++, opIdx++) {
-			unsigned mbrId = getMemberId(typeId, mbrIdx);
-			unsigned mbrTypeId = inst.operands[opIdx];
+			unsigned mbrId      = getMemberId(typeId, mbrIdx);
+			unsigned mbrTypeId  = inst.operands[opIdx];
 			members[mbrId].type = mbrTypeId;
-			Type &mbrType = types[mbrTypeId];
+			Type &mbrType       = types[mbrTypeId];
 			t.byteSize += mbrType.byteSize;
 		}
 
 		for (unsigned i = 1; i < inst.length; ++i) {
-			Type &membertype = types[inst.operands[i]];
+			Type &membertype              = types[inst.operands[i]];
 			std::get<1>(t.members[i - 1]) = membertype;
 		}
 		break;
 	}
 	case OpMemberName: {
 		if (strcmp(inst.string, "") != 0) {
-			unsigned typeId = inst.operands[0];
-			unsigned member = inst.operands[1];
-			unsigned mbrId = getMemberId(typeId, member);
+			unsigned typeId     = inst.operands[0];
+			unsigned member     = inst.operands[1];
+			unsigned mbrId      = getMemberId(typeId, member);
 			members[mbrId].name = inst.string;
-			references[mbrId] = inst.string;
+			references[mbrId]   = inst.string;
 
-			Type &type = types[inst.operands[0]];
+			Type &type                        = types[inst.operands[0]];
 			std::get<0>(type.members[member]) = (char *)&inst.operands[2];
 		}
 		break;
 	}
 	case OpMemberDecorate: {
-		unsigned typeId = inst.operands[0];
-		unsigned member = inst.operands[1];
-		unsigned mbrId = getMemberId(typeId, member);
+		unsigned   typeId     = inst.operands[0];
+		unsigned   member     = inst.operands[1];
+		unsigned   mbrId      = getMemberId(typeId, member);
 		Decoration decoration = (Decoration)inst.operands[2];
 		switch (decoration) {
 		case DecorationBuiltIn: {
-			Member &mbr = members[mbrId];
-			mbr.builtin = true;
+			Member &mbr     = members[mbrId];
+			mbr.builtin     = true;
 			mbr.builtinType = (BuiltIn)inst.operands[3];
 			break;
 		}
@@ -652,15 +654,16 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		break;
 	}
 	case OpConstant: {
-		Type resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
+		Type resultType   = types[inst.operands[0]];
+		id   result       = inst.operands[1];
+		types[result]     = resultType;
 		std::string value = "unknown";
 		if (resultType.name == "float") {
-			float f = *(float *)&inst.operands[2];
+			float             f = *(float *)&inst.operands[2];
 			std::stringstream strvalue;
 			strvalue << f;
-			if (strvalue.str().find_first_of(".e") == std::string::npos) strvalue << ".0";
+			if (strvalue.str().find_first_of(".e") == std::string::npos)
+				strvalue << ".0";
 			value = strvalue.str();
 		}
 		if (resultType.name == "int") {
@@ -672,28 +675,29 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		break;
 	}
 	case OpConstantTrue: {
-		Type resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
+		Type resultType    = types[inst.operands[0]];
+		id   result        = inst.operands[1];
+		types[result]      = resultType;
 		references[result] = "true";
 		break;
 	}
 	case OpConstantFalse: {
-		Type resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
+		Type resultType    = types[inst.operands[0]];
+		id   result        = inst.operands[1];
+		types[result]      = resultType;
 		references[result] = "false";
 		break;
 	}
 	case OpConstantComposite: {
 		Type resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
+		id   result     = inst.operands[1];
+		types[result]   = resultType;
 		std::stringstream str;
 		str << resultType.name << "(";
 		for (unsigned i = 2; i < inst.length; ++i) {
 			str << getReference(inst.operands[i]);
-			if (i < inst.length - 1) str << ", ";
+			if (i < inst.length - 1)
+				str << ", ";
 		}
 		str << ")";
 		references[result] = str.str();
@@ -747,81 +751,81 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		break;
 	}
 	case OpTypeArray: {
-		unsigned id = inst.operands[0];
-		Type &t = types[id];
-		t.opcode = inst.opcode;
-		t.name = "unknownarray";
-		t.isarray = true;
+		unsigned id   = inst.operands[0];
+		Type    &t    = types[id];
+		t.opcode      = inst.opcode;
+		t.name        = "unknownarray";
+		t.isarray     = true;
 		Type &subtype = types[inst.operands[1]];
-		t.length = atoi(references[inst.operands[2]].c_str());
+		t.length      = atoi(references[inst.operands[2]].c_str());
 		if (subtype.name != "") {
 			t.name = subtype.name;
 		}
-		t.members = subtype.members;
+		t.members  = subtype.members;
 		t.byteSize = subtype.byteSize * t.length;
 		break;
 	}
 	case OpTypeVector: {
-		unsigned id = inst.operands[0];
-		Type &t = types[id];
-		t.opcode = inst.opcode;
-		t.name = "vec?";
+		unsigned id  = inst.operands[0];
+		Type    &t   = types[id];
+		t.opcode     = inst.opcode;
+		t.name       = "vec?";
 		Type subtype = types[inst.operands[1]];
 		if (subtype.name == "int" && inst.operands[2] == 2) {
-			t.name = "ivec2";
+			t.name   = "ivec2";
 			t.length = 2;
 		}
 		else if (subtype.name == "int" && inst.operands[2] == 3) {
-			t.name = "ivec3";
+			t.name   = "ivec3";
 			t.length = 3;
 		}
 		else if (subtype.name == "int" && inst.operands[2] == 4) {
-			t.name = "ivec4";
+			t.name   = "ivec4";
 			t.length = 4;
 		}
 		else if (subtype.name == "float" && inst.operands[2] == 2) {
-			t.name = "vec2";
+			t.name   = "vec2";
 			t.length = 2;
 		}
 		else if (subtype.name == "float" && inst.operands[2] == 3) {
-			t.name = "vec3";
+			t.name   = "vec3";
 			t.length = 3;
 		}
 		else if (subtype.name == "float" && inst.operands[2] == 4) {
-			t.name = "vec4";
+			t.name   = "vec4";
 			t.length = 4;
 		}
 		else if (subtype.name == "bool" && inst.operands[2] == 2) {
-			t.name = "bvec2";
+			t.name   = "bvec2";
 			t.length = 2;
 		}
 		else if (subtype.name == "bool" && inst.operands[2] == 3) {
-			t.name = "bvec3";
+			t.name   = "bvec3";
 			t.length = 3;
 		}
 		else if (subtype.name == "bool" && inst.operands[2] == 4) {
-			t.name = "bvec4";
+			t.name   = "bvec4";
 			t.length = 4;
 		}
 		t.byteSize = subtype.byteSize * t.length;
 		break;
 	}
 	case OpTypeMatrix: {
-		unsigned id = inst.operands[0];
-		Type &t = types[id];
-		t.opcode = inst.opcode;
-		t.name = "mat?";
+		unsigned id  = inst.operands[0];
+		Type    &t   = types[id];
+		t.opcode     = inst.opcode;
+		t.name       = "mat?";
 		Type subtype = types[inst.operands[1]];
 		if (subtype.name == "vec2" && inst.operands[2] == 2) {
-			t.name = "mat2";
+			t.name   = "mat2";
 			t.length = 4;
 		}
 		if (subtype.name == "vec3" && inst.operands[2] == 3) {
-			t.name = "mat3";
+			t.name   = "mat3";
 			t.length = 4;
 		}
 		else if (subtype.name == "vec4" && inst.operands[2] == 4) {
-			t.name = "mat4";
+			t.name   = "mat4";
 			t.length = 4;
 		}
 		t.byteSize = subtype.byteSize * t.length;
@@ -829,10 +833,10 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 	}
 	case OpTypeImage: {
 		unsigned id = inst.operands[0];
-		Type &t = types[id];
-		t.opcode = inst.opcode;
-		bool video = inst.length >= 8 && inst.operands[8] == 1;
-		bool depth = inst.length >= 3 && inst.operands[3] == 1;
+		Type    &t  = types[id];
+		t.opcode    = inst.opcode;
+		bool video  = inst.length >= 8 && inst.operands[8] == 1;
+		bool depth  = inst.length >= 3 && inst.operands[3] == 1;
 		if (video && target.system == Android) {
 			t.name = "samplerExternalOES";
 		}
@@ -853,23 +857,23 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		break;
 	}
 	case OpTypeSampledImage: {
-		unsigned id = inst.operands[0];
+		unsigned id    = inst.operands[0];
 		unsigned image = inst.operands[1];
-		Type t = types[image];  // Pass through image type...
-		t.opcode = inst.opcode; // ...except OpCode...
-		t.baseType = image;     // ...and base type
-		types[id] = t;
+		Type     t     = types[image]; // Pass through image type...
+		t.opcode       = inst.opcode;  // ...except OpCode...
+		t.baseType     = image;        // ...and base type
+		types[id]      = t;
 		break;
 	}
 	case OpVariable: {
 		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		Variable &v = variables[result];
-		v.id = result;
-		v.type = inst.operands[0];
-		v.storage = (StorageClass)inst.operands[2];
-		v.declared = true; // v.storage == StorageClassInput || v.storage == StorageClassOutput || v.storage == StorageClassUniformConstant;
+		id    result     = inst.operands[1];
+		types[result]    = resultType;
+		Variable &v      = variables[result];
+		v.id             = result;
+		v.type           = inst.operands[0];
+		v.storage        = (StorageClass)inst.operands[2];
+		v.declared       = true; // v.storage == StorageClassInput || v.storage == StorageClassOutput || v.storage == StorageClassUniformConstant;
 		if (names.find(result) != names.end()) {
 			if (target.version >= 300 && v.storage == StorageClassOutput && stage == StageFragment) {
 				if (isFragDepthUsed)
@@ -881,7 +885,8 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 			}
 			std::stringstream name;
 			name << names[result].name;
-			if (v.storage == StorageClassFunction && getReference(result) != "param") name << "_" << result;
+			if (v.storage == StorageClassFunction && getReference(result) != "param")
+				name << "_" << result;
 			references[result] = name.str();
 		}
 		if (v.storage == StorageClassFunction && getReference(result) != "param") {
@@ -898,11 +903,11 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 	}
 	case OpPhi: {
 		Type resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
+		id   result     = inst.operands[1];
+		types[result]   = resultType;
 
 		std::string rsltRef = getReference(result); // Combining these two lines can cause race...
-		references[result] = rsltRef;               // ...condition during template optimization
+		references[result]  = rsltRef;              // ...condition during template optimization
 
 		output(out);
 		(*out) << resultType.name << " " << rsltRef << ";\n";
@@ -911,11 +916,12 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 
 		for (unsigned i = 2; i < inst.length; i += 2) {
 			id variable = inst.operands[i];
-			id parent = inst.operands[i + 1];
+			id parent   = inst.operands[i + 1];
 
 			if (labelStarts.find(parent) != labelStarts.end()) {
 				indent(out);
-				if (!first) (*out) << "else ";
+				if (!first)
+					(*out) << "else ";
 				(*out) << labelStarts[parent] << "\n";
 				++indentation;
 				indent(out);
@@ -928,7 +934,7 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 
 		for (unsigned i = 2; i < inst.length; i += 2) {
 			id variable = inst.operands[i];
-			id parent = inst.operands[i + 1];
+			id parent   = inst.operands[i + 1];
 
 			if (labelStarts.find(parent) == labelStarts.end()) {
 				indent(out);
@@ -943,11 +949,11 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		break;
 	}
 	case OpCompositeExtract: {
-		Type resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id composite = inst.operands[2];
-		std::stringstream str;
+		Type resultType                 = types[inst.operands[0]];
+		id   result                     = inst.operands[1];
+		types[result]                   = resultType;
+		id                    composite = inst.operands[2];
+		std::stringstream     str;
 		std::vector<unsigned> indices;
 		for (unsigned i = 3; i < inst.length; ++i) {
 			indices.push_back(inst.operands[i]);
@@ -958,17 +964,17 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 	}
 	case OpVectorShuffle: {
 		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id vector1 = inst.operands[2];
+		id    result     = inst.operands[1];
+		types[result]    = resultType;
+		id vector1       = inst.operands[2];
 		id vector1length = types[vector1].length;
-		id vector2 = inst.operands[3];
+		id vector2       = inst.operands[3];
 		id vector2length = types[vector2].length;
 
 		std::stringstream str;
 		str << resultType.name << "(";
 		for (unsigned i = 4; i < inst.length; ++i) {
-			id index = inst.operands[i];
+			id                    index = inst.operands[i];
 			std::vector<unsigned> indices1;
 			indices1.push_back(index);
 			std::vector<unsigned> indices2;
@@ -977,192 +983,193 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 				str << getReference(vector1) << indexName(types[vector1], indices1);
 			else
 				str << getReference(vector2) << indexName(types[vector2], indices2);
-			if (i < inst.length - 1) str << ", ";
+			if (i < inst.length - 1)
+				str << ", ";
 		}
 		str << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpFMul: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id operand1 = inst.operands[2];
-		id operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		id                operand1 = inst.operands[2];
+		id                operand2 = inst.operands[3];
 		std::stringstream str;
 		str << "(" << getReference(operand1) << " * " << getReference(operand2) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpIMul: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id operand1 = inst.operands[2];
-		id operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		id                operand1 = inst.operands[2];
+		id                operand2 = inst.operands[3];
 		std::stringstream str;
 		str << "(" << getReference(operand1) << " * " << getReference(operand2) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpFAdd: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id operand1 = inst.operands[2];
-		id operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		id                operand1 = inst.operands[2];
+		id                operand2 = inst.operands[3];
 		std::stringstream str;
 		str << "(" << getReference(operand1) << " + " << getReference(operand2) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpMatrixTimesMatrix: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id operand1 = inst.operands[2];
-		id operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		id                operand1 = inst.operands[2];
+		id                operand2 = inst.operands[3];
 		std::stringstream str;
 		str << "(" << getReference(operand1) << " * " << getReference(operand2) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpMatrixTimesScalar: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id matrix = inst.operands[2];
-		id scalar = inst.operands[3];
+		Type &resultType         = types[inst.operands[0]];
+		id    result             = inst.operands[1];
+		types[result]            = resultType;
+		id                matrix = inst.operands[2];
+		id                scalar = inst.operands[3];
 		std::stringstream str;
 		str << "(" << getReference(matrix) << " * " << getReference(scalar) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpVectorTimesScalar: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id vector = inst.operands[2];
-		id scalar = inst.operands[3];
+		Type &resultType         = types[inst.operands[0]];
+		id    result             = inst.operands[1];
+		types[result]            = resultType;
+		id                vector = inst.operands[2];
+		id                scalar = inst.operands[3];
 		std::stringstream str;
 		str << "(" << getReference(vector) << " * " << getReference(scalar) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpFOrdGreaterThan: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id op1 = inst.operands[2];
-		id op2 = inst.operands[3];
+		Type &resultType      = types[inst.operands[0]];
+		id    result          = inst.operands[1];
+		types[result]         = resultType;
+		id                op1 = inst.operands[2];
+		id                op2 = inst.operands[3];
 		std::stringstream str;
 		str << "(" << getReference(op1) << " > " << getReference(op2) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpFOrdLessThanEqual: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id op1 = inst.operands[2];
-		id op2 = inst.operands[3];
+		Type &resultType      = types[inst.operands[0]];
+		id    result          = inst.operands[1];
+		types[result]         = resultType;
+		id                op1 = inst.operands[2];
+		id                op2 = inst.operands[3];
 		std::stringstream str;
 		str << "(" << getReference(op1) << " <= " << getReference(op2) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpFOrdNotEqual: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id op1 = inst.operands[2];
-		id op2 = inst.operands[3];
+		Type &resultType      = types[inst.operands[0]];
+		id    result          = inst.operands[1];
+		types[result]         = resultType;
+		id                op1 = inst.operands[2];
+		id                op2 = inst.operands[3];
 		std::stringstream str;
 		str << "(" << getReference(op1) << " != " << getReference(op2) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpSGreaterThan: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		unsigned operand1 = inst.operands[2];
-		unsigned operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		unsigned          operand1 = inst.operands[2];
+		unsigned          operand2 = inst.operands[3];
 		std::stringstream str;
 		str << getReference(operand1) << " > " << getReference(operand2);
 		references[result] = str.str();
 		break;
 	}
 	case OpSGreaterThanEqual: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		unsigned operand1 = inst.operands[2];
-		unsigned operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		unsigned          operand1 = inst.operands[2];
+		unsigned          operand2 = inst.operands[3];
 		std::stringstream str;
 		str << getReference(operand1) << " >= " << getReference(operand2);
 		references[result] = str.str();
 		break;
 	}
 	case OpLogicalAnd: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id op1 = inst.operands[2];
-		id op2 = inst.operands[3];
+		Type &resultType      = types[inst.operands[0]];
+		id    result          = inst.operands[1];
+		types[result]         = resultType;
+		id                op1 = inst.operands[2];
+		id                op2 = inst.operands[3];
 		std::stringstream str;
 		str << "(" << getReference(op1) << " && " << getReference(op2) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpFSub: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id op1 = inst.operands[2];
-		id op2 = inst.operands[3];
+		Type &resultType      = types[inst.operands[0]];
+		id    result          = inst.operands[1];
+		types[result]         = resultType;
+		id                op1 = inst.operands[2];
+		id                op2 = inst.operands[3];
 		std::stringstream str;
 		str << "(" << getReference(op1) << " - " << getReference(op2) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpDot: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id op1 = inst.operands[2];
-		id op2 = inst.operands[3];
+		Type &resultType      = types[inst.operands[0]];
+		id    result          = inst.operands[1];
+		types[result]         = resultType;
+		id                op1 = inst.operands[2];
+		id                op2 = inst.operands[3];
 		std::stringstream str;
 		str << "dot(" << getReference(op1) << ", " << getReference(op2) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpFDiv: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id op1 = inst.operands[2];
-		id op2 = inst.operands[3];
+		Type &resultType      = types[inst.operands[0]];
+		id    result          = inst.operands[1];
+		types[result]         = resultType;
+		id                op1 = inst.operands[2];
+		id                op2 = inst.operands[3];
 		std::stringstream str;
 		str << "(" << getReference(op1) << " / " << getReference(op2) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpVectorTimesMatrix: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id vector = inst.operands[2];
-		id matrix = inst.operands[3];
+		Type &resultType         = types[inst.operands[0]];
+		id    result             = inst.operands[1];
+		types[result]            = resultType;
+		id                vector = inst.operands[2];
+		id                matrix = inst.operands[3];
 		std::stringstream str;
 		str << "(" << getReference(vector) << " * " << getReference(matrix) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpConvertSToF: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		id value = inst.operands[2];
+		Type             &resultType = types[inst.operands[0]];
+		id                result     = inst.operands[1];
+		id                value      = inst.operands[2];
 		std::stringstream str;
 		if (resultType.length > 1) {
 			str << "vec" << resultType.length << "(" << getReference(value) << ")";
@@ -1174,33 +1181,33 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		break;
 	}
 	case OpTranspose: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id matrix = inst.operands[2];
+		Type &resultType         = types[inst.operands[0]];
+		id    result             = inst.operands[1];
+		types[result]            = resultType;
+		id                matrix = inst.operands[2];
 		std::stringstream str;
 		str << "transpose(" << getReference(matrix) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpSelect: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id condition = inst.operands[2];
-		id obj1 = inst.operands[3];
-		id obj2 = inst.operands[4];
+		Type &resultType            = types[inst.operands[0]];
+		id    result                = inst.operands[1];
+		types[result]               = resultType;
+		id                condition = inst.operands[2];
+		id                obj1      = inst.operands[3];
+		id                obj2      = inst.operands[4];
 		std::stringstream str;
 		str << "(" << getReference(condition) << " ? " << getReference(obj1) << " : " << getReference(obj2) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpCompositeInsert: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id object = inst.operands[2];
-		id composite = inst.operands[3];
+		Type &resultType            = types[inst.operands[0]];
+		id    result                = inst.operands[1];
+		types[result]               = resultType;
+		id                object    = inst.operands[2];
+		id                composite = inst.operands[3];
 		std::stringstream str;
 		str << getReference(object);
 		references[result] = str.str();
@@ -1212,17 +1219,18 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		break;
 	}
 	case OpFunctionCall: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id func = inst.operands[2];
+		Type &resultType     = types[inst.operands[0]];
+		id    result         = inst.operands[1];
+		types[result]        = resultType;
+		id          func     = inst.operands[2];
 		std::string funcname = names[func].name;
-		funcname = funcname.substr(0, funcname.find_first_of('('));
+		funcname             = funcname.substr(0, funcname.find_first_of('('));
 		std::stringstream str;
 		str << funcname << "(";
 		for (unsigned i = 3; i < inst.length; ++i) {
 			str << getReference(inst.operands[i]);
-			if (i < inst.length - 1) str << ", ";
+			if (i < inst.length - 1)
+				str << ", ";
 		}
 		str << ")";
 		references[result] = str.str();
@@ -1230,9 +1238,9 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 	}
 	case OpExtInst: {
 		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id set = inst.operands[2];
+		id    result     = inst.operands[1];
+		types[result]    = resultType;
+		id set           = inst.operands[2];
 		{
 			GLSLstd450 instruction = (GLSLstd450)inst.operands[3];
 			outputLibraryInstruction(target, attributes, inst, instruction);
@@ -1242,7 +1250,7 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 	case OpFunctionParameter: {
 		Parameter param;
 		param.type = types[inst.operands[0]];
-		param.id = inst.operands[1];
+		param.id   = inst.operands[1];
 		parameters.push_back(param);
 		if (names.find(param.id) != names.end()) {
 			references[param.id] = names[param.id].name;
@@ -1283,34 +1291,34 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 	}
 	case OpSelectionMerge: {
 		output(out);
-		id label = inst.operands[0];
+		id       label     = inst.operands[0];
 		unsigned selection = inst.operands[1];
 		(*out) << "// Merge " << label << " " << selection;
 		Merge merge;
-		merge.loop = false;
+		merge.loop    = false;
 		merges[label] = merge;
 		break;
 	}
 	case OpLoopMerge: {
 		output(out);
-		id label = inst.operands[0];
+		id       label     = inst.operands[0];
 		unsigned selection = inst.operands[1];
 		(*out) << "// Merge " << label << " " << selection;
 		Merge merge;
-		merge.loop = true;
+		merge.loop    = true;
 		merges[label] = merge;
 		break;
 	}
 	case OpBranchConditional: {
-		id condition = inst.operands[0];
-		id trueLabel = inst.operands[1];
+		id condition  = inst.operands[0];
+		id trueLabel  = inst.operands[1];
 		id falseLabel = inst.operands[2];
 
 		bool foundMerge = false;
-		bool loop = false;
+		bool loop       = false;
 		if (merges.find(falseLabel) != merges.end()) {
 			foundMerge = true;
-			loop = merges[falseLabel].loop;
+			loop       = merges[falseLabel].loop;
 		}
 
 		std::stringstream _true;
@@ -1322,7 +1330,8 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		if (!foundMerge) {
 			std::stringstream str;
 			str << "}\n";
-			for (int i = 0; i < indentation; ++i) str << "\t";
+			for (int i = 0; i < indentation; ++i)
+				str << "\t";
 			str << "else";
 			labelStarts[falseLabel] = str.str();
 		}
@@ -1334,12 +1343,12 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		break;
 	}
 	case OpDecorate: {
-		unsigned target = inst.operands[0];
+		unsigned   target     = inst.operands[0];
 		Decoration decoration = (Decoration)inst.operands[1];
 		switch (decoration) {
 		case DecorationBuiltIn: {
-			Variable &var = variables[target];
-			var.builtin = true;
+			Variable &var   = variables[target];
+			var.builtin     = true;
 			var.builtinType = (BuiltIn)inst.operands[2];
 			if (var.builtinType == BuiltInVertexId) {
 				vtxIdVarId = target;
@@ -1365,109 +1374,110 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 	}
 	case OpTypeFunction: {
 		unsigned id = inst.operands[0];
-		Type &t = types[id];
-		t.opcode = inst.opcode;
-		t.name = "function";
+		Type    &t  = types[id];
+		t.opcode    = inst.opcode;
+		t.name      = "function";
 		break;
 	}
 	case OpIEqual: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		unsigned operand1 = inst.operands[2];
-		unsigned operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		unsigned          operand1 = inst.operands[2];
+		unsigned          operand2 = inst.operands[3];
 		std::stringstream str;
 		str << getReference(operand1) << " == " << getReference(operand2);
 		references[result] = str.str();
 		break;
 	}
 	case OpIAdd: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		unsigned operand1 = inst.operands[2];
-		unsigned operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		unsigned          operand1 = inst.operands[2];
+		unsigned          operand2 = inst.operands[3];
 		std::stringstream str;
 		str << getReference(operand1) << " + " << getReference(operand2);
 		references[result] = str.str();
 		break;
 	}
 	case OpFOrdLessThan: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		unsigned operand1 = inst.operands[2];
-		unsigned operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		unsigned          operand1 = inst.operands[2];
+		unsigned          operand2 = inst.operands[3];
 		std::stringstream str;
 		str << getReference(operand1) << " < " << getReference(operand2);
 		references[result] = str.str();
 		break;
 	}
 	case OpSLessThan: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		unsigned operand1 = inst.operands[2];
-		unsigned operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		unsigned          operand1 = inst.operands[2];
+		unsigned          operand2 = inst.operands[3];
 		std::stringstream str;
 		str << getReference(operand1) << " < " << getReference(operand2);
 		references[result] = str.str();
 		break;
 	}
 	case OpSLessThanEqual: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		unsigned operand1 = inst.operands[2];
-		unsigned operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		unsigned          operand1 = inst.operands[2];
+		unsigned          operand2 = inst.operands[3];
 		std::stringstream str;
 		str << getReference(operand1) << " <= " << getReference(operand2);
 		references[result] = str.str();
 		break;
 	}
 	case OpFNegate: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		unsigned operand = inst.operands[2];
+		Type &resultType          = types[inst.operands[0]];
+		id    result              = inst.operands[1];
+		types[result]             = resultType;
+		unsigned          operand = inst.operands[2];
 		std::stringstream str;
 		str << "-" << getReference(operand);
 		references[result] = str.str();
 		break;
 	}
 	case OpBitcast: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id operand = inst.operands[2];
+		Type &resultType   = types[inst.operands[0]];
+		id    result       = inst.operands[1];
+		types[result]      = resultType;
+		id operand         = inst.operands[2];
 		references[result] = references[operand];
 		break;
 	}
 	case OpConvertUToF: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id value = inst.operands[2];
+		Type &resultType        = types[inst.operands[0]];
+		id    result            = inst.operands[1];
+		types[result]           = resultType;
+		id                value = inst.operands[2];
 		std::stringstream str;
 		str << "float(" << getReference(value) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpAccessChain: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id base = inst.operands[2];
+		Type &resultType       = types[inst.operands[0]];
+		id    result           = inst.operands[1];
+		types[result]          = resultType;
+		id                base = inst.operands[2];
 		std::stringstream str;
-		std::string test = getReference(base);
+		std::string       test = getReference(base);
 		if (target.lang == HLSL && stage == StageGeometry && getReference(base) == "g_gl_in") {
 			str << "gl_Position";
 		}
 		else if (strncmp(types[base].name.c_str(), "gl_", 3) != 0 || types[base].isarray)
 			str << getReference(base);
-		if (target.lang == HLSL && stage == StageVertex) str << "v_";
+		if (target.lang == HLSL && stage == StageVertex)
+			str << "v_";
 		std::vector<std::string> indices;
-		unsigned length = inst.length;
+		unsigned                 length = inst.length;
 		if (target.lang == HLSL && stage == StageGeometry && getReference(base) == "g_gl_in") {
 			--length;
 		}
@@ -1482,82 +1492,82 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		break;
 	}
 	case OpLoad: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
+		Type &resultType   = types[inst.operands[0]];
+		id    result       = inst.operands[1];
+		types[result]      = resultType;
 		references[result] = getReference(inst.operands[2]);
 		break;
 	}
 	case OpFOrdEqual: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		unsigned operand1 = inst.operands[2];
-		unsigned operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		unsigned          operand1 = inst.operands[2];
+		unsigned          operand2 = inst.operands[3];
 		std::stringstream str;
 		str << getReference(operand1) << " == " << getReference(operand2);
 		references[result] = str.str();
 		break;
 	}
 	case OpFOrdGreaterThanEqual: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		unsigned operand1 = inst.operands[2];
-		unsigned operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		unsigned          operand1 = inst.operands[2];
+		unsigned          operand2 = inst.operands[3];
 		std::stringstream str;
 		str << getReference(operand1) << " >= " << getReference(operand2);
 		references[result] = str.str();
 		break;
 	}
 	case OpFMod: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		unsigned operand1 = inst.operands[2];
-		unsigned operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		unsigned          operand1 = inst.operands[2];
+		unsigned          operand2 = inst.operands[3];
 		std::stringstream str;
 		str << "mod(" << getReference(operand1) << ", " << getReference(operand2) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpISub: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		unsigned operand1 = inst.operands[2];
-		unsigned operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		unsigned          operand1 = inst.operands[2];
+		unsigned          operand2 = inst.operands[3];
 		std::stringstream str;
 		str << getReference(operand1) << " - " << getReference(operand2);
 		references[result] = str.str();
 		break;
 	}
 	case OpLogicalOr: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		unsigned operand1 = inst.operands[2];
-		unsigned operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		unsigned          operand1 = inst.operands[2];
+		unsigned          operand2 = inst.operands[3];
 		std::stringstream str;
 		str << getReference(operand1) << " || " << getReference(operand2);
 		references[result] = str.str();
 		break;
 	}
 	case OpConvertFToS: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		unsigned value = inst.operands[2];
+		Type &resultType        = types[inst.operands[0]];
+		id    result            = inst.operands[1];
+		types[result]           = resultType;
+		unsigned          value = inst.operands[2];
 		std::stringstream str;
 		str << "int(" << getReference(value) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpLogicalNot: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		unsigned value = inst.operands[2];
+		Type &resultType        = types[inst.operands[0]];
+		id    result            = inst.operands[1];
+		types[result]           = resultType;
+		unsigned          value = inst.operands[2];
 		std::stringstream str;
 		str << "!(" << getReference(value) << ")";
 		references[result] = str.str();
@@ -1575,53 +1585,54 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		firstLabel = true;
 		parameters.clear();
 		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
+		id    result     = inst.operands[1];
+		types[result]    = resultType;
 		if (result == entryPoint) {
 			references[result] = "main";
-			funcName = "main";
-			funcType = "void";
+			funcName           = "main";
+			funcType           = "void";
 		}
 		else if (names.find(result) != names.end()) {
-			std::string name = names[result].name;
-			name = name.substr(0, name.find_first_of('('));
+			std::string name   = names[result].name;
+			name               = name.substr(0, name.find_first_of('('));
 			references[result] = name;
-			funcName = name;
-			funcType = resultType.name;
+			funcName           = name;
+			funcType           = resultType.name;
 		}
 		break;
 	}
 	case OpCompositeConstruct: {
 		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
+		id    result     = inst.operands[1];
+		types[result]    = resultType;
 		std::stringstream str;
 		str << resultType.name << "(";
 		for (unsigned i = 2; i < inst.length; ++i) {
 			str << getReference(inst.operands[i]);
-			if (i < inst.length - 1) str << ", ";
+			if (i < inst.length - 1)
+				str << ", ";
 		}
 		str << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpMatrixTimesVector: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id matrix = inst.operands[2];
-		id vector = inst.operands[3];
+		Type &resultType         = types[inst.operands[0]];
+		id    result             = inst.operands[1];
+		types[result]            = resultType;
+		id                matrix = inst.operands[2];
+		id                vector = inst.operands[3];
 		std::stringstream str;
 		str << "(" << getReference(matrix) << " * " << getReference(vector) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpImageSampleImplicitLod: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id sampler = inst.operands[2];
-		id coordinate = inst.operands[3];
+		Type &resultType             = types[inst.operands[0]];
+		id    result                 = inst.operands[1];
+		types[result]                = resultType;
+		id                sampler    = inst.operands[2];
+		id                coordinate = inst.operands[3];
 		std::stringstream str;
 		if (target.version < 300)
 			str << "texture2D";
@@ -1637,12 +1648,12 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		break;
 	}
 	case OpImageSampleExplicitLod: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id sampler = inst.operands[2];
-		id coordinate = inst.operands[3];
-		id lod = inst.operands[5];
+		Type &resultType             = types[inst.operands[0]];
+		id    result                 = inst.operands[1];
+		types[result]                = resultType;
+		id                sampler    = inst.operands[2];
+		id                coordinate = inst.operands[3];
+		id                lod        = inst.operands[5];
 		std::stringstream str;
 		if (target.system == HTML5)
 			str << "texture2DLodEXT";
@@ -1657,11 +1668,11 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		break;
 	}
 	case OpImageSampleDrefImplicitLod: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id sampler = inst.operands[2];
-		id coordinate = inst.operands[3];
+		Type &resultType             = types[inst.operands[0]];
+		id    result                 = inst.operands[1];
+		types[result]                = resultType;
+		id                sampler    = inst.operands[2];
+		id                coordinate = inst.operands[3];
 		std::stringstream str;
 		if (target.version < 300)
 			str << "shadow2D";
@@ -1677,30 +1688,30 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		break;
 	}
 	case OpDPdx: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id p = inst.operands[2];
+		Type &resultType    = types[inst.operands[0]];
+		id    result        = inst.operands[1];
+		types[result]       = resultType;
+		id                p = inst.operands[2];
 		std::stringstream str;
 		str << "dFdx(" << getReference(p) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpDPdy: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id p = inst.operands[2];
+		Type &resultType    = types[inst.operands[0]];
+		id    result        = inst.operands[1];
+		types[result]       = resultType;
+		id                p = inst.operands[2];
 		std::stringstream str;
 		str << "dFdy(" << getReference(p) << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpFwidth: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id p = inst.operands[2];
+		Type &resultType    = types[inst.operands[0]];
+		id    result        = inst.operands[1];
+		types[result]       = resultType;
+		id                p = inst.operands[2];
 		std::stringstream str;
 		str << "fwidth(" << getReference(p) << ")";
 		references[result] = str.str();
@@ -1708,8 +1719,8 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 	}
 	case OpUndef: {
 		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
+		id    result     = inst.operands[1];
+		types[result]    = resultType;
 		if (resultType.name == "bool") {
 			references[result] = "false";
 		}
@@ -1719,9 +1730,9 @@ void CStyleTranslator::outputInstruction(const Target &target, std::map<std::str
 		break;
 	}
 	case OpImageWrite: {
-		id image = inst.operands[0];
+		id image      = inst.operands[0];
 		id coordinate = inst.operands[1];
-		id texels = inst.operands[2];
+		id texels     = inst.operands[2];
 		output(out);
 		(*out) << "imageStore(" << getReference(image) << ", " << getReference(coordinate) << ", " << getReference(texels) << ");\n";
 		break;

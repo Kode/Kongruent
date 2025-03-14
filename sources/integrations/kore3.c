@@ -309,9 +309,9 @@ bool is_texture(type_id t) {
 	return t == tex2d_type_id || t == tex2darray_type_id || t == texcube_type_id;
 }
 
-#define CASE_TEXTURE                                                                                                                                           \
-	case DEFINITION_TEX2D:                                                                                                                                     \
-	case DEFINITION_TEX2DARRAY:                                                                                                                                \
+#define CASE_TEXTURE            \
+	case DEFINITION_TEX2D:      \
+	case DEFINITION_TEX2DARRAY: \
 	case DEFINITION_TEXCUBE
 
 static const char *convert_blend_op(int op) {
@@ -345,9 +345,9 @@ static member *find_member(type *t, char *name) {
 }
 
 static void write_root_signature(FILE *output, descriptor_set *all_descriptor_sets[256], size_t all_descriptor_sets_count) {
-	uint32_t cbv_index = 0;
-	uint32_t srv_index = 0;
-	uint32_t uav_index = 0;
+	uint32_t cbv_index     = 0;
+	uint32_t srv_index     = 0;
+	uint32_t uav_index     = 0;
 	uint32_t sampler_index = 0;
 
 	uint32_t table_count = 0;
@@ -356,7 +356,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 		descriptor_set *set = all_descriptor_sets[set_index];
 
 		bool has_sampler = false;
-		bool has_other = false;
+		bool has_other   = false;
 
 		for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 			definition *def = &set->definitions[definition_index];
@@ -392,7 +392,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 		descriptor_set *set = all_descriptor_sets[set_count];
 
 		bool has_sampler = false;
-		bool has_other = false;
+		bool has_other   = false;
 
 		for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 			definition *def = &set->definitions[definition_index];
@@ -576,43 +576,43 @@ void kore3_export(char *directory, api_kind api) {
 	memset(global_register_indices, 0, sizeof(global_register_indices));
 
 	char *api_short = NULL;
-	char *api_long = NULL;
-	char *api_caps = NULL;
+	char *api_long  = NULL;
+	char *api_caps  = NULL;
 	switch (api) {
 	case API_DIRECT3D9:
 		api_short = "d3d9";
-		api_long = "direct3d9";
-		api_caps = "D3D9";
+		api_long  = "direct3d9";
+		api_caps  = "D3D9";
 		break;
 	case API_DIRECT3D11:
 		api_short = "d3d11";
-		api_long = "direct3d11";
-		api_caps = "D3D11";
+		api_long  = "direct3d11";
+		api_caps  = "D3D11";
 		break;
 	case API_DIRECT3D12:
 		api_short = "d3d12";
-		api_long = "direct3d12";
-		api_caps = "D3D12";
+		api_long  = "direct3d12";
+		api_caps  = "D3D12";
 		break;
 	case API_METAL:
 		api_short = "metal";
-		api_long = "metal";
-		api_caps = "METAL";
+		api_long  = "metal";
+		api_caps  = "METAL";
 		break;
 	case API_OPENGL:
 		api_short = "opengl";
-		api_long = "opengl";
-		api_caps = "OPENGL";
+		api_long  = "opengl";
+		api_caps  = "OPENGL";
 		break;
 	case API_VULKAN:
 		api_short = "vulkan";
-		api_long = "vulkan";
-		api_caps = "VULKAN";
+		api_long  = "vulkan";
+		api_caps  = "VULKAN";
 		break;
 	case API_WEBGPU:
 		api_short = "webgpu";
-		api_long = "webgpu";
-		api_caps = "WEBGPU";
+		api_long  = "webgpu";
+		api_caps  = "WEBGPU";
 		break;
 	default:
 		assert(false);
@@ -664,15 +664,15 @@ void kore3_export(char *directory, api_kind api) {
 		}
 	}
 
-	type_id vertex_inputs[256] = {0};
-	size_t vertex_input_slots[256] = {0};
-	size_t vertex_inputs_size = 0;
+	type_id vertex_inputs[256]      = {0};
+	size_t  vertex_input_slots[256] = {0};
+	size_t  vertex_inputs_size      = 0;
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 			name_id vertex_shader_name = NO_NAME;
-			name_id mesh_shader_name = NO_NAME;
+			name_id mesh_shader_name   = NO_NAME;
 
 			for (size_t j = 0; j < t->members.size; ++j) {
 				if (t->members.m[j].name == add_name("vertex")) {
@@ -697,7 +697,7 @@ void kore3_export(char *directory, api_kind api) {
 						check(f->parameters_size > 0, context, "Vertex function requires at least one parameter");
 
 						for (size_t input_index = 0; input_index < f->parameters_size; ++input_index) {
-							vertex_inputs[vertex_inputs_size] = f->parameter_types[input_index].type;
+							vertex_inputs[vertex_inputs_size]      = f->parameter_types[input_index].type;
 							vertex_input_slots[vertex_inputs_size] = input_index;
 							vertex_inputs_size += 1;
 						}
@@ -710,7 +710,7 @@ void kore3_export(char *directory, api_kind api) {
 	}
 
 	descriptor_set *sets[256];
-	size_t sets_count = 0;
+	size_t          sets_count = 0;
 
 	{
 		char filename[512];
@@ -909,7 +909,7 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "\tenum {\n");
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 				definition d = set->definitions[definition_index];
-				char upper_definition_name[256];
+				char       upper_definition_name[256];
 				to_upper(get_name(get_global(d.global)->name), upper_definition_name);
 
 				switch (d.kind) {
@@ -1137,8 +1137,8 @@ void kore3_export(char *directory, api_kind api) {
 			}
 		}
 
-		global *root_constants_global = NULL;
-		char root_constants_type_name[256] = {0};
+		global *root_constants_global         = NULL;
+		char    root_constants_type_name[256] = {0};
 
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
@@ -1263,9 +1263,9 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "void kong_create_%s_set(kore_gpu_device *device, const %s_parameters *parameters, %s_set *set) {\n", get_name(set->name),
 			        get_name(set->name), get_name(set->name));
 
-			size_t other_count = 0;
-			size_t sampler_count = 0;
-			size_t dynamic_count = 0;
+			size_t other_count    = 0;
+			size_t sampler_count  = 0;
+			size_t dynamic_count  = 0;
 			size_t bindless_count = 0;
 
 			for (size_t descriptor_index = 0; descriptor_index < set->definitions_count; ++descriptor_index) {
@@ -1315,7 +1315,7 @@ void kore3_export(char *directory, api_kind api) {
 				        bindless_count, sampler_count);
 			}
 
-			size_t other_index = 0;
+			size_t other_index   = 0;
 			size_t sampler_index = 0;
 
 			for (size_t descriptor_index = 0; descriptor_index < set->definitions_count; ++descriptor_index) {
@@ -1623,10 +1623,10 @@ void kore3_export(char *directory, api_kind api) {
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 				fprintf(output, "\tkore_%s_render_pipeline_parameters %s_parameters = {0};\n\n", api_short, get_name(t->name));
 
-				name_id vertex_shader_name = NO_NAME;
+				name_id vertex_shader_name        = NO_NAME;
 				name_id amplification_shader_name = NO_NAME;
-				name_id mesh_shader_name = NO_NAME;
-				name_id fragment_shader_name = NO_NAME;
+				name_id mesh_shader_name          = NO_NAME;
+				name_id fragment_shader_name      = NO_NAME;
 
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("vertex")) {
@@ -1728,18 +1728,18 @@ void kore3_export(char *directory, api_kind api) {
 					check(fragment_shader_name != NO_NAME, context, "No fragment shader name found");
 				}
 
-				function *vertex_function = NULL;
+				function *vertex_function   = NULL;
 				function *fragment_function = NULL;
 
-				type_id vertex_inputs[64] = {0};
-				bool instanced[64] = {0};
-				size_t vertex_inputs_count = 0;
+				type_id vertex_inputs[64]   = {0};
+				bool    instanced[64]       = {0};
+				size_t  vertex_inputs_count = 0;
 
 				if (vertex_shader_name != NO_NAME) {
 					for (function_id i = 0; get_function(i) != NULL; ++i) {
 						function *f = get_function(i);
 						if (f->name == vertex_shader_name) {
-							vertex_function = f;
+							vertex_function       = f;
 							debug_context context = {0};
 							check(f->parameters_size > 0, context, "Vertex function requires at least one parameter");
 							for (size_t input_index = 0; input_index < f->parameters_size; ++input_index) {
@@ -1773,8 +1773,8 @@ void kore3_export(char *directory, api_kind api) {
 					size_t location = 0;
 
 					for (size_t input_index = 0; input_index < vertex_inputs_count; ++input_index) {
-						type *vertex_type = get_type(vertex_inputs[input_index]);
-						size_t offset = 0;
+						type  *vertex_type = get_type(vertex_inputs[input_index]);
+						size_t offset      = 0;
 
 						for (size_t j = 0; j < vertex_type->members.size; ++j) {
 							fprintf(output, "\t%s_parameters.vertex.buffers[%zu].attributes[%zu].format = %s;\n", get_name(t->name), input_index, j,
@@ -1946,7 +1946,7 @@ void kore3_export(char *directory, api_kind api) {
 
 				if (api == API_OPENGL) {
 					global_id globals[256];
-					size_t globals_size = 0;
+					size_t    globals_size = 0;
 					find_referenced_globals(vertex_function, globals, &globals_size);
 					find_referenced_globals(fragment_function, globals, &globals_size);
 
@@ -1983,11 +1983,11 @@ void kore3_export(char *directory, api_kind api) {
 			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
 				fprintf(output, "\tkore_%s_ray_pipeline_parameters %s_parameters = {0};\n\n", api_short, get_name(t->name));
 
-				name_id gen_shader_name = NO_NAME;
-				name_id miss_shader_name = NO_NAME;
-				name_id closest_shader_name = NO_NAME;
+				name_id gen_shader_name          = NO_NAME;
+				name_id miss_shader_name         = NO_NAME;
+				name_id closest_shader_name      = NO_NAME;
 				name_id intersection_shader_name = NO_NAME;
-				name_id any_shader_name = NO_NAME;
+				name_id any_shader_name          = NO_NAME;
 
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("gen")) {

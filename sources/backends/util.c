@@ -66,7 +66,7 @@ uint32_t base_type_size(type_id type) {
 
 uint32_t struct_size(type_id id) {
 	uint32_t size = 0;
-	type *t = get_type(id);
+	type    *t    = get_type(id);
 	for (size_t member_index = 0; member_index < t->members.size; ++member_index) {
 		size += base_type_size(t->members.m[member_index].type.type);
 	}

@@ -55,7 +55,7 @@ static void write_functions(void) {
 		kong_log(LOG_LEVEL_INFO, "Function: %s", get_name(f->name));
 
 		uint8_t *data = f->code.o;
-		size_t size = f->code.size;
+		size_t   size = f->code.size;
 
 		size_t index = 0;
 		while (index < size) {
@@ -66,7 +66,7 @@ static void write_functions(void) {
 				break;
 			case OPCODE_LOAD_MEMBER: {
 				char indices[256];
-				int offset = 0;
+				int  offset = 0;
 
 				for (int i = 0; i < o->op_load_member.member_indices_size; ++i) {
 					if (o->op_load_member.dynamic_member[i]) {
@@ -86,7 +86,7 @@ static void write_functions(void) {
 			}
 			case OPCODE_CALL: {
 				char parameters[256];
-				int offset = 0;
+				int  offset = 0;
 
 				for (int i = 0; i < o->op_call.parameters_size; ++i) {
 					offset += sprintf(&parameters[offset], "$%zu", o->op_call.parameters[i].index);
@@ -116,7 +116,7 @@ static void write_functions(void) {
 				break;
 			case OPCODE_STORE_MEMBER: {
 				char indices[256];
-				int offset = 0;
+				int  offset = 0;
 
 				for (int i = 0; i < o->op_store_member.member_indices_size; ++i) {
 					if (o->op_store_member.dynamic_member[i]) {

@@ -14,8 +14,8 @@ namespace krafix {
 
 	private:
 		//**SourceMap::SrcMapDocSP sourcemap;
-		int outputLine;
-		int originalLine;
+		int  outputLine;
+		int  originalLine;
 		char name[256];
 	};
 }

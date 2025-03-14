@@ -91,9 +91,9 @@ static void write_code(char *wgsl, char *directory, const char *filename) {
 }
 
 static type_id vertex_inputs[256];
-static size_t vertex_inputs_size = 0;
+static size_t  vertex_inputs_size = 0;
 static type_id fragment_inputs[256];
-static size_t fragment_inputs_size = 0;
+static size_t  fragment_inputs_size = 0;
 
 static bool is_vertex_input(type_id t) {
 	for (size_t i = 0; i < vertex_inputs_size; ++i) {
@@ -172,8 +172,8 @@ static int global_register_indices[512];
 
 static void write_globals(char *wgsl, size_t *offset) {
 	for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
-		global *g = get_global(i);
-		int register_index = global_register_indices[i];
+		global *g              = get_global(i);
+		int     register_index = global_register_indices[i];
 
 		if (g->type == sampler_type_id) {
 			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%i) var _%" PRIu64 ": sampler;\n\n", register_index, g->var_index);
@@ -190,7 +190,7 @@ static void write_globals(char *wgsl, size_t *offset) {
 		}
 		else {
 			type *t = get_type(g->type);
-			char type_name[256];
+			char  type_name[256];
 			if (t->name != NO_NAME) {
 				strcpy(type_name, get_name(t->name));
 			}
@@ -203,9 +203,9 @@ static void write_globals(char *wgsl, size_t *offset) {
 }
 
 static function_id vertex_functions[256];
-static size_t vertex_functions_size = 0;
+static size_t      vertex_functions_size = 0;
 static function_id fragment_functions[256];
-static size_t fragment_functions_size = 0;
+static size_t      fragment_functions_size = 0;
 
 static bool is_vertex_function(function_id f) {
 	for (size_t i = 0; i < vertex_functions_size; ++i) {
@@ -234,7 +234,7 @@ static void write_functions(char *code, size_t *offset) {
 		}
 
 		uint8_t *data = f->code.o;
-		size_t size = f->code.size;
+		size_t   size = f->code.size;
 
 		uint64_t parameter_ids[256] = {0};
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
@@ -356,9 +356,9 @@ static void write_functions(char *code, size_t *offset) {
 				type *s = get_type(o->op_store_member.member_parent_type);
 
 				if (o->op_store_member.member_indices_size > 1) {
-					type_id last_type = NO_TYPE;
-					type_id last_last_type = NO_TYPE;
-					char *last_member_name = NULL;
+					type_id last_type        = NO_TYPE;
+					type_id last_last_type   = NO_TYPE;
+					char   *last_member_name = NULL;
 					for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
 						if (i == o->op_store_member.member_indices_size - 1) {
 							if (!o->op_store_member.dynamic_member[i]) {
@@ -368,7 +368,7 @@ static void write_functions(char *code, size_t *offset) {
 
 						if (!o->op_store_member.dynamic_member[i]) {
 							type_id t = s->members.m[o->op_store_member.static_member_indices[i]].type.type;
-							s = get_type(t);
+							s         = get_type(t);
 
 							if (i == o->op_store_member.member_indices_size - 2) {
 								last_last_type = t;
@@ -423,7 +423,7 @@ static void write_functions(char *code, size_t *offset) {
 											*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.static_member_indices[i]].name));
 										}
 										is_array = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type)->array_size > 0;
-										s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
+										s        = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
 									}
 								}
 								*offset += sprintf(&code[*offset], " = _%" PRIu64 ".%c;\n", o->op_store_member.from.index, last_member_name[element]);
@@ -454,7 +454,7 @@ static void write_functions(char *code, size_t *offset) {
 						check(o->op_store_member.static_member_indices[i] < s->members.size, context, "Member index out of bounds");
 						*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.static_member_indices[i]].name));
 						is_array = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type)->array_size > 0;
-						s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
+						s        = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
 					}
 				}
 				*offset += sprintf(&code[*offset], " = _%" PRIu64 ";\n", o->op_store_member.from.index);
@@ -575,7 +575,7 @@ static void write_functions(char *code, size_t *offset) {
 }
 
 static void wgsl_export_everything(char *directory) {
-	char *wgsl = (char *)calloc(1024 * 1024, 1);
+	char         *wgsl    = (char *)calloc(1024 * 1024, 1);
 	debug_context context = {0};
 	check(wgsl != NULL, context, "Could not allocate the wgsl string");
 	size_t offset = 0;
@@ -615,7 +615,7 @@ void wgsl_export(char *directory) {
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-			name_id vertex_shader_name = NO_NAME;
+			name_id vertex_shader_name   = NO_NAME;
 			name_id fragment_shader_name = NO_NAME;
 
 			for (size_t j = 0; j < t->members.size; ++j) {

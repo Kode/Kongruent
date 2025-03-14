@@ -10,7 +10,7 @@
 #include <string.h>
 
 static statement *statement_allocate(void) {
-	statement *s = (statement *)malloc(sizeof(statement));
+	statement    *s       = (statement *)malloc(sizeof(statement));
 	debug_context context = {0};
 	check(s != NULL, context, "Could not allocate statement");
 	return s;
@@ -30,7 +30,7 @@ static void statements_add(statements *statements, statement *statement) {
 }
 
 static expression *expression_allocate(void) {
-	expression *e = (expression *)malloc(sizeof(expression));
+	expression   *e       = (expression *)malloc(sizeof(expression));
 	debug_context context = {0};
 	check(e != NULL, context, "Could not allocate expression");
 	init_type_ref(&e->type, NO_NAME);
@@ -42,8 +42,8 @@ static expression *expression_allocate(void) {
 // }
 
 typedef struct state {
-	tokens *tokens;
-	size_t index;
+	tokens       *tokens;
+	size_t        index;
 	debug_context context;
 } state_t;
 
@@ -54,7 +54,7 @@ static token current(state_t *state) {
 
 static void update_debug_context(state_t *state) {
 	state->context.column = current(state).column;
-	state->context.line = current(state).line;
+	state->context.line   = current(state).line;
 }
 
 static void advance_state(state_t *state) {
@@ -75,15 +75,15 @@ static void match_token_identifier(state_t *state) {
 	}
 }
 
-static definition parse_definition(state_t *state);
-static statement *parse_statement(state_t *state, block *parent_block);
+static definition  parse_definition(state_t *state);
+static statement  *parse_statement(state_t *state, block *parent_block);
 static expression *parse_expression(state_t *state);
 
 void parse(const char *filename, tokens *tokens) {
-	state_t state = {0};
+	state_t state          = {0};
 	state.context.filename = filename;
-	state.tokens = tokens;
-	state.index = 0;
+	state.tokens           = tokens;
+	state.index            = 0;
 
 	for (;;) {
 		token token = current(&state);
@@ -103,9 +103,9 @@ static statement *parse_block(state_t *state, block *parent_block) {
 	statements statements;
 	statements_init(&statements);
 
-	statement *new_block = statement_allocate();
-	new_block->kind = STATEMENT_BLOCK;
-	new_block->block.parent = parent_block;
+	statement *new_block       = statement_allocate();
+	new_block->kind            = STATEMENT_BLOCK;
+	new_block->block.parent    = parent_block;
 	new_block->block.vars.size = 0;
 
 	for (;;) {
@@ -134,7 +134,7 @@ typedef enum modifier {
 
 typedef struct modifiers {
 	modifier_t m[16];
-	size_t size;
+	size_t     size;
 } modifiers_t;
 
 // static void modifiers_init(modifiers_t *modifiers) {
@@ -166,9 +166,9 @@ static double attribute_parameter_to_number(name_id attribute_name, name_id para
 }
 
 static definition parse_definition(state_t *state) {
-	attribute_list attributes = {0};
+	attribute_list  attributes = {0};
 	descriptor_set *current_sets[64];
-	size_t current_sets_count = 0;
+	size_t          current_sets_count = 0;
 
 	if (current(state).kind == TOKEN_HASH) {
 		advance_state(state);
@@ -182,7 +182,7 @@ static definition parse_definition(state_t *state) {
 			current_attribute.name = current(state).identifier;
 
 			if (current_attribute.name == add_name("root_constants")) {
-				current_sets[current_sets_count] = create_set(current_attribute.name);
+				current_sets[current_sets_count]                                = create_set(current_attribute.name);
 				current_attribute.parameters[current_attribute.paramters_count] = current_sets[current_sets_count]->index;
 				current_sets_count += 1;
 			}
@@ -199,7 +199,7 @@ static definition parse_definition(state_t *state) {
 								debug_context context = {0};
 								error(context, "Descriptor set can not be called root_constants");
 							}
-							current_sets[current_sets_count] = create_set(current(state).identifier);
+							current_sets[current_sets_count]                                = create_set(current(state).identifier);
 							current_attribute.parameters[current_attribute.paramters_count] = current_sets[current_sets_count]->index;
 							current_sets_count += 1;
 						}
@@ -246,7 +246,7 @@ static definition parse_definition(state_t *state) {
 			error(context, "A struct can not be assigned to a set");
 		}
 
-		definition structy = parse_struct(state);
+		definition structy                 = parse_struct(state);
 		get_type(structy.type)->attributes = attributes;
 		return structy;
 	}
@@ -256,8 +256,8 @@ static definition parse_definition(state_t *state) {
 			error(context, "A function can not be assigned to a set");
 		}
 
-		definition d = parse_function(state);
-		function *f = get_function(d.function);
+		definition d  = parse_function(state);
+		function  *f  = get_function(d.function);
 		f->attributes = attributes;
 		return d;
 	}
@@ -320,10 +320,10 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		advance_state(state);
 
 		statement *if_block = parse_statement(state, parent_block);
-		statement *s = statement_allocate();
-		s->kind = STATEMENT_IF;
-		s->iffy.test = test;
-		s->iffy.if_block = if_block;
+		statement *s        = statement_allocate();
+		s->kind             = STATEMENT_IF;
+		s->iffy.test        = test;
+		s->iffy.if_block    = if_block;
 
 		s->iffy.else_size = 0;
 
@@ -341,12 +341,12 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 
 				statement *if_block = parse_statement(state, parent_block);
 
-				s->iffy.else_tests[s->iffy.else_size] = test;
+				s->iffy.else_tests[s->iffy.else_size]  = test;
 				s->iffy.else_blocks[s->iffy.else_size] = if_block;
 			}
 			else {
-				statement *else_block = parse_statement(state, parent_block);
-				s->iffy.else_tests[s->iffy.else_size] = NULL;
+				statement *else_block                  = parse_statement(state, parent_block);
+				s->iffy.else_tests[s->iffy.else_size]  = NULL;
 				s->iffy.else_blocks[s->iffy.else_size] = else_block;
 			}
 
@@ -367,9 +367,9 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 
 		statement *while_block = parse_statement(state, parent_block);
 
-		statement *s = statement_allocate();
-		s->kind = STATEMENT_WHILE;
-		s->whiley.test = test;
+		statement *s          = statement_allocate();
+		s->kind               = STATEMENT_WHILE;
+		s->whiley.test        = test;
 		s->whiley.while_block = while_block;
 
 		return s;
@@ -379,8 +379,8 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 
 		statement *do_block = parse_statement(state, parent_block);
 
-		statement *s = statement_allocate();
-		s->kind = STATEMENT_DO_WHILE;
+		statement *s          = statement_allocate();
+		s->kind               = STATEMENT_DO_WHILE;
 		s->whiley.while_block = do_block;
 
 		match_token(state, TOKEN_WHILE, "Expected \"while\"");
@@ -403,10 +403,10 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		statements outer_block_statements;
 		statements_init(&outer_block_statements);
 
-		statement *outer_block = statement_allocate();
-		outer_block->kind = STATEMENT_BLOCK;
-		outer_block->block.parent = parent_block;
-		outer_block->block.vars.size = 0;
+		statement *outer_block        = statement_allocate();
+		outer_block->kind             = STATEMENT_BLOCK;
+		outer_block->block.parent     = parent_block;
+		outer_block->block.vars.size  = 0;
 		outer_block->block.statements = outer_block_statements;
 
 		advance_state(state);
@@ -428,15 +428,15 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 
 		statement *inner_block = parse_statement(state, &outer_block->block);
 
-		statement *post_statement = statement_allocate();
-		post_statement->kind = STATEMENT_EXPRESSION;
+		statement *post_statement  = statement_allocate();
+		post_statement->kind       = STATEMENT_EXPRESSION;
 		post_statement->expression = post_expression;
 
 		statements_add(&inner_block->block.statements, post_statement);
 
-		statement *s = statement_allocate();
-		s->kind = STATEMENT_WHILE;
-		s->whiley.test = test;
+		statement *s          = statement_allocate();
+		s->kind               = STATEMENT_WHILE;
+		s->whiley.test        = test;
 		s->whiley.while_block = inner_block;
 
 		statements_add(&outer_block->block.statements, s);
@@ -469,12 +469,12 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
 		advance_state(state);
 
-		statement *statement = statement_allocate();
-		statement->kind = STATEMENT_LOCAL_VARIABLE;
-		statement->local_variable.var.name = name.identifier;
-		statement->local_variable.var.type = type;
+		statement *statement                      = statement_allocate();
+		statement->kind                           = STATEMENT_LOCAL_VARIABLE;
+		statement->local_variable.var.name        = name.identifier;
+		statement->local_variable.var.type        = type;
 		statement->local_variable.var.variable_id = 0;
-		statement->local_variable.init = init;
+		statement->local_variable.init            = init;
 		return statement;
 	}
 	case TOKEN_RETURN: {
@@ -484,8 +484,8 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
 		advance_state(state);
 
-		statement *statement = statement_allocate();
-		statement->kind = STATEMENT_RETURN_EXPRESSION;
+		statement *statement  = statement_allocate();
+		statement->kind       = STATEMENT_RETURN_EXPRESSION;
 		statement->expression = expr;
 		return statement;
 	}
@@ -494,8 +494,8 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
 		advance_state(state);
 
-		statement *statement = statement_allocate();
-		statement->kind = STATEMENT_EXPRESSION;
+		statement *statement  = statement_allocate();
+		statement->kind       = STATEMENT_EXPRESSION;
 		statement->expression = expr;
 		return statement;
 	}
@@ -512,20 +512,20 @@ static expression *parse_logical(state_t *state);
 
 static expression *parse_assign(state_t *state) {
 	expression *expr = parse_logical(state);
-	bool done = false;
+	bool        done = false;
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
 			if (op == OPERATOR_ASSIGN || op == OPERATOR_MINUS_ASSIGN || op == OPERATOR_PLUS_ASSIGN || op == OPERATOR_DIVIDE_ASSIGN ||
 			    op == OPERATOR_MULTIPLY_ASSIGN) {
 				advance_state(state);
-				expression *right = parse_logical(state);
-				expression *expression = expression_allocate();
-				expression->kind = EXPRESSION_BINARY;
-				expression->binary.left = expr;
-				expression->binary.op = op;
+				expression *right        = parse_logical(state);
+				expression *expression   = expression_allocate();
+				expression->kind         = EXPRESSION_BINARY;
+				expression->binary.left  = expr;
+				expression->binary.op    = op;
 				expression->binary.right = right;
-				expr = expression;
+				expr                     = expression;
 			}
 			else {
 				done = true;
@@ -542,19 +542,19 @@ static expression *parse_equality(state_t *state);
 
 static expression *parse_logical(state_t *state) {
 	expression *expr = parse_equality(state);
-	bool done = false;
+	bool        done = false;
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
 			if (op == OPERATOR_OR || op == OPERATOR_AND || op == OPERATOR_XOR) {
 				advance_state(state);
-				expression *right = parse_equality(state);
-				expression *expression = expression_allocate();
-				expression->kind = EXPRESSION_BINARY;
-				expression->binary.left = expr;
-				expression->binary.op = op;
+				expression *right        = parse_equality(state);
+				expression *expression   = expression_allocate();
+				expression->kind         = EXPRESSION_BINARY;
+				expression->binary.left  = expr;
+				expression->binary.op    = op;
 				expression->binary.right = right;
-				expr = expression;
+				expr                     = expression;
 			}
 			else {
 				done = true;
@@ -571,19 +571,19 @@ static expression *parse_comparison(state_t *state);
 
 static expression *parse_equality(state_t *state) {
 	expression *expr = parse_comparison(state);
-	bool done = false;
+	bool        done = false;
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
 			if (op == OPERATOR_EQUALS || op == OPERATOR_NOT_EQUALS) {
 				advance_state(state);
-				expression *right = parse_comparison(state);
-				expression *expression = expression_allocate();
-				expression->kind = EXPRESSION_BINARY;
-				expression->binary.left = expr;
-				expression->binary.op = op;
+				expression *right        = parse_comparison(state);
+				expression *expression   = expression_allocate();
+				expression->kind         = EXPRESSION_BINARY;
+				expression->binary.left  = expr;
+				expression->binary.op    = op;
 				expression->binary.right = right;
-				expr = expression;
+				expr                     = expression;
 			}
 			else {
 				done = true;
@@ -600,19 +600,19 @@ static expression *parse_addition(state_t *state);
 
 static expression *parse_comparison(state_t *state) {
 	expression *expr = parse_addition(state);
-	bool done = false;
+	bool        done = false;
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
 			if (op == OPERATOR_GREATER || op == OPERATOR_GREATER_EQUAL || op == OPERATOR_LESS || op == OPERATOR_LESS_EQUAL) {
 				advance_state(state);
-				expression *right = parse_addition(state);
-				expression *expression = expression_allocate();
-				expression->kind = EXPRESSION_BINARY;
-				expression->binary.left = expr;
-				expression->binary.op = op;
+				expression *right        = parse_addition(state);
+				expression *expression   = expression_allocate();
+				expression->kind         = EXPRESSION_BINARY;
+				expression->binary.left  = expr;
+				expression->binary.op    = op;
 				expression->binary.right = right;
-				expr = expression;
+				expr                     = expression;
 			}
 			else {
 				done = true;
@@ -629,19 +629,19 @@ static expression *parse_multiplication(state_t *state);
 
 static expression *parse_addition(state_t *state) {
 	expression *expr = parse_multiplication(state);
-	bool done = false;
+	bool        done = false;
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
 			if (op == OPERATOR_MINUS || op == OPERATOR_PLUS) {
 				advance_state(state);
-				expression *right = parse_multiplication(state);
-				expression *expression = expression_allocate();
-				expression->kind = EXPRESSION_BINARY;
-				expression->binary.left = expr;
-				expression->binary.op = op;
+				expression *right        = parse_multiplication(state);
+				expression *expression   = expression_allocate();
+				expression->kind         = EXPRESSION_BINARY;
+				expression->binary.left  = expr;
+				expression->binary.op    = op;
 				expression->binary.right = right;
-				expr = expression;
+				expr                     = expression;
 			}
 			else {
 				done = true;
@@ -658,19 +658,19 @@ static expression *parse_unary(state_t *state);
 
 static expression *parse_multiplication(state_t *state) {
 	expression *expr = parse_unary(state);
-	bool done = false;
+	bool        done = false;
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
 			if (op == OPERATOR_DIVIDE || op == OPERATOR_MULTIPLY || op == OPERATOR_MOD) {
 				advance_state(state);
-				expression *right = parse_unary(state);
-				expression *expression = expression_allocate();
-				expression->kind = EXPRESSION_BINARY;
-				expression->binary.left = expr;
-				expression->binary.op = op;
+				expression *right        = parse_unary(state);
+				expression *expression   = expression_allocate();
+				expression->kind         = EXPRESSION_BINARY;
+				expression->binary.left  = expr;
+				expression->binary.op    = op;
 				expression->binary.right = right;
-				expr = expression;
+				expr                     = expression;
 			}
 			else {
 				done = true;
@@ -692,10 +692,10 @@ static expression *parse_unary(state_t *state) {
 			operatorr op = current(state).op;
 			if (op == OPERATOR_NOT || op == OPERATOR_MINUS) {
 				advance_state(state);
-				expression *right = parse_unary(state);
-				expression *expression = expression_allocate();
-				expression->kind = EXPRESSION_UNARY;
-				expression->unary.op = op;
+				expression *right       = parse_unary(state);
+				expression *expression  = expression_allocate();
+				expression->kind        = EXPRESSION_UNARY;
+				expression->unary.op    = op;
 				expression->unary.right = right;
 				return expression;
 			}
@@ -728,20 +728,20 @@ static expression *parse_member(state_t *state, bool square) {
 			bool dynamic = square && current(state).kind != TOKEN_INT;
 
 			expression *var = expression_allocate();
-			var->kind = EXPRESSION_VARIABLE;
-			var->variable = token.identifier;
+			var->kind       = EXPRESSION_VARIABLE;
+			var->variable   = token.identifier;
 
-			expression *member = expression_allocate();
-			member->kind = dynamic ? EXPRESSION_DYNAMIC_MEMBER : EXPRESSION_STATIC_MEMBER;
-			member->member.left = var;
+			expression *member   = expression_allocate();
+			member->kind         = dynamic ? EXPRESSION_DYNAMIC_MEMBER : EXPRESSION_STATIC_MEMBER;
+			member->member.left  = var;
 			member->member.right = parse_member(state, square);
 
 			return member;
 		}
 		else {
 			expression *var = expression_allocate();
-			var->kind = EXPRESSION_VARIABLE;
-			var->variable = token.identifier;
+			var->kind       = EXPRESSION_VARIABLE;
+			var->variable   = token.identifier;
 			return var;
 		}
 	}
@@ -759,20 +759,20 @@ static expression *parse_member(state_t *state, bool square) {
 			bool dynamic = square && current(state).kind != TOKEN_INT;
 
 			expression *var = expression_allocate();
-			var->kind = EXPRESSION_INDEX;
-			var->index = index;
+			var->kind       = EXPRESSION_INDEX;
+			var->index      = index;
 
-			expression *member = expression_allocate();
-			member->kind = dynamic ? EXPRESSION_DYNAMIC_MEMBER : EXPRESSION_STATIC_MEMBER;
-			member->member.left = var;
+			expression *member   = expression_allocate();
+			member->kind         = dynamic ? EXPRESSION_DYNAMIC_MEMBER : EXPRESSION_STATIC_MEMBER;
+			member->member.left  = var;
 			member->member.right = parse_member(state, square);
 
 			return member;
 		}
 		else {
 			expression *var = expression_allocate();
-			var->kind = EXPRESSION_INDEX;
-			var->index = index;
+			var->kind       = EXPRESSION_INDEX;
+			var->index      = index;
 			return var;
 		}
 	}
@@ -788,9 +788,9 @@ static expression *parse_member(state_t *state, bool square) {
 
 			bool dynamic = square && current(state).kind != TOKEN_INT;
 
-			expression *member = expression_allocate();
-			member->kind = dynamic ? EXPRESSION_DYNAMIC_MEMBER : EXPRESSION_STATIC_MEMBER;
-			member->member.left = index;
+			expression *member   = expression_allocate();
+			member->kind         = dynamic ? EXPRESSION_DYNAMIC_MEMBER : EXPRESSION_STATIC_MEMBER;
+			member->member.left  = index;
 			member->member.right = parse_member(state, square);
 
 			return member;
@@ -812,24 +812,24 @@ static expression *parse_primary(state_t *state) {
 	case TOKEN_BOOLEAN: {
 		bool value = current(state).boolean;
 		advance_state(state);
-		left = expression_allocate();
-		left->kind = EXPRESSION_BOOLEAN;
+		left          = expression_allocate();
+		left->kind    = EXPRESSION_BOOLEAN;
 		left->boolean = value;
 		break;
 	}
 	case TOKEN_FLOAT: {
 		double value = current(state).number;
 		advance_state(state);
-		left = expression_allocate();
-		left->kind = EXPRESSION_FLOAT;
+		left         = expression_allocate();
+		left->kind   = EXPRESSION_FLOAT;
 		left->number = value;
 		break;
 	}
 	case TOKEN_INT: {
 		double value = current(state).number;
 		advance_state(state);
-		left = expression_allocate();
-		left->kind = EXPRESSION_INT;
+		left         = expression_allocate();
+		left->kind   = EXPRESSION_INT;
 		left->number = value;
 		break;
 	}
@@ -849,9 +849,9 @@ static expression *parse_primary(state_t *state) {
 		}
 		else {
 			expression *var = expression_allocate();
-			var->kind = EXPRESSION_VARIABLE;
-			var->variable = token.identifier;
-			left = var;
+			var->kind       = EXPRESSION_VARIABLE;
+			var->variable   = token.identifier;
+			left            = var;
 		}
 		break;
 	}
@@ -860,8 +860,8 @@ static expression *parse_primary(state_t *state) {
 		expression *expr = parse_expression(state);
 		match_token(state, TOKEN_RIGHT_PAREN, "Expected a closing bracket");
 		advance_state(state);
-		left = expression_allocate();
-		left->kind = EXPRESSION_GROUPING;
+		left           = expression_allocate();
+		left->kind     = EXPRESSION_GROUPING;
 		left->grouping = expr;
 		break;
 	}
@@ -879,9 +879,9 @@ static expression *parse_primary(state_t *state) {
 
 		expression *right = parse_member(state, square);
 
-		expression *member = expression_allocate();
-		member->kind = dynamic ? EXPRESSION_DYNAMIC_MEMBER : EXPRESSION_STATIC_MEMBER;
-		member->member.left = left;
+		expression *member   = expression_allocate();
+		member->kind         = dynamic ? EXPRESSION_DYNAMIC_MEMBER : EXPRESSION_STATIC_MEMBER;
+		member->member.left  = left;
 		member->member.right = right;
 
 		if (current(state).kind == TOKEN_LEFT_PAREN) {
@@ -927,9 +927,9 @@ static expression *parse_call(state_t *state, name_id func_name) {
 
 	expression *call = NULL;
 
-	call = expression_allocate();
-	call->kind = EXPRESSION_CALL;
-	call->call.func_name = func_name;
+	call                  = expression_allocate();
+	call->kind            = EXPRESSION_CALL;
+	call->call.func_name  = func_name;
 	call->call.parameters = parse_parameters(state);
 
 	if (current(state).kind == TOKEN_DOT || current(state).kind == TOKEN_LEFT_SQUARE) {
@@ -941,9 +941,9 @@ static expression *parse_call(state_t *state, name_id func_name) {
 
 		expression *right = parse_member(state, square);
 
-		expression *member = expression_allocate();
-		member->kind = dynamic ? EXPRESSION_DYNAMIC_MEMBER : EXPRESSION_STATIC_MEMBER;
-		member->member.left = call;
+		expression *member   = expression_allocate();
+		member->kind         = dynamic ? EXPRESSION_DYNAMIC_MEMBER : EXPRESSION_STATIC_MEMBER;
+		member->member.left  = call;
 		member->member.right = right;
 
 		if (current(state).kind == TOKEN_LEFT_PAREN) {
@@ -963,10 +963,10 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 	match_token(state, TOKEN_LEFT_CURLY, "Expected an opening curly bracket");
 	advance_state(state);
 
-	token member_names[MAX_MEMBERS];
+	token    member_names[MAX_MEMBERS];
 	type_ref type_refs[MAX_MEMBERS];
-	token member_values[MAX_MEMBERS];
-	size_t count = 0;
+	token    member_values[MAX_MEMBERS];
+	size_t   count = 0;
 
 	while (current(state).kind != TOKEN_RIGHT_CURLY) {
 		debug_context context = {0};
@@ -983,10 +983,10 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 		}
 		else {
 			type_ref t;
-			t.type = NO_TYPE;
-			t.unresolved.name = NO_NAME;
+			t.type                  = NO_TYPE;
+			t.unresolved.name       = NO_NAME;
 			t.unresolved.array_size = 0;
-			type_refs[count] = t;
+			type_refs[count]        = t;
 		}
 
 		if (current(state).kind == TOKEN_OPERATOR && current(state).op == OPERATOR_ASSIGN) {
@@ -1008,7 +1008,7 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 			}
 		}
 		else {
-			member_values[count].kind = TOKEN_NONE;
+			member_values[count].kind       = TOKEN_NONE;
 			member_values[count].identifier = NO_NAME;
 		}
 
@@ -1030,7 +1030,7 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 
 	for (size_t i = 0; i < count; ++i) {
 		member member;
-		member.name = member_names[i].identifier;
+		member.name  = member_names[i].identifier;
 		member.value = member_values[i];
 		if (member.value.kind != TOKEN_NONE) {
 			if (member.value.kind == TOKEN_BOOLEAN) {
@@ -1086,10 +1086,10 @@ static definition parse_function(state_t *state) {
 	match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
 	advance_state(state);
 
-	uint8_t parameters_size = 0;
-	name_id param_names[256] = {0};
-	type_ref param_types[256] = {0};
-	name_id param_attributes[256] = {0};
+	uint8_t  parameters_size       = 0;
+	name_id  param_names[256]      = {0};
+	type_ref param_types[256]      = {0};
+	name_id  param_attributes[256] = {0};
 
 	while (current(state).kind != TOKEN_RIGHT_PAREN) {
 		if (current(state).kind == TOKEN_HASH) {
@@ -1097,7 +1097,7 @@ static definition parse_function(state_t *state) {
 			match_token(state, TOKEN_LEFT_SQUARE, "Expected an opening square bracket");
 			advance_state(state);
 			match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
-			token attribute_name = current(state);
+			token attribute_name              = current(state);
 			param_attributes[parameters_size] = attribute_name.identifier;
 			advance_state(state);
 			match_token(state, TOKEN_RIGHT_SQUARE, "Expected a closing square bracket");
@@ -1126,14 +1126,14 @@ static definition parse_function(state_t *state) {
 	statement *block = parse_block(state, NULL);
 
 	definition d;
-	d.kind = DEFINITION_FUNCTION;
-	d.function = add_function(name.identifier);
-	function *f = get_function(d.function);
-	f->return_type = return_type;
+	d.kind             = DEFINITION_FUNCTION;
+	d.function         = add_function(name.identifier);
+	function *f        = get_function(d.function);
+	f->return_type     = return_type;
 	f->parameters_size = parameters_size;
 	for (uint8_t parameter_index = 0; parameter_index < parameters_size; ++parameter_index) {
-		f->parameter_names[parameter_index] = param_names[parameter_index];
-		f->parameter_types[parameter_index] = param_types[parameter_index];
+		f->parameter_names[parameter_index]      = param_names[parameter_index];
+		f->parameter_types[parameter_index]      = param_types[parameter_index];
 		f->parameter_attributes[parameter_index] = param_attributes[parameter_index];
 	}
 	f->block = block;
@@ -1151,7 +1151,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 	advance_state(state);
 
 	name_id type_name = NO_NAME;
-	type_id type = NO_TYPE;
+	type_id type      = NO_TYPE;
 
 	if (current(state).kind == TOKEN_LEFT_CURLY) {
 		type = parse_struct_inner(state, NO_NAME).type;
@@ -1162,7 +1162,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 		advance_state(state);
 	}
 
-	bool array = false;
+	bool     array      = false;
 	uint32_t array_size = UINT32_MAX;
 
 	if (current(state).kind == TOKEN_LEFT_SQUARE) {
@@ -1192,7 +1192,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 	if (type_name == NO_NAME) {
 		debug_context context = {0};
 		check(type != NO_TYPE, context, "Const has no type");
-		d.kind = DEFINITION_CONST_CUSTOM;
+		d.kind   = DEFINITION_CONST_CUSTOM;
 		d.global = add_global(type, attributes, name.identifier);
 	}
 	else if (type_name == add_name("tex2d")) {
@@ -1200,28 +1200,28 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 
 		type_id t_id = tex2d_type_id;
 		if (array) {
-			type_id array_type_id = add_type(get_type(t_id)->name);
-			get_type(array_type_id)->base = t_id;
+			type_id array_type_id               = add_type(get_type(t_id)->name);
+			get_type(array_type_id)->base       = t_id;
 			get_type(array_type_id)->array_size = array_size;
-			t_id = array_type_id;
+			t_id                                = array_type_id;
 		}
 
 		d.global = add_global(t_id, attributes, name.identifier);
 	}
 	else if (type_name == add_name("tex2darray")) {
-		d.kind = DEFINITION_TEX2DARRAY;
+		d.kind   = DEFINITION_TEX2DARRAY;
 		d.global = add_global(tex2darray_type_id, attributes, name.identifier);
 	}
 	else if (type_name == add_name("texcube")) {
-		d.kind = DEFINITION_TEXCUBE;
+		d.kind   = DEFINITION_TEXCUBE;
 		d.global = add_global(texcube_type_id, attributes, name.identifier);
 	}
 	else if (type_name == add_name("sampler")) {
-		d.kind = DEFINITION_SAMPLER;
+		d.kind   = DEFINITION_SAMPLER;
 		d.global = add_global(sampler_type_id, attributes, name.identifier);
 	}
 	else if (type_name == add_name("bvh")) {
-		d.kind = DEFINITION_BVH;
+		d.kind   = DEFINITION_BVH;
 		d.global = add_global(bvh_type_id, attributes, name.identifier);
 	}
 	else if (type_name == add_name("float")) {
@@ -1234,7 +1234,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 
 		float_value.value.floats[0] = (float)value->number;
 
-		d.kind = DEFINITION_CONST_BASIC;
+		d.kind   = DEFINITION_CONST_BASIC;
 		d.global = add_global_with_value(float_id, attributes, name.identifier, float_value);
 	}
 	else if (type_name == add_name("float2")) {
@@ -1253,7 +1253,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 			float2_value.value.floats[i] = (float)value->call.parameters.e[i]->number;
 		}
 
-		d.kind = DEFINITION_CONST_BASIC;
+		d.kind   = DEFINITION_CONST_BASIC;
 		d.global = add_global_with_value(float2_id, attributes, name.identifier, float2_value);
 	}
 	else if (type_name == add_name("float3")) {
@@ -1272,7 +1272,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 			float3_value.value.floats[i] = (float)value->call.parameters.e[i]->number;
 		}
 
-		d.kind = DEFINITION_CONST_BASIC;
+		d.kind   = DEFINITION_CONST_BASIC;
 		d.global = add_global_with_value(float3_id, attributes, name.identifier, float3_value);
 	}
 	else if (type_name == add_name("float4")) {
@@ -1300,8 +1300,8 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 
 		d.kind = DEFINITION_CONST_BASIC;
 		if (array) {
-			type_id array_type_id = add_type(get_type(float4_id)->name);
-			get_type(array_type_id)->base = float4_id;
+			type_id array_type_id               = add_type(get_type(float4_id)->name);
+			get_type(array_type_id)->base       = float4_id;
 			get_type(array_type_id)->array_size = array_size;
 
 			d.global = add_global(array_type_id, attributes, name.identifier);

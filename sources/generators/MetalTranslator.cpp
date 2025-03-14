@@ -25,7 +25,8 @@ namespace {
 	std::string replace(std::string str, char c1, char c2) {
 		std::string ret = str;
 		for (unsigned i = 0; i < str.length(); ++i) {
-			if (str[i] == c1) ret[i] = c2;
+			if (str[i] == c1)
+				ret[i] = c2;
 		}
 		return ret;
 	}
@@ -42,10 +43,11 @@ void MetalTranslator::outputCode(const Target &target, const char *sourcefilenam
 	out = &file;
 
 	for (unsigned i = 0; i < instructions.size(); ++i) {
-		outputting = false;
+		outputting        = false;
 		Instruction &inst = instructions[i];
 		outputInstruction(target, attributes, inst);
-		if (outputting) (*out) << "\n";
+		if (outputting)
+			(*out) << "\n";
 	}
 
 	file.close();
@@ -129,16 +131,16 @@ void MetalTranslator::outputInstruction(const Target &target, std::map<std::stri
 		break;
 	}
 	case OpAccessChain: {
-		Type resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id base = inst.operands[2];
+		Type resultType        = types[inst.operands[0]];
+		id   result            = inst.operands[1];
+		types[result]          = resultType;
+		id                base = inst.operands[2];
 		std::stringstream str;
 		str << getReference(base);
 
 		unsigned typeId = getBaseTypeID(variables[base].type);
 		for (unsigned i = 3; i < inst.length; ++i) {
-			Type t = types[typeId];
+			Type     t       = types[typeId];
 			unsigned elemRef = inst.operands[i];
 			switch (t.opcode) {
 			case OpTypeVector: {
@@ -163,10 +165,10 @@ void MetalTranslator::outputInstruction(const Target &target, std::map<std::stri
 			}
 			case OpTypeStruct: {
 				unsigned mbrIdx = atoi(getReference(elemRef).c_str());
-				unsigned mbrId = getMemberId(typeId, mbrIdx);
+				unsigned mbrId  = getMemberId(typeId, mbrIdx);
 				str << "." << getReference(mbrId);
 				Member mbr = members[mbrId];
-				typeId = mbr.type;
+				typeId     = mbr.type;
 				break;
 			}
 			case OpTypeArray: {
@@ -183,46 +185,46 @@ void MetalTranslator::outputInstruction(const Target &target, std::map<std::stri
 		break;
 	}
 	case OpTypeArray: {
-		unsigned id = inst.operands[0];
+		unsigned id      = inst.operands[0];
 		unsigned reftype = inst.operands[1];
-		Type t = types[reftype];                               // Pass through referenced type
-		t.opcode = inst.opcode;                                // ...except OpCode
-		t.baseType = reftype;                                  // ...and base type
-		t.length = atoi(references[inst.operands[2]].c_str()); // ...and length
-		t.byteSize = t.byteSize * t.length;                    // ...and byte size
-		t.isarray = true;                                      // ...and array marker
-		types[id] = t;
+		Type     t       = types[reftype];                             // Pass through referenced type
+		t.opcode         = inst.opcode;                                // ...except OpCode
+		t.baseType       = reftype;                                    // ...and base type
+		t.length         = atoi(references[inst.operands[2]].c_str()); // ...and length
+		t.byteSize       = t.byteSize * t.length;                      // ...and byte size
+		t.isarray        = true;                                       // ...and array marker
+		types[id]        = t;
 		break;
 	}
 	case OpTypeVector: {
-		unsigned id = inst.operands[0];
-		Type &t = types[id];
-		t.opcode = inst.opcode;
-		t.length = inst.operands[2];
+		unsigned id  = inst.operands[0];
+		Type    &t   = types[id];
+		t.opcode     = inst.opcode;
+		t.length     = inst.operands[2];
 		Type subtype = types[inst.operands[1]];
-		t.name = subtype.name + std::to_string(t.length);
-		t.byteSize = subtype.byteSize * t.length;
+		t.name       = subtype.name + std::to_string(t.length);
+		t.byteSize   = subtype.byteSize * t.length;
 		break;
 	}
 	case OpTypeMatrix: {
-		unsigned id = inst.operands[0];
-		Type &t = types[id];
-		t.opcode = inst.opcode;
-		t.length = inst.operands[2];
+		unsigned id   = inst.operands[0];
+		Type    &t    = types[id];
+		t.opcode      = inst.opcode;
+		t.length      = inst.operands[2];
 		Type &subtype = types[inst.operands[1]];
-		t.name = "float" + std::to_string(t.length) + "x" + std::to_string(subtype.length);
-		t.byteSize = subtype.byteSize * t.length;
+		t.name        = "float" + std::to_string(t.length) + "x" + std::to_string(subtype.length);
+		t.byteSize    = subtype.byteSize * t.length;
 		break;
 	}
 	case OpTypeImage: {
-		unsigned id = inst.operands[0];
-		Type &t = types[id];
-		t.opcode = inst.opcode;
-		t.imageDim = (Dim)inst.operands[2];
-		t.isDepthImage = (inst.operands[3] == 1);
-		t.isarray = !!(inst.operands[4]);
+		unsigned id           = inst.operands[0];
+		Type    &t            = types[id];
+		t.opcode              = inst.opcode;
+		t.imageDim            = (Dim)inst.operands[2];
+		t.isDepthImage        = (inst.operands[3] == 1);
+		t.isarray             = !!(inst.operands[4]);
 		t.isMultiSampledImage = !!(inst.operands[5]);
-		t.sampledImage = (SampledImage)inst.operands[6];
+		t.sampledImage        = (SampledImage)inst.operands[6];
 
 		if (t.isDepthImage) {
 			switch (t.imageDim) {
@@ -259,17 +261,17 @@ void MetalTranslator::outputInstruction(const Target &target, std::map<std::stri
 	}
 	case OpTypeSampler: {
 		unsigned id = inst.operands[0];
-		Type &t = types[id];
-		t.opcode = inst.opcode;
-		t.name = "sampler2D";
+		Type    &t  = types[id];
+		t.opcode    = inst.opcode;
+		t.name      = "sampler2D";
 		break;
 	}
 	case OpVariable: {
-		unsigned id = inst.operands[1];
-		Variable &v = variables[id];
-		v.type = inst.operands[0];
-		v.storage = (StorageClass)inst.operands[2];
-		v.declared = v.storage == StorageClassInput || v.storage == StorageClassOutput || v.storage == StorageClassUniformConstant;
+		unsigned  id = inst.operands[1];
+		Variable &v  = variables[id];
+		v.type       = inst.operands[0];
+		v.storage    = (StorageClass)inst.operands[2];
+		v.declared   = v.storage == StorageClassInput || v.storage == StorageClassOutput || v.storage == StorageClassUniformConstant;
 		if (names.find(id) != names.end()) {
 			if (v.storage == StorageClassInput) {
 				if (stage == StageVertex) {
@@ -313,11 +315,11 @@ void MetalTranslator::outputInstruction(const Target &target, std::map<std::stri
 		(*out) << "struct " << name << "_uniforms {\n";
 		++indentation;
 		for (std::map<unsigned, Variable>::iterator v = variables.begin(); v != variables.end(); ++v) {
-			unsigned id = v->first;
+			unsigned  id       = v->first;
 			Variable &variable = v->second;
 
 			Type &t = types[variable.type];
-			Name n = names[id];
+			Name  n = names[id];
 
 			if (variable.storage == StorageClassUniformConstant) {
 				if (t.name != "sampler2D") {
@@ -334,11 +336,11 @@ void MetalTranslator::outputInstruction(const Target &target, std::map<std::stri
 		++indentation;
 		int i = 0;
 		for (std::map<unsigned, Variable>::iterator v = variables.begin(); v != variables.end(); ++v) {
-			unsigned id = v->first;
+			unsigned  id       = v->first;
 			Variable &variable = v->second;
 
 			Type &t = types[variable.type];
-			Name n = names[id];
+			Name  n = names[id];
 
 			if (variable.storage == StorageClassInput) {
 				indent(out);
@@ -361,11 +363,11 @@ void MetalTranslator::outputInstruction(const Target &target, std::map<std::stri
 			++indentation;
 			i = 0;
 			for (std::map<unsigned, Variable>::iterator v = variables.begin(); v != variables.end(); ++v) {
-				unsigned id = v->first;
+				unsigned  id       = v->first;
 				Variable &variable = v->second;
 
 				Type &t = types[variable.type];
-				Name n = names[id];
+				Name  n = names[id];
 
 				if (variable.storage == StorageClassOutput) {
 					if (variable.builtin && stage == StageVertex) {
@@ -391,27 +393,26 @@ void MetalTranslator::outputInstruction(const Target &target, std::map<std::stri
 
 		indent(out);
 		if (stage == StageVertex) {
-			(*out) << "vertex " << name << "_out " << name << "_main(device " << name << "_in* vertices [[buffer(0)]]"
-			       << ", constant " << name << "_uniforms& uniforms [[buffer(1)]]"
-			       << ", unsigned int vid [[vertex_id]]) {\n";
+			(*out) << "vertex " << name << "_out " << name << "_main(device " << name << "_in* vertices [[buffer(0)]]" << ", constant " << name
+			       << "_uniforms& uniforms [[buffer(1)]]" << ", unsigned int vid [[vertex_id]]) {\n";
 		}
 		else {
-			(*out) << "fragment float4 " << name << "_main(constant " << name << "_uniforms& uniforms [[buffer(0)]]"
-			       << ", " << name << "_in input [[stage_in]]";
+			(*out) << "fragment float4 " << name << "_main(constant " << name << "_uniforms& uniforms [[buffer(0)]]" << ", " << name
+			       << "_in input [[stage_in]]";
 
 			int texindex = 0;
 			for (std::map<unsigned, Variable>::iterator v = variables.begin(); v != variables.end(); ++v) {
-				unsigned id = v->first;
+				unsigned  id       = v->first;
 				Variable &variable = v->second;
 
 				Type &t = types[variable.type];
-				Name n = names[id];
+				Name  n = names[id];
 
 				if (variable.storage == StorageClassUniformConstant) {
 					if (t.name == "sampler2D") {
 						indent(out);
-						(*out) << ", texture2d<float> " << n.name << " [[texture(" << texindex << ")]]"
-						       << ", sampler " << n.name << "Sampler [[sampler(" << texindex << ")]]";
+						(*out) << ", texture2d<float> " << n.name << " [[texture(" << texindex << ")]]" << ", sampler " << n.name << "Sampler [[sampler("
+						       << texindex << ")]]";
 						++texindex;
 					}
 				}
@@ -429,9 +430,9 @@ void MetalTranslator::outputInstruction(const Target &target, std::map<std::stri
 	}
 	case OpMatrixTimesVector: {
 		// Type resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		id matrix = inst.operands[2];
-		id vector = inst.operands[3];
+		id                result = inst.operands[1];
+		id                matrix = inst.operands[2];
+		id                vector = inst.operands[3];
 		std::stringstream str;
 		str << "(" << getReference(matrix) << " * " << getReference(vector) << ")";
 		references[result] = str.str();
@@ -439,9 +440,9 @@ void MetalTranslator::outputInstruction(const Target &target, std::map<std::stri
 	}
 	case OpImageSampleImplicitLod: {
 		// Type resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		id sampler = inst.operands[2];
-		id coordinate = inst.operands[3];
+		id                result     = inst.operands[1];
+		id                sampler    = inst.operands[2];
+		id                coordinate = inst.operands[3];
 		std::stringstream str;
 		str << getReference(sampler) << ".sample(" << getReference(sampler) << "Sampler, " << getReference(coordinate) << ")";
 		references[result] = str.str();
@@ -463,8 +464,8 @@ void MetalTranslator::outputInstruction(const Target &target, std::map<std::stri
 		break;
 	case OpStore: {
 		output(out);
-		unsigned refId = inst.operands[0];
-		Variable &v = variables[refId];
+		unsigned  refId = inst.operands[0];
+		Variable &v     = variables[refId];
 		if (v.type != 0 && !v.declared) {
 			Type &t = getBaseType(v.type);
 			(*out) << t.name << " " << getReference(refId);
@@ -481,11 +482,11 @@ void MetalTranslator::outputInstruction(const Target &target, std::map<std::stri
 	}
 	case OpConstantComposite: {
 		Type resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
+		id   result     = inst.operands[1];
+		types[result]   = resultType;
 
 		std::stringstream str;
-		std::string closer;
+		std::string       closer;
 		if (resultType.isarray) {
 			str << "{";
 			closer = "}";
@@ -496,7 +497,8 @@ void MetalTranslator::outputInstruction(const Target &target, std::map<std::stri
 		}
 		for (unsigned i = 2; i < inst.length; ++i) {
 			str << getReference(inst.operands[i]);
-			if (i < inst.length - 1) str << ", ";
+			if (i < inst.length - 1)
+				str << ", ";
 		}
 		str << closer;
 

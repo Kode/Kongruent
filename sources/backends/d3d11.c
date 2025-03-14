@@ -58,8 +58,9 @@ int compile_hlsl_to_d3d11(const char *source, uint8_t **output, size_t *outputle
 
 	ID3DBlob *errorMessage = NULL;
 	ID3DBlob *shaderBuffer = NULL;
-	UINT flags = 0;
-	if (debug) flags |= D3DCOMPILE_DEBUG;
+	UINT      flags        = 0;
+	if (debug)
+		flags |= D3DCOMPILE_DEBUG;
 	HRESULT hr = D3DCompile(source, length, "Unknown", NULL, NULL, "main", shaderString(stage, 4), flags, 0, &shaderBuffer, &errorMessage);
 	if (hr != S_OK) {
 		hr = D3DCompile(source, length, "Unknown", NULL, NULL, "main", shaderString(stage, 5), flags, 0, &shaderBuffer, &errorMessage);
@@ -152,9 +153,9 @@ int compile_hlsl_to_d3d11(const char *source, uint8_t **output, size_t *outputle
 		file->write((char *)shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize());
 		*outputlength += shaderBuffer->GetBufferSize();*/
 
-		SIZE_T size = shaderBuffer->lpVtbl->GetBufferSize(shaderBuffer);
+		SIZE_T size   = shaderBuffer->lpVtbl->GetBufferSize(shaderBuffer);
 		*outputlength = size;
-		*output = (uint8_t *)malloc(size);
+		*output       = (uint8_t *)malloc(size);
 		memcpy(*output, shaderBuffer->lpVtbl->GetBufferPointer(shaderBuffer), size);
 
 		return 0;
@@ -162,8 +163,8 @@ int compile_hlsl_to_d3d11(const char *source, uint8_t **output, size_t *outputle
 	else {
 		debug_context context = {0};
 		check(errorMessage != NULL, context, "Error message missing");
-		SIZE_T size = errorMessage->lpVtbl->GetBufferSize(errorMessage);
-		char *error = malloc(size + 1);
+		SIZE_T size  = errorMessage->lpVtbl->GetBufferSize(errorMessage);
+		char  *error = malloc(size + 1);
 		check(error != NULL, context, "Could not allocate error string");
 		memcpy(error, errorMessage->lpVtbl->GetBufferPointer(errorMessage), size);
 		error[size] = 0;

@@ -23,23 +23,23 @@ typedef struct global_value {
 		GLOBAL_VALUE_NONE
 	} kind;
 	union {
-		float floats[4];
-		int ints[4];
+		float    floats[4];
+		int      ints[4];
 		unsigned uints[4];
-		bool b;
+		bool     b;
 	} value;
 } global_value;
 
 struct descriptor_set;
 
 typedef struct global {
-	name_id name;
-	type_id type;
-	uint64_t var_index;
-	global_value value;
-	attribute_list attributes;
+	name_id                name;
+	type_id                type;
+	uint64_t               var_index;
+	global_value           value;
+	attribute_list         attributes;
 	struct descriptor_set *sets[64];
-	size_t sets_count;
+	size_t                 sets_count;
 } global;
 
 void globals_init(void);

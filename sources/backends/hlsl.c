@@ -193,7 +193,7 @@ static bool is_input(type_id t, type_id inputs[64], size_t inputs_count) {
 static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id inputs[64], size_t inputs_count, type_id output, function *main,
                         function **rayshaders, size_t rayshaders_count) {
 	type_id types[256];
-	size_t types_size = 0;
+	size_t  types_size = 0;
 	if (main != NULL) {
 		find_referenced_types(main, types, &types_size);
 	}
@@ -206,7 +206,7 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 
 	if (inputs_count > 0) {
 		for (size_t input_index = 0; input_index < inputs_count - 1; ++input_index) {
-			type *t = get_type(inputs[input_index]);
+			type *t                        = get_type(inputs[input_index]);
 			input_offsets[input_index + 1] = input_offsets[input_index] + t->members.size;
 		}
 	}
@@ -275,9 +275,9 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 }
 
 static void assign_register_indices(uint32_t *register_indices, function *shader) {
-	uint32_t cbv_index = 0;
-	uint32_t srv_index = 0;
-	uint32_t uav_index = 0;
+	uint32_t cbv_index     = 0;
+	uint32_t srv_index     = 0;
+	uint32_t uav_index     = 0;
 	uint32_t sampler_index = 0;
 
 	descriptor_set_group *set_group = get_descriptor_set_group(shader->descriptor_set_group_index);
@@ -291,8 +291,8 @@ static void assign_register_indices(uint32_t *register_indices, function *shader
 				error(context, "More than one root constants struct found");
 			}
 
-			uint32_t size = 0;
-			global_id g = UINT32_MAX;
+			uint32_t  size = 0;
+			global_id g    = UINT32_MAX;
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 				definition *def = &set->definitions[definition_index];
 
@@ -320,7 +320,7 @@ static void assign_register_indices(uint32_t *register_indices, function *shader
 
 			global *g = get_global(global_index);
 
-			type *t = get_type(g->type);
+			type   *t         = get_type(g->type);
 			type_id base_type = t->array_size > 0 ? t->base : g->type;
 
 			if (base_type == sampler_type_id) {
@@ -369,7 +369,7 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 	assign_register_indices(register_indices, main);
 
 	global_id globals[256];
-	size_t globals_size = 0;
+	size_t    globals_size = 0;
 	if (main != NULL) {
 		find_referenced_globals(main, globals, &globals_size);
 	}
@@ -378,10 +378,10 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 	}
 
 	for (size_t i = 0; i < globals_size; ++i) {
-		global *g = get_global(globals[i]);
-		int register_index = register_indices[globals[i]];
+		global *g              = get_global(globals[i]);
+		int     register_index = register_indices[globals[i]];
 
-		type *t = get_type(g->type);
+		type   *t         = get_type(g->type);
 		type_id base_type = t->array_size > 0 ? t->base : g->type;
 
 		if (base_type == sampler_type_id) {
@@ -445,19 +445,19 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 }
 
 static function *raygen_shaders[256];
-static size_t raygen_shaders_size = 0;
+static size_t    raygen_shaders_size = 0;
 
 static function *raymiss_shaders[256];
-static size_t raymiss_shaders_size = 0;
+static size_t    raymiss_shaders_size = 0;
 
 static function *rayclosesthit_shaders[256];
-static size_t rayclosesthit_shaders_size = 0;
+static size_t    rayclosesthit_shaders_size = 0;
 
 static function *rayintersection_shaders[256];
-static size_t rayintersection_shaders_size = 0;
+static size_t    rayintersection_shaders_size = 0;
 
 static function *rayanyhit_shaders[256];
-static size_t rayanyhit_shaders_size = 0;
+static size_t    rayanyhit_shaders_size = 0;
 
 static bool is_raygen_shader(function *f) {
 	for (size_t rayshader_index = 0; rayshader_index < raygen_shaders_size; ++rayshader_index) {
@@ -505,7 +505,7 @@ static bool is_rayanyhit_shader(function *f) {
 }
 
 static descriptor_set *all_descriptor_sets[256];
-static size_t all_descriptor_sets_count = 0;
+static size_t          all_descriptor_sets_count = 0;
 
 static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 	uint32_t register_indices[512] = {0};
@@ -524,8 +524,8 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 				error(context, "More than one root constants struct found");
 			}
 
-			uint32_t size = 0;
-			global_id g = UINT32_MAX;
+			uint32_t  size = 0;
+			global_id g    = UINT32_MAX;
 			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
 				definition *def = &set->definitions[definition_index];
 
@@ -547,9 +547,9 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 			continue;
 		}
 
-		bool has_sampler = false;
-		bool has_other = false;
-		bool has_dynamic = false;
+		bool has_sampler   = false;
+		bool has_other     = false;
+		bool has_dynamic   = false;
 		bool has_boundless = false;
 
 		for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
@@ -734,7 +734,7 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 }
 
 static type_id payload_types[256];
-static size_t payload_types_count = 0;
+static size_t  payload_types_count = 0;
 
 static bool is_payload_type(type_id t) {
 	for (size_t payload_index = 0; payload_index < payload_types_count; ++payload_index) {
@@ -747,7 +747,7 @@ static bool is_payload_type(type_id t) {
 
 static void write_functions(char *hlsl, size_t *offset, shader_stage stage, function *main, function **rayshaders, size_t rayshaders_count) {
 	function *functions[256];
-	size_t functions_size = 0;
+	size_t    functions_size = 0;
 
 	if (main != NULL) {
 		functions[functions_size] = main;
@@ -767,7 +767,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 		function *f = functions[i];
 
 		uint8_t *data = f->code.o;
-		size_t size = f->code.size;
+		size_t   size = f->code.size;
 
 		size_t index = 0;
 		while (index < size) {
@@ -849,7 +849,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 		check(f->block != NULL, context, "Function block missing");
 
 		uint8_t *data = f->code.o;
-		size_t size = f->code.size;
+		size_t   size = f->code.size;
 
 		uint64_t parameter_ids[256] = {0};
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
@@ -996,7 +996,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				}
 
 				type_id vertex_type = (type_id)vertices_attribute->parameters[1];
-				char *vertex_name = get_name(get_type(vertex_type)->name);
+				char   *vertex_name = get_name(get_type(vertex_type)->name);
 
 				*offset += sprintf(&hlsl[*offset], "[outputtopology(\"triangle\")][numthreads(%i, %i, %i)] %s main(", (int)threads_attribute->parameters[0],
 				                   (int)threads_attribute->parameters[1], (int)threads_attribute->parameters[2], type_string(f->return_type.type));
@@ -1138,7 +1138,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			switch (o->type) {
 			case OPCODE_LOAD_MEMBER: {
 				uint64_t global_var_index = 0;
-				global *g = NULL;
+				global  *g                = NULL;
 				for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
 					g = get_global(j);
 					if (o->op_load_member.from.index == g->var_index) {
@@ -1190,7 +1190,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			case OPCODE_DIVIDE_AND_STORE_MEMBER:
 			case OPCODE_MULTIPLY_AND_STORE_MEMBER: {
 				uint64_t global_var_index = 0;
-				global *g = NULL;
+				global  *g                = NULL;
 				for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
 					g = get_global(j);
 					if (o->op_store_member.to.index == g->var_index) {
@@ -1204,8 +1204,8 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 
 				indent(hlsl, offset, indentation);
 				*offset += sprintf(&hlsl[*offset], "_%" PRIu64, o->op_store_member.to.index);
-				type *s = get_type(o->op_store_member.member_parent_type);
-				bool is_array = o->op_store_member.member_parent_array;
+				type *s        = get_type(o->op_store_member.member_parent_type);
+				bool  is_array = o->op_store_member.member_parent_array;
 				for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
 					if (is_array) {
 						type *from_type = get_type(o->op_store_member.member_parent_type);
@@ -1232,7 +1232,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 						check(o->op_store_member.static_member_indices[i] < s->members.size, context, "Member index out of bounds");
 						*offset += sprintf(&hlsl[*offset], ".%s", member_string(s, s->members.m[o->op_store_member.static_member_indices[i]].name));
 						is_array = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type)->array_size > 0;
-						s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
+						s        = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
 					}
 				}
 
@@ -1426,7 +1426,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 }
 
 static void hlsl_export_vertex(char *directory, api_kind d3d, function *main) {
-	char *hlsl = (char *)calloc(1024 * 1024, 1);
+	char  *hlsl   = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
 	assert(main->parameters_size > 0);
@@ -1446,9 +1446,9 @@ static void hlsl_export_vertex(char *directory, api_kind d3d, function *main) {
 
 	write_functions(hlsl, &offset, SHADER_STAGE_VERTEX, main, NULL, 0);
 
-	uint8_t *output = NULL;
-	size_t output_size = 0;
-	int result = 1;
+	uint8_t *output      = NULL;
+	size_t   output_size = 0;
+	int      result      = 1;
 	switch (d3d) {
 	case API_DIRECT3D9:
 		result = compile_hlsl_to_d3d9(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
@@ -1476,7 +1476,7 @@ static void hlsl_export_vertex(char *directory, api_kind d3d, function *main) {
 }
 
 static void hlsl_export_amplification(char *directory, function *main) {
-	char *hlsl = (char *)calloc(1024 * 1024, 1);
+	char  *hlsl   = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
 	write_types(hlsl, &offset, SHADER_STAGE_AMPLIFICATION, NULL, 0, NO_TYPE, main, NULL, 0);
@@ -1485,9 +1485,9 @@ static void hlsl_export_amplification(char *directory, function *main) {
 
 	write_functions(hlsl, &offset, SHADER_STAGE_AMPLIFICATION, main, NULL, 0);
 
-	uint8_t *output = NULL;
-	size_t output_size = 0;
-	int result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_AMPLIFICATION, false);
+	uint8_t *output      = NULL;
+	size_t   output_size = 0;
+	int      result      = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_AMPLIFICATION, false);
 
 	debug_context context = {0};
 	check(result == 0, context, "HLSL compilation failed");
@@ -1504,7 +1504,7 @@ static void hlsl_export_amplification(char *directory, function *main) {
 }
 
 static void hlsl_export_mesh(char *directory, function *main) {
-	char *hlsl = (char *)calloc(1024 * 1024, 1);
+	char  *hlsl   = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
 	attribute *vertices_attribute = find_attribute(&main->attributes, add_name("vertices"));
@@ -1521,9 +1521,9 @@ static void hlsl_export_mesh(char *directory, function *main) {
 
 	write_functions(hlsl, &offset, SHADER_STAGE_MESH, main, NULL, 0);
 
-	uint8_t *output = NULL;
-	size_t output_size = 0;
-	int result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_MESH, false);
+	uint8_t *output      = NULL;
+	size_t   output_size = 0;
+	int      result      = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_MESH, false);
 
 	debug_context context = {0};
 	check(result == 0, context, "HLSL compilation failed");
@@ -1540,7 +1540,7 @@ static void hlsl_export_mesh(char *directory, function *main) {
 }
 
 static void hlsl_export_fragment(char *directory, api_kind d3d, function *main) {
-	char *hlsl = (char *)calloc(1024 * 1024, 1);
+	char  *hlsl   = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
 	assert(main->parameters_size > 0);
@@ -1555,9 +1555,9 @@ static void hlsl_export_fragment(char *directory, api_kind d3d, function *main) 
 
 	write_functions(hlsl, &offset, SHADER_STAGE_FRAGMENT, main, NULL, 0);
 
-	uint8_t *output = NULL;
-	size_t output_size = 0;
-	int result = 1;
+	uint8_t *output      = NULL;
+	size_t   output_size = 0;
+	int      result      = 1;
 	switch (d3d) {
 	case API_DIRECT3D9:
 		result = compile_hlsl_to_d3d9(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
@@ -1585,7 +1585,7 @@ static void hlsl_export_fragment(char *directory, api_kind d3d, function *main) 
 }
 
 static void hlsl_export_compute(char *directory, api_kind d3d, function *main) {
-	char *hlsl = (char *)calloc(1024 * 1024, 1);
+	char  *hlsl   = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
 	write_types(hlsl, &offset, SHADER_STAGE_COMPUTE, NULL, 0, NO_TYPE, main, NULL, 0);
@@ -1596,9 +1596,9 @@ static void hlsl_export_compute(char *directory, api_kind d3d, function *main) {
 
 	debug_context context = {0};
 
-	uint8_t *output = NULL;
-	size_t output_size = 0;
-	int result = 1;
+	uint8_t *output      = NULL;
+	size_t   output_size = 0;
+	int      result      = 1;
 	switch (d3d) {
 	case API_DIRECT3D9:
 		error(context, "Compute shaders are not supported in Direct3D 9");
@@ -1626,13 +1626,13 @@ static void hlsl_export_compute(char *directory, api_kind d3d, function *main) {
 }
 
 static void hlsl_export_all_ray_shaders(char *directory) {
-	char *hlsl = (char *)calloc(1024 * 1024, 1);
+	char         *hlsl    = (char *)calloc(1024 * 1024, 1);
 	debug_context context = {0};
 	check(hlsl != NULL, context, "Could not allocate the hlsl string");
 	size_t offset = 0;
 
 	function *all_rayshaders[256 * 3];
-	size_t all_rayshaders_size = 0;
+	size_t    all_rayshaders_size = 0;
 	for (size_t rayshader_index = 0; rayshader_index < raygen_shaders_size; ++rayshader_index) {
 		all_rayshaders[all_rayshaders_size] = raygen_shaders[rayshader_index];
 		all_rayshaders_size += 1;
@@ -1683,9 +1683,9 @@ static void hlsl_export_all_ray_shaders(char *directory) {
 
 	write_functions(hlsl, &offset, SHADER_STAGE_RAY_GENERATION, NULL, all_rayshaders, all_rayshaders_size);
 
-	uint8_t *output = NULL;
-	size_t output_size = 0;
-	int result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_RAY_GENERATION, false);
+	uint8_t *output      = NULL;
+	size_t   output_size = 0;
+	int      result      = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_RAY_GENERATION, false);
 	check(result == 0, context, "HLSL compilation failed");
 
 	char *name = "ray";
@@ -1715,10 +1715,10 @@ void hlsl_export(char *directory, api_kind d3d) {
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-			name_id vertex_shader_name = NO_NAME;
+			name_id vertex_shader_name        = NO_NAME;
 			name_id amplification_shader_name = NO_NAME;
-			name_id mesh_shader_name = NO_NAME;
-			name_id fragment_shader_name = NO_NAME;
+			name_id mesh_shader_name          = NO_NAME;
+			name_id fragment_shader_name      = NO_NAME;
 
 			for (size_t j = 0; j < t->members.size; ++j) {
 				if (t->members.m[j].name == add_name("vertex")) {
@@ -1739,10 +1739,10 @@ void hlsl_export(char *directory, api_kind d3d) {
 			check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "vertex or mesh shader missing");
 			check(fragment_shader_name != NO_NAME, context, "fragment shader missing");
 
-			function *vertex_shader = NULL;
+			function *vertex_shader        = NULL;
 			function *amplification_shader = NULL;
-			function *mesh_shader = NULL;
-			function *fragment_shader = NULL;
+			function *mesh_shader          = NULL;
+			function *fragment_shader      = NULL;
 
 			for (function_id i = 0; get_function(i) != NULL; ++i) {
 				function *f = get_function(i);
@@ -1765,7 +1765,7 @@ void hlsl_export(char *directory, api_kind d3d) {
 			}
 
 			global_id all_globals[256];
-			size_t all_globals_size = 0;
+			size_t    all_globals_size = 0;
 
 			if (vertex_shader != NULL) {
 				find_referenced_globals(vertex_shader, all_globals, &all_globals_size);
@@ -1802,13 +1802,13 @@ void hlsl_export(char *directory, api_kind d3d) {
 	}
 
 	function *compute_shaders[256];
-	size_t compute_shaders_size = 0;
+	size_t    compute_shaders_size = 0;
 
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
 		if (has_attribute(&f->attributes, add_name("compute"))) {
 			global_id all_globals[256];
-			size_t all_globals_size = 0;
+			size_t    all_globals_size = 0;
 
 			find_referenced_globals(f, all_globals, &all_globals_size);
 
@@ -1839,11 +1839,11 @@ void hlsl_export(char *directory, api_kind d3d) {
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 		if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-			name_id raygen_shader_name = NO_NAME;
-			name_id raymiss_shader_name = NO_NAME;
-			name_id rayclosesthit_shader_name = NO_NAME;
+			name_id raygen_shader_name          = NO_NAME;
+			name_id raymiss_shader_name         = NO_NAME;
+			name_id rayclosesthit_shader_name   = NO_NAME;
 			name_id rayintersection_shader_name = NO_NAME;
-			name_id rayanyhit_shader_name = NO_NAME;
+			name_id rayanyhit_shader_name       = NO_NAME;
 
 			for (size_t j = 0; j < t->members.size; ++j) {
 				if (t->members.m[j].name == add_name("gen")) {

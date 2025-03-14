@@ -10,8 +10,8 @@ typedef enum variable_kind { VARIABLE_GLOBAL, VARIABLE_LOCAL } variable_kind;
 
 typedef struct variable {
 	variable_kind kind;
-	uint64_t index;
-	type_ref type;
+	uint64_t      index;
+	type_ref      type;
 } variable;
 
 typedef struct opcode {
@@ -74,37 +74,37 @@ typedef struct opcode {
 			variable from;
 			variable to;
 
-			bool dynamic_member[64];
+			bool     dynamic_member[64];
 			variable dynamic_member_indices[64];
 
 			uint32_t static_member_indices[64];
-			type_id member_parent_type;
-			bool member_parent_array;
+			type_id  member_parent_type;
+			bool     member_parent_array;
 
 			uint8_t member_indices_size;
 		} op_store_member;
 		struct {
-			float number;
+			float    number;
 			variable to;
 		} op_load_float_constant;
 		struct {
-			int number;
+			int      number;
 			variable to;
 		} op_load_int_constant;
 		struct {
-			bool boolean;
+			bool     boolean;
 			variable to;
 		} op_load_bool_constant;
 		struct {
 			variable from;
 			variable to;
 
-			bool dynamic_member[64];
+			bool     dynamic_member[64];
 			variable dynamic_member_indices[64];
 
 			uint32_t static_member_indices[64];
-			type_id member_parent_type;
-			bool member_parent_array;
+			type_id  member_parent_type;
+			bool     member_parent_array;
 
 			uint8_t member_indices_size;
 		} op_load_member;
@@ -113,9 +113,9 @@ typedef struct opcode {
 		} op_return;
 		struct {
 			variable var;
-			name_id func;
+			name_id  func;
 			variable parameters[64];
-			uint8_t parameters_size;
+			uint8_t  parameters_size;
 		} op_call;
 		struct {
 			variable right;
@@ -154,7 +154,7 @@ typedef struct opcode {
 
 typedef struct opcodes {
 	uint8_t o[OPCODES_SIZE];
-	size_t size;
+	size_t  size;
 } opcodes;
 
 void allocate_globals(void);

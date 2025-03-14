@@ -13,7 +13,7 @@ struct expression;
 
 typedef struct expressions {
 	struct expression *e[256];
-	size_t size;
+	size_t             size;
 } expressions;
 
 typedef struct expression {
@@ -38,21 +38,21 @@ typedef struct expression {
 	union {
 		struct {
 			struct expression *left;
-			operatorr op;
+			operatorr          op;
 			struct expression *right;
 		} binary;
 		struct {
-			operatorr op;
+			operatorr          op;
 			struct expression *right;
 		} unary;
-		bool boolean;
+		bool   boolean;
 		double number;
 		// char string[MAX_IDENTIFIER_SIZE];
-		name_id variable;
-		uint32_t index;
+		name_id            variable;
+		uint32_t           index;
 		struct expression *grouping;
 		struct {
-			name_id func_name;
+			name_id     func_name;
 			expressions parameters;
 		} call;
 		struct {
@@ -69,24 +69,24 @@ struct statement;
 
 typedef struct statements {
 	struct statement *s[256];
-	size_t size;
+	size_t            size;
 } statements;
 
 typedef struct local_variable {
-	name_id name;
+	name_id  name;
 	type_ref type;
 	uint64_t variable_id;
 } local_variable;
 
 typedef struct local_variables {
 	local_variable v[256];
-	size_t size;
+	size_t         size;
 } local_variables;
 
 typedef struct block {
-	struct block *parent;
+	struct block   *parent;
 	local_variables vars;
-	statements statements;
+	statements      statements;
 } block;
 
 typedef struct statement {
@@ -103,20 +103,20 @@ typedef struct statement {
 	union {
 		expression *expression;
 		struct {
-			expression *test;
+			expression       *test;
 			struct statement *if_block;
-			expression *else_tests[64];
+			expression       *else_tests[64];
 			struct statement *else_blocks[64];
-			uint16_t else_size;
+			uint16_t          else_size;
 		} iffy;
 		struct {
-			expression *test;
+			expression       *test;
 			struct statement *while_block;
 		} whiley;
 		block block;
 		struct {
 			local_variable var;
-			expression *init;
+			expression    *init;
 		} local_variable;
 	};
 } statement;
@@ -136,8 +136,8 @@ typedef struct definition {
 
 	union {
 		function_id function;
-		global_id global;
-		type_id type;
+		global_id   global;
+		type_id     type;
 	};
 } definition;
 

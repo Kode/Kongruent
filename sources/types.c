@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static type *types = NULL;
-static type_id types_size = 1024;
+static type   *types           = NULL;
+static type_id types_size      = 1024;
 static type_id next_type_index = 0;
 
 type_id void_id;
@@ -45,7 +45,7 @@ type_id ray_type_id;
 type_id bvh_type_id;
 
 typedef struct prefix {
-	char str[5];
+	char   str[5];
 	size_t size;
 } prefix;
 
@@ -56,7 +56,7 @@ static void permute_for_real(const char *set, prefix p, int n, int k, void (*fou
 	}
 
 	for (int i = 0; i < n; ++i) {
-		prefix newPrefix = p;
+		prefix newPrefix              = p;
 		newPrefix.str[newPrefix.size] = set[i];
 		++newPrefix.size;
 		permute_for_real(set, newPrefix, n, k - 1, found);
@@ -71,367 +71,367 @@ static void permute(const char *set, int n, int k, void (*found)(char *)) {
 }
 
 static void vec2_found_f32(char *permutation) {
-	type *t = get_type(float2_id);
+	type         *t       = get_type(float2_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = float_id;
 	++t->members.size;
 }
 
 static void vec2_found_vec2(char *permutation) {
-	type *t = get_type(float2_id);
+	type         *t       = get_type(float2_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = float2_id;
 	++t->members.size;
 }
 
 static void vec3_found_f32(char *permutation) {
-	type *t = get_type(float3_id);
+	type         *t       = get_type(float3_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = float_id;
 	++t->members.size;
 }
 
 static void vec3_found_vec2(char *permutation) {
-	type *t = get_type(float3_id);
+	type         *t       = get_type(float3_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = float2_id;
 	++t->members.size;
 }
 
 static void vec3_found_vec3(char *permutation) {
-	type *t = get_type(float3_id);
+	type         *t       = get_type(float3_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = float3_id;
 	++t->members.size;
 }
 
 static void vec4_found_f32(char *permutation) {
-	type *t = get_type(float4_id);
+	type         *t       = get_type(float4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = float_id;
 	++t->members.size;
 }
 
 static void vec4_found_vec2(char *permutation) {
-	type *t = get_type(float4_id);
+	type         *t       = get_type(float4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = float2_id;
 	++t->members.size;
 }
 
 static void vec4_found_vec3(char *permutation) {
-	type *t = get_type(float4_id);
+	type         *t       = get_type(float4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = float3_id;
 	++t->members.size;
 }
 
 static void vec4_found_vec4(char *permutation) {
-	type *t = get_type(float4_id);
+	type         *t       = get_type(float4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = float4_id;
 	++t->members.size;
 }
 
 static void int2_found_int(char *permutation) {
-	type *t = get_type(int2_id);
+	type         *t       = get_type(int2_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = int_id;
 	++t->members.size;
 }
 
 static void int2_found_int2(char *permutation) {
-	type *t = get_type(int2_id);
+	type         *t       = get_type(int2_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = int2_id;
 	++t->members.size;
 }
 
 static void int3_found_int(char *permutation) {
-	type *t = get_type(int3_id);
+	type         *t       = get_type(int3_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = int_id;
 	++t->members.size;
 }
 
 static void int3_found_int2(char *permutation) {
-	type *t = get_type(int3_id);
+	type         *t       = get_type(int3_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = int2_id;
 	++t->members.size;
 }
 
 static void int3_found_int3(char *permutation) {
-	type *t = get_type(int3_id);
+	type         *t       = get_type(int3_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = int3_id;
 	++t->members.size;
 }
 
 static void int4_found_int(char *permutation) {
-	type *t = get_type(int4_id);
+	type         *t       = get_type(int4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = int_id;
 	++t->members.size;
 }
 
 static void int4_found_int2(char *permutation) {
-	type *t = get_type(int4_id);
+	type         *t       = get_type(int4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = int2_id;
 	++t->members.size;
 }
 
 static void int4_found_int3(char *permutation) {
-	type *t = get_type(int4_id);
+	type         *t       = get_type(int4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = int3_id;
 	++t->members.size;
 }
 
 static void int4_found_int4(char *permutation) {
-	type *t = get_type(int4_id);
+	type         *t       = get_type(int4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = int4_id;
 	++t->members.size;
 }
 
 static void uint2_found_uint(char *permutation) {
-	type *t = get_type(uint2_id);
+	type         *t       = get_type(uint2_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint_id;
 	++t->members.size;
 }
 
 static void uint2_found_uint2(char *permutation) {
-	type *t = get_type(uint2_id);
+	type         *t       = get_type(uint2_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint2_id;
 	++t->members.size;
 }
 
 static void uint3_found_uint(char *permutation) {
-	type *t = get_type(uint3_id);
+	type         *t       = get_type(uint3_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint_id;
 	++t->members.size;
 }
 
 static void uint3_found_uint2(char *permutation) {
-	type *t = get_type(uint3_id);
+	type         *t       = get_type(uint3_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint2_id;
 	++t->members.size;
 }
 
 static void uint3_found_uint3(char *permutation) {
-	type *t = get_type(uint3_id);
+	type         *t       = get_type(uint3_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint3_id;
 	++t->members.size;
 }
 
 static void uint4_found_uint(char *permutation) {
-	type *t = get_type(uint4_id);
+	type         *t       = get_type(uint4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint_id;
 	++t->members.size;
 }
 
 static void uint4_found_uint2(char *permutation) {
-	type *t = get_type(uint4_id);
+	type         *t       = get_type(uint4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint2_id;
 	++t->members.size;
 }
 
 static void uint4_found_uint3(char *permutation) {
-	type *t = get_type(uint4_id);
+	type         *t       = get_type(uint4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint3_id;
 	++t->members.size;
 }
 
 static void uint4_found_uint4(char *permutation) {
-	type *t = get_type(uint4_id);
+	type         *t       = get_type(uint4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = uint4_id;
 	++t->members.size;
 }
 
 static void bool2_found_bool(char *permutation) {
-	type *t = get_type(bool2_id);
+	type         *t       = get_type(bool2_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool_id;
 	++t->members.size;
 }
 
 static void bool2_found_bool2(char *permutation) {
-	type *t = get_type(bool2_id);
+	type         *t       = get_type(bool2_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool2_id;
 	++t->members.size;
 }
 
 static void bool3_found_bool(char *permutation) {
-	type *t = get_type(bool3_id);
+	type         *t       = get_type(bool3_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool_id;
 	++t->members.size;
 }
 
 static void bool3_found_bool2(char *permutation) {
-	type *t = get_type(bool3_id);
+	type         *t       = get_type(bool3_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool2_id;
 	++t->members.size;
 }
 
 static void bool3_found_bool3(char *permutation) {
-	type *t = get_type(bool3_id);
+	type         *t       = get_type(bool3_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool3_id;
 	++t->members.size;
 }
 
 static void bool4_found_bool(char *permutation) {
-	type *t = get_type(bool4_id);
+	type         *t       = get_type(bool4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool_id;
 	++t->members.size;
 }
 
 static void bool4_found_bool2(char *permutation) {
-	type *t = get_type(bool4_id);
+	type         *t       = get_type(bool4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool2_id;
 	++t->members.size;
 }
 
 static void bool4_found_bool3(char *permutation) {
-	type *t = get_type(bool4_id);
+	type         *t       = get_type(bool4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool3_id;
 	++t->members.size;
 }
 
 static void bool4_found_bool4(char *permutation) {
-	type *t = get_type(bool4_id);
+	type         *t       = get_type(bool4_id);
 	debug_context context = {0};
 	check(t->members.size < MAX_MEMBERS, context, "Out of members");
-	t->members.m[t->members.size].name = add_name(permutation);
+	t->members.m[t->members.size].name      = add_name(permutation);
 	t->members.m[t->members.size].type.type = bool4_id;
 	++t->members.size;
 }
 
 void init_type_ref(type_ref *t, name_id name) {
-	t->type = NO_TYPE;
-	t->unresolved.name = name;
+	t->type                  = NO_TYPE;
+	t->unresolved.name       = name;
 	t->unresolved.array_size = 0;
 }
 
 void types_init(void) {
-	type *new_types = realloc(types, types_size * sizeof(type));
-	debug_context context = {0};
+	type         *new_types = realloc(types, types_size * sizeof(type));
+	debug_context context   = {0};
 	check(new_types != NULL, context, "Could not allocate types");
-	types = new_types;
+	types           = new_types;
 	next_type_index = 0;
 
-	void_id = add_type(add_name("void"));
+	void_id                     = add_type(add_name("void"));
 	get_type(void_id)->built_in = true;
 
-	sampler_type_id = add_type(add_name("sampler"));
-	get_type(sampler_type_id)->built_in = true;
-	tex2d_type_id = add_type(add_name("tex2d"));
-	get_type(tex2d_type_id)->built_in = true;
-	tex2darray_type_id = add_type(add_name("tex2darray"));
+	sampler_type_id                        = add_type(add_name("sampler"));
+	get_type(sampler_type_id)->built_in    = true;
+	tex2d_type_id                          = add_type(add_name("tex2d"));
+	get_type(tex2d_type_id)->built_in      = true;
+	tex2darray_type_id                     = add_type(add_name("tex2darray"));
 	get_type(tex2darray_type_id)->built_in = true;
-	texcube_type_id = add_type(add_name("texcube"));
-	get_type(texcube_type_id)->built_in = true;
+	texcube_type_id                        = add_type(add_name("texcube"));
+	get_type(texcube_type_id)->built_in    = true;
 
-	bool_id = add_type(add_name("bool"));
-	get_type(bool_id)->built_in = true;
-	float_id = add_type(add_name("float"));
+	bool_id                      = add_type(add_name("bool"));
+	get_type(bool_id)->built_in  = true;
+	float_id                     = add_type(add_name("float"));
 	get_type(float_id)->built_in = true;
-	int_id = add_type(add_name("int"));
-	get_type(int_id)->built_in = true;
-	uint_id = add_type(add_name("uint"));
-	get_type(uint_id)->built_in = true;
+	int_id                       = add_type(add_name("int"));
+	get_type(int_id)->built_in   = true;
+	uint_id                      = add_type(add_name("uint"));
+	get_type(uint_id)->built_in  = true;
 
 	{
-		float2_id = add_type(add_name("float2"));
+		float2_id                     = add_type(add_name("float2"));
 		get_type(float2_id)->built_in = true;
-		const char *letters = "xy";
+		const char *letters           = "xy";
 		permute(letters, (int)strlen(letters), 1, vec2_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec2_found_vec2);
 		letters = "rg";
@@ -440,9 +440,9 @@ void types_init(void) {
 	}
 
 	{
-		float3_id = add_type(add_name("float3"));
+		float3_id                     = add_type(add_name("float3"));
 		get_type(float3_id)->built_in = true;
-		const char *letters = "xyz";
+		const char *letters           = "xyz";
 		permute(letters, (int)strlen(letters), 1, vec3_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec3_found_vec2);
 		permute(letters, (int)strlen(letters), 3, vec3_found_vec3);
@@ -453,9 +453,9 @@ void types_init(void) {
 	}
 
 	{
-		float4_id = add_type(add_name("float4"));
+		float4_id                     = add_type(add_name("float4"));
 		get_type(float4_id)->built_in = true;
-		const char *letters = "xyzw";
+		const char *letters           = "xyzw";
 		permute(letters, (int)strlen(letters), 1, vec4_found_f32);
 		permute(letters, (int)strlen(letters), 2, vec4_found_vec2);
 		permute(letters, (int)strlen(letters), 3, vec4_found_vec3);
@@ -468,9 +468,9 @@ void types_init(void) {
 	}
 
 	{
-		int2_id = add_type(add_name("int2"));
+		int2_id                     = add_type(add_name("int2"));
 		get_type(int2_id)->built_in = true;
-		const char *letters = "xy";
+		const char *letters         = "xy";
 		permute(letters, (int)strlen(letters), 1, int2_found_int);
 		permute(letters, (int)strlen(letters), 2, int2_found_int2);
 		letters = "rg";
@@ -479,9 +479,9 @@ void types_init(void) {
 	}
 
 	{
-		int3_id = add_type(add_name("int3"));
+		int3_id                     = add_type(add_name("int3"));
 		get_type(int3_id)->built_in = true;
-		const char *letters = "xyz";
+		const char *letters         = "xyz";
 		permute(letters, (int)strlen(letters), 1, int3_found_int);
 		permute(letters, (int)strlen(letters), 2, int3_found_int2);
 		permute(letters, (int)strlen(letters), 3, int3_found_int3);
@@ -492,9 +492,9 @@ void types_init(void) {
 	}
 
 	{
-		int4_id = add_type(add_name("int4"));
+		int4_id                     = add_type(add_name("int4"));
 		get_type(int4_id)->built_in = true;
-		const char *letters = "xyzw";
+		const char *letters         = "xyzw";
 		permute(letters, (int)strlen(letters), 1, int4_found_int);
 		permute(letters, (int)strlen(letters), 2, int4_found_int2);
 		permute(letters, (int)strlen(letters), 3, int4_found_int3);
@@ -507,9 +507,9 @@ void types_init(void) {
 	}
 
 	{
-		uint2_id = add_type(add_name("uint2"));
+		uint2_id                     = add_type(add_name("uint2"));
 		get_type(uint2_id)->built_in = true;
-		const char *letters = "xy";
+		const char *letters          = "xy";
 		permute(letters, (int)strlen(letters), 1, uint2_found_uint);
 		permute(letters, (int)strlen(letters), 2, uint2_found_uint2);
 		letters = "rg";
@@ -518,9 +518,9 @@ void types_init(void) {
 	}
 
 	{
-		uint3_id = add_type(add_name("uint3"));
+		uint3_id                     = add_type(add_name("uint3"));
 		get_type(uint3_id)->built_in = true;
-		const char *letters = "xyz";
+		const char *letters          = "xyz";
 		permute(letters, (int)strlen(letters), 1, uint3_found_uint);
 		permute(letters, (int)strlen(letters), 2, uint3_found_uint2);
 		permute(letters, (int)strlen(letters), 3, uint3_found_uint3);
@@ -531,9 +531,9 @@ void types_init(void) {
 	}
 
 	{
-		uint4_id = add_type(add_name("uint4"));
+		uint4_id                     = add_type(add_name("uint4"));
 		get_type(uint4_id)->built_in = true;
-		const char *letters = "xyzw";
+		const char *letters          = "xyzw";
 		permute(letters, (int)strlen(letters), 1, uint4_found_uint);
 		permute(letters, (int)strlen(letters), 2, uint4_found_uint2);
 		permute(letters, (int)strlen(letters), 3, uint4_found_uint3);
@@ -546,9 +546,9 @@ void types_init(void) {
 	}
 
 	{
-		bool2_id = add_type(add_name("bool2"));
+		bool2_id                     = add_type(add_name("bool2"));
 		get_type(bool2_id)->built_in = true;
-		const char *letters = "xy";
+		const char *letters          = "xy";
 		permute(letters, (int)strlen(letters), 1, bool2_found_bool);
 		permute(letters, (int)strlen(letters), 2, bool2_found_bool2);
 		letters = "rg";
@@ -557,9 +557,9 @@ void types_init(void) {
 	}
 
 	{
-		bool3_id = add_type(add_name("bool3"));
+		bool3_id                     = add_type(add_name("bool3"));
 		get_type(bool3_id)->built_in = true;
-		const char *letters = "xyz";
+		const char *letters          = "xyz";
 		permute(letters, (int)strlen(letters), 1, bool3_found_bool);
 		permute(letters, (int)strlen(letters), 2, bool3_found_bool2);
 		permute(letters, (int)strlen(letters), 3, bool3_found_bool3);
@@ -570,9 +570,9 @@ void types_init(void) {
 	}
 
 	{
-		bool4_id = add_type(add_name("bool4"));
+		bool4_id                     = add_type(add_name("bool4"));
 		get_type(bool4_id)->built_in = true;
-		const char *letters = "xyzw";
+		const char *letters          = "xyzw";
 		permute(letters, (int)strlen(letters), 1, bool4_found_bool);
 		permute(letters, (int)strlen(letters), 2, bool4_found_bool2);
 		permute(letters, (int)strlen(letters), 3, bool4_found_bool3);
@@ -585,80 +585,80 @@ void types_init(void) {
 	}
 
 	{
-		float2x2_id = add_type(add_name("float2x2"));
+		float2x2_id                     = add_type(add_name("float2x2"));
 		get_type(float2x2_id)->built_in = true;
 	}
 
 	{
-		float3x2_id = add_type(add_name("float3x2"));
+		float3x2_id                     = add_type(add_name("float3x2"));
 		get_type(float3x2_id)->built_in = true;
 	}
 
 	{
-		float2x3_id = add_type(add_name("float2x3"));
+		float2x3_id                     = add_type(add_name("float2x3"));
 		get_type(float2x3_id)->built_in = true;
 	}
 
 	{
-		float4x2_id = add_type(add_name("float4x2"));
+		float4x2_id                     = add_type(add_name("float4x2"));
 		get_type(float4x2_id)->built_in = true;
 	}
 
 	{
-		float2x4_id = add_type(add_name("float2x4"));
+		float2x4_id                     = add_type(add_name("float2x4"));
 		get_type(float2x4_id)->built_in = true;
 	}
 
 	{
-		float3x3_id = add_type(add_name("float3x3"));
+		float3x3_id                     = add_type(add_name("float3x3"));
 		get_type(float3x3_id)->built_in = true;
 	}
 
 	{
-		float4x3_id = add_type(add_name("float4x3"));
+		float4x3_id                     = add_type(add_name("float4x3"));
 		get_type(float4x3_id)->built_in = true;
 	}
 
 	{
-		float3x4_id = add_type(add_name("float3x4"));
+		float3x4_id                     = add_type(add_name("float3x4"));
 		get_type(float3x4_id)->built_in = true;
 	}
 
 	{
-		float4x4_id = add_type(add_name("float4x4"));
+		float4x4_id                     = add_type(add_name("float4x4"));
 		get_type(float4x4_id)->built_in = true;
 	}
 
 	{
-		ray_type_id = add_type(add_name("ray"));
+		ray_type_id                     = add_type(add_name("ray"));
 		get_type(ray_type_id)->built_in = true;
 
 		type *t = get_type(ray_type_id);
 
-		t->members.m[t->members.size].name = add_name("origin");
+		t->members.m[t->members.size].name      = add_name("origin");
 		t->members.m[t->members.size].type.type = float3_id;
 		++t->members.size;
 
-		t->members.m[t->members.size].name = add_name("direction");
+		t->members.m[t->members.size].name      = add_name("direction");
 		t->members.m[t->members.size].type.type = float3_id;
 		++t->members.size;
 
-		t->members.m[t->members.size].name = add_name("min");
+		t->members.m[t->members.size].name      = add_name("min");
 		t->members.m[t->members.size].type.type = float_id;
 		++t->members.size;
 
-		t->members.m[t->members.size].name = add_name("max");
+		t->members.m[t->members.size].name      = add_name("max");
 		t->members.m[t->members.size].type.type = float_id;
 		++t->members.size;
 	}
 
 	{
-		bvh_type_id = add_type(add_name("bvh"));
+		bvh_type_id                     = add_type(add_name("bvh"));
 		get_type(bvh_type_id)->built_in = true;
 	}
 
 	{
-		function_type_id = add_type(add_name("fun"));
+		function_type_id                     = add_type(add_name("fun"));
 		get_type(function_type_id)->built_in = true;
 	}
 }
@@ -666,8 +666,8 @@ void types_init(void) {
 static void grow_if_needed(uint64_t size) {
 	while (size >= types_size) {
 		types_size *= 2;
-		type *new_types = realloc(types, types_size * sizeof(type));
-		debug_context context = {0};
+		type         *new_types = realloc(types, types_size * sizeof(type));
+		debug_context context   = {0};
 		check(new_types != NULL, context, "Could not allocate types");
 		types = new_types;
 	}
@@ -679,12 +679,12 @@ type_id add_type(name_id name) {
 	type_id s = next_type_index;
 	++next_type_index;
 
-	types[s].name = name;
+	types[s].name                        = name;
 	types[s].attributes.attributes_count = 0;
-	types[s].members.size = 0;
-	types[s].built_in = false;
-	types[s].array_size = 0;
-	types[s].base = NO_TYPE;
+	types[s].members.size                = 0;
+	types[s].built_in                    = false;
+	types[s].array_size                  = 0;
+	types[s].base                        = NO_TYPE;
 
 	return s;
 }
@@ -721,13 +721,13 @@ type_id find_type_by_ref(type_ref *t) {
 	}
 
 	if (found_name) {
-		type_id new_type = add_type(t->unresolved.name);
+		type_id new_type               = add_type(t->unresolved.name);
 		get_type(new_type)->array_size = t->unresolved.array_size;
 
 		type_ref no_array_type;
-		no_array_type = *t;
+		no_array_type                       = *t;
 		no_array_type.unresolved.array_size = 0;
-		get_type(new_type)->base = find_type_by_ref(&no_array_type);
+		get_type(new_type)->base            = find_type_by_ref(&no_array_type);
 	}
 
 	return NO_TYPE;

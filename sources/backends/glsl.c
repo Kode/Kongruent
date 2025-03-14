@@ -88,7 +88,7 @@ static void write_code(char *glsl, char *directory, const char *filename, const 
 
 static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id input, type_id output, function *main) {
 	type_id types[256];
-	size_t types_size = 0;
+	size_t  types_size = 0;
 	find_referenced_types(main, types, &types_size);
 
 	for (size_t i = 0; i < types_size; ++i) {
@@ -141,7 +141,7 @@ static int global_register_indices[512];
 
 static void write_globals(char *glsl, size_t *offset, function *main) {
 	global_id globals[256];
-	size_t globals_size = 0;
+	size_t    globals_size = 0;
 	find_referenced_globals(main, globals, &globals_size);
 
 	for (size_t i = 0; i < globals_size; ++i) {
@@ -172,7 +172,7 @@ static void write_globals(char *glsl, size_t *offset, function *main) {
 
 static void write_functions(char *code, size_t *offset, shader_stage stage, type_id input, type_id output, function *main, bool flip) {
 	function *functions[256];
-	size_t functions_size = 0;
+	size_t    functions_size = 0;
 
 	functions[functions_size] = main;
 	functions_size += 1;
@@ -186,7 +186,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 		check(f->block != NULL, context, "Function has no block");
 
 		uint8_t *data = f->code.o;
-		size_t size = f->code.size;
+		size_t   size = f->code.size;
 
 		uint64_t parameter_ids[256] = {0};
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
@@ -428,14 +428,14 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 }
 
 static void glsl_export_vertex(char *directory, function *main, bool flip) {
-	char *glsl = (char *)calloc(1024 * 1024, 1);
+	char         *glsl    = (char *)calloc(1024 * 1024, 1);
 	debug_context context = {0};
 	check(glsl != NULL, context, "Could not allocate glsl string");
 
 	size_t offset = 0;
 
 	assert(main->parameters_size > 0);
-	type_id vertex_input = main->parameter_types[0].type;
+	type_id vertex_input  = main->parameter_types[0].type;
 	type_id vertex_output = main->return_type.type;
 
 	check(vertex_input != NO_TYPE, context, "vertex input missing");
@@ -471,7 +471,7 @@ static void glsl_export_vertex(char *directory, function *main, bool flip) {
 }
 
 static void glsl_export_fragment(char *directory, function *main) {
-	char *glsl = (char *)calloc(1024 * 1024, 1);
+	char         *glsl    = (char *)calloc(1024 * 1024, 1);
 	debug_context context = {0};
 	check(glsl != NULL, context, "Could not allocate glsl string");
 
@@ -502,7 +502,7 @@ static void glsl_export_fragment(char *directory, function *main) {
 }
 
 static void glsl_export_compute(char *directory, function *main) {
-	char *glsl = (char *)calloc(1024 * 1024, 1);
+	char         *glsl    = (char *)calloc(1024 * 1024, 1);
 	debug_context context = {0};
 	check(glsl != NULL, context, "Could not allocate glsl string");
 
@@ -555,15 +555,15 @@ void glsl_export(char *directory) {
 	}
 
 	function *vertex_shaders[256];
-	size_t vertex_shaders_size = 0;
+	size_t    vertex_shaders_size = 0;
 
 	function *fragment_shaders[256];
-	size_t fragment_shaders_size = 0;
+	size_t    fragment_shaders_size = 0;
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-			name_id vertex_shader_name = NO_NAME;
+			name_id vertex_shader_name   = NO_NAME;
 			name_id fragment_shader_name = NO_NAME;
 
 			for (size_t j = 0; j < t->members.size; ++j) {
@@ -594,7 +594,7 @@ void glsl_export(char *directory) {
 	}
 
 	function *compute_shaders[256];
-	size_t compute_shaders_size = 0;
+	size_t    compute_shaders_size = 0;
 
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);

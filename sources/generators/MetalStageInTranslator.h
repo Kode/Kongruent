@@ -16,17 +16,17 @@ namespace krafix {
 		unsigned binding;
 		unsigned offset;
 		unsigned stride;
-		bool isPerInstance;
-		bool isUsedByShader;
+		bool     isPerInstance;
+		bool     isUsedByShader;
 
 		MetalVertexAttribute() : binding(0), offset(0), stride(0), isPerInstance(false), isUsedByShader(false) {}
 	};
 
 	struct MetalVertexInStruct {
-		std::string name;
+		std::string        name;
 		std::ostringstream body;
-		unsigned byteSize;
-		unsigned padIndex;
+		unsigned           byteSize;
+		unsigned           padIndex;
 
 		void padToOffset(unsigned offset);
 
@@ -36,10 +36,10 @@ namespace krafix {
 	/** The rendering context in which a shader conversion occurs. */
 	struct MetalStageInTranslatorRenderContext {
 		std::unordered_map<unsigned, MetalVertexAttribute> vertexAttributesByLocation;
-		signed vertexAttributeStageInBinding;
-		bool shouldFlipVertexY;
-		bool shouldFlipFragmentY;
-		bool isRenderingPoints;
+		signed                                             vertexAttributeStageInBinding;
+		bool                                               shouldFlipVertexY;
+		bool                                               shouldFlipFragmentY;
+		bool                                               isRenderingPoints;
 
 		MetalStageInTranslatorRenderContext()
 		    : vertexAttributeStageInBinding(-1), shouldFlipVertexY(true), shouldFlipFragmentY(true), isRenderingPoints(false) {}
@@ -62,32 +62,32 @@ namespace krafix {
 		MetalStageInTranslator(std::vector<uint32_t> &spirv) : MetalTranslator(spirv, StageCompute) {}
 
 	protected:
-		virtual void outputHeader();
-		virtual void outputFunctionSignature(bool asDeclaration);
-		virtual void outputEntryFunctionSignature(bool asDeclaration);
-		virtual void outputLocalFunctionSignature(bool asDeclaration);
-		virtual void closeFunctionSignature(bool asDeclaration);
-		virtual bool outputFunctionParameters(bool asDeclaration, bool needsComma);
-		virtual bool outputLooseUniformStruct();
-		virtual void outputUniformBuffers();
-		virtual void outputVertexInStructs();
-		virtual bool outputStageInStruct();
-		virtual bool outputStageOutStruct();
-		virtual void addSamplerReference(Instruction &inst);
+		virtual void   outputHeader();
+		virtual void   outputFunctionSignature(bool asDeclaration);
+		virtual void   outputEntryFunctionSignature(bool asDeclaration);
+		virtual void   outputLocalFunctionSignature(bool asDeclaration);
+		virtual void   closeFunctionSignature(bool asDeclaration);
+		virtual bool   outputFunctionParameters(bool asDeclaration, bool needsComma);
+		virtual bool   outputLooseUniformStruct();
+		virtual void   outputUniformBuffers();
+		virtual void   outputVertexInStructs();
+		virtual bool   outputStageInStruct();
+		virtual bool   outputStageOutStruct();
+		virtual void   addSamplerReference(Instruction &inst);
 		virtual signed getMetalResourceIndex(Variable &variable, Opcode rezType);
-		ShaderStage stageFromSPIRVExecutionModel(ExecutionModel execModel);
-		bool isUniformBufferMember(Variable &var, Type &type);
-		bool paramComma(std::ostream *out, bool needsComma);
+		ShaderStage    stageFromSPIRVExecutionModel(ExecutionModel execModel);
+		bool           isUniformBufferMember(Variable &var, Type &type);
+		bool           paramComma(std::ostream *out, bool needsComma);
 
-		MetalStageInTranslatorRenderContext *_pRenderContext;
+		MetalStageInTranslatorRenderContext              *_pRenderContext;
 		std::unordered_map<unsigned, MetalVertexInStruct> _vertexInStructs;
-		unsigned _nextMTLBufferIndex;
-		unsigned _nextMTLTextureIndex;
-		unsigned _nextMTLSamplerIndex;
-		bool _hasLooseUniforms;
-		bool _hasStageIn;
-		bool _hasStageOut;
-		bool _isEntryFunction;
+		unsigned                                          _nextMTLBufferIndex;
+		unsigned                                          _nextMTLTextureIndex;
+		unsigned                                          _nextMTLSamplerIndex;
+		bool                                              _hasLooseUniforms;
+		bool                                              _hasStageIn;
+		bool                                              _hasStageOut;
+		bool                                              _isEntryFunction;
 	};
 
 	/**

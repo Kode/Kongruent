@@ -42,7 +42,7 @@ void find_referenced_globals(function *f, global_id *globals, size_t *globals_si
 	}
 
 	function *functions[256];
-	size_t functions_size = 0;
+	size_t    functions_size = 0;
 
 	functions[functions_size] = f;
 	functions_size += 1;
@@ -51,7 +51,7 @@ void find_referenced_globals(function *f, global_id *globals, size_t *globals_si
 
 	for (size_t l = 0; l < functions_size; ++l) {
 		uint8_t *data = functions[l]->code.o;
-		size_t size = functions[l]->code.size;
+		size_t   size = functions[l]->code.size;
 
 		size_t index = 0;
 		while (index < size) {
@@ -105,7 +105,7 @@ void find_referenced_functions(function *f, function **functions, size_t *functi
 	}
 
 	uint8_t *data = f->code.o;
-	size_t size = f->code.size;
+	size_t   size = f->code.size;
 
 	size_t index = 0;
 	while (index < size) {
@@ -163,7 +163,7 @@ void find_referenced_types(function *f, type_id *types, size_t *types_size) {
 	}
 
 	function *functions[256];
-	size_t functions_size = 0;
+	size_t    functions_size = 0;
 
 	functions[functions_size] = f;
 	functions_size += 1;
@@ -171,7 +171,7 @@ void find_referenced_types(function *f, type_id *types, size_t *types_size) {
 	find_referenced_functions(f, functions, &functions_size);
 
 	for (size_t function_index = 0; function_index < functions_size; ++function_index) {
-		function *func = functions[function_index];
+		function     *func    = functions[function_index];
 		debug_context context = {0};
 		for (uint8_t parameter_index = 0; parameter_index < func->parameters_size; ++parameter_index) {
 			check(func->parameter_types[parameter_index].type != NO_TYPE, context, "Function parameter type not found");
@@ -181,7 +181,7 @@ void find_referenced_types(function *f, type_id *types, size_t *types_size) {
 		add_found_type(func->return_type.type, types, types_size);
 
 		uint8_t *data = functions[function_index]->code.o;
-		size_t size = functions[function_index]->code.size;
+		size_t   size = functions[function_index]->code.size;
 
 		size_t index = 0;
 		while (index < size) {
@@ -257,10 +257,10 @@ static void find_referenced_sets(global_id *globals, size_t globals_size, descri
 }
 
 static render_pipeline extract_render_pipeline_from_type(type *t) {
-	name_id vertex_shader_name = NO_NAME;
+	name_id vertex_shader_name        = NO_NAME;
 	name_id amplification_shader_name = NO_NAME;
-	name_id mesh_shader_name = NO_NAME;
-	name_id fragment_shader_name = NO_NAME;
+	name_id mesh_shader_name          = NO_NAME;
+	name_id fragment_shader_name      = NO_NAME;
 
 	for (size_t j = 0; j < t->members.size; ++j) {
 		if (t->members.m[j].name == add_name("vertex")) {
@@ -333,8 +333,8 @@ static void find_render_pipeline_groups(void) {
 		static_array_push(group, remaining_pipelines.values[0]);
 
 		for (size_t index = 1; index < remaining_pipelines.size; ++index) {
-			uint32_t pipeline_index = remaining_pipelines.values[index];
-			render_pipeline *pipeline = &all_render_pipelines.values[pipeline_index];
+			uint32_t         pipeline_index = remaining_pipelines.values[index];
+			render_pipeline *pipeline       = &all_render_pipelines.values[pipeline_index];
 
 			bool found = false;
 
@@ -372,11 +372,11 @@ static void find_all_compute_shaders(void) {
 }
 
 static raytracing_pipeline extract_raytracing_pipeline_from_type(type *t) {
-	name_id gen_shader_name = NO_NAME;
-	name_id miss_shader_name = NO_NAME;
-	name_id closest_shader_name = NO_NAME;
+	name_id gen_shader_name          = NO_NAME;
+	name_id miss_shader_name         = NO_NAME;
+	name_id closest_shader_name      = NO_NAME;
 	name_id intersection_shader_name = NO_NAME;
-	name_id any_shader_name = NO_NAME;
+	name_id any_shader_name          = NO_NAME;
 
 	for (size_t j = 0; j < t->members.size; ++j) {
 		if (t->members.m[j].name == add_name("gen")) {
@@ -452,8 +452,8 @@ static void find_raytracing_pipeline_groups(void) {
 		static_array_push(group, remaining_pipelines.values[0]);
 
 		for (size_t index = 1; index < remaining_pipelines.size; ++index) {
-			uint32_t pipeline_index = remaining_pipelines.values[index];
-			raytracing_pipeline *pipeline = &all_raytracing_pipelines.values[pipeline_index];
+			uint32_t             pipeline_index = remaining_pipelines.values[index];
+			raytracing_pipeline *pipeline       = &all_raytracing_pipelines.values[pipeline_index];
 
 			bool found = false;
 
@@ -523,7 +523,7 @@ static void find_descriptor_set_groups(void) {
 		static_array_init(group);
 
 		global_id function_globals[256];
-		size_t function_globals_size = 0;
+		size_t    function_globals_size = 0;
 
 		render_pipeline_group *pipeline_group = &all_render_pipeline_groups.values[pipeline_group_index];
 		for (size_t pipeline_index = 0; pipeline_index < pipeline_group->size; ++pipeline_index) {
@@ -573,7 +573,7 @@ static void find_descriptor_set_groups(void) {
 		static_array_init(group);
 
 		global_id function_globals[256];
-		size_t function_globals_size = 0;
+		size_t    function_globals_size = 0;
 
 		find_referenced_globals(all_compute_shaders.values[compute_shader_index], function_globals, &function_globals_size);
 
@@ -594,7 +594,7 @@ static void find_descriptor_set_groups(void) {
 		static_array_init(group);
 
 		global_id function_globals[256];
-		size_t function_globals_size = 0;
+		size_t    function_globals_size = 0;
 
 		raytracing_pipeline_group *pipeline_group = &all_raytracing_pipeline_groups.values[pipeline_group_index];
 		for (size_t pipeline_index = 0; pipeline_index < pipeline_group->size; ++pipeline_index) {

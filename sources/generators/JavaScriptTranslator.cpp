@@ -21,14 +21,16 @@ namespace {
 
 	std::string findfilename(const std::string &path) {
 		size_t pos = 0;
-		if (path.find_last_of('/') != std::string::npos) pos = std::max(pos, path.find_last_of('/') + 1);
-		if (path.find_last_of('\\') != std::string::npos) pos = std::max(pos, path.find_last_of('\\') + 1);
+		if (path.find_last_of('/') != std::string::npos)
+			pos = std::max(pos, path.find_last_of('/') + 1);
+		if (path.find_last_of('\\') != std::string::npos)
+			pos = std::max(pos, path.find_last_of('\\') + 1);
 		return path.substr(pos);
 	}
 }
 
 void JavaScriptTranslator::outputCode(const Target &target, const char *sourcefilename, const char *filename, std::map<std::string, int> &attributes) {
-	outputLine = 0;
+	outputLine   = 0;
 	originalLine = -1;
 
 	//**sourcemap->file = findfilename(filename);
@@ -36,8 +38,10 @@ void JavaScriptTranslator::outputCode(const Target &target, const char *sourcefi
 
 	std::string name = findfilename(sourcefilename);
 	for (size_t i = 0; i < name.size(); ++i) {
-		if (name[i] == '.') name[i] = '_';
-		if (name[i] == '-') name[i] = '_';
+		if (name[i] == '.')
+			name[i] = '_';
+		if (name[i] == '-')
+			name[i] = '_';
 	}
 	name = name.substr(0, name.size() - 5);
 	strcpy(this->name, name.c_str());
@@ -47,10 +51,11 @@ void JavaScriptTranslator::outputCode(const Target &target, const char *sourcefi
 	out = &file;
 
 	for (unsigned i = 0; i < instructions.size(); ++i) {
-		outputting = false;
+		outputting        = false;
 		Instruction &inst = instructions[i];
 		outputInstruction(target, attributes, inst);
-		if (outputting) (*out) << "\n";
+		if (outputting)
+			(*out) << "\n";
 	}
 	for (unsigned i = 0; i < functions.size(); ++i) {
 		(*out) << functions[i]->text.str();
@@ -78,7 +83,7 @@ void JavaScriptTranslator::outputLibraryInstruction(const Target &target, std::m
 void JavaScriptTranslator::outputInstruction(const Target &target, std::map<std::string, int> &attributes, Instruction &inst) {
 	switch (inst.opcode) {
 	case OpLine: {
-		unsigned line = inst.operands[2] - 1; // should be operands[1]?
+		unsigned line   = inst.operands[2] - 1; // should be operands[1]?
 		unsigned column = inst.operands[3] - 1;
 		if (line != originalLine) {
 			originalLine = line;
@@ -94,10 +99,12 @@ void JavaScriptTranslator::outputInstruction(const Target &target, std::map<std:
 					Variable variable = variables[i];
 
 					Type &t = types[variable.type];
-					Name n = names[variable.id];
+					Name  n = names[variable.id];
 
-					if (t.members.size() > 0) continue;
-					if (n.name == "") continue;
+					if (t.members.size() > 0)
+						continue;
+					if (n.name == "")
+						continue;
 
 					if (variable.storage != StorageClassUniformConstant && variable.storage != StorageClassInput && variable.storage != StorageClassOutput) {
 						(*out) << "var " << t.name << " " << n.name << ";\n";
@@ -120,7 +127,8 @@ void JavaScriptTranslator::outputInstruction(const Target &target, std::map<std:
 				(*out) << "function " << funcName << "(";
 				for (unsigned i = 0; i < parameters.size(); ++i) {
 					(*out) << parameters[i].type.name << " " << getReference(parameters[i].id);
-					if (i < parameters.size() - 1) (*out) << ", ";
+					if (i < parameters.size() - 1)
+						(*out) << ", ";
 				}
 				(*out) << ")\n";
 				++outputLine;
@@ -138,13 +146,13 @@ void JavaScriptTranslator::outputInstruction(const Target &target, std::map<std:
 	}
 	case OpVariable: {
 		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		Variable &v = variables[result];
-		v.id = result;
-		v.type = inst.operands[0];
-		v.storage = (StorageClass)inst.operands[2];
-		v.declared = true;
+		id    result     = inst.operands[1];
+		types[result]    = resultType;
+		Variable &v      = variables[result];
+		v.id             = result;
+		v.type           = inst.operands[0];
+		v.storage        = (StorageClass)inst.operands[2];
+		v.declared       = true;
 		if (names.find(result) != names.end()) {
 			if (v.storage == StorageClassInput) {
 				references[result] = std::string("input.") + names[result].name;
@@ -171,57 +179,58 @@ void JavaScriptTranslator::outputInstruction(const Target &target, std::map<std:
 	}
 	case OpCompositeConstruct: {
 		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
+		id    result     = inst.operands[1];
+		types[result]    = resultType;
 		std::stringstream str;
 		str << resultType.name << "(";
 		for (unsigned i = 2; i < inst.length; ++i) {
 			str << getReference(inst.operands[i]);
-			if (i < inst.length - 1) str << ", ";
+			if (i < inst.length - 1)
+				str << ", ";
 		}
 		str << ")";
 		references[result] = str.str();
 		break;
 	}
 	case OpMatrixTimesVector: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id matrix = inst.operands[2];
-		id vector = inst.operands[3];
+		Type &resultType         = types[inst.operands[0]];
+		id    result             = inst.operands[1];
+		types[result]            = resultType;
+		id                matrix = inst.operands[2];
+		id                vector = inst.operands[3];
 		std::stringstream str;
 		str << "mul(transpose(" << getReference(matrix) << "), " << getReference(vector) << ")"; // TODO: Get rid of transpose, when kfx is deprecated
 		references[result] = str.str();
 		break;
 	}
 	case OpVectorTimesMatrix: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id vector = inst.operands[2];
-		id matrix = inst.operands[3];
+		Type &resultType         = types[inst.operands[0]];
+		id    result             = inst.operands[1];
+		types[result]            = resultType;
+		id                vector = inst.operands[2];
+		id                matrix = inst.operands[3];
 		std::stringstream str;
 		str << "mul(" << getReference(vector) << ", transpose(" << getReference(matrix) << "))";
 		references[result] = str.str();
 		break;
 	}
 	case OpMatrixTimesMatrix: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id operand1 = inst.operands[2];
-		id operand2 = inst.operands[3];
+		Type &resultType           = types[inst.operands[0]];
+		id    result               = inst.operands[1];
+		types[result]              = resultType;
+		id                operand1 = inst.operands[2];
+		id                operand2 = inst.operands[3];
 		std::stringstream str;
 		str << "transpose(mul(transpose(" << getReference(operand1) << "), transpose(" << getReference(operand2) << ")))";
 		references[result] = str.str();
 		break;
 	}
 	case OpImageSampleImplicitLod: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		types[result] = resultType;
-		id sampler = inst.operands[2];
-		id coordinate = inst.operands[3];
+		Type &resultType             = types[inst.operands[0]];
+		id    result                 = inst.operands[1];
+		types[result]                = resultType;
+		id                sampler    = inst.operands[2];
+		id                coordinate = inst.operands[3];
 		std::stringstream str;
 		if (target.system == Unity) {
 			str << "tex2D(" << getReference(sampler) << ", float2(" << getReference(coordinate) << ".x, 1.0 - " << getReference(coordinate) << ".y))";
@@ -233,9 +242,9 @@ void JavaScriptTranslator::outputInstruction(const Target &target, std::map<std:
 		break;
 	}
 	case OpConvertSToF: {
-		Type &resultType = types[inst.operands[0]];
-		id result = inst.operands[1];
-		id value = inst.operands[2];
+		Type             &resultType = types[inst.operands[0]];
+		id                result     = inst.operands[1];
+		id                value      = inst.operands[2];
 		std::stringstream str;
 		if (resultType.length > 1) {
 			str << "float" << resultType.length << "(" << getReference(value) << ")";

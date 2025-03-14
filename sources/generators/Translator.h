@@ -16,9 +16,9 @@ namespace krafix {
 
 	struct Target {
 		TargetLanguage lang;
-		int version;
-		bool es;
-		TargetSystem system;
+		int            version;
+		bool           es;
+		TargetSystem   system;
 
 		std::string string() {
 			switch (lang) {
@@ -27,7 +27,8 @@ namespace krafix {
 			case GLSL: {
 				std::stringstream stream;
 				stream << "GLSL ";
-				if (es) stream << "ES ";
+				if (es)
+					stream << "ES ";
 				stream << version;
 				return stream.str();
 			}
@@ -56,9 +57,9 @@ namespace krafix {
 		Instruction(std::vector<unsigned> &spirv, unsigned &index);
 		Instruction(int opcode, unsigned *operands, unsigned length);
 
-		Opcode opcode;
-		unsigned *operands;
-		unsigned length;
+		Opcode      opcode;
+		unsigned   *operands;
+		unsigned    length;
 		const char *string;
 	};
 
@@ -70,10 +71,10 @@ namespace krafix {
 		                        std::map<std::string, int> &attributes) = 0;
 
 	protected:
-		std::vector<unsigned> &spirv;
+		std::vector<unsigned>   &spirv;
 		std::vector<Instruction> instructions;
-		ShaderStage stage;
-		ExecutionModel executionModel();
+		ShaderStage              stage;
+		ExecutionModel           executionModel();
 
 		unsigned magicNumber;
 		unsigned version;

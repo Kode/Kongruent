@@ -11,13 +11,13 @@ typedef uint32_t function_id;
 struct statement;
 
 typedef struct function {
-	attribute_list attributes;
-	name_id name;
-	type_ref return_type;
-	name_id parameter_names[256];
-	type_ref parameter_types[256];
-	name_id parameter_attributes[256];
-	uint8_t parameters_size;
+	attribute_list    attributes;
+	name_id           name;
+	type_ref          return_type;
+	name_id           parameter_names[256];
+	type_ref          parameter_types[256];
+	name_id           parameter_attributes[256];
+	uint8_t           parameters_size;
 	struct statement *block;
 
 	uint32_t descriptor_set_group_index;

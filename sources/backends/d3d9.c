@@ -29,10 +29,10 @@ int compile_hlsl_to_d3d9(const char *source, uint8_t **output, size_t *outputlen
 		return 1;
 	}
 
-	LPD3DXBUFFER errors;
-	LPD3DXBUFFER shader;
+	LPD3DXBUFFER        errors;
+	LPD3DXBUFFER        shader;
 	LPD3DXCONSTANTTABLE table;
-	HRESULT hr =
+	HRESULT             hr =
 	    CompileShader(source, (UINT)strlen(source), NULL, NULL, "main", stage == SHADER_STAGE_VERTEX ? "vs_2_0" : "ps_2_0", 0, &shader, &errors, &table);
 	if (FAILED(hr)) {
 		hr = CompileShader(source, (UINT)strlen(source), NULL, NULL, "main", stage == SHADER_STAGE_VERTEX ? "vs_3_0" : "ps_3_0", 0, &shader, &errors, &table);
@@ -96,9 +96,9 @@ int compile_hlsl_to_d3d9(const char *source, uint8_t **output, size_t *outputlen
 		}*/
 		// file.write((char*)shader->GetBufferPointer(), shader->GetBufferSize());
 
-		SIZE_T size = shader->lpVtbl->GetBufferSize((IDirect3DCryptoSession9 *)shader);
+		SIZE_T size   = shader->lpVtbl->GetBufferSize((IDirect3DCryptoSession9 *)shader);
 		*outputlength = size;
-		*output = (uint8_t *)malloc(size);
+		*output       = (uint8_t *)malloc(size);
 		memcpy(*output, shader->lpVtbl->GetBufferPointer((IDirect3DCryptoSession9 *)shader), size);
 
 		return 0;

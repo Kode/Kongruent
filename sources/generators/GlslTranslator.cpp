@@ -15,7 +15,7 @@ typedef unsigned id;
 namespace {
 	std::vector<std::string> splitLines(std::string text) {
 		std::vector<std::string> lines;
-		unsigned lastSplit = 0;
+		unsigned                 lastSplit = 0;
 		for (unsigned i = 0; i < text.size(); ++i) {
 			if (text[i] == '\n') {
 				lines.push_back(text.substr(lastSplit, i - lastSplit));
@@ -40,14 +40,16 @@ void GlslTranslator::outputCode(const Target &target, const char *sourcefilename
 	}
 	else {
 		(*out) << "#version " << target.version << "\n";
-		if (target.es && target.version >= 300) (*out) << " es\n";
+		if (target.es && target.version >= 300)
+			(*out) << " es\n";
 	}
 
 	for (unsigned i = 0; i < instructions.size(); ++i) {
-		outputting = false;
+		outputting        = false;
 		Instruction &inst = instructions[i];
 		outputInstruction(target, attributes, inst);
-		if (outputting) (*out) << "\n";
+		if (outputting)
+			(*out) << "\n";
 	}
 	for (unsigned i = 0; i < functions.size(); ++i) {
 		if (functions[i]->name == "patch_main") {
@@ -61,7 +63,7 @@ void GlslTranslator::outputCode(const Target &target, const char *sourcefilename
 				}
 			}
 			if (patch.size() > 0) {
-				std::vector<std::string> mainlines = splitLines(functions[i]->text.str());
+				std::vector<std::string> mainlines  = splitLines(functions[i]->text.str());
 				std::vector<std::string> patchlines = splitLines(patch);
 				for (unsigned line = 0; line < 2; ++line) {
 					(*out) << mainlines[line] << '\n';
@@ -99,21 +101,28 @@ void GlslTranslator::outputInstruction(const Target &target, std::map<std::strin
 					(*out) << "#extension GL_OES_EGL_image_external : require\n";
 				}
 				if ((target.system == HTML5 || (target.es && target.version == 100)) && stage == StageFragment) {
-					if (isFragDepthUsed) (*out) << "#extension GL_EXT_frag_depth : require\n";
-					if (isFragDataUsed) (*out) << "#extension GL_EXT_draw_buffers : require\n";
-					if (isTextureLodUsed) (*out) << "#extension GL_EXT_shader_texture_lod : require\n";
-					if (isDerivativesUsed) (*out) << "#extension GL_OES_standard_derivatives : require\n";
+					if (isFragDepthUsed)
+						(*out) << "#extension GL_EXT_frag_depth : require\n";
+					if (isFragDataUsed)
+						(*out) << "#extension GL_EXT_draw_buffers : require\n";
+					if (isTextureLodUsed)
+						(*out) << "#extension GL_EXT_shader_texture_lod : require\n";
+					if (isDerivativesUsed)
+						(*out) << "#extension GL_OES_standard_derivatives : require\n";
 				}
 
 				for (std::map<unsigned, Type>::iterator it = types.begin(); it != types.end(); ++it) {
 					Type &type = it->second;
-					if (type.ispointer) continue;
-					if (type.members.size() == 0) continue;
-					if (strncmp(type.name.c_str(), "gl_", 3) == 0) continue;
+					if (type.ispointer)
+						continue;
+					if (type.members.size() == 0)
+						continue;
+					if (strncmp(type.name.c_str(), "gl_", 3) == 0)
+						continue;
 					(*out) << "struct " << type.name << " {\n";
 					for (std::map<unsigned, std::pair<std::string, Type> >::iterator it2 = type.members.begin(); it2 != type.members.end(); ++it2) {
-						std::string &name = std::get<0>(it2->second);
-						std::string type_name = std::get<1>(it2->second).name;
+						std::string &name      = std::get<0>(it2->second);
+						std::string  type_name = std::get<1>(it2->second).name;
 						(*out) << "\t" << type_name << " " << name << ";\n";
 					}
 					(*out) << "};\n";
@@ -136,10 +145,10 @@ void GlslTranslator::outputInstruction(const Target &target, std::map<std::strin
 				}
 
 				for (std::map<unsigned, Variable>::iterator v = variables.begin(); v != variables.end(); ++v) {
-					unsigned id = v->first;
+					unsigned  id       = v->first;
 					Variable &variable = v->second;
 
-					Type &t = types[variable.type];
+					Type       &t    = types[variable.type];
 					std::string name = getReference(id);
 
 					if (variable.builtin) {
@@ -258,8 +267,10 @@ void GlslTranslator::outputInstruction(const Target &target, std::map<std::strin
 				(*out) << "\n";
 
 				if (target.system == HTML5) {
-					if (isTransposeUsed) (*out) << transposeFunctionString;
-					if (isMatrixInverseUsed) (*out) << matrixInverseFunctionString;
+					if (isTransposeUsed)
+						(*out) << transposeFunctionString;
+					if (isMatrixInverseUsed)
+						(*out) << matrixInverseFunctionString;
 					(*out) << "\n";
 				}
 
@@ -270,7 +281,8 @@ void GlslTranslator::outputInstruction(const Target &target, std::map<std::strin
 				(*out) << funcType << " " << funcName << "(";
 				for (unsigned i = 0; i < parameters.size(); ++i) {
 					(*out) << parameters[i].type.name << " " << getReference(parameters[i].id);
-					if (i < parameters.size() - 1) (*out) << ", ";
+					if (i < parameters.size() - 1)
+						(*out) << ", ";
 				}
 				(*out) << ");\n";
 			}
@@ -284,7 +296,8 @@ void GlslTranslator::outputInstruction(const Target &target, std::map<std::strin
 				(*out) << funcType << " " << funcName << "(";
 				for (unsigned i = 0; i < parameters.size(); ++i) {
 					(*out) << parameters[i].type.name << " " << getReference(parameters[i].id);
-					if (i < parameters.size() - 1) (*out) << ", ";
+					if (i < parameters.size() - 1)
+						(*out) << ", ";
 				}
 				(*out) << ")\n";
 			}

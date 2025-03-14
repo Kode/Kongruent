@@ -3,7 +3,7 @@
 #include "errors.h"
 
 static descriptor_set sets[MAX_SETS];
-static size_t sets_count = 0;
+static size_t         sets_count = 0;
 
 descriptor_set *create_set(name_id name) {
 	for (size_t set_index = 0; set_index < sets_count; ++set_index) {
@@ -18,9 +18,9 @@ descriptor_set *create_set(name_id name) {
 		return NULL;
 	}
 
-	descriptor_set *new_set = &sets[sets_count];
-	new_set->name = name;
-	new_set->index = (uint32_t)sets_count;
+	descriptor_set *new_set    = &sets[sets_count];
+	new_set->name              = name;
+	new_set->index             = (uint32_t)sets_count;
 	new_set->definitions_count = 0;
 
 	sets_count += 1;

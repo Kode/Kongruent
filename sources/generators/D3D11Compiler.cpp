@@ -56,12 +56,12 @@ namespace {
 int compileHLSLToD3D11(const char *fromRelative, const char *to, const char *source, char *output, size_t *outputlength,
                        const std::map<std::string, int> &attributes, EShLanguage stage, bool debug) {
 #ifdef _WIN32
-	char from[256];
+	char   from[256];
 	size_t length;
-	char *data;
+	char  *data;
 	if (source) {
 		strcpy(from, fromRelative);
-		data = (char *)source;
+		data   = (char *)source;
 		length = strlen(source);
 	}
 	else {
@@ -85,13 +85,15 @@ int compileHLSLToD3D11(const char *fromRelative, const char *to, const char *sou
 
 	ID3DBlob *errorMessage;
 	ID3DBlob *shaderBuffer;
-	UINT flags = 0;
-	if (debug) flags |= D3DCOMPILE_DEBUG;
+	UINT      flags = 0;
+	if (debug)
+		flags |= D3DCOMPILE_DEBUG;
 	HRESULT hr = D3DCompile(data, length, from, nullptr, nullptr, "main", shaderString(stage, 4), flags, 0, &shaderBuffer, &errorMessage);
-	if (hr != S_OK) hr = D3DCompile(data, length, from, nullptr, nullptr, "main", shaderString(stage, 5), flags, 0, &shaderBuffer, &errorMessage);
+	if (hr != S_OK)
+		hr = D3DCompile(data, length, from, nullptr, nullptr, "main", shaderString(stage, 5), flags, 0, &shaderBuffer, &errorMessage);
 	if (hr == S_OK) {
-		std::ostream *file;
-		std::ofstream actualfile;
+		std::ostream   *file;
+		std::ofstream   actualfile;
 		std::ostrstream arrayout(output, 1024 * 1024);
 		*outputlength = 0;
 
@@ -134,14 +136,14 @@ int compileHLSLToD3D11(const char *fromRelative, const char *to, const char *sou
 		}
 
 		ID3D11ShaderReflectionConstantBuffer *constants = reflector->GetConstantBufferByName("$Globals");
-		D3D11_SHADER_BUFFER_DESC bufferDesc;
+		D3D11_SHADER_BUFFER_DESC              bufferDesc;
 		hr = constants->GetDesc(&bufferDesc);
 		if (hr == S_OK) {
 			file->put(bufferDesc.Variables);
 			*outputlength += 1;
 			for (unsigned i = 0; i < bufferDesc.Variables; ++i) {
 				ID3D11ShaderReflectionVariable *variable = constants->GetVariableByIndex(i);
-				D3D11_SHADER_VARIABLE_DESC variableDesc;
+				D3D11_SHADER_VARIABLE_DESC      variableDesc;
 				hr = variable->GetDesc(&variableDesc);
 				if (hr == S_OK) {
 					(*file) << variableDesc.Name;

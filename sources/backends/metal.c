@@ -50,9 +50,9 @@ static void write_code(char *metal, char *directory, const char *filename) {
 }
 
 static type_id vertex_inputs[256];
-static size_t vertex_inputs_size = 0;
+static size_t  vertex_inputs_size = 0;
 static type_id fragment_inputs[256];
-static size_t fragment_inputs_size = 0;
+static size_t  fragment_inputs_size = 0;
 
 static bool is_vertex_input(type_id t) {
 	for (size_t i = 0; i < vertex_inputs_size; ++i) {
@@ -130,9 +130,9 @@ static void write_types(char *metal, size_t *offset) {
 static int global_register_indices[512];
 
 static function_id vertex_functions[256];
-static size_t vertex_functions_size = 0;
+static size_t      vertex_functions_size = 0;
 static function_id fragment_functions[256];
-static size_t fragment_functions_size = 0;
+static size_t      fragment_functions_size = 0;
 
 static bool is_vertex_function(function_id f) {
 	for (size_t i = 0; i < vertex_functions_size; ++i) {
@@ -161,7 +161,7 @@ static void write_functions(char *code, size_t *offset) {
 		}
 
 		uint8_t *data = f->code.o;
-		size_t size = f->code.size;
+		size_t   size = f->code.size;
 
 		uint64_t parameter_ids[256] = {0};
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
@@ -182,14 +182,14 @@ static void write_functions(char *code, size_t *offset) {
 		strcpy(buffers, "");
 		if (is_vertex_function(i) || is_fragment_function(i)) {
 			global_id globals[256];
-			size_t globals_size = 0;
+			size_t    globals_size = 0;
 			find_referenced_globals(f, globals, &globals_size);
 
 			size_t buffers_offset = 0;
 
 			for (size_t i = 0; i < globals_size; ++i) {
-				global *g = get_global(globals[i]);
-				int register_index = global_register_indices[globals[i]];
+				global *g              = get_global(globals[i]);
+				int     register_index = global_register_indices[globals[i]];
 
 				if (g->type == sampler_type_id) {
 					buffers_offset += sprintf(&buffers[buffers_offset], ", sampler _%" PRIu64 " [[sampler(%i)]]", g->var_index, register_index);
@@ -364,7 +364,7 @@ static void write_functions(char *code, size_t *offset) {
 }
 
 static void metal_export_everything(char *directory) {
-	char *metal = (char *)calloc(1024 * 1024, 1);
+	char         *metal   = (char *)calloc(1024 * 1024, 1);
 	debug_context context = {0};
 	check(metal != NULL, context, "Could not allocate Metal string");
 	size_t offset = 0;
@@ -412,7 +412,7 @@ void metal_export(char *directory) {
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-			name_id vertex_shader_name = NO_NAME;
+			name_id vertex_shader_name   = NO_NAME;
 			name_id fragment_shader_name = NO_NAME;
 
 			for (size_t j = 0; j < t->members.size; ++j) {

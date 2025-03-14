@@ -64,10 +64,10 @@ typedef struct token {
 	} kind;
 
 	union {
-		bool boolean;
+		bool   boolean;
 		double number;
 		// char string[MAX_IDENTIFIER_SIZE];
-		name_id identifier;
+		name_id   identifier;
 		operatorr op;
 	};
 } token;

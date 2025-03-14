@@ -49,7 +49,7 @@ static void read_file(char *filename) {
 	char *data = (char *)malloc(size + 1);
 
 	debug_context context = {0};
-	context.filename = filename;
+	context.filename      = filename;
 	check(data != NULL, context, "Could not allocate memory to read file %s", filename);
 
 	fread(data, 1, size, file);
@@ -69,12 +69,12 @@ typedef enum integration_kind { INTEGRATION_KORE3 } integration_kind;
 int main(int argc, char **argv) {
 	arg_mode mode = MODE_MODECHECK;
 
-	char *inputs[256] = {0};
-	size_t inputs_size = 0;
-	char *platform = NULL;
-	api_kind api = API_DEFAULT;
+	char            *inputs[256] = {0};
+	size_t           inputs_size = 0;
+	char            *platform    = NULL;
+	api_kind         api         = API_DEFAULT;
 	integration_kind integration = INTEGRATION_KORE3;
-	char *output = NULL;
+	char            *output      = NULL;
 
 	for (int i = 1; i < argc; ++i) {
 		char *arg = argv[i];
@@ -158,12 +158,12 @@ int main(int argc, char **argv) {
 		}
 		case MODE_OUTPUT: {
 			output = arg;
-			mode = MODE_MODECHECK;
+			mode   = MODE_MODECHECK;
 			break;
 		}
 		case MODE_PLATFORM: {
 			platform = arg;
-			mode = MODE_MODECHECK;
+			mode     = MODE_MODECHECK;
 			break;
 		}
 		case MODE_API: {
@@ -256,7 +256,7 @@ int main(int argc, char **argv) {
 			strcat(path, "/");
 			strcat(path, f.name);
 
-			size_t length = strlen(path);
+			size_t length         = strlen(path);
 			size_t dotkong_length = strlen(".kong");
 			if (length > dotkong_length && strcmp(&path[length - dotkong_length], ".kong") == 0) {
 				read_file(path);
@@ -337,7 +337,7 @@ int main(int argc, char **argv) {
 
 void execute_sync(const char *command) {
 #ifdef _WIN32
-	STARTUPINFOA startupInfo;
+	STARTUPINFOA        startupInfo;
 	PROCESS_INFORMATION processInfo;
 	memset(&startupInfo, 0, sizeof(startupInfo));
 	memset(&processInfo, 0, sizeof(processInfo));
