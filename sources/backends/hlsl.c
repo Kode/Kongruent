@@ -214,7 +214,9 @@ static void write_types(char *hlsl, size_t *offset, shader_stage stage, type_id 
 	for (size_t i = 0; i < types_size; ++i) {
 		type *t = get_type(types[i]);
 
-		if (!t->built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
+		bool built_in = t->built_in || (get_type(t->base) != NULL && get_type(t->base)->built_in);
+
+		if (!built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
 			*offset += sprintf(&hlsl[*offset], "struct %s {\n", get_name(t->name));
 
 			if (stage == SHADER_STAGE_VERTEX && is_input(types[i], inputs, inputs_count)) {
