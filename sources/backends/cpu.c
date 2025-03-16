@@ -837,7 +837,7 @@ void cpu_export(char *directory) {
 
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
-		if (has_attribute(&f->attributes, add_name("compute"))) {
+		if (has_attribute(&f->attributes, add_name("compute")) && has_attribute(&f->attributes, add_name("cpu"))) {
 			compute_shaders[compute_shaders_size] = f;
 			compute_shaders_size += 1;
 		}
