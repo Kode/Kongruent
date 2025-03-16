@@ -69,8 +69,8 @@ type_ref resolve_member_var_type(statement *parent_block, type_ref parent_type, 
 	else if (left->kind == EXPRESSION_INDEX) {
 		if (parent_type.type != NO_TYPE) {
 			init_type_ref(&left->type, NO_NAME);
-			left->type = parent_type;
-			return parent_type;
+			left->type.type = get_type(parent_type.type)->base;
+			return left->type;
 		}
 	}
 
@@ -525,7 +525,7 @@ void resolve_types_in_block(statement *parent, statement *block) {
 			name_id var_type_name = s->local_variable.var.type.unresolved.name;
 
 			if (s->local_variable.var.type.type == NO_TYPE && var_type_name != NO_NAME) {
-				s->local_variable.var.type.type = find_type_by_name(var_type_name);
+				s->local_variable.var.type.type = find_type_by_ref(&s->local_variable.var.type);
 			}
 
 			if (s->local_variable.var.type.type == NO_TYPE) {

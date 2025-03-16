@@ -728,6 +728,8 @@ type_id find_type_by_ref(type_ref *t) {
 		no_array_type                       = *t;
 		no_array_type.unresolved.array_size = 0;
 		get_type(new_type)->base            = find_type_by_ref(&no_array_type);
+
+		return new_type;
 	}
 
 	return NO_TYPE;
