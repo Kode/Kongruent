@@ -148,7 +148,7 @@ typedef struct opcode {
 	};
 } opcode;
 
-#define OPCODES_SIZE (64 * 1024)
+#define OPCODES_SIZE (256 * 1024)
 
 typedef struct opcodes {
 	uint8_t o[OPCODES_SIZE];
