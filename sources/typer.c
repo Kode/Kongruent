@@ -576,11 +576,10 @@ void resolve_types(void) {
 		}
 
 		if (f->return_type.type == NO_TYPE) {
-			name_id return_type_name = f->return_type.unresolved.name;
-			f->return_type.type      = find_type_by_name(return_type_name);
+			f->return_type.type = find_type_by_ref(&f->return_type);
+
 			if (f->return_type.type == NO_TYPE) {
-				debug_context context = {0};
-				error(context, "Could not find type %s for %s", get_name(return_type_name), get_name(f->name));
+				error_no_context("Could not find type %s for %s", get_name(f->return_type.unresolved.name), get_name(f->name));
 			}
 		}
 	}

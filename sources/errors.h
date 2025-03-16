@@ -22,7 +22,9 @@ typedef struct debug_context {
 } debug_context;
 
 noreturn void error(debug_context context, const char *message, ...);
+noreturn void error_no_context(const char *message, ...);
 noreturn void error_args(debug_context context, const char *message, va_list args);
+noreturn void error_args_no_context(const char *message, va_list args);
 void          check_function(bool test, debug_context context, const char *message, ...);
 #define check(test, context, message, ...) \
 	assert(test);                          \
