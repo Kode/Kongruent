@@ -1204,11 +1204,14 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 
 				indent(hlsl, offset, indentation);
 				*offset += sprintf(&hlsl[*offset], "_%" PRIu64, o->op_store_member.to.index);
-				type *s        = get_type(o->op_store_member.member_parent_type);
-				bool  is_array = o->op_store_member.member_parent_array;
+
+				type *s = get_type(o->op_store_member.to.type.type);
+
 				for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
+					bool is_array = s->array_size > 0 || o->op_store_member.to.type.type == tex2d_type_id;
+
 					if (is_array) {
-						type *from_type = get_type(o->op_store_member.member_parent_type);
+						type *from_type = get_type(s->base);
 
 						if (global_var_index != 0 && i == 0 && get_type(from_type->base)->built_in) {
 							if (o->op_store_member.dynamic_member[i]) {
@@ -1224,15 +1227,16 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 						else {
 							*offset += sprintf(&hlsl[*offset], "[%i]", o->op_store_member.static_member_indices[i]);
 						}
-						is_array = false;
+
+						s = from_type;
 					}
 					else {
 						debug_context context = {0};
 						check(!o->op_store_member.dynamic_member[i], context, "Unexpected dynamic member");
 						check(o->op_store_member.static_member_indices[i] < s->members.size, context, "Member index out of bounds");
 						*offset += sprintf(&hlsl[*offset], ".%s", member_string(s, s->members.m[o->op_store_member.static_member_indices[i]].name));
-						is_array = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type)->array_size > 0;
-						s        = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
+
+						s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
 					}
 				}
 
