@@ -701,10 +701,14 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 				else if (simd_width == 4) {
 					for (int simd_index = 0; simd_index < 4; ++simd_index) {
 						indent(code, offset, indentation);
+
 						*offset += sprintf(&code[*offset], "_%" PRIu64, o->op_store_member.to.index);
-						type *s        = get_type(o->op_store_member.member_parent_type);
-						bool  is_array = o->op_store_member.member_parent_array;
+
+						type *s = get_type(o->op_store_member.to.type.type);
+
 						for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
+							bool is_array = s->array_size > 0 || o->op_store_member.to.type.type == tex2d_type_id;
+
 							if (is_array) {
 								if (o->op_store_member.dynamic_member[i]) {
 									*offset += sprintf(&code[*offset], "[kore_int32x4_get(_%" PRIu64 ", %i)]",
@@ -713,15 +717,17 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 								else {
 									*offset += sprintf(&code[*offset], "[%i]", o->op_store_member.static_member_indices[i]);
 								}
-								is_array = false;
+
+								s = get_type(s->base);
 							}
 							else {
 								debug_context context = {0};
 								check(!o->op_store_member.dynamic_member[i], context, "Unexpected dynamic member");
 								check(o->op_store_member.static_member_indices[i] < s->members.size, context, "Member index out of bounds");
+
 								*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.static_member_indices[i]].name));
-								is_array = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type)->array_size > 0;
-								s        = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
+
+								s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
 							}
 						}
 

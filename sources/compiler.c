@@ -284,8 +284,6 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				expression *right                     = left->member.right;
 				type_id     prev_struct               = left->member.left->type.type;
 				type       *prev_s                    = get_type(prev_struct);
-				o.op_store_member.member_parent_type  = prev_struct;
-				o.op_store_member.member_parent_array = get_type(left->member.left->type.type)->array_size > 0 || left->member.left->type.type == tex2d_type_id;
 
 				bool parent_dynamic = left->kind == EXPRESSION_DYNAMIC_MEMBER;
 

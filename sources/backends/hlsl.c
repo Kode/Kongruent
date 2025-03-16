@@ -1234,6 +1234,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 						debug_context context = {0};
 						check(!o->op_store_member.dynamic_member[i], context, "Unexpected dynamic member");
 						check(o->op_store_member.static_member_indices[i] < s->members.size, context, "Member index out of bounds");
+
 						*offset += sprintf(&hlsl[*offset], ".%s", member_string(s, s->members.m[o->op_store_member.static_member_indices[i]].name));
 
 						s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
