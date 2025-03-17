@@ -646,7 +646,7 @@ static void find_descriptor_set_groups(void) {
 	}
 }
 
-descriptor_set_group *find_descriptor_set_group_for_type(type *t) {
+descriptor_set_group *find_descriptor_set_group_for_pipe_type(type *t) {
 	if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 		render_pipeline pipeline = extract_render_pipeline_from_type(t);
 

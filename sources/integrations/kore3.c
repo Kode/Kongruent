@@ -1112,7 +1112,7 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, "void kong_set_render_pipeline_%s(kore_gpu_command_list *list) {\n", get_name(t->name));
 				fprintf(output, "\tkore_%s_command_list_set_render_pipeline(list, &%s);\n", api_short, get_name(t->name));
 
-				descriptor_set_group *group = find_descriptor_set_group_for_type(t);
+				descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
 				for (size_t group_index = 0; group_index < group->size; ++group_index) {
 					fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
 				}
@@ -1128,7 +1128,7 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, "void kong_set_ray_pipeline_%s(kore_gpu_command_list *list) {\n", get_name(t->name));
 				fprintf(output, "\tkore_d3d12_command_list_set_ray_pipeline(list, &%s);\n", get_name(t->name));
 
-				descriptor_set_group *group = find_descriptor_set_group_for_type(t);
+				descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
 				for (size_t group_index = 0; group_index < group->size; ++group_index) {
 					fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
 				}
