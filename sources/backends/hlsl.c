@@ -1216,7 +1216,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					if (is_array) {
 						type *from_type = get_type(s->base);
 
-						if (global_var_index != 0 && i == 0 && get_type(from_type->base)->built_in) {
+						if (global_var_index != 0 && i == 0 && from_type->built_in) {
 							if (o->op_store_member.dynamic_member[i]) {
 								*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "].data", o->op_store_member.dynamic_member_indices[i].index);
 							}
