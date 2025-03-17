@@ -1161,11 +1161,11 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					if (o->op_load_member.dynamic_member[i]) {
 						type *from_type = get_type(o->op_load_member.from.type.type);
 
-						if (global_var_index != 0 && i == 0 && get_type(from_type->base)->built_in) {
-							*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "].data", o->op_load_member.dynamic_member_indices[i].index);
-						}
-						else if (from_type->array_size == UINT32_MAX && from_type->base == tex2d_type_id) {
+						if (from_type->array_size == UINT32_MAX && from_type->base == tex2d_type_id) {
 							*offset += sprintf(&hlsl[*offset], "[NonUniformResourceIndex(_%" PRIu64 ")]", o->op_load_member.dynamic_member_indices[i].index);
+						}
+						else if (global_var_index != 0 && i == 0 && get_type(from_type->base)->built_in) {
+							*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "].data", o->op_load_member.dynamic_member_indices[i].index);
 						}
 						else {
 							*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "]", o->op_load_member.dynamic_member_indices[i].index);
