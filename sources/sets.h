@@ -7,10 +7,9 @@
 #define MAX_SET_DEFINITIONS 32
 
 typedef struct descriptor_set {
-	uint32_t   index;
-	name_id    name;
-	definition definitions[MAX_SET_DEFINITIONS];
-	size_t     definitions_count;
+	uint32_t     index;
+	name_id      name;
+	global_array globals;
 } descriptor_set;
 
 #define MAX_SETS 256

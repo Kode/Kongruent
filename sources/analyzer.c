@@ -488,8 +488,8 @@ static void check_globals_in_descriptor_set_group(descriptor_set_group *group) {
 
 	for (size_t set_index = 0; set_index < group->size; ++set_index) {
 		descriptor_set *set = group->values[set_index];
-		for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-			global_id g = set->definitions[definition_index].global;
+		for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+			global_id g = set->globals.globals[global_index];
 
 			for (size_t global_index = 0; global_index < set_globals.size; ++global_index) {
 				if (set_globals.values[global_index] == g) {

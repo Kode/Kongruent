@@ -18,10 +18,10 @@ descriptor_set *create_set(name_id name) {
 		return NULL;
 	}
 
-	descriptor_set *new_set    = &sets[sets_count];
-	new_set->name              = name;
-	new_set->index             = (uint32_t)sets_count;
-	new_set->definitions_count = 0;
+	descriptor_set *new_set = &sets[sets_count];
+	new_set->name           = name;
+	new_set->index          = (uint32_t)sets_count;
+	new_set->globals.size   = 0;
 
 	sets_count += 1;
 
@@ -31,14 +31,14 @@ descriptor_set *create_set(name_id name) {
 void add_definition_to_set(descriptor_set *set, definition def) {
 	assert(def.kind != DEFINITION_FUNCTION && def.kind != DEFINITION_STRUCT);
 
-	for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-		if (set->definitions[definition_index].global == def.global) {
+	for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+		if (set->globals.globals[global_index] == def.global) {
 			return;
 		}
 	}
 
 	get_global(def.global)->sets[get_global(def.global)->sets_count] = set;
 	get_global(def.global)->sets_count += 1;
-	set->definitions[set->definitions_count] = def;
-	set->definitions_count += 1;
+	set->globals.globals[set->globals.size] = def.global;
+	set->globals.size += 1;
 }

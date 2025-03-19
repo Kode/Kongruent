@@ -93,3 +93,15 @@ extern type_id texcube_type_id;
 extern type_id sampler_type_id;
 extern type_id ray_type_id;
 extern type_id bvh_type_id;
+
+static inline bool is_texture(type_id t) {
+	return t == tex2d_type_id || t == tex2darray_type_id || t == texcube_type_id;
+}
+
+static inline bool is_cbv_srv_uav(type_id t) {
+	return is_texture(t) || t == bvh_type_id || !get_type(t)->built_in;
+}
+
+static inline bool is_sampler(type_id t) {
+	return t == sampler_type_id;
+}

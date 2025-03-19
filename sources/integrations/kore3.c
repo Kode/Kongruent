@@ -305,10 +305,6 @@ static const char *convert_blend_mode(int mode) {
 	}
 }
 
-bool is_texture(type_id t) {
-	return t == tex2d_type_id || t == tex2darray_type_id || t == texcube_type_id;
-}
-
 #define CASE_TEXTURE            \
 	case DEFINITION_TEX2D:      \
 	case DEFINITION_TEX2DARRAY: \
@@ -358,20 +354,17 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 		bool has_sampler = false;
 		bool has_other   = false;
 
-		for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-			definition *def = &set->definitions[definition_index];
+		for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+			global *g = get_global(set->globals.globals[global_index]);
 
-			switch (def->kind) {
-			case DEFINITION_CONST_CUSTOM:
-			CASE_TEXTURE:
-			case DEFINITION_BVH:
+			if (is_cbv_srv_uav(g->type)) {
 				has_other = true;
-				break;
-			case DEFINITION_SAMPLER:
+			}
+			else if (is_sampler(g->type)) {
 				has_sampler = true;
-				break;
-			default:
-				assert(false);
+			}
+
+			if (has_other && has_sampler) {
 				break;
 			}
 		}
@@ -394,20 +387,17 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 		bool has_sampler = false;
 		bool has_other   = false;
 
-		for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-			definition *def = &set->definitions[definition_index];
+		for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+			global *g = get_global(set->globals.globals[global_index]);
 
-			switch (def->kind) {
-			case DEFINITION_CONST_CUSTOM:
-			CASE_TEXTURE:
-			case DEFINITION_BVH:
+			if (is_cbv_srv_uav(g->type)) {
 				has_other = true;
-				break;
-			case DEFINITION_SAMPLER:
+			}
+			else if (is_sampler(g->type)) {
 				has_sampler = true;
-				break;
-			default:
-				assert(false);
+			}
+
+			if (has_other && has_sampler) {
 				break;
 			}
 		}
@@ -415,30 +405,21 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 		if (has_other) {
 			size_t count = 0;
 
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition *def = &set->definitions[definition_index];
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g = get_global(set->globals.globals[global_index]);
 
-				switch (def->kind) {
-				case DEFINITION_CONST_CUSTOM:
-				CASE_TEXTURE:
-				case DEFINITION_BVH: {
+				if (is_cbv_srv_uav(g->type)) {
 					count += 1;
-					break;
-				}
-				default:
-					assert(false);
-					break;
 				}
 			}
 
 			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%zu] = {};\n", table_index, count);
 
 			size_t range_index = 0;
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition *def = &set->definitions[definition_index];
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g = get_global(set->globals.globals[global_index]);
 
-				switch (def->kind) {
-				case DEFINITION_CONST_CUSTOM:
+				if (!get_type(g->type)->built_in) {
 					fprintf(output, "\tranges%i[%zu].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;\n", table_index, range_index);
 					fprintf(output, "\tranges%i[%zu].BaseShaderRegister = %i;\n", table_index, range_index, cbv_index);
 					fprintf(output, "\tranges%i[%zu].NumDescriptors = 1;\n", table_index, range_index);
@@ -447,10 +428,9 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					cbv_index += 1;
 
 					range_index += 1;
-
-					break;
-				CASE_TEXTURE: {
-					attribute *write_attribute = find_attribute(&get_global(def->global)->attributes, add_name("write"));
+				}
+				else if (is_texture(g->type)) {
+					attribute *write_attribute = find_attribute(&g->attributes, add_name("write"));
 
 					if (write_attribute != NULL) {
 						fprintf(output, "\tranges%i[%zu].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;\n", table_index, range_index);
@@ -472,13 +452,8 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					}
 
 					range_index += 1;
-
-					break;
-				default:
-					assert(false);
-					break;
 				}
-				case DEFINITION_BVH:
+				else if (g->type == bvh_type_id) {
 					fprintf(output, "\tranges%i[%zu].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;\n", table_index, range_index);
 					fprintf(output, "\tranges%i[%zu].BaseShaderRegister = %i;\n", table_index, range_index, srv_index);
 					fprintf(output, "\tranges%i[%zu].NumDescriptors = 1;\n", table_index, range_index);
@@ -487,52 +462,38 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					srv_index += 1;
 
 					range_index += 1;
-
-					break;
 				}
+
+				fprintf(output, "\n\tparams[%i].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;\n", table_index);
+				fprintf(output, "\tparams[%i].DescriptorTable.NumDescriptorRanges = %zu;\n", table_index, count);
+				fprintf(output, "\tparams[%i].DescriptorTable.pDescriptorRanges = ranges%i;\n", table_index, table_index);
+
+				table_index += 1;
 			}
-
-			fprintf(output, "\n\tparams[%i].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;\n", table_index);
-			fprintf(output, "\tparams[%i].DescriptorTable.NumDescriptorRanges = %zu;\n", table_index, count);
-			fprintf(output, "\tparams[%i].DescriptorTable.pDescriptorRanges = ranges%i;\n", table_index, table_index);
-
-			table_index += 1;
 		}
 
 		if (has_sampler) {
 			size_t count = 0;
 
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition *def = &set->definitions[definition_index];
-
-				switch (def->kind) {
-				case DEFINITION_SAMPLER: {
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g = get_global(set->globals.globals[global_index]);
+				if (is_sampler(g->type)) {
 					count += 1;
-					break;
-				}
-				default:
-					assert(false);
-					break;
 				}
 			}
 
 			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%zu] = {};\n", table_index, count);
 
 			size_t range_index = 0;
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition *def = &set->definitions[definition_index];
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g = get_global(set->globals.globals[global_index]);
 
-				switch (def->kind) {
-				case DEFINITION_SAMPLER:
+				if (is_sampler(g->type)) {
 					fprintf(output, "\tranges%i[%zu].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;\n", table_index, range_index);
 					fprintf(output, "\tranges%i[%zu].BaseShaderRegister = %i;\n", table_index, range_index, sampler_index);
 					fprintf(output, "\tranges%i[%zu].NumDescriptors = 1;\n", table_index, range_index);
 					fprintf(output, "\tranges%i[%zu].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;\n", table_index, range_index);
 					sampler_index += 1;
-					break;
-				default:
-					assert(false);
-					break;
 				}
 			}
 
@@ -817,68 +778,59 @@ void kore3_export(char *directory, api_kind api) {
 			}
 
 			fprintf(output, "typedef struct %s_parameters {\n", get_name(set->name));
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition d = set->definitions[definition_index];
-				switch (d.kind) {
-				case DEFINITION_CONST_CUSTOM:
-					fprintf(output, "\tkore_gpu_buffer *%s;\n", get_name(get_global(d.global)->name));
-					break;
-				CASE_TEXTURE: {
-					type *t = get_type(get_global(d.global)->type);
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g = get_global(set->globals.globals[global_index]);
+
+				if (!get_type(g->type)->built_in) {
+					fprintf(output, "\tkore_gpu_buffer *%s;\n", get_name(g->name));
+				}
+				else if (is_texture(g->type)) {
+					type *t = get_type(g->type);
 					if (t->array_size == UINT32_MAX) {
-						fprintf(output, "\tkore_gpu_texture_view *%s;\n", get_name(get_global(d.global)->name));
-						fprintf(output, "\tsize_t %s_count;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\tkore_gpu_texture_view *%s;\n", get_name(g->name));
+						fprintf(output, "\tsize_t %s_count;\n", get_name(g->name));
 					}
 					else {
-						fprintf(output, "\tkore_gpu_texture_view %s;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\tkore_gpu_texture_view %s;\n", get_name(g->name));
 					}
-					break;
 				}
-				case DEFINITION_SAMPLER:
-					fprintf(output, "\tkore_gpu_sampler *%s;\n", get_name(get_global(d.global)->name));
-					break;
-				case DEFINITION_BVH:
-					fprintf(output, "\tkore_gpu_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
-					break;
-				case DEFINITION_CONST_BASIC:
-					fprintf(output, "\tkore_gpu_buffer *%s;\n", get_name(get_global(d.global)->name));
-					break;
-				default: {
-					debug_context context = {0};
-					error(context, "Unexpected kind of definition");
-					break;
+				else if (is_sampler(g->type)) {
+					fprintf(output, "\tkore_gpu_sampler *%s;\n", get_name(g->name));
 				}
+				else if (g->type == bvh_type_id) {
+					fprintf(output, "\tkore_gpu_raytracing_hierarchy *%s;\n", get_name(g->name));
+				}
+				else {
+					fprintf(output, "\tkore_gpu_buffer *%s;\n", get_name(g->name));
 				}
 			}
+
 			fprintf(output, "} %s_parameters;\n\n", get_name(set->name));
 
 			fprintf(output, "typedef struct %s_set {\n", get_name(set->name));
 			fprintf(output, "\tkore_%s_descriptor_set set;\n\n", api_short);
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition d = set->definitions[definition_index];
-				switch (d.kind) {
-				case DEFINITION_CONST_CUSTOM:
-					fprintf(output, "\tkore_gpu_buffer *%s;\n", get_name(get_global(d.global)->name));
-					break;
-				case DEFINITION_CONST_BASIC:
-					fprintf(output, "\tkore_gpu_buffer *%s;\n", get_name(get_global(d.global)->name));
-					break;
-				case DEFINITION_BVH:
-					fprintf(output, "\tkore_gpu_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
-					break;
-				CASE_TEXTURE: {
-					type *t = get_type(get_global(d.global)->type);
+
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g = get_global(set->globals.globals[global_index]);
+
+				if (!get_type(g->type)->built_in) {
+					fprintf(output, "\tkore_gpu_buffer *%s;\n", get_name(g->name));
+				}
+				else if (g->type == bvh_type_id) {
+					fprintf(output, "\tkore_gpu_raytracing_hierarchy *%s;\n", get_name(g->name));
+				}
+				else if (is_texture(g->type)) {
+					type *t = get_type(g->type);
 					if (t->array_size == UINT32_MAX) {
-						fprintf(output, "\tkore_gpu_texture_view *%s;\n", get_name(get_global(d.global)->name));
-						fprintf(output, "\tsize_t %s_count;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\tkore_gpu_texture_view *%s;\n", get_name(g->name));
+						fprintf(output, "\tsize_t %s_count;\n", get_name(g->name));
 					}
 					else {
-						fprintf(output, "\tkore_gpu_texture_view %s;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\tkore_gpu_texture_view %s;\n", get_name(g->name));
 					}
-					break;
 				}
-				default:
-					break;
+				else {
+					fprintf(output, "\tkore_gpu_buffer *%s;\n", get_name(g->name));
 				}
 			}
 			fprintf(output, "} %s_set;\n\n", get_name(set->name));
@@ -887,17 +839,13 @@ void kore3_export(char *directory, api_kind api) {
 			        get_name(set->name), get_name(set->name));
 
 			fprintf(output, "void kong_set_descriptor_set_%s(kore_gpu_command_list *list, %s_set *set", get_name(set->name), get_name(set->name));
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition d = set->definitions[definition_index];
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g = get_global(set->globals.globals[global_index]);
 
-				switch (d.kind) {
-				case DEFINITION_CONST_CUSTOM:
-					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
-						fprintf(output, ", uint32_t %s_index", get_name(get_global(d.global)->name));
+				if (!get_type(g->type)->built_in) {
+					if (has_attribute(&g->attributes, add_name("indexed"))) {
+						fprintf(output, ", uint32_t %s_index", get_name(g->name));
 					}
-					break;
-				default:
-					break;
 				}
 			}
 			fprintf(output, ");\n\n");
@@ -907,55 +855,46 @@ void kore3_export(char *directory, api_kind api) {
 
 			fprintf(output, "typedef struct %s_set_update {\n", get_name(set->name));
 			fprintf(output, "\tenum {\n");
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition d = set->definitions[definition_index];
-				char       upper_definition_name[256];
-				to_upper(get_name(get_global(d.global)->name), upper_definition_name);
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g = get_global(set->globals.globals[global_index]);
+				char    upper_definition_name[256];
+				to_upper(get_name(g->name), upper_definition_name);
 
-				switch (d.kind) {
-				case DEFINITION_CONST_CUSTOM:
+				if (!get_type(g->type)->built_in) {
 					fprintf(output, "\t\t%s_SET_UPDATE_%s,\n", upper_set_name, upper_definition_name);
-					break;
-				case DEFINITION_BVH:
+				}
+				else if (g->type == bvh_type_id) {
 					fprintf(output, "\t\t%s_SET_UPDATE_%s,\n", upper_set_name, upper_definition_name);
-					break;
-				CASE_TEXTURE: {
+				}
+				else if (is_texture(g->type)) {
 					// type *t = get_type(get_global(d.global)->type);
 					fprintf(output, "\t\t%s_SET_UPDATE_%s,\n", upper_set_name, upper_definition_name);
-					break;
-				}
-				default:
-					break;
 				}
 			}
 			fprintf(output, "\t} kind;\n");
 
 			fprintf(output, "\tunion {\n");
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition d = set->definitions[definition_index];
-				switch (d.kind) {
-				case DEFINITION_CONST_CUSTOM:
-					fprintf(output, "\t\tkore_gpu_buffer *%s;\n", get_name(get_global(d.global)->name));
-					break;
-				case DEFINITION_BVH:
-					fprintf(output, "\t\tkore_gpu_raytracing_hierarchy *%s;\n", get_name(get_global(d.global)->name));
-					break;
-				CASE_TEXTURE: {
-					type *t = get_type(get_global(d.global)->type);
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g = get_global(set->globals.globals[global_index]);
+
+				if (!get_type(g->type)->built_in) {
+					fprintf(output, "\t\tkore_gpu_buffer *%s;\n", get_name(g->name));
+				}
+				else if (g->type == bvh_type_id) {
+					fprintf(output, "\t\tkore_gpu_raytracing_hierarchy *%s;\n", get_name(g->name));
+				}
+				else if (is_texture(g->type)) {
+					type *t = get_type(g->type);
 					if (t->array_size == UINT32_MAX) {
 						fprintf(output, "\t\tstruct {\n");
-						fprintf(output, "\t\t\tkore_gpu_texture_view *%s;\n", get_name(get_global(d.global)->name));
-						fprintf(output, "\t\t\tuint32_t *%s_indices;\n", get_name(get_global(d.global)->name));
-						fprintf(output, "\t\t\tsize_t %s_count;\n", get_name(get_global(d.global)->name));
-						fprintf(output, "\t\t} %s;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\t\t\tkore_gpu_texture_view *%s;\n", get_name(g->name));
+						fprintf(output, "\t\t\tuint32_t *%s_indices;\n", get_name(g->name));
+						fprintf(output, "\t\t\tsize_t %s_count;\n", get_name(g->name));
+						fprintf(output, "\t\t} %s;\n", get_name(g->name));
 					}
 					else {
-						fprintf(output, "\t\tkore_gpu_texture_view %s;\n", get_name(get_global(d.global)->name));
+						fprintf(output, "\t\tkore_gpu_texture_view %s;\n", get_name(g->name));
 					}
-					break;
-				}
-				default:
-					break;
 				}
 			}
 			fprintf(output, "\t};\n");
@@ -1183,15 +1122,16 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "}\n\n");
 
 					fprintf(output, "%s *%s_buffer_lock(kore_gpu_buffer *buffer, uint32_t index, uint32_t count) {\n", type_name, type_name);
-					fprintf(
-					    output,
-					    "\treturn (%s *)kore_gpu_buffer_lock(buffer, index * align_pow2((int)sizeof(%s), 256), count * align_pow2((int)sizeof(%s), 256));\n",
-					    type_name, type_name, type_name);
+					fprintf(output,
+					        "\treturn (%s *)kore_gpu_buffer_lock(buffer, index * align_pow2((int)sizeof(%s), 256), count * align_pow2((int)sizeof(%s), "
+					        "256));\n",
+					        type_name, type_name, type_name);
 					fprintf(output, "}\n\n");
 
 					fprintf(output, "%s *%s_buffer_try_to_lock(kore_gpu_buffer *buffer, uint32_t index, uint32_t count) {\n", type_name, type_name);
 					fprintf(output,
-					        "\treturn (%s *)kore_gpu_buffer_try_to_lock(buffer, index * align_pow2((int)sizeof(%s), 256), count * align_pow2((int)sizeof(%s), "
+					        "\treturn (%s *)kore_gpu_buffer_try_to_lock(buffer, index * align_pow2((int)sizeof(%s), 256), count * "
+					        "align_pow2((int)sizeof(%s), "
 					        "256));\n",
 					        type_name, type_name, type_name);
 					fprintf(output, "}\n\n");
@@ -1268,42 +1208,38 @@ void kore3_export(char *directory, api_kind api) {
 			size_t dynamic_count  = 0;
 			size_t bindless_count = 0;
 
-			for (size_t descriptor_index = 0; descriptor_index < set->definitions_count; ++descriptor_index) {
-				definition d = set->definitions[descriptor_index];
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g = get_global(set->globals.globals[global_index]);
 
-				switch (d.kind) {
-				case DEFINITION_CONST_CUSTOM:
-					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
+				if (!get_type(g->type)->built_in) {
+					if (has_attribute(&g->attributes, add_name("indexed"))) {
 						dynamic_count += 1;
 					}
 					else {
 						other_count += 1;
 					}
-					break;
-				case DEFINITION_CONST_BASIC:
-					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
-						dynamic_count += 1;
-					}
-					else {
-						other_count += 1;
-					}
-					break;
-				CASE_TEXTURE: {
-					type *t = get_type(get_global(d.global)->type);
+				}
+				else if (is_texture(g->type)) {
+					type *t = get_type(g->type);
 					if (t->array_size == UINT32_MAX) {
 						bindless_count += 1;
 					}
 					else {
 						other_count += 1;
 					}
-					break;
-				default:
-					assert(false);
-					break;
 				}
-				case DEFINITION_SAMPLER:
+				else if (is_sampler(g->type))
+
+				{
 					sampler_count += 1;
-					break;
+				}
+				else {
+					if (has_attribute(&g->attributes, add_name("indexed"))) {
+						dynamic_count += 1;
+					}
+					else {
+						other_count += 1;
+					}
 				}
 			}
 
@@ -1318,111 +1254,100 @@ void kore3_export(char *directory, api_kind api) {
 			size_t other_index   = 0;
 			size_t sampler_index = 0;
 
-			for (size_t descriptor_index = 0; descriptor_index < set->definitions_count; ++descriptor_index) {
-				definition d = set->definitions[descriptor_index];
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g = get_global(set->globals.globals[global_index]);
 
-				switch (d.kind) {
-				case DEFINITION_CONST_CUSTOM:
-					if (!has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
-						fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %zu);\n", api_short,
-						        get_name(get_global(d.global)->name), other_index);
+				if (!get_type(g->type)->built_in) {
+					if (!has_attribute(&g->attributes, add_name("indexed"))) {
+						fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
+						        other_index);
 						other_index += 1;
 					}
-					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
-					break;
-				case DEFINITION_CONST_BASIC:
-					if (!has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
-						fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_uav(device, &set->set, parameters->%s, %zu);\n", api_short,
-						        get_name(get_global(d.global)->name), other_index);
-						other_index += 1;
-					}
-					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
-					break;
-				case DEFINITION_BVH:
-					fprintf(output, "\tkore_%s_descriptor_set_set_bvh_view_srv(device, &set->set, parameters->%s, %zu);\n", api_short,
-					        get_name(get_global(d.global)->name), other_index);
-					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
+					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+				}
+				else if (g->type == bvh_type_id) {
+					fprintf(output, "\tkore_%s_descriptor_set_set_bvh_view_srv(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
+					        other_index);
+					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 					other_index += 1;
-					break;
-				case DEFINITION_TEX2D: {
-					type *t = get_type(get_global(d.global)->type);
+				}
+				else if (g->type == tex2d_type_id) {
+					type *t = get_type(g->type);
 					if (t->array_size == UINT32_MAX) {
 						fprintf(output, "\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) * parameters->textures_count);\n",
-						        get_name(get_global(d.global)->name));
-						fprintf(output, "\tassert(set->%s != NULL);\n", get_name(get_global(d.global)->name));
+						        get_name(g->name));
+						fprintf(output, "\tassert(set->%s != NULL);\n", get_name(g->name));
 						fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
 						fprintf(output,
 						        "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
 						        "&parameters->%s[index]);\n",
-						        api_short, get_name(get_global(d.global)->name));
-						fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(get_global(d.global)->name),
-						        get_name(get_global(d.global)->name));
+						        api_short, get_name(g->name));
+						fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(g->name), get_name(g->name));
 						fprintf(output, "\t}\n");
 
-						fprintf(output, "\tset->%s_count = parameters->%s_count;\n", get_name(get_global(d.global)->name),
-						        get_name(get_global(d.global)->name));
+						fprintf(output, "\tset->%s_count = parameters->%s_count;\n", get_name(g->name), get_name(g->name));
 					}
 					else {
-						attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
+						attribute *write_attribute = find_attribute(&g->attributes, add_name("write"));
 						if (write_attribute != NULL) {
 							fprintf(output, "\tkore_%s_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %zu);\n", api_short,
-							        get_name(get_global(d.global)->name), other_index);
+							        get_name(g->name), other_index);
 						}
 						else {
 							if (api == API_VULKAN) {
-								fprintf(output, "\tkore_vulkan_descriptor_set_set_texture_view(device, &set->set, &parameters->%s, %zu);\n",
-								        get_name(get_global(d.global)->name), descriptor_index);
+								fprintf(output, "\tkore_vulkan_descriptor_set_set_texture_view(device, &set->set, &parameters->%s, %zu);\n", get_name(g->name),
+								        global_index);
 							}
 							else {
-								fprintf(
-								    output,
-								    "\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %zu, &parameters->%s);\n",
-								    api_short, other_index, get_name(get_global(d.global)->name));
+								fprintf(output,
+								        "\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %zu, "
+								        "&parameters->%s);\n",
+								        api_short, other_index, get_name(g->name));
 							}
 						}
 
-						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
+						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 
 						other_index += 1;
 					}
-
-					break;
 				}
-				case DEFINITION_TEX2DARRAY: {
-					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
+				else if (g->type == tex2darray_type_id) {
+					attribute *write_attribute = find_attribute(&g->attributes, add_name("write"));
 					if (write_attribute != NULL) {
 						debug_context context = {0};
 						error(context, "Texture arrays can not be writable");
 					}
 
 					fprintf(output, "\tkore_%s_descriptor_set_set_texture_array_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
-					        get_name(get_global(d.global)->name), other_index);
+					        get_name(g->name), other_index);
 
-					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
+					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 					other_index += 1;
-					break;
 				}
-				case DEFINITION_TEXCUBE: {
-					attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
+				else if (g->type == texcube_type_id) {
+					attribute *write_attribute = find_attribute(&g->attributes, add_name("write"));
 					if (write_attribute != NULL) {
 						debug_context context = {0};
 						error(context, "Cube maps can not be writable");
 					}
 					fprintf(output, "\tkore_%s_descriptor_set_set_texture_cube_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
-					        get_name(get_global(d.global)->name), other_index);
+					        get_name(g->name), other_index);
 
-					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(get_global(d.global)->name), get_name(get_global(d.global)->name));
+					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 					other_index += 1;
-					break;
 				}
-				case DEFINITION_SAMPLER:
-					fprintf(output, "\tkore_%s_descriptor_set_set_sampler(device, &set->set, parameters->%s, %zu);\n", api_short,
-					        get_name(get_global(d.global)->name), sampler_index);
+				else if (is_sampler(g->type)) {
+					fprintf(output, "\tkore_%s_descriptor_set_set_sampler(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
+					        sampler_index);
 					sampler_index += 1;
-					break;
-				default:
-					assert(false);
-					break;
+				}
+				else {
+					if (!has_attribute(&g->attributes, add_name("indexed"))) {
+						fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_uav(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
+						        other_index);
+						other_index += 1;
+					}
+					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 				}
 			}
 			fprintf(output, "}\n\n");
@@ -1432,86 +1357,73 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "void kong_set_descriptor_set_%s(kore_gpu_command_list *list, %s_set *set", get_name(set->name), get_name(set->name));
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition d = set->definitions[definition_index];
-				switch (d.kind) {
-				case DEFINITION_CONST_CUSTOM:
-					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
-						fprintf(output, ", uint32_t %s_index", get_name(get_global(d.global)->name));
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g = get_global(set->globals.globals[global_index]);
+
+				if (!get_type(g->type)->built_in) {
+					if (has_attribute(&g->attributes, add_name("indexed"))) {
+						fprintf(output, ", uint32_t %s_index", get_name(g->name));
 					}
-					break;
-				default:
-					break;
 				}
 			}
 			fprintf(output, ") {\n");
-			for (size_t descriptor_index = 0; descriptor_index < set->definitions_count; ++descriptor_index) {
-				definition d = set->definitions[descriptor_index];
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g = get_global(set->globals.globals[global_index]);
 
-				switch (d.kind) {
-				case DEFINITION_CONST_CUSTOM:
-					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
+				if (!get_type(g->type)->built_in) {
+					if (has_attribute(&g->attributes, add_name("indexed"))) {
 						if (api == API_VULKAN) {
-							fprintf(output, "\tkore_vulkan_descriptor_set_prepare_buffer(list, set->%s);\n", get_name(get_global(d.global)->name));
+							fprintf(output, "\tkore_vulkan_descriptor_set_prepare_buffer(list, set->%s);\n", get_name(g->name));
 						}
 						else {
-							fprintf(
-							    output,
-							    "\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), align_pow2((int)%i, 256));\n",
-							    api_short, get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), struct_size(get_global(d.global)->type),
-							    struct_size(get_global(d.global)->type));
+							fprintf(output,
+							        "\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), "
+							        "align_pow2((int)%i, 256));\n",
+							        api_short, get_name(g->name), get_name(g->name), struct_size(g->type), struct_size(g->type));
 						}
 					}
 					else {
-						fprintf(output, "\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short,
-						        get_name(get_global(d.global)->name));
+						fprintf(output, "\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short, get_name(g->name));
 					}
-					break;
-				case DEFINITION_CONST_BASIC:
-					if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
-						if (api == API_VULKAN) {
-							fprintf(output, "\tkore_vulkan_descriptor_set_prepare_buffer(list, set->%s);\n", get_name(get_global(d.global)->name));
-						}
-						else {
-							fprintf(
-							    output,
-							    "\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), align_pow2((int)%i, 256));\n",
-							    api_short, get_name(get_global(d.global)->name), get_name(get_global(d.global)->name), struct_size(get_global(d.global)->type),
-							    struct_size(get_global(d.global)->type));
-						}
-					}
-					else {
-						fprintf(output, "\tkore_%s_descriptor_set_prepare_uav_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short,
-						        get_name(get_global(d.global)->name));
-					}
-					break;
-				CASE_TEXTURE: {
-					type *t = get_type(get_global(d.global)->type);
+				}
+
+				else if (is_texture(g->type)) {
+					type *t = get_type(g->type);
 					if (t->array_size == UINT32_MAX) {
-						fprintf(output, "\tfor (size_t index = 0; index < set->%s_count; ++index) {\n", get_name(get_global(d.global)->name));
-						fprintf(output, "\t\tkore_%s_descriptor_set_prepare_srv_texture(list, &set->%s[index]);\n", api_short,
-						        get_name(get_global(d.global)->name));
+						fprintf(output, "\tfor (size_t index = 0; index < set->%s_count; ++index) {\n", get_name(g->name));
+						fprintf(output, "\t\tkore_%s_descriptor_set_prepare_srv_texture(list, &set->%s[index]);\n", api_short, get_name(g->name));
 						fprintf(output, "\t}\n");
 					}
 					else {
-						attribute *write_attribute = find_attribute(&get_global(d.global)->attributes, add_name("write"));
+						attribute *write_attribute = find_attribute(&g->attributes, add_name("write"));
 						if (write_attribute != NULL) {
-							fprintf(output, "\tkore_%s_descriptor_set_prepare_uav_texture(list, &set->%s);\n", api_short, get_name(get_global(d.global)->name));
+							fprintf(output, "\tkore_%s_descriptor_set_prepare_uav_texture(list, &set->%s);\n", api_short, get_name(g->name));
 						}
 						else {
 							if (api == API_VULKAN) {
-								fprintf(output, "\tkore_vulkan_descriptor_set_prepare_texture(list, &set->%s);\n", get_name(get_global(d.global)->name));
+								fprintf(output, "\tkore_vulkan_descriptor_set_prepare_texture(list, &set->%s);\n", get_name(g->name));
 							}
 							else {
-								fprintf(output, "\tkore_%s_descriptor_set_prepare_srv_texture(list, &set->%s);\n", api_short,
-								        get_name(get_global(d.global)->name));
+								fprintf(output, "\tkore_%s_descriptor_set_prepare_srv_texture(list, &set->%s);\n", api_short, get_name(g->name));
 							}
 						}
 					}
-					break;
 				}
-				default:
-					break;
+				else {
+					if (has_attribute(&g->attributes, add_name("indexed"))) {
+						if (api == API_VULKAN) {
+							fprintf(output, "\tkore_vulkan_descriptor_set_prepare_buffer(list, set->%s);\n", get_name(g->name));
+						}
+						else {
+							fprintf(output,
+							        "\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), "
+							        "align_pow2((int)%i, 256));\n",
+							        api_short, get_name(g->name), get_name(g->name), struct_size(g->type), struct_size(g->type));
+						}
+					}
+					else {
+						fprintf(output, "\tkore_%s_descriptor_set_prepare_uav_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short, get_name(g->name));
+					}
 				}
 			}
 
@@ -1519,16 +1431,13 @@ void kore3_export(char *directory, api_kind api) {
 
 			{
 				uint32_t dynamic_count = 0;
-				for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-					definition d = set->definitions[definition_index];
-					switch (d.kind) {
-					case DEFINITION_CONST_CUSTOM:
-						if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g = get_global(set->globals.globals[global_index]);
+
+					if (!get_type(g->type)->built_in) {
+						if (has_attribute(&g->attributes, add_name("indexed"))) {
 							dynamic_count += 1;
 						}
-						break;
-					default:
-						break;
 					}
 				}
 
@@ -1540,20 +1449,17 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\tuint32_t dynamic_sizes[%i];\n", dynamic_count);
 
 					uint32_t dynamic_index = 0;
-					for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-						definition d = set->definitions[definition_index];
-						switch (d.kind) {
-						case DEFINITION_CONST_CUSTOM:
-							if (has_attribute(&get_global(d.global)->attributes, add_name("indexed"))) {
-								fprintf(output, "\tdynamic_buffers[%i] = set->%s;\n", dynamic_index, get_name(get_global(d.global)->name));
-								fprintf(output, "\tdynamic_offsets[%i] = %s_index * align_pow2((int)%i, 256);\n", dynamic_index,
-								        get_name(get_global(d.global)->name), struct_size(get_global(d.global)->type));
-								fprintf(output, "\tdynamic_sizes[%i] = align_pow2((int)%i, 256);\n", dynamic_index, struct_size(get_global(d.global)->type));
+					for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+						global *g = get_global(set->globals.globals[global_index]);
+
+						if (!get_type(g->type)->built_in) {
+							if (has_attribute(&g->attributes, add_name("indexed"))) {
+								fprintf(output, "\tdynamic_buffers[%i] = set->%s;\n", dynamic_index, get_name(g->name));
+								fprintf(output, "\tdynamic_offsets[%i] = %s_index * align_pow2((int)%i, 256);\n", dynamic_index, get_name(g->name),
+								        struct_size(g->type));
+								fprintf(output, "\tdynamic_sizes[%i] = align_pow2((int)%i, 256);\n", dynamic_index, struct_size(g->type));
 								dynamic_index += 1;
 							}
-							break;
-						default:
-							break;
 						}
 					}
 				}
@@ -2078,20 +1984,15 @@ void kore3_export(char *directory, api_kind api) {
 
 			fprintf(output, "\t{\n");
 
-			fprintf(output, "\t\tVkDescriptorSetLayoutBinding layout_bindings[%zu] = {\n", set->definitions_count);
+			fprintf(output, "\t\tVkDescriptorSetLayoutBinding layout_bindings[%zu] = {\n", set->globals.size);
 
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition def = set->definitions[definition_index];
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g = get_global(set->globals.globals[global_index]);
 
-				switch (def.kind) {
-				case DEFINITION_FUNCTION:
-					break;
-				case DEFINITION_STRUCT:
-					break;
-				case DEFINITION_TEX2D:
+				if (g->type == tex2d_type_id) {
 					fprintf(output, "\t\t\t{\n");
-					fprintf(output, "\t\t\t\t.binding = %zu,\n", definition_index);
-					if (has_attribute(&get_global(def.global)->attributes, add_name("write"))) {
+					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
+					if (has_attribute(&g->attributes, add_name("write"))) {
 						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
 					}
 					else {
@@ -2101,25 +2002,25 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
 					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
 					fprintf(output, "\t\t\t},\n");
-					break;
-				case DEFINITION_TEX2DARRAY:
-					break;
-				case DEFINITION_TEXCUBE:
-					break;
-				case DEFINITION_SAMPLER:
+				}
+				else if (g->type == tex2darray_type_id) {
+				}
+				else if (g->type == texcube_type_id) {
+				}
+				else if (is_sampler(g->type)) {
 					fprintf(output, "\t\t\t{\n");
-					fprintf(output, "\t\t\t\t.binding = %zu,\n", definition_index);
+					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 					fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,\n");
 					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
 					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
 					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
 					fprintf(output, "\t\t\t},\n");
-					break;
-				case DEFINITION_CONST_CUSTOM: {
+				}
+				else if (!get_type(g->type)->built_in) {
 					fprintf(output, "\t\t\t{\n");
-					fprintf(output, "\t\t\t\t.binding = %zu,\n", definition_index);
-					if (has_attribute(&get_global(def.global)->attributes, add_name("write"))) {
-						if (has_attribute(&get_global(def.global)->attributes, add_name("indexed"))) {
+					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
+					if (has_attribute(&g->attributes, add_name("write"))) {
+						if (has_attribute(&g->attributes, add_name("indexed"))) {
 							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,\n");
 						}
 						else {
@@ -2127,7 +2028,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 					}
 					else {
-						if (has_attribute(&get_global(def.global)->attributes, add_name("indexed"))) {
+						if (has_attribute(&g->attributes, add_name("indexed"))) {
 							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,\n");
 						}
 						else {
@@ -2138,12 +2039,6 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
 					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
 					fprintf(output, "\t\t\t},\n");
-					break;
-				}
-				case DEFINITION_CONST_BASIC:
-					break;
-				case DEFINITION_BVH:
-					break;
 				}
 			}
 
@@ -2154,7 +2049,7 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "\t\tVkDescriptorSetLayoutCreateInfo layout_create_info = {\n");
 			fprintf(output, "\t\t\t.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,\n");
 			fprintf(output, "\t\t\t.pNext = NULL,\n");
-			fprintf(output, "\t\t\t.bindingCount = %zu,\n", set->definitions_count);
+			fprintf(output, "\t\t\t.bindingCount = %zu,\n", set->globals.size);
 			fprintf(output, "\t\t\t.pBindings = layout_bindings,\n");
 			fprintf(output, "\t\t};\n");
 

@@ -42,6 +42,12 @@ typedef struct global {
 	size_t                 sets_count;
 } global;
 
+typedef struct global_array {
+	global_id globals[256];
+	bool      writable[256];
+	size_t    size;
+} global_array;
+
 void globals_init(void);
 
 global_id add_global(type_id type, attribute_list attributes, name_id name);

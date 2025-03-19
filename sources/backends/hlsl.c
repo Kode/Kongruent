@@ -288,37 +288,27 @@ static void assign_register_indices(uint32_t *register_indices, function *shader
 		descriptor_set *set = set_group->values[group_index];
 
 		if (set->name == add_name("root_constants")) {
-			if (set->definitions_count != 1) {
+			if (set->globals.size != 1) {
 				debug_context context = {0};
 				error(context, "More than one root constants struct found");
 			}
 
-			uint32_t  size = 0;
-			global_id g    = UINT32_MAX;
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition *def = &set->definitions[definition_index];
+			global_id g_id = set->globals.globals[0];
+			global   *g    = get_global(g_id);
 
-				switch (def->kind) {
-				case DEFINITION_CONST_CUSTOM:
-					size += struct_size(get_global(def->global)->type);
-					g = def->global;
-					break;
-				default: {
-					debug_context context = {0};
-					error(context, "Unsupported type for a root constant");
-					break;
-				}
-				}
+			if (get_type(g->type)->built_in) {
+				debug_context context = {0};
+				error(context, "Unsupported type for a root constant");
 			}
 
-			register_indices[g] = srv_index;
+			register_indices[g_id] = srv_index;
 			srv_index += 1;
 
 			continue;
 		}
 
-		for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-			global_id global_index = set->definitions[definition_index].global;
+		for (size_t g_index = 0; g_index < set->globals.size; ++g_index) {
+			global_id global_index = set->globals.globals[g_index];
 
 			global *g = get_global(global_index);
 
@@ -521,28 +511,20 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 		descriptor_set *set = set_group->values[group_index];
 
 		if (set->name == add_name("root_constants")) {
-			if (set->definitions_count != 1) {
+			if (set->globals.size != 1) {
 				debug_context context = {0};
 				error(context, "More than one root constants struct found");
 			}
 
 			uint32_t  size = 0;
-			global_id g    = UINT32_MAX;
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition *def = &set->definitions[definition_index];
+			global_id g    = set->globals.globals[0];
 
-				switch (def->kind) {
-				case DEFINITION_CONST_CUSTOM:
-					size += struct_size(get_global(def->global)->type);
-					g = def->global;
-					break;
-				default: {
-					debug_context context = {0};
-					error(context, "Unsupported type for a root constant");
-					break;
-				}
-				}
+			if (get_type(get_global(g)->type)->built_in) {
+				debug_context context = {0};
+				error(context, "Unsupported type for a root constant");
 			}
+
+			size += struct_size(get_global(g)->type);
 
 			*offset += sprintf(&hlsl[*offset], "\\\n, RootConstants(num32BitConstants=%i, b%i)", size / 4, register_indices[g]);
 
@@ -554,24 +536,21 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 		bool has_dynamic   = false;
 		bool has_boundless = false;
 
-		for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-			definition *def = &set->definitions[definition_index];
+		for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+			global *g = get_global(set->globals.globals[global_index]);
 
-			switch (def->kind) {
-			case DEFINITION_CONST_CUSTOM: {
-				if (has_attribute(&get_global(def->global)->attributes, add_name("indexed"))) {
+			type_id t = g->type;
+
+			if (!get_type(t)->built_in) {
+				if (has_attribute(&g->attributes, add_name("indexed"))) {
 					has_dynamic = true;
 				}
 				else {
 					has_other = true;
 				}
-				break;
 			}
-			case DEFINITION_TEX2D:
-			case DEFINITION_TEX2DARRAY:
-			case DEFINITION_TEXCUBE: {
-				type *t = get_type(get_global(def->global)->type);
-				if (t->array_size == UINT32_MAX) {
+			else if (is_texture(t)) {
+				if (get_type(t)->array_size == UINT32_MAX) {
 					has_boundless = true;
 				}
 				else {
@@ -579,18 +558,13 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 				}
 				break;
 			}
-			case DEFINITION_SAMPLER:
+			else if (is_sampler(t)) {
 				has_sampler = true;
-				break;
-			case DEFINITION_CONST_BASIC: {
-				type *t = get_type(get_global(def->global)->type);
-				if (t->array_size > 0) {
+			}
+			else {
+				if (get_type(t)->array_size > 0) {
 					has_other = true;
 				}
-				break;
-			}
-			default:
-				break;
 			}
 		}
 
@@ -598,12 +572,12 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 			*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(");
 
 			bool first = true;
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition *def = &set->definitions[definition_index];
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global_id g_id = set->globals.globals[global_index];
+				global   *g    = get_global(g_id);
 
-				switch (def->kind) {
-				case DEFINITION_CONST_CUSTOM:
-					if (!has_attribute(&get_global(def->global)->attributes, add_name("indexed"))) {
+				if (!get_type(g->type)->built_in) {
+					if (!has_attribute(&g->attributes, add_name("indexed"))) {
 						if (first) {
 							first = false;
 						}
@@ -611,13 +585,11 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 							*offset += sprintf(&hlsl[*offset], ", ");
 						}
 
-						*offset += sprintf(&hlsl[*offset], "CBV(b%i)", register_indices[def->global]);
+						*offset += sprintf(&hlsl[*offset], "CBV(b%i)", register_indices[g_id]);
 					}
-					break;
-				case DEFINITION_TEX2D:
-				case DEFINITION_TEX2DARRAY:
-				case DEFINITION_TEXCUBE: {
-					attribute *write_attribute = find_attribute(&get_global(def->global)->attributes, add_name("write"));
+				}
+				else if (is_texture(g->type)) {
+					attribute *write_attribute = find_attribute(&g->attributes, add_name("write"));
 
 					if (first) {
 						first = false;
@@ -627,15 +599,14 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 					}
 
 					if (write_attribute != NULL) {
-						*offset += sprintf(&hlsl[*offset], "UAV(u%i)", register_indices[def->global]);
+						*offset += sprintf(&hlsl[*offset], "UAV(u%i)", register_indices[g_id]);
 					}
 					else {
-						*offset += sprintf(&hlsl[*offset], "SRV(t%i)", register_indices[def->global]);
+						*offset += sprintf(&hlsl[*offset], "SRV(t%i)", register_indices[g_id]);
 					}
-					break;
 				}
-				case DEFINITION_CONST_BASIC: {
-					type *t = get_type(get_global(def->global)->type);
+				else {
+					type *t = get_type(g->type);
 					if (t->array_size > 0) {
 						if (first) {
 							first = false;
@@ -644,11 +615,8 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 							*offset += sprintf(&hlsl[*offset], ", ");
 						}
 
-						*offset += sprintf(&hlsl[*offset], "UAV(u%i)", register_indices[def->global]);
+						*offset += sprintf(&hlsl[*offset], "UAV(u%i)", register_indices[g_id]);
 					}
-				}
-				default:
-					break;
 				}
 			}
 
@@ -659,23 +627,20 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 			*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(");
 
 			bool first = true;
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition *def = &set->definitions[definition_index];
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global_id g_id = set->globals.globals[global_index];
+				global   *g    = get_global(g_id);
 
-				switch (def->kind) {
-				case DEFINITION_CONST_CUSTOM:
-					if (has_attribute(&get_global(def->global)->attributes, add_name("indexed"))) {
+				if (!get_type(g->type)->built_in) {
+					if (has_attribute(&g->attributes, add_name("indexed"))) {
 						if (first) {
 							first = false;
 						}
 						else {
 							*offset += sprintf(&hlsl[*offset], ", ");
 						}
-						*offset += sprintf(&hlsl[*offset], "CBV(b%i)", register_indices[def->global]);
+						*offset += sprintf(&hlsl[*offset], "CBV(b%i)", register_indices[g_id]);
 					}
-					break;
-				default:
-					break;
 				}
 			}
 
@@ -684,23 +649,17 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 
 		if (has_boundless) {
 			uint32_t boundless_space = 1;
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition *def = &set->definitions[definition_index];
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g = get_global(set->globals.globals[global_index]);
 
-				switch (def->kind) {
-				case DEFINITION_TEX2D:
-				case DEFINITION_TEX2DARRAY:
-				case DEFINITION_TEXCUBE: {
-					type *t = get_type(get_global(def->global)->type);
+				if (is_texture(g->type)) {
+					type *t = get_type(g->type);
 
 					if (t->array_size == UINT32_MAX) {
 						*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(SRV(t0, space = %i, numDescriptors = unbounded))", boundless_space);
 						boundless_space += 1;
 					}
 
-					break;
-				}
-				default:
 					break;
 				}
 			}
@@ -710,21 +669,18 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 			*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(");
 
 			bool first = true;
-			for (size_t definition_index = 0; definition_index < set->definitions_count; ++definition_index) {
-				definition *def = &set->definitions[definition_index];
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global_id g_id = set->globals.globals[global_index];
+				global   *g    = get_global(g_id);
 
-				switch (def->kind) {
-				case DEFINITION_SAMPLER:
+				if (is_sampler(g->type)) {
 					if (first) {
 						first = false;
 					}
 					else {
 						*offset += sprintf(&hlsl[*offset], ", ");
 					}
-					*offset += sprintf(&hlsl[*offset], "Sampler(s%i)", register_indices[def->global]);
-					break;
-				default:
-					break;
+					*offset += sprintf(&hlsl[*offset], "Sampler(s%i)", register_indices[g_id]);
 				}
 			}
 
