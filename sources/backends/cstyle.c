@@ -26,7 +26,8 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		break;
 	case OPCODE_NEGATE:
 		indent(code, offset, *indentation);
-		*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = -_%" PRIu64 ";\n", type_string(o->op_negate.to.type.type), o->op_negate.to.index, o->op_negate.from.index);
+		*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = -_%" PRIu64 ";\n", type_string(o->op_negate.to.type.type), o->op_negate.to.index,
+		                   o->op_negate.from.index);
 		break;
 	case OPCODE_NOT:
 		indent(code, offset, *indentation);
