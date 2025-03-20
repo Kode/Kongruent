@@ -417,7 +417,8 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 
 			size_t range_index = 0;
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
-				global *g = get_global(set->globals.globals[global_index]);
+				global *g        = get_global(set->globals.globals[global_index]);
+				bool    writable = set->globals.writable[global_index];
 
 				if (!get_type(g->type)->built_in) {
 					fprintf(output, "\tranges%i[%zu].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;\n", table_index, range_index);
@@ -430,9 +431,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 					range_index += 1;
 				}
 				else if (is_texture(g->type)) {
-					attribute *write_attribute = find_attribute(&g->attributes, add_name("write"));
-
-					if (write_attribute != NULL) {
+					if (writable) {
 						fprintf(output, "\tranges%i[%zu].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;\n", table_index, range_index);
 						fprintf(output, "\tranges%i[%zu].BaseShaderRegister = %i;\n", table_index, range_index, uav_index);
 						fprintf(output, "\tranges%i[%zu].NumDescriptors = 1;\n", table_index, range_index);
@@ -1255,7 +1254,8 @@ void kore3_export(char *directory, api_kind api) {
 			size_t sampler_index = 0;
 
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
-				global *g = get_global(set->globals.globals[global_index]);
+				global *g        = get_global(set->globals.globals[global_index]);
+				bool    writable = set->globals.globals[global_index];
 
 				if (!get_type(g->type)->built_in) {
 					if (!has_attribute(&g->attributes, add_name("indexed"))) {
@@ -1288,8 +1288,7 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\tset->%s_count = parameters->%s_count;\n", get_name(g->name), get_name(g->name));
 					}
 					else {
-						attribute *write_attribute = find_attribute(&g->attributes, add_name("write"));
-						if (write_attribute != NULL) {
+						if (writable) {
 							fprintf(output, "\tkore_%s_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %zu);\n", api_short,
 							        get_name(g->name), other_index);
 						}
@@ -1312,8 +1311,7 @@ void kore3_export(char *directory, api_kind api) {
 					}
 				}
 				else if (g->type == tex2darray_type_id) {
-					attribute *write_attribute = find_attribute(&g->attributes, add_name("write"));
-					if (write_attribute != NULL) {
+					if (writable) {
 						debug_context context = {0};
 						error(context, "Texture arrays can not be writable");
 					}
@@ -1325,8 +1323,7 @@ void kore3_export(char *directory, api_kind api) {
 					other_index += 1;
 				}
 				else if (g->type == texcube_type_id) {
-					attribute *write_attribute = find_attribute(&g->attributes, add_name("write"));
-					if (write_attribute != NULL) {
+					if (writable) {
 						debug_context context = {0};
 						error(context, "Cube maps can not be writable");
 					}
@@ -1368,7 +1365,8 @@ void kore3_export(char *directory, api_kind api) {
 			}
 			fprintf(output, ") {\n");
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
-				global *g = get_global(set->globals.globals[global_index]);
+				global *g        = get_global(set->globals.globals[global_index]);
+				bool    writable = set->globals.writable[global_index];
 
 				if (!get_type(g->type)->built_in) {
 					if (has_attribute(&g->attributes, add_name("indexed"))) {
@@ -1395,8 +1393,7 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\t}\n");
 					}
 					else {
-						attribute *write_attribute = find_attribute(&g->attributes, add_name("write"));
-						if (write_attribute != NULL) {
+						if (writable) {
 							fprintf(output, "\tkore_%s_descriptor_set_prepare_uav_texture(list, &set->%s);\n", api_short, get_name(g->name));
 						}
 						else {
@@ -1987,12 +1984,13 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "\t\tVkDescriptorSetLayoutBinding layout_bindings[%zu] = {\n", set->globals.size);
 
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
-				global *g = get_global(set->globals.globals[global_index]);
+				global *g        = get_global(set->globals.globals[global_index]);
+				bool    writable = set->globals.writable[global_index];
 
 				if (g->type == tex2d_type_id) {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
-					if (has_attribute(&g->attributes, add_name("write"))) {
+					if (writable) {
 						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
 					}
 					else {
@@ -2019,7 +2017,7 @@ void kore3_export(char *directory, api_kind api) {
 				else if (!get_type(g->type)->built_in) {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
-					if (has_attribute(&g->attributes, add_name("write"))) {
+					if (writable) {
 						if (has_attribute(&g->attributes, add_name("indexed"))) {
 							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,\n");
 						}
