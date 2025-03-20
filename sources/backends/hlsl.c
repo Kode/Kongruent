@@ -575,7 +575,6 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 				else {
 					has_other = true;
 				}
-				break;
 			}
 			else if (is_sampler(t)) {
 				has_sampler = true;
@@ -677,8 +676,6 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 						*offset += sprintf(&hlsl[*offset], "\\\n, DescriptorTable(SRV(t0, space = %i, numDescriptors = unbounded))", boundless_space);
 						boundless_space += 1;
 					}
-
-					break;
 				}
 			}
 		}
