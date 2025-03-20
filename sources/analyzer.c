@@ -15,7 +15,7 @@ static raytracing_pipelines all_raytracing_pipelines;
 // a pipeline group is a collection of pipelines that share shaders
 static raytracing_pipeline_groups all_raytracing_pipeline_groups;
 
-static void find_referenced_global_for_var(variable v, global_array *globals) {
+static void find_referenced_global_for_var(variable v, global_array *globals, bool write) {
 	for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
 		global *g = get_global(j);
 
@@ -24,12 +24,17 @@ static void find_referenced_global_for_var(variable v, global_array *globals) {
 			for (size_t k = 0; k < globals->size; ++k) {
 				if (globals->globals[k] == j) {
 					found = true;
+
+					if (write) {
+						globals->writable[k] = true;
+					}
+
 					break;
 				}
 			}
 			if (!found) {
 				globals->globals[globals->size]  = j;
-				globals->writable[globals->size] = false;
+				globals->writable[globals->size] = write;
 				globals->size += 1;
 			}
 			return;
@@ -69,12 +74,12 @@ void find_referenced_globals(function *f, global_array *globals) {
 			case OPCODE_GREATER_EQUAL:
 			case OPCODE_LESS:
 			case OPCODE_LESS_EQUAL: {
-				find_referenced_global_for_var(o->op_binary.left, globals);
-				find_referenced_global_for_var(o->op_binary.right, globals);
+				find_referenced_global_for_var(o->op_binary.left, globals, false);
+				find_referenced_global_for_var(o->op_binary.right, globals, false);
 				break;
 			}
 			case OPCODE_LOAD_MEMBER: {
-				find_referenced_global_for_var(o->op_load_member.from, globals);
+				find_referenced_global_for_var(o->op_load_member.from, globals, false);
 				break;
 			}
 			case OPCODE_STORE_MEMBER:
@@ -82,12 +87,12 @@ void find_referenced_globals(function *f, global_array *globals) {
 			case OPCODE_ADD_AND_STORE_MEMBER:
 			case OPCODE_DIVIDE_AND_STORE_MEMBER:
 			case OPCODE_MULTIPLY_AND_STORE_MEMBER: {
-				find_referenced_global_for_var(o->op_store_member.to, globals);
+				find_referenced_global_for_var(o->op_store_member.to, globals, true);
 				break;
 			}
 			case OPCODE_CALL: {
 				for (uint8_t i = 0; i < o->op_call.parameters_size; ++i) {
-					find_referenced_global_for_var(o->op_call.parameters[i], globals);
+					find_referenced_global_for_var(o->op_call.parameters[i], globals, false);
 				}
 				break;
 			}

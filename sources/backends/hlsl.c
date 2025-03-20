@@ -369,8 +369,27 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 		find_referenced_globals(rayshaders[rayshader_index], &globals);
 	}
 
+	descriptor_set_group *group = find_descriptor_set_group_for_function(main);
+	for (size_t descriptor_set_index = 0; descriptor_set_index < group->size; ++descriptor_set_index) {
+		descriptor_set *set = group->values[descriptor_set_index];
+		for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+			global_id id = set->globals.globals[global_index];
+			for (size_t function_global_index = 0; function_global_index < globals.size; ++function_global_index) {
+				global_id function_global_id = globals.globals[function_global_index];
+
+				if (id == function_global_id) {
+					if (set->globals.writable[global_index]) {
+						globals.writable[function_global_index] = true;
+					}
+					break;
+				}
+			}
+		}
+	}
+
 	for (size_t i = 0; i < globals.size; ++i) {
 		global *g              = get_global(globals.globals[i]);
+		bool    writable       = globals.writable[i];
 		int     register_index = register_indices[globals.globals[i]];
 
 		type   *t         = get_type(g->type);
@@ -380,7 +399,7 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 			*offset += sprintf(&hlsl[*offset], "SamplerState _%" PRIu64 " : register(s%i);\n\n", g->var_index, register_index);
 		}
 		else if (base_type == tex2d_type_id) {
-			if (has_attribute(&g->attributes, add_name("write"))) {
+			if (writable) {
 				*offset += sprintf(&hlsl[*offset], "RWTexture2D<float4> _%" PRIu64 " : register(u%i);\n\n", g->var_index, register_index);
 			}
 			else {
@@ -573,8 +592,9 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 
 			bool first = true;
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
-				global_id g_id = set->globals.globals[global_index];
-				global   *g    = get_global(g_id);
+				global_id g_id     = set->globals.globals[global_index];
+				global   *g        = get_global(g_id);
+				bool      writable = set->globals.writable[global_index];
 
 				if (!get_type(g->type)->built_in) {
 					if (!has_attribute(&g->attributes, add_name("indexed"))) {
@@ -589,8 +609,6 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 					}
 				}
 				else if (is_texture(g->type)) {
-					attribute *write_attribute = find_attribute(&g->attributes, add_name("write"));
-
 					if (first) {
 						first = false;
 					}
@@ -598,7 +616,7 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 						*offset += sprintf(&hlsl[*offset], ", ");
 					}
 
-					if (write_attribute != NULL) {
+					if (writable) {
 						*offset += sprintf(&hlsl[*offset], "UAV(u%i)", register_indices[g_id]);
 					}
 					else {
