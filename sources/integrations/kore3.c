@@ -1254,8 +1254,9 @@ void kore3_export(char *directory, api_kind api) {
 			size_t sampler_index = 0;
 
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
-				global *g        = get_global(set->globals.globals[global_index]);
-				bool    writable = set->globals.writable[global_index];
+				global *g            = get_global(set->globals.globals[global_index]);
+				bool    writable     = set->globals.writable[global_index];
+				type_id base_type_id = get_type(g->type)->base != NO_TYPE ? get_type(g->type)->base : g->type;
 
 				if (!get_type(g->type)->built_in) {
 					if (!has_attribute(&g->attributes, add_name("indexed"))) {
@@ -1265,13 +1266,13 @@ void kore3_export(char *directory, api_kind api) {
 					}
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 				}
-				else if (g->type == bvh_type_id) {
+				else if (base_type_id == bvh_type_id) {
 					fprintf(output, "\tkore_%s_descriptor_set_set_bvh_view_srv(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
 					        other_index);
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 					other_index += 1;
 				}
-				else if (g->type == tex2d_type_id) {
+				else if (base_type_id == tex2d_type_id) {
 					type *t = get_type(g->type);
 					if (t->array_size == UINT32_MAX) {
 						fprintf(output, "\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) * parameters->textures_count);\n",
@@ -1310,7 +1311,7 @@ void kore3_export(char *directory, api_kind api) {
 						other_index += 1;
 					}
 				}
-				else if (g->type == tex2darray_type_id) {
+				else if (base_type_id == tex2darray_type_id) {
 					if (writable) {
 						debug_context context = {0};
 						error(context, "Texture arrays can not be writable");
@@ -1322,7 +1323,7 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 					other_index += 1;
 				}
-				else if (g->type == texcube_type_id) {
+				else if (base_type_id == texcube_type_id) {
 					if (writable) {
 						debug_context context = {0};
 						error(context, "Cube maps can not be writable");
