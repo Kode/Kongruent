@@ -498,14 +498,32 @@ static void check_globals_in_descriptor_set_group(descriptor_set_group *group) {
 		for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 			global_id g = set->globals.globals[global_index];
 
-			for (size_t global_index = 0; global_index < set_globals.size; ++global_index) {
-				if (set_globals.values[global_index] == g) {
+			for (size_t global_index2 = 0; global_index2 < set_globals.size; ++global_index2) {
+				if (set_globals.values[global_index2] == g) {
 					debug_context context = {0};
 					error(context, "Global used from more than one descriptor set in one descriptor set group");
 				}
 			}
 
 			static_array_push(set_globals, g);
+		}
+	}
+}
+
+static void update_globals_in_descriptor_set_group(descriptor_set_group *group, global_array *globals) {
+	for (size_t set_index = 0; set_index < group->size; ++set_index) {
+		descriptor_set *set = group->values[set_index];
+
+		for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+			global_id g = set->globals.globals[global_index];
+
+			for (size_t global_index2 = 0; global_index2 < globals->size; ++global_index2) {
+				if (globals->globals[global_index2] == g) {
+					if (globals->writable[global_index2]) {
+						set->globals.writable[global_index] = true;
+					}
+				}
+			}
 		}
 	}
 }
@@ -553,6 +571,8 @@ static void find_descriptor_set_groups(void) {
 
 		check_globals_in_descriptor_set_group(&group);
 
+		update_globals_in_descriptor_set_group(&group, &function_globals);
+
 		uint32_t descriptor_set_group_index = (uint32_t)all_descriptor_set_groups.size;
 		static_array_push(all_descriptor_set_groups, group);
 
@@ -585,6 +605,8 @@ static void find_descriptor_set_groups(void) {
 		find_referenced_sets(&function_globals, &group);
 
 		check_globals_in_descriptor_set_group(&group);
+
+		update_globals_in_descriptor_set_group(&group, &function_globals);
 
 		uint32_t descriptor_set_group_index = (uint32_t)all_descriptor_set_groups.size;
 		static_array_push(all_descriptor_set_groups, group);
@@ -624,6 +646,8 @@ static void find_descriptor_set_groups(void) {
 		find_referenced_sets(&function_globals, &group);
 
 		check_globals_in_descriptor_set_group(&group);
+
+		update_globals_in_descriptor_set_group(&group, &function_globals);
 
 		uint32_t descriptor_set_group_index = (uint32_t)all_descriptor_set_groups.size;
 		static_array_push(all_descriptor_set_groups, group);
