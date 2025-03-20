@@ -1851,13 +1851,13 @@ void kore3_export(char *directory, api_kind api) {
 				        get_name(t->name));
 
 				if (api == API_OPENGL) {
-					global_id globals[256];
-					size_t    globals_size = 0;
-					find_referenced_globals(vertex_function, globals, &globals_size);
-					find_referenced_globals(fragment_function, globals, &globals_size);
+					global_array globals = {0};
 
-					for (global_id i = 0; i < globals_size; ++i) {
-						global *g = get_global(globals[i]);
+					find_referenced_globals(vertex_function, &globals);
+					find_referenced_globals(fragment_function, &globals);
+
+					for (global_id i = 0; i < globals.size; ++i) {
+						global *g = get_global(globals.globals[i]);
 						if (g->type == sampler_type_id) {
 						}
 						else if (is_texture(g->type)) {

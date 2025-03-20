@@ -360,18 +360,18 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 	uint32_t register_indices[512] = {0};
 	assign_register_indices(register_indices, main);
 
-	global_id globals[256];
-	size_t    globals_size = 0;
+	global_array globals = {0};
+
 	if (main != NULL) {
-		find_referenced_globals(main, globals, &globals_size);
+		find_referenced_globals(main, &globals);
 	}
 	for (size_t rayshader_index = 0; rayshader_index < rayshaders_count; ++rayshader_index) {
-		find_referenced_globals(rayshaders[rayshader_index], globals, &globals_size);
+		find_referenced_globals(rayshaders[rayshader_index], &globals);
 	}
 
-	for (size_t i = 0; i < globals_size; ++i) {
-		global *g              = get_global(globals[i]);
-		int     register_index = register_indices[globals[i]];
+	for (size_t i = 0; i < globals.size; ++i) {
+		global *g              = get_global(globals.globals[i]);
+		int     register_index = register_indices[globals.globals[i]];
 
 		type   *t         = get_type(g->type);
 		type_id base_type = t->array_size > 0 ? t->base : g->type;
@@ -1728,24 +1728,23 @@ void hlsl_export(char *directory, api_kind d3d) {
 				}
 			}
 
-			global_id all_globals[256];
-			size_t    all_globals_size = 0;
+			global_array all_globals = {0};
 
 			if (vertex_shader != NULL) {
-				find_referenced_globals(vertex_shader, all_globals, &all_globals_size);
+				find_referenced_globals(vertex_shader, &all_globals);
 			}
 			if (amplification_shader != NULL) {
-				find_referenced_globals(amplification_shader, all_globals, &all_globals_size);
+				find_referenced_globals(amplification_shader, &all_globals);
 			}
 			if (mesh_shader != NULL) {
-				find_referenced_globals(mesh_shader, all_globals, &all_globals_size);
+				find_referenced_globals(mesh_shader, &all_globals);
 			}
 			if (fragment_shader != NULL) {
-				find_referenced_globals(fragment_shader, all_globals, &all_globals_size);
+				find_referenced_globals(fragment_shader, &all_globals);
 			}
 
-			for (size_t global_index = 0; global_index < all_globals_size; ++global_index) {
-				global *g = get_global(all_globals[global_index]);
+			for (size_t global_index = 0; global_index < all_globals.size; ++global_index) {
+				global *g = get_global(all_globals.globals[global_index]);
 				for (size_t set_index = 0; set_index < g->sets_count; ++set_index) {
 					bool found = false;
 
@@ -1771,13 +1770,12 @@ void hlsl_export(char *directory, api_kind d3d) {
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
 		if (has_attribute(&f->attributes, add_name("compute"))) {
-			global_id all_globals[256];
-			size_t    all_globals_size = 0;
+			global_array all_globals = {0};
 
-			find_referenced_globals(f, all_globals, &all_globals_size);
+			find_referenced_globals(f, &all_globals);
 
-			for (size_t global_index = 0; global_index < all_globals_size; ++global_index) {
-				global *g = get_global(all_globals[global_index]);
+			for (size_t global_index = 0; global_index < all_globals.size; ++global_index) {
+				global *g = get_global(all_globals.globals[global_index]);
 				for (size_t set_index = 0; set_index < g->sets_count; ++set_index) {
 					bool found = false;
 

@@ -167,12 +167,12 @@ static void write_types(char *code, size_t *offset, function *main, uint8_t simd
 }
 
 static void write_globals(char *code, size_t *offset, char *header_code, size_t *header_offset, function *main) {
-	global_id globals[256];
-	size_t    globals_size = 0;
-	find_referenced_globals(main, globals, &globals_size);
+	global_array globals = {0};
 
-	for (size_t i = 0; i < globals_size; ++i) {
-		global *g = get_global(globals[i]);
+	find_referenced_globals(main, &globals);
+
+	for (size_t i = 0; i < globals.size; ++i) {
+		global *g = get_global(globals.globals[i]);
 
 		type   *t         = get_type(g->type);
 		type_id base_type = t->array_size > 0 ? t->base : g->type;

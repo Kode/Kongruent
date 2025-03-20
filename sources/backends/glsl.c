@@ -140,12 +140,12 @@ static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id 
 static int global_register_indices[512];
 
 static void write_globals(char *glsl, size_t *offset, function *main) {
-	global_id globals[256];
-	size_t    globals_size = 0;
-	find_referenced_globals(main, globals, &globals_size);
+	global_array globals = {0};
 
-	for (size_t i = 0; i < globals_size; ++i) {
-		global *g = get_global(globals[i]);
+	find_referenced_globals(main, &globals);
+
+	for (size_t i = 0; i < globals.size; ++i) {
+		global *g = get_global(globals.globals[i]);
 		// int register_index = global_register_indices[globals[i]];
 
 		if (g->type == sampler_type_id) {

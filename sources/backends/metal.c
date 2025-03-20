@@ -181,15 +181,14 @@ static void write_functions(char *code, size_t *offset) {
 		char buffers[1024];
 		strcpy(buffers, "");
 		if (is_vertex_function(i) || is_fragment_function(i)) {
-			global_id globals[256];
-			size_t    globals_size = 0;
-			find_referenced_globals(f, globals, &globals_size);
+			global_array globals = {0};
+			find_referenced_globals(f, &globals);
 
 			size_t buffers_offset = 0;
 
-			for (size_t i = 0; i < globals_size; ++i) {
-				global *g              = get_global(globals[i]);
-				int     register_index = global_register_indices[globals[i]];
+			for (size_t i = 0; i < globals.size; ++i) {
+				global *g              = get_global(globals.globals[i]);
+				int     register_index = global_register_indices[globals.globals[i]];
 
 				if (g->type == sampler_type_id) {
 					buffers_offset += sprintf(&buffers[buffers_offset], ", sampler _%" PRIu64 " [[sampler(%i)]]", g->var_index, register_index);

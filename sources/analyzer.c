@@ -15,27 +15,29 @@ static raytracing_pipelines all_raytracing_pipelines;
 // a pipeline group is a collection of pipelines that share shaders
 static raytracing_pipeline_groups all_raytracing_pipeline_groups;
 
-static void find_referenced_global_for_var(variable v, global_id *globals, size_t *globals_size) {
+static void find_referenced_global_for_var(variable v, global_array *globals) {
 	for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
 		global *g = get_global(j);
+
 		if (v.index == g->var_index) {
 			bool found = false;
-			for (size_t k = 0; k < *globals_size; ++k) {
-				if (globals[k] == j) {
+			for (size_t k = 0; k < globals->size; ++k) {
+				if (globals->globals[k] == j) {
 					found = true;
 					break;
 				}
 			}
 			if (!found) {
-				globals[*globals_size] = j;
-				*globals_size += 1;
+				globals->globals[globals->size]  = j;
+				globals->writable[globals->size] = false;
+				globals->size += 1;
 			}
 			return;
 		}
 	}
 }
 
-void find_referenced_globals(function *f, global_id *globals, size_t *globals_size) {
+void find_referenced_globals(function *f, global_array *globals) {
 	if (f->block == NULL) {
 		// built-in
 		return;
@@ -67,12 +69,12 @@ void find_referenced_globals(function *f, global_id *globals, size_t *globals_si
 			case OPCODE_GREATER_EQUAL:
 			case OPCODE_LESS:
 			case OPCODE_LESS_EQUAL: {
-				find_referenced_global_for_var(o->op_binary.left, globals, globals_size);
-				find_referenced_global_for_var(o->op_binary.right, globals, globals_size);
+				find_referenced_global_for_var(o->op_binary.left, globals);
+				find_referenced_global_for_var(o->op_binary.right, globals);
 				break;
 			}
 			case OPCODE_LOAD_MEMBER: {
-				find_referenced_global_for_var(o->op_load_member.from, globals, globals_size);
+				find_referenced_global_for_var(o->op_load_member.from, globals);
 				break;
 			}
 			case OPCODE_STORE_MEMBER:
@@ -80,12 +82,12 @@ void find_referenced_globals(function *f, global_id *globals, size_t *globals_si
 			case OPCODE_ADD_AND_STORE_MEMBER:
 			case OPCODE_DIVIDE_AND_STORE_MEMBER:
 			case OPCODE_MULTIPLY_AND_STORE_MEMBER: {
-				find_referenced_global_for_var(o->op_store_member.to, globals, globals_size);
+				find_referenced_global_for_var(o->op_store_member.to, globals);
 				break;
 			}
 			case OPCODE_CALL: {
 				for (uint8_t i = 0; i < o->op_call.parameters_size; ++i) {
-					find_referenced_global_for_var(o->op_call.parameters[i], globals, globals_size);
+					find_referenced_global_for_var(o->op_call.parameters[i], globals);
 				}
 				break;
 			}
@@ -217,9 +219,9 @@ static void add_set(descriptor_sets *sets, descriptor_set *set) {
 	static_array_push_p(sets, set);
 }
 
-static void find_referenced_sets(global_id *globals, size_t globals_size, descriptor_sets *sets) {
-	for (size_t global_index = 0; global_index < globals_size; ++global_index) {
-		global *g = get_global(globals[global_index]);
+static void find_referenced_sets(global_array *globals, descriptor_sets *sets) {
+	for (size_t global_index = 0; global_index < globals->size; ++global_index) {
+		global *g = get_global(globals->globals[global_index]);
 
 		if (g->sets_count == 0) {
 			continue;
@@ -231,8 +233,8 @@ static void find_referenced_sets(global_id *globals, size_t globals_size, descri
 		}
 	}
 
-	for (size_t global_index = 0; global_index < globals_size; ++global_index) {
-		global *g = get_global(globals[global_index]);
+	for (size_t global_index = 0; global_index < globals->size; ++global_index) {
+		global *g = get_global(globals->globals[global_index]);
 
 		if (g->sets_count < 2) {
 			continue;
@@ -522,28 +524,27 @@ static void find_descriptor_set_groups(void) {
 		descriptor_set_group group;
 		static_array_init(group);
 
-		global_id function_globals[256];
-		size_t    function_globals_size = 0;
+		global_array function_globals = {0};
 
 		render_pipeline_group *pipeline_group = &all_render_pipeline_groups.values[pipeline_group_index];
 		for (size_t pipeline_index = 0; pipeline_index < pipeline_group->size; ++pipeline_index) {
 			render_pipeline *pipeline = &all_render_pipelines.values[pipeline_group->values[pipeline_index]];
 
 			if (pipeline->vertex_shader != NULL) {
-				find_referenced_globals(pipeline->vertex_shader, function_globals, &function_globals_size);
+				find_referenced_globals(pipeline->vertex_shader, &function_globals);
 			}
 			if (pipeline->amplification_shader != NULL) {
-				find_referenced_globals(pipeline->amplification_shader, function_globals, &function_globals_size);
+				find_referenced_globals(pipeline->amplification_shader, &function_globals);
 			}
 			if (pipeline->mesh_shader != NULL) {
-				find_referenced_globals(pipeline->mesh_shader, function_globals, &function_globals_size);
+				find_referenced_globals(pipeline->mesh_shader, &function_globals);
 			}
 			if (pipeline->fragment_shader != NULL) {
-				find_referenced_globals(pipeline->fragment_shader, function_globals, &function_globals_size);
+				find_referenced_globals(pipeline->fragment_shader, &function_globals);
 			}
 		}
 
-		find_referenced_sets(function_globals, function_globals_size, &group);
+		find_referenced_sets(&function_globals, &group);
 
 		check_globals_in_descriptor_set_group(&group);
 
@@ -572,12 +573,11 @@ static void find_descriptor_set_groups(void) {
 		descriptor_set_group group;
 		static_array_init(group);
 
-		global_id function_globals[256];
-		size_t    function_globals_size = 0;
+		global_array function_globals = {0};
 
-		find_referenced_globals(all_compute_shaders.values[compute_shader_index], function_globals, &function_globals_size);
+		find_referenced_globals(all_compute_shaders.values[compute_shader_index], &function_globals);
 
-		find_referenced_sets(function_globals, function_globals_size, &group);
+		find_referenced_sets(&function_globals, &group);
 
 		check_globals_in_descriptor_set_group(&group);
 
@@ -593,31 +593,30 @@ static void find_descriptor_set_groups(void) {
 		descriptor_set_group group;
 		static_array_init(group);
 
-		global_id function_globals[256];
-		size_t    function_globals_size = 0;
+		global_array function_globals = {0};
 
 		raytracing_pipeline_group *pipeline_group = &all_raytracing_pipeline_groups.values[pipeline_group_index];
 		for (size_t pipeline_index = 0; pipeline_index < pipeline_group->size; ++pipeline_index) {
 			raytracing_pipeline *pipeline = &all_raytracing_pipelines.values[pipeline_group->values[pipeline_index]];
 
 			if (pipeline->gen_shader != NULL) {
-				find_referenced_globals(pipeline->gen_shader, function_globals, &function_globals_size);
+				find_referenced_globals(pipeline->gen_shader, &function_globals);
 			}
 			if (pipeline->miss_shader != NULL) {
-				find_referenced_globals(pipeline->miss_shader, function_globals, &function_globals_size);
+				find_referenced_globals(pipeline->miss_shader, &function_globals);
 			}
 			if (pipeline->closest_shader != NULL) {
-				find_referenced_globals(pipeline->closest_shader, function_globals, &function_globals_size);
+				find_referenced_globals(pipeline->closest_shader, &function_globals);
 			}
 			if (pipeline->intersection_shader != NULL) {
-				find_referenced_globals(pipeline->intersection_shader, function_globals, &function_globals_size);
+				find_referenced_globals(pipeline->intersection_shader, &function_globals);
 			}
 			if (pipeline->any_shader != NULL) {
-				find_referenced_globals(pipeline->any_shader, function_globals, &function_globals_size);
+				find_referenced_globals(pipeline->any_shader, &function_globals);
 			}
 		}
 
-		find_referenced_sets(function_globals, function_globals_size, &group);
+		find_referenced_sets(&function_globals, &group);
 
 		check_globals_in_descriptor_set_group(&group);
 
