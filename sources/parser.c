@@ -1202,6 +1202,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 		if (array) {
 			type_id array_type_id               = add_type(get_type(t_id)->name);
 			get_type(array_type_id)->base       = t_id;
+			get_type(array_type_id)->built_in   = get_type(t_id)->built_in;
 			get_type(array_type_id)->array_size = array_size;
 			t_id                                = array_type_id;
 		}
@@ -1302,6 +1303,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 		if (array) {
 			type_id array_type_id               = add_type(get_type(float4_id)->name);
 			get_type(array_type_id)->base       = float4_id;
+			get_type(array_type_id)->built_in   = true;
 			get_type(array_type_id)->array_size = array_size;
 
 			d.global = add_global(array_type_id, attributes, name.identifier);

@@ -709,27 +709,27 @@ type_id find_type_by_ref(type_ref *t) {
 	debug_context context = {0};
 	check(t->unresolved.name != NO_NAME, context, "Attempted to find a no-name");
 
-	bool found_name = false;
+	type_id base_type_id = NO_TYPE;
 
 	for (type_id i = 0; i < next_type_index; ++i) {
 		if (types[i].name == t->unresolved.name) {
-			found_name = true;
 			if (types[i].array_size == t->unresolved.array_size) {
 				return i;
 			}
+			base_type_id = i;
 		}
 	}
 
-	if (found_name) {
-		type_id new_type               = add_type(t->unresolved.name);
-		get_type(new_type)->array_size = t->unresolved.array_size;
+	if (base_type_id != NO_TYPE) {
+		type_id new_type_id  = add_type(t->unresolved.name);
+		type   *new_type     = get_type(new_type_id);
+		new_type->array_size = t->unresolved.array_size;
 
-		type_ref no_array_type;
-		no_array_type                       = *t;
-		no_array_type.unresolved.array_size = 0;
-		get_type(new_type)->base            = find_type_by_ref(&no_array_type);
+		type *base_type    = get_type(base_type_id);
+		new_type->base     = base_type_id;
+		new_type->built_in = base_type->built_in;
 
-		return new_type;
+		return new_type_id;
 	}
 
 	return NO_TYPE;
