@@ -1255,7 +1255,7 @@ void kore3_export(char *directory, api_kind api) {
 
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 				global *g        = get_global(set->globals.globals[global_index]);
-				bool    writable = set->globals.globals[global_index];
+				bool    writable = set->globals.writable[global_index];
 
 				if (!get_type(g->type)->built_in) {
 					if (!has_attribute(&g->attributes, add_name("indexed"))) {
