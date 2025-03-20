@@ -1409,7 +1409,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 					}
 				}
-				else {
+				else if (!is_sampler(g->type)) {
 					if (has_attribute(&g->attributes, add_name("indexed"))) {
 						if (api == API_VULKAN) {
 							fprintf(output, "\tkore_vulkan_descriptor_set_prepare_buffer(list, set->%s);\n", get_name(g->name));
