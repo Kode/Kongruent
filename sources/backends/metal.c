@@ -192,24 +192,24 @@ static void write_argument_buffers(char *code, size_t *offset) {
 				if (!has_attribute(&g->attributes, add_name("indexed"))) {
 					char name[256];
 					type_name(g->type, name);
-					*offset += sprintf(&code[*offset], "\tconstant %s *_%" PRIu64 ";\n", name, g->var_index);
+					*offset += sprintf(&code[*offset], "\tdevice %s *_%" PRIu64 " [[id(%zu)]];\n", name, g->var_index, global_index); // TODO: Handle constant data and set it via constantDataAtIndex
 				}
 			}
 			else if (is_texture(g->type)) {
 				if (writable) {
-					*offset += sprintf(&code[*offset], "\ttexture2d<float, access::write> %s;\n", get_name(g->name));
+					*offset += sprintf(&code[*offset], "\ttexture2d<float, access::write> %s [[id(%zu)]];\n", get_name(g->name), global_index);
 				}
 				else {
-					*offset += sprintf(&code[*offset], "\ttexture2d<float> %s;\n", get_name(g->name));
+					*offset += sprintf(&code[*offset], "\ttexture2d<float> %s [[id(%zu)]];\n", get_name(g->name), global_index);
 				}
 			}
 			else if (is_sampler(g->type)) {
-				*offset += sprintf(&code[*offset], "\tsampler %s;\n", get_name(g->name));
+				*offset += sprintf(&code[*offset], "\tsampler %s [[id(%zu)]];\n", get_name(g->name), global_index);
 			}
 			else {
 				type *t = get_type(g->type);
 				if (t->array_size > 0) {
-					*offset += sprintf(&code[*offset], "\tdevice %s *%s", get_name(get_type(g->type)->name), get_name(g->name));
+					*offset += sprintf(&code[*offset], "\tdevice %s *%s [[id(%zu)]];\n", get_name(get_type(g->type)->name), get_name(g->name), global_index);
 				}
 			}
 		}
