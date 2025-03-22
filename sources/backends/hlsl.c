@@ -309,6 +309,7 @@ static void assign_register_indices(uint32_t *register_indices, function *shader
 
 		for (size_t g_index = 0; g_index < set->globals.size; ++g_index) {
 			global_id global_index = set->globals.globals[g_index];
+			bool      writable     = set->globals.writable[g_index];
 
 			global *g = get_global(global_index);
 
@@ -323,7 +324,7 @@ static void assign_register_indices(uint32_t *register_indices, function *shader
 				if (t->array_size == UINT32_MAX) {
 					register_indices[global_index] = 0;
 				}
-				else if (has_attribute(&g->attributes, add_name("write"))) {
+				else if (writable) {
 					register_indices[global_index] = uav_index;
 					uav_index += 1;
 				}
