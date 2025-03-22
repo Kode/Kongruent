@@ -479,8 +479,8 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 				indent(code, offset, indentation);
 				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_add", type_string(o->op_binary.result.type.type, simd_width),
 				                   o->op_binary.result.index);
-				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.left.type));
-				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.right.type));
+				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.left.type));
+				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.right.type));
 				*offset += sprintf(&code[*offset], "_x%i(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
@@ -488,8 +488,8 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 				indent(code, offset, indentation);
 				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_sub", type_string(o->op_binary.result.type.type, simd_width),
 				                   o->op_binary.result.index);
-				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.left.type));
-				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.right.type));
+				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.left.type));
+				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.right.type));
 				*offset += sprintf(&code[*offset], "_x%i(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
@@ -497,8 +497,8 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 				indent(code, offset, indentation);
 				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_mult", type_string(o->op_binary.result.type.type, simd_width),
 				                   o->op_binary.result.index);
-				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.left.type));
-				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.right.type));
+				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.left.type));
+				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.right.type));
 				*offset += sprintf(&code[*offset], "_x%i(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
@@ -506,8 +506,8 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 				indent(code, offset, indentation);
 				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_div", type_string(o->op_binary.result.type.type, simd_width),
 				                   o->op_binary.result.index);
-				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.left.type));
-				*offset += sprintf(&code[*offset], type_to_mini(o->op_binary.right.type));
+				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.left.type));
+				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.right.type));
 				*offset += sprintf(&code[*offset], "_x%i(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
@@ -581,7 +581,7 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 
 					for (uint8_t parameter_index = 0; parameter_index < o->op_call.parameters_size; ++parameter_index) {
 						variable v = o->op_call.parameters[parameter_index];
-						*offset += sprintf(&code[*offset], type_to_mini(v.type));
+						*offset += sprintf(&code[*offset], "%s", type_to_mini(v.type));
 					}
 
 					*offset += sprintf(&code[*offset], "_x%i(", simd_width);

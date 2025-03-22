@@ -1024,9 +1024,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			}
 			else if (stage == SHADER_STAGE_FRAGMENT && main) {
 				if (false /*TODO*/) {
-					spirv_id object = write_op_load(instructions, convert_type_to_spirv_id(o->op_return.var.type.type),
-					                                convert_kong_index_to_spirv_id(o->op_return.var.index));
-					write_op_store(instructions, output_var, object);
+					//spirv_id object = write_op_load(instructions, convert_type_to_spirv_id(o->op_return.var.type.type), convert_kong_index_to_spirv_id(o->op_return.var.index));
+					//write_op_store(instructions, output_var, object);
 				}
 				else {
 					write_op_store(instructions, output_var, convert_kong_index_to_spirv_id(o->op_return.var.index));
@@ -1151,7 +1150,7 @@ static void write_globals(instructions_buffer *instructions_block, function *mai
 
 	for (size_t i = 0; i < globals.size; ++i) {
 		global *g              = get_global(globals.globals[i]);
-		int     register_index = global_register_indices[globals.globals[i]];
+		//int     register_index = global_register_indices[globals.globals[i]];
 
 		type   *t         = get_type(g->type);
 		type_id base_type = t->array_size > 0 ? t->base : g->type;

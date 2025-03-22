@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static char *type_string(type_id type) {
+/*static char *type_string(type_id type) {
 	if (type == float_id) {
 		return "float";
 	}
@@ -42,7 +42,7 @@ static char *type_string(type_id type) {
 		return "Texture2D<float4>";
 	}
 	return get_name(get_type(type)->name);
-}
+}*/
 
 static void write_functions(void) {
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
@@ -70,7 +70,7 @@ static void write_functions(void) {
 
 				for (int i = 0; i < o->op_load_member.member_indices_size; ++i) {
 					if (o->op_load_member.dynamic_member[i]) {
-						offset += sprintf(&indices[offset], "$%zu", o->op_load_member.dynamic_member_indices[i].index);
+						offset += sprintf(&indices[offset], "$%" PRIu64, o->op_load_member.dynamic_member_indices[i].index);
 					}
 					else {
 						offset += sprintf(&indices[offset], "%i", o->op_load_member.static_member_indices[i]);
@@ -89,7 +89,7 @@ static void write_functions(void) {
 				int  offset = 0;
 
 				for (int i = 0; i < o->op_call.parameters_size; ++i) {
-					offset += sprintf(&parameters[offset], "$%zu", o->op_call.parameters[i].index);
+					offset += sprintf(&parameters[offset], "$%" PRIu64, o->op_call.parameters[i].index);
 
 					if (i < o->op_call.parameters_size - 1) {
 						offset += sprintf(&parameters[offset], ", ");
@@ -120,7 +120,7 @@ static void write_functions(void) {
 
 				for (int i = 0; i < o->op_store_member.member_indices_size; ++i) {
 					if (o->op_store_member.dynamic_member[i]) {
-						offset += sprintf(&indices[offset], "$%zu", o->op_store_member.dynamic_member_indices[i].index);
+						offset += sprintf(&indices[offset], "$%" PRIu64, o->op_store_member.dynamic_member_indices[i].index);
 					}
 					else {
 						offset += sprintf(&indices[offset], "%i", o->op_store_member.static_member_indices[i]);
