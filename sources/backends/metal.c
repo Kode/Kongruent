@@ -210,7 +210,8 @@ static void write_argument_buffers(char *code, size_t *offset) {
 			else {
 				type *t = get_type(g->type);
 				if (t->array_size > 0) {
-					*offset += sprintf(&code[*offset], "\tdevice %s *_%" PRIu64 " [[id(%zu)]];\n", get_name(get_type(g->type)->name), g->var_index, global_index);
+					*offset +=
+					    sprintf(&code[*offset], "\tdevice %s *_%" PRIu64 " [[id(%zu)]];\n", get_name(get_type(g->type)->name), g->var_index, global_index);
 				}
 			}
 		}
@@ -393,16 +394,18 @@ static void write_functions(char *code, size_t *offset) {
 				if (o->op_call.func == add_name("sample")) {
 					check(o->op_call.parameters_size == 3, context, "sample requires three parameters");
 					indent(code, offset, indentation);
-					*offset +=
-					    sprintf(&code[*offset], "%s _%" PRIu64 " = argument_buffer0._%" PRIu64 ".sample(argument_buffer0._%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
-					            o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index, o->op_call.parameters[2].index);
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = argument_buffer0._%" PRIu64 ".sample(argument_buffer0._%" PRIu64 ", _%" PRIu64 ");\n",
+					                   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index,
+					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index);
 				}
 				else if (o->op_call.func == add_name("sample_lod")) {
 					check(o->op_call.parameters_size == 4, context, "sample_lod requires four parameters");
 					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = argument_buffer0._%" PRIu64 ".sample(argument_buffer0._%" PRIu64 ", _%" PRIu64 ", level(_%" PRIu64 "));\n",
-					                   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index,
-					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index, o->op_call.parameters[3].index);
+					*offset +=
+					    sprintf(&code[*offset],
+					            "%s _%" PRIu64 " = argument_buffer0._%" PRIu64 ".sample(argument_buffer0._%" PRIu64 ", _%" PRIu64 ", level(_%" PRIu64 "));\n",
+					            type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index,
+					            o->op_call.parameters[2].index, o->op_call.parameters[3].index);
 				}
 				else {
 					indent(code, offset, indentation);
