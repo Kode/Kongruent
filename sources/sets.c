@@ -28,6 +28,14 @@ descriptor_set *create_set(name_id name) {
 	return new_set;
 }
 
+descriptor_set *get_set(size_t index) {
+    return &sets[index];
+}
+
+size_t get_sets_count(void) {
+    return sets_count;
+}
+
 void add_definition_to_set(descriptor_set *set, definition def) {
 	assert(def.kind != DEFINITION_FUNCTION && def.kind != DEFINITION_STRUCT);
 

@@ -16,6 +16,10 @@ typedef struct descriptor_set {
 
 descriptor_set *create_set(name_id name);
 
+descriptor_set *get_set(size_t index);
+
+size_t get_sets_count(void);
+
 void add_definition_to_set(descriptor_set *set, definition def);
 
 #endif
