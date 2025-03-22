@@ -192,25 +192,25 @@ static void write_argument_buffers(char *code, size_t *offset) {
 				if (!has_attribute(&g->attributes, add_name("indexed"))) {
 					char name[256];
 					type_name(g->type, name);
-					*offset += sprintf(&code[*offset], "\tdevice %s *_%" PRIu64 " [[id(%zu)]];\n", name, g->var_index,
-					                   global_index); // TODO: Handle constant data and set it via constantDataAtIndex
+					*offset += sprintf(&code[*offset], "\tconstant %s *_%" PRIu64 " [[id(%zu)]];\n", name, g->var_index,
+					                   global_index); // TODO: Make use of constantDataAtIndex
 				}
 			}
 			else if (is_texture(g->type)) {
 				if (writable) {
-					*offset += sprintf(&code[*offset], "\ttexture2d<float, access::write> %s [[id(%zu)]];\n", get_name(g->name), global_index);
+					*offset += sprintf(&code[*offset], "\ttexture2d<float, access::write> _%" PRIu64 " [[id(%zu)]];\n", g->var_index, global_index);
 				}
 				else {
-					*offset += sprintf(&code[*offset], "\ttexture2d<float> %s [[id(%zu)]];\n", get_name(g->name), global_index);
+					*offset += sprintf(&code[*offset], "\ttexture2d<float> _%" PRIu64 " [[id(%zu)]];\n", g->var_index, global_index);
 				}
 			}
 			else if (is_sampler(g->type)) {
-				*offset += sprintf(&code[*offset], "\tsampler %s [[id(%zu)]];\n", get_name(g->name), global_index);
+				*offset += sprintf(&code[*offset], "\tsampler _%" PRIu64 " [[id(%zu)]];\n", g->var_index, global_index);
 			}
 			else {
 				type *t = get_type(g->type);
 				if (t->array_size > 0) {
-					*offset += sprintf(&code[*offset], "\tdevice %s *%s [[id(%zu)]];\n", get_name(get_type(g->type)->name), get_name(g->name), global_index);
+					*offset += sprintf(&code[*offset], "\tdevice %s *_%" PRIu64 " [[id(%zu)]];\n", get_name(get_type(g->type)->name), g->var_index, global_index);
 				}
 			}
 		}
@@ -394,13 +394,13 @@ static void write_functions(char *code, size_t *offset) {
 					check(o->op_call.parameters_size == 3, context, "sample requires three parameters");
 					indent(code, offset, indentation);
 					*offset +=
-					    sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64 ".sample(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
+					    sprintf(&code[*offset], "%s _%" PRIu64 " = argument_buffer0._%" PRIu64 ".sample(argument_buffer0._%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
 					            o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index, o->op_call.parameters[2].index);
 				}
 				else if (o->op_call.func == add_name("sample_lod")) {
 					check(o->op_call.parameters_size == 4, context, "sample_lod requires four parameters");
 					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64 ".sample(_%" PRIu64 ", _%" PRIu64 ", level(_%" PRIu64 "));\n",
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = argument_buffer0._%" PRIu64 ".sample(argument_buffer0._%" PRIu64 ", _%" PRIu64 ", level(_%" PRIu64 "));\n",
 					                   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index,
 					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index, o->op_call.parameters[3].index);
 				}
