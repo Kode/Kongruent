@@ -1145,7 +1145,7 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "}\n\n");
 
 					fprintf(output, "void %s_buffer_unlock(kore_gpu_buffer *buffer) {\n", type_name);
-					if (api != API_OPENGL) {
+					if (api != API_OPENGL && api != API_METAL) {
 						bool has_matrices = false;
 						for (size_t j = 0; j < t->members.size; ++j) {
 							if (t->members.m[j].type.type == float4x4_id || t->members.m[j].type.type == float3x3_id) {
