@@ -259,7 +259,7 @@ static void write_functions(char *code, size_t *offset) {
 				descriptor_set *set = set_group->values[set_index];
 
 				buffers_offset +=
-				    sprintf(&buffers[buffers_offset], ", constant %s& argument_buffer%zu [[buffer(%zu)]]", get_name(set->name), set_index, set_index);
+				    sprintf(&buffers[buffers_offset], ", constant %s& argument_buffer%zu [[buffer(%zu)]]", get_name(set->name), set_index, set_index + 1);
 			}
 		}
 
