@@ -1262,11 +1262,11 @@ void kore3_export(char *directory, api_kind api) {
 					if (!has_attribute(&g->attributes, add_name("indexed"))) {
 						if (api == API_METAL) {
 							fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
-									other_index);
+							        other_index);
 						}
 						else {
-							fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
-									other_index);
+							fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %zu);\n", api_short,
+							        get_name(g->name), other_index);
 						}
 						other_index += 1;
 					}
