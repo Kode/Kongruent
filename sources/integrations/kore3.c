@@ -828,6 +828,9 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\tkore_gpu_texture_view %s;\n", get_name(g->name));
 					}
 				}
+				else if (is_sampler(g->type)) {
+					fprintf(output, "\tkore_gpu_sampler *%s;\n", get_name(g->name));
+				}
 				else {
 					fprintf(output, "\tkore_gpu_buffer *%s;\n", get_name(g->name));
 				}
@@ -1222,6 +1225,16 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\tdescriptor%zu.index = %zu;\n", global_index, global_index);
 						fprintf(output, "\tdescriptor%zu.dataType = MTLDataTypePointer;\n\n", global_index);
 					}
+					else if (is_texture(g->type)) {
+						fprintf(output, "\tMTLArgumentDescriptor* descriptor%zu = [MTLArgumentDescriptor argumentDescriptor];\n", global_index);
+						fprintf(output, "\tdescriptor%zu.index = %zu;\n", global_index, global_index);
+						fprintf(output, "\tdescriptor%zu.dataType = MTLDataTypeTexture;\n\n", global_index);
+					}
+					else if (is_sampler(g->type)) {
+						fprintf(output, "\tMTLArgumentDescriptor* descriptor%zu = [MTLArgumentDescriptor argumentDescriptor];\n", global_index);
+						fprintf(output, "\tdescriptor%zu.index = %zu;\n", global_index, global_index);
+						fprintf(output, "\tdescriptor%zu.dataType = MTLDataTypeSampler;\n\n", global_index);
+					}
 				}
 
 				fprintf(output, "\tid<MTLArgumentEncoder> argument_encoder = [metal_device newArgumentEncoderWithArguments: @[");
@@ -1248,6 +1261,16 @@ void kore3_export(char *directory, api_kind api) {
 					if (!get_type(g->type)->built_in) {
 						fprintf(output, "\t\tid<MTLBuffer> buffer = (__bridge id<MTLBuffer>)parameters->%s->metal.buffer;\n", get_name(g->name));
 						fprintf(output, "\t\t[argument_encoder setBuffer: buffer offset: 0 atIndex: %zu];\n", global_index);
+						fprintf(output, "\t\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+					}
+					else if (is_texture(g->type)) {
+						fprintf(output, "\t\tid<MTLTexture> texture = (__bridge id<MTLTexture>)parameters->%s.texture->metal.texture;\n", get_name(g->name));
+						fprintf(output, "\t\t[argument_encoder setTexture: texture atIndex: %zu];\n", global_index);
+						fprintf(output, "\t\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+					}
+					else if (is_sampler(g->type)) {
+						fprintf(output, "\t\tid<MTLSamplerState> sampler = (__bridge id<MTLSamplerState>)parameters->%s->metal.sampler;\n", get_name(g->name));
+						fprintf(output, "\t\t[argument_encoder setSamplerState: sampler atIndex: %zu];\n", global_index);
 						fprintf(output, "\t\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 					}
 
@@ -1464,8 +1487,8 @@ void kore3_export(char *directory, api_kind api) {
 							fprintf(output, "\tkore_%s_descriptor_set_prepare_uav_texture(list, &set->%s);\n", api_short, get_name(g->name));
 						}
 						else {
-							if (api == API_VULKAN) {
-								fprintf(output, "\tkore_vulkan_descriptor_set_prepare_texture(list, &set->%s);\n", get_name(g->name));
+							if (api == API_VULKAN || api == API_METAL) {
+								fprintf(output, "\tkore_%s_descriptor_set_prepare_texture(list, &set->%s);\n", api_short, get_name(g->name));
 							}
 							else {
 								fprintf(output, "\tkore_%s_descriptor_set_prepare_srv_texture(list, &set->%s);\n", api_short, get_name(g->name));
