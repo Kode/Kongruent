@@ -29,11 +29,11 @@ descriptor_set *create_set(name_id name) {
 }
 
 descriptor_set *get_set(size_t index) {
-    return &sets[index];
+	return &sets[index];
 }
 
 size_t get_sets_count(void) {
-    return sets_count;
+	return sets_count;
 }
 
 void add_definition_to_set(descriptor_set *set, definition def) {

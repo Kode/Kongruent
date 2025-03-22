@@ -72,27 +72,27 @@ static bool is_fragment_input(type_id t) {
 	return false;
 }
 
-static void type_name(type_id id, char* output_name) {
-    type *t = get_type(id);
+static void type_name(type_id id, char *output_name) {
+	type *t = get_type(id);
 
-    if (t->name == NO_NAME) {
-        bool found = false;
-        for (global_id j = 0; get_global(j)->type != NO_TYPE; ++j) {
-            global *g = get_global(j);
-            if (g->type == id) {
-                sprintf(output_name, "_%" PRIu64 "_type", g->var_index);
-                found = true;
-                break;
-            }
-        }
+	if (t->name == NO_NAME) {
+		bool found = false;
+		for (global_id j = 0; get_global(j)->type != NO_TYPE; ++j) {
+			global *g = get_global(j);
+			if (g->type == id) {
+				sprintf(output_name, "_%" PRIu64 "_type", g->var_index);
+				found = true;
+				break;
+			}
+		}
 
-        if (!found) {
-            strcpy(output_name, "Unknown");
-        }
-    }
-    else {
-        strcpy(output_name, get_name(t->name));
-    }
+		if (!found) {
+			strcpy(output_name, "Unknown");
+		}
+	}
+	else {
+		strcpy(output_name, get_name(t->name));
+	}
 }
 
 static void write_types(char *metal, size_t *offset) {
@@ -100,9 +100,9 @@ static void write_types(char *metal, size_t *offset) {
 		type *t = get_type(i);
 
 		if (!t->built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
-            char name[256];
-            type_name(i, name);
-            *offset += sprintf(&metal[*offset], "struct %s {\n", name);
+			char name[256];
+			type_name(i, name);
+			*offset += sprintf(&metal[*offset], "struct %s {\n", name);
 
 			if (is_vertex_input(i)) {
 				for (size_t j = 0; j < t->members.size; ++j) {
@@ -157,65 +157,65 @@ static bool is_fragment_function(function_id f) {
 }
 
 static void write_argument_buffers(char *code, size_t *offset) {
-    for (size_t set_index = 0; set_index < get_sets_count(); ++set_index) {
-        descriptor_set *set = get_set(set_index);
+	for (size_t set_index = 0; set_index < get_sets_count(); ++set_index) {
+		descriptor_set *set = get_set(set_index);
 
-        if (set->name == add_name("root_constants")) {
-            if (set->globals.size != 1) {
-                debug_context context = {0};
-                error(context, "More than one root constants struct found");
-            }
+		if (set->name == add_name("root_constants")) {
+			if (set->globals.size != 1) {
+				debug_context context = {0};
+				error(context, "More than one root constants struct found");
+			}
 
-            uint32_t  size = 0;
-            global_id g    = set->globals.globals[0];
+			uint32_t  size = 0;
+			global_id g    = set->globals.globals[0];
 
-            if (get_type(get_global(g)->type)->built_in) {
-                debug_context context = {0};
-                error(context, "Unsupported type for a root constant");
-            }
+			if (get_type(get_global(g)->type)->built_in) {
+				debug_context context = {0};
+				error(context, "Unsupported type for a root constant");
+			}
 
-            size += struct_size(get_global(g)->type);
+			size += struct_size(get_global(g)->type);
 
-            *offset += sprintf(&code[*offset], "\\\n, RootConstants(num32BitConstants=%i)", size / 4);
+			*offset += sprintf(&code[*offset], "\\\n, RootConstants(num32BitConstants=%i)", size / 4);
 
-            continue;
-        }
+			continue;
+		}
 
-        *offset += sprintf(&code[*offset], "struct %s {\n", get_name(set->name));
+		*offset += sprintf(&code[*offset], "struct %s {\n", get_name(set->name));
 
-        for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
-            global_id g_id     = set->globals.globals[global_index];
-            global   *g        = get_global(g_id);
-            bool      writable = set->globals.writable[global_index];
+		for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+			global_id g_id     = set->globals.globals[global_index];
+			global   *g        = get_global(g_id);
+			bool      writable = set->globals.writable[global_index];
 
-            if (!get_type(g->type)->built_in) {
-                if (!has_attribute(&g->attributes, add_name("indexed"))) {
-                    char name[256];
-                    type_name(g->type, name);
-                    *offset += sprintf(&code[*offset], "\tconstant %s *_%" PRIu64 ";\n", name, g->var_index);
-                }
-            }
-            else if (is_texture(g->type)) {
-                if (writable) {
-                    *offset += sprintf(&code[*offset], "\ttexture2d<float, access::write> %s;\n", get_name(g->name));
-                }
-                else {
-                    *offset += sprintf(&code[*offset], "\ttexture2d<float> %s;\n", get_name(g->name));
-                }
-            }
-            else if (is_sampler(g->type)) {
-                *offset += sprintf(&code[*offset], "\tsampler %s;\n", get_name(g->name));
-            }
-            else {
-                type *t = get_type(g->type);
-                if (t->array_size > 0) {
-                    *offset += sprintf(&code[*offset], "\tdevice %s *%s", get_name(get_type(g->type)->name), get_name(g->name));
-                }
-            }
-        }
+			if (!get_type(g->type)->built_in) {
+				if (!has_attribute(&g->attributes, add_name("indexed"))) {
+					char name[256];
+					type_name(g->type, name);
+					*offset += sprintf(&code[*offset], "\tconstant %s *_%" PRIu64 ";\n", name, g->var_index);
+				}
+			}
+			else if (is_texture(g->type)) {
+				if (writable) {
+					*offset += sprintf(&code[*offset], "\ttexture2d<float, access::write> %s;\n", get_name(g->name));
+				}
+				else {
+					*offset += sprintf(&code[*offset], "\ttexture2d<float> %s;\n", get_name(g->name));
+				}
+			}
+			else if (is_sampler(g->type)) {
+				*offset += sprintf(&code[*offset], "\tsampler %s;\n", get_name(g->name));
+			}
+			else {
+				type *t = get_type(g->type);
+				if (t->array_size > 0) {
+					*offset += sprintf(&code[*offset], "\tdevice %s *%s", get_name(get_type(g->type)->name), get_name(g->name));
+				}
+			}
+		}
 
-        *offset += sprintf(&code[*offset], "};\n\n");
-    }
+		*offset += sprintf(&code[*offset], "};\n\n");
+	}
 }
 
 static void write_functions(char *code, size_t *offset) {
@@ -256,8 +256,9 @@ static void write_functions(char *code, size_t *offset) {
 
 			for (size_t set_index = 0; set_index < set_group->size; ++set_index) {
 				descriptor_set *set = set_group->values[set_index];
-				
-				buffers_offset += sprintf(&buffers[buffers_offset], ", constant %s& argument_buffer%zu [[buffer(%zu)]]", get_name(set->name), set_index, set_index);
+
+				buffers_offset +=
+				    sprintf(&buffers[buffers_offset], ", constant %s& argument_buffer%zu [[buffer(%zu)]]", get_name(set->name), set_index, set_index);
 			}
 		}
 
@@ -270,7 +271,7 @@ static void write_functions(char *code, size_t *offset) {
 			*offset += sprintf(&code[*offset], "%s) {\n", buffers);
 		}
 		else if (is_fragment_function(i)) {
-            if (get_type(f->return_type.type)->array_size > 0) {
+			if (get_type(f->return_type.type)->array_size > 0) {
 				*offset += sprintf(&code[*offset], "struct _kong_colors_out {\n");
 				for (uint32_t j = 0; j < get_type(f->return_type.type)->array_size; ++j) {
 					*offset += sprintf(&code[*offset], "\t%s _%i [[color(%i)]];\n", type_string(f->return_type.type), j, j);
@@ -324,13 +325,12 @@ static void write_functions(char *code, size_t *offset) {
 
 				indent(code, offset, indentation);
 				if (global_var_index != 0) {
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = argument_buffer0._%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
-									   o->op_load_member.from.index);
-				
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = argument_buffer0._%" PRIu64, type_string(o->op_load_member.to.type.type),
+					                   o->op_load_member.to.index, o->op_load_member.from.index);
 				}
 				else {
 					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
-									   o->op_load_member.from.index);
+					                   o->op_load_member.from.index);
 				}
 				type *s = get_type(o->op_load_member.member_parent_type);
 
@@ -444,8 +444,8 @@ static void metal_export_everything(char *directory) {
 	offset += sprintf(&metal[offset], "};\n\n");
 
 	write_types(metal, &offset);
-    
-    write_argument_buffers(metal, &offset);
+
+	write_argument_buffers(metal, &offset);
 
 	write_functions(metal, &offset);
 
