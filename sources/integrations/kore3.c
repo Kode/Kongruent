@@ -35,7 +35,7 @@ static char *type_string(type_id type) {
 		return "kore_matrix4x4";
 	}
 	if (type == int_id) {
-		return "int";
+		return "int32_t";
 	}
 	if (type == int2_id) {
 		return "kore_int2";
@@ -47,7 +47,7 @@ static char *type_string(type_id type) {
 		return "kore_int4";
 	}
 	if (type == uint_id) {
-		return "unsigned";
+		return "uint32_t";
 	}
 	if (type == uint2_id) {
 		return "kore_uint2";
@@ -1260,8 +1260,14 @@ void kore3_export(char *directory, api_kind api) {
 
 				if (!get_type(g->type)->built_in) {
 					if (!has_attribute(&g->attributes, add_name("indexed"))) {
-						fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
-						        other_index);
+						if (api == API_METAL) {
+							fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
+									other_index);
+						}
+						else {
+							fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
+									other_index);
+						}
 						other_index += 1;
 					}
 					fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
@@ -1374,7 +1380,7 @@ void kore3_export(char *directory, api_kind api) {
 						if (api == API_VULKAN) {
 							fprintf(output, "\tkore_vulkan_descriptor_set_prepare_buffer(list, set->%s);\n", get_name(g->name));
 						}
-						else {
+						else if (api == API_DIRECT3D12) {
 							fprintf(output,
 							        "\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), "
 							        "align_pow2((int)%i, 256));\n",
@@ -1382,7 +1388,9 @@ void kore3_export(char *directory, api_kind api) {
 						}
 					}
 					else {
-						fprintf(output, "\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short, get_name(g->name));
+						if (api == API_DIRECT3D12) {
+							fprintf(output, "\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short, get_name(g->name));
+						}
 					}
 				}
 				else if (is_texture(g->type)) {
