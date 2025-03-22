@@ -965,7 +965,7 @@ void kore3_export(char *directory, api_kind api) {
 		else {
 			sprintf(filename, "%s/%s", directory, "kong.c");
 		}
-		
+
 		FILE *output = fopen(filename, "wb");
 
 		fprintf(output, "#include \"kong.h\"\n\n");
@@ -1013,7 +1013,7 @@ void kore3_export(char *directory, api_kind api) {
 		fprintf(output, "#include <kore3/util/align.h>\n\n");
 		fprintf(output, "#include <assert.h>\n");
 		fprintf(output, "#include <stdlib.h>\n\n");
-		
+
 		if (api == API_METAL) {
 			fprintf(output, "#import <MetalKit/MTKView.h>\n\n");
 		}
@@ -1191,39 +1191,39 @@ void kore3_export(char *directory, api_kind api) {
 
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
-			
+
 			if (set->name == add_name("root_constants")) {
 				assert(root_constants_global != NULL);
-				
+
 				fprintf(output, "void kong_set_root_constants_%s(kore_gpu_command_list *list, %s *constants) {\n", get_name(root_constants_global->name),
-						root_constants_type_name);
+				        root_constants_type_name);
 				fprintf(output, "\tkore_%s_command_list_set_root_constants(list, %s_table_index, constants, %i);\n", api_short, get_name(set->name),
-						struct_size(root_constants_global->type));
+				        struct_size(root_constants_global->type));
 				fprintf(output, "}\n\n");
-				
+
 				continue;
 			}
-			
+
 			if (api == API_VULKAN) {
 				fprintf(output, "extern VkDescriptorSetLayout %s_set_layout;\n\n", get_name(set->name));
 			}
-			
+
 			fprintf(output, "void kong_create_%s_set(kore_gpu_device *device, const %s_parameters *parameters, %s_set *set) {\n", get_name(set->name),
-					get_name(set->name), get_name(set->name));
-			
+			        get_name(set->name), get_name(set->name));
+
 			if (api == API_METAL) {
 				fprintf(output, "\tid<MTLDevice> metal_device = (__bridge id<MTLDevice>)device->metal.device;\n\n");
-				
+
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					global *g = get_global(set->globals.globals[global_index]);
-					
+
 					if (!get_type(g->type)->built_in) {
 						fprintf(output, "\tMTLArgumentDescriptor* descriptor%zu = [MTLArgumentDescriptor argumentDescriptor];\n", global_index);
 						fprintf(output, "\tdescriptor%zu.index = %zu;\n", global_index, global_index);
 						fprintf(output, "\tdescriptor%zu.dataType = MTLDataTypePointer;\n\n", global_index);
 					}
 				}
-				
+
 				fprintf(output, "\tid<MTLArgumentEncoder> argument_encoder = [metal_device newArgumentEncoderWithArguments: @[");
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					if (global_index == 0) {
@@ -1234,26 +1234,26 @@ void kore3_export(char *directory, api_kind api) {
 					}
 				}
 				fprintf(output, "]];\n\n");
-				
+
 				fprintf(output, "\tkore_metal_device_create_descriptor_set_buffer(device, [argument_encoder encodedLength], &set->set.argument_buffer);\n\n");
-				
+
 				fprintf(output, "\tid<MTLBuffer> metal_argument_buffer = (__bridge id<MTLBuffer>)set->set.argument_buffer.metal.buffer;\n\n");
 				fprintf(output, "\t[argument_encoder setArgumentBuffer:metal_argument_buffer offset:0];\n\n");
-				
+
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					global *g = get_global(set->globals.globals[global_index]);
-					
+
 					fprintf(output, "\t{\n");
-					
+
 					if (!get_type(g->type)->built_in) {
 						fprintf(output, "\t\tid<MTLBuffer> buffer = (__bridge id<MTLBuffer>)parameters->%s->metal.buffer;\n", get_name(g->name));
 						fprintf(output, "\t\t[argument_encoder setBuffer: buffer offset: 0 atIndex: %zu];\n", global_index);
 						fprintf(output, "\t\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 					}
-					
+
 					fprintf(output, "\t}\n\n");
 				}
-				
+
 				fprintf(output, "}\n\n");
 			}
 			else {
@@ -1261,10 +1261,10 @@ void kore3_export(char *directory, api_kind api) {
 				size_t sampler_count  = 0;
 				size_t dynamic_count  = 0;
 				size_t bindless_count = 0;
-				
+
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					global *g = get_global(set->globals.globals[global_index]);
-					
+
 					if (!get_type(g->type)->built_in) {
 						if (has_attribute(&g->attributes, add_name("indexed"))) {
 							dynamic_count += 1;
@@ -1283,7 +1283,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 					}
 					else if (is_sampler(g->type))
-						
+
 					{
 						sampler_count += 1;
 					}
@@ -1296,32 +1296,32 @@ void kore3_export(char *directory, api_kind api) {
 						}
 					}
 				}
-				
+
 				if (api == API_VULKAN) {
 					fprintf(output, "\tkore_vulkan_device_create_descriptor_set(device, &%s_set_layout, &set->set);\n", get_name(set->name));
 				}
 				else {
 					fprintf(output, "\tkore_%s_device_create_descriptor_set(device, %zu, %zu, %zu, %zu, &set->set);\n", api_short, other_count, dynamic_count,
-							bindless_count, sampler_count);
+					        bindless_count, sampler_count);
 				}
-				
+
 				size_t other_index   = 0;
 				size_t sampler_index = 0;
-				
+
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					global *g            = get_global(set->globals.globals[global_index]);
 					bool    writable     = set->globals.writable[global_index];
 					type_id base_type_id = get_type(g->type)->base != NO_TYPE ? get_type(g->type)->base : g->type;
-					
+
 					if (!get_type(g->type)->built_in) {
 						if (!has_attribute(&g->attributes, add_name("indexed"))) {
 							if (api == API_METAL) {
-								fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
-										other_index);
+								fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view(device, &set->set, parameters->%s, %zu);\n", api_short,
+								        get_name(g->name), other_index);
 							}
 							else {
-								fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
-										other_index);
+								fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %zu);\n", api_short,
+								        get_name(g->name), other_index);
 							}
 							other_index += 1;
 						}
@@ -1329,7 +1329,7 @@ void kore3_export(char *directory, api_kind api) {
 					}
 					else if (base_type_id == bvh_type_id) {
 						fprintf(output, "\tkore_%s_descriptor_set_set_bvh_view_srv(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
-								other_index);
+						        other_index);
 						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 						other_index += 1;
 					}
@@ -1337,38 +1337,38 @@ void kore3_export(char *directory, api_kind api) {
 						type *t = get_type(g->type);
 						if (t->array_size == UINT32_MAX) {
 							fprintf(output, "\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) * parameters->textures_count);\n",
-									get_name(g->name));
+							        get_name(g->name));
 							fprintf(output, "\tassert(set->%s != NULL);\n", get_name(g->name));
 							fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
 							fprintf(output,
-									"\t\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
-									"&parameters->%s[index]);\n",
-									api_short, get_name(g->name));
+							        "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
+							        "&parameters->%s[index]);\n",
+							        api_short, get_name(g->name));
 							fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(g->name), get_name(g->name));
 							fprintf(output, "\t}\n");
-							
+
 							fprintf(output, "\tset->%s_count = parameters->%s_count;\n", get_name(g->name), get_name(g->name));
 						}
 						else {
 							if (writable) {
 								fprintf(output, "\tkore_%s_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %zu);\n", api_short,
-										get_name(g->name), other_index);
+								        get_name(g->name), other_index);
 							}
 							else {
 								if (api == API_VULKAN) {
-									fprintf(output, "\tkore_vulkan_descriptor_set_set_texture_view(device, &set->set, &parameters->%s, %zu);\n", get_name(g->name),
-											global_index);
+									fprintf(output, "\tkore_vulkan_descriptor_set_set_texture_view(device, &set->set, &parameters->%s, %zu);\n",
+									        get_name(g->name), global_index);
 								}
 								else {
 									fprintf(output,
-											"\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %zu, "
-											"&parameters->%s);\n",
-											api_short, other_index, get_name(g->name));
+									        "\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %zu, "
+									        "&parameters->%s);\n",
+									        api_short, other_index, get_name(g->name));
 								}
 							}
-							
+
 							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
-							
+
 							other_index += 1;
 						}
 					}
@@ -1377,10 +1377,10 @@ void kore3_export(char *directory, api_kind api) {
 							debug_context context = {0};
 							error(context, "Texture arrays can not be writable");
 						}
-						
+
 						fprintf(output, "\tkore_%s_descriptor_set_set_texture_array_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
-								get_name(g->name), other_index);
-						
+						        get_name(g->name), other_index);
+
 						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 						other_index += 1;
 					}
@@ -1390,20 +1390,20 @@ void kore3_export(char *directory, api_kind api) {
 							error(context, "Cube maps can not be writable");
 						}
 						fprintf(output, "\tkore_%s_descriptor_set_set_texture_cube_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
-								get_name(g->name), other_index);
-						
+						        get_name(g->name), other_index);
+
 						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 						other_index += 1;
 					}
 					else if (is_sampler(g->type)) {
 						fprintf(output, "\tkore_%s_descriptor_set_set_sampler(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
-								sampler_index);
+						        sampler_index);
 						sampler_index += 1;
 					}
 					else {
 						if (!has_attribute(&g->attributes, add_name("indexed"))) {
-							fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_uav(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
-									other_index);
+							fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_uav(device, &set->set, parameters->%s, %zu);\n", api_short,
+							        get_name(g->name), other_index);
 							other_index += 1;
 						}
 						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
@@ -1411,15 +1411,15 @@ void kore3_export(char *directory, api_kind api) {
 				}
 				fprintf(output, "}\n\n");
 			}
-			
+
 			fprintf(output, "void kong_update_%s_set(%s_set *set, %s_set_update *updates, uint32_t updates_count) {\n", get_name(set->name),
-					get_name(set->name), get_name(set->name));
+			        get_name(set->name), get_name(set->name));
 			fprintf(output, "}\n\n");
-			
+
 			fprintf(output, "void kong_set_descriptor_set_%s(kore_gpu_command_list *list, %s_set *set", get_name(set->name), get_name(set->name));
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 				global *g = get_global(set->globals.globals[global_index]);
-				
+
 				if (!get_type(g->type)->built_in) {
 					if (has_attribute(&g->attributes, add_name("indexed"))) {
 						fprintf(output, ", uint32_t %s_index", get_name(g->name));
@@ -1430,7 +1430,7 @@ void kore3_export(char *directory, api_kind api) {
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 				global *g        = get_global(set->globals.globals[global_index]);
 				bool    writable = set->globals.writable[global_index];
-				
+
 				if (!get_type(g->type)->built_in) {
 					if (has_attribute(&g->attributes, add_name("indexed"))) {
 						if (api == API_VULKAN || api == API_METAL) {
@@ -1438,9 +1438,9 @@ void kore3_export(char *directory, api_kind api) {
 						}
 						else if (api == API_DIRECT3D12) {
 							fprintf(output,
-									"\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), "
-									"align_pow2((int)%i, 256));\n",
-									api_short, get_name(g->name), get_name(g->name), struct_size(g->type), struct_size(g->type));
+							        "\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), "
+							        "align_pow2((int)%i, 256));\n",
+							        api_short, get_name(g->name), get_name(g->name), struct_size(g->type), struct_size(g->type));
 						}
 					}
 					else {
@@ -1480,9 +1480,9 @@ void kore3_export(char *directory, api_kind api) {
 						}
 						else {
 							fprintf(output,
-									"\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), "
-									"align_pow2((int)%i, 256));\n",
-									api_short, get_name(g->name), get_name(g->name), struct_size(g->type), struct_size(g->type));
+							        "\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), "
+							        "align_pow2((int)%i, 256));\n",
+							        api_short, get_name(g->name), get_name(g->name), struct_size(g->type), struct_size(g->type));
 						}
 					}
 					else {
@@ -1490,44 +1490,44 @@ void kore3_export(char *directory, api_kind api) {
 					}
 				}
 			}
-			
+
 			fprintf(output, "\n");
-			
+
 			{
 				uint32_t dynamic_count = 0;
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					global *g = get_global(set->globals.globals[global_index]);
-					
+
 					if (!get_type(g->type)->built_in) {
 						if (has_attribute(&g->attributes, add_name("indexed"))) {
 							dynamic_count += 1;
 						}
 					}
 				}
-				
+
 				if (dynamic_count > 0) {
 					fprintf(output, "\tkore_gpu_buffer *dynamic_buffers[%i];\n", dynamic_count);
-					
+
 					fprintf(output, "\tuint32_t dynamic_offsets[%i];\n", dynamic_count);
-					
+
 					fprintf(output, "\tuint32_t dynamic_sizes[%i];\n", dynamic_count);
-					
+
 					uint32_t dynamic_index = 0;
 					for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 						global *g = get_global(set->globals.globals[global_index]);
-						
+
 						if (!get_type(g->type)->built_in) {
 							if (has_attribute(&g->attributes, add_name("indexed"))) {
 								fprintf(output, "\tdynamic_buffers[%i] = set->%s;\n", dynamic_index, get_name(g->name));
 								fprintf(output, "\tdynamic_offsets[%i] = %s_index * align_pow2((int)%i, 256);\n", dynamic_index, get_name(g->name),
-										struct_size(g->type));
+								        struct_size(g->type));
 								fprintf(output, "\tdynamic_sizes[%i] = align_pow2((int)%i, 256);\n", dynamic_index, struct_size(g->type));
 								dynamic_index += 1;
 							}
 						}
 					}
 				}
-				
+
 				if (api == API_METAL) {
 					fprintf(output, "\n\tkore_metal_command_list_set_descriptor_set(list, &set->set);\n");
 				}

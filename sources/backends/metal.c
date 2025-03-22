@@ -192,7 +192,8 @@ static void write_argument_buffers(char *code, size_t *offset) {
 				if (!has_attribute(&g->attributes, add_name("indexed"))) {
 					char name[256];
 					type_name(g->type, name);
-					*offset += sprintf(&code[*offset], "\tdevice %s *_%" PRIu64 " [[id(%zu)]];\n", name, g->var_index, global_index); // TODO: Handle constant data and set it via constantDataAtIndex
+					*offset += sprintf(&code[*offset], "\tdevice %s *_%" PRIu64 " [[id(%zu)]];\n", name, g->var_index,
+					                   global_index); // TODO: Handle constant data and set it via constantDataAtIndex
 				}
 			}
 			else if (is_texture(g->type)) {
