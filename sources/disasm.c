@@ -17,31 +17,31 @@
 #include <string.h>
 
 /*static char *type_string(type_id type) {
-	if (type == float_id) {
-		return "float";
-	}
-	if (type == float2_id) {
-		return "float2";
-	}
-	if (type == float3_id) {
-		return "float3";
-	}
-	if (type == float4_id) {
-		return "float4";
-	}
-	if (type == float4x4_id) {
-		return "float4x4";
-	}
-	if (type == ray_type_id) {
-		return "RayDesc";
-	}
-	if (type == bvh_type_id) {
-		return "RaytracingAccelerationStructure";
-	}
-	if (type == tex2d_type_id) {
-		return "Texture2D<float4>";
-	}
-	return get_name(get_type(type)->name);
+    if (type == float_id) {
+        return "float";
+    }
+    if (type == float2_id) {
+        return "float2";
+    }
+    if (type == float3_id) {
+        return "float3";
+    }
+    if (type == float4_id) {
+        return "float4";
+    }
+    if (type == float4x4_id) {
+        return "float4x4";
+    }
+    if (type == ray_type_id) {
+        return "RayDesc";
+    }
+    if (type == bvh_type_id) {
+        return "RaytracingAccelerationStructure";
+    }
+    if (type == tex2d_type_id) {
+        return "Texture2D<float4>";
+    }
+    return get_name(get_type(type)->name);
 }*/
 
 static void write_functions(void) {
