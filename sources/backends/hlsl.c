@@ -357,6 +357,10 @@ static void assign_register_indices(uint32_t *register_indices, function *shader
 }
 
 static void write_globals(char *hlsl, size_t *offset, function *main, function **rayshaders, size_t rayshaders_count) {
+	if (main == NULL) {
+		main = rayshaders[0]; // TODO: Consider all raytracing pipelines
+	}
+
 	uint32_t register_indices[512] = {0};
 	assign_register_indices(register_indices, main);
 
@@ -1612,6 +1616,7 @@ static void hlsl_export_all_ray_shaders(char *directory) {
 
 	function *all_rayshaders[256 * 3];
 	size_t    all_rayshaders_size = 0;
+
 	for (size_t rayshader_index = 0; rayshader_index < raygen_shaders_size; ++rayshader_index) {
 		all_rayshaders[all_rayshaders_size] = raygen_shaders[rayshader_index];
 		all_rayshaders_size += 1;
