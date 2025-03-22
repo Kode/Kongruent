@@ -381,8 +381,8 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 
 	uint32_t table_index = 0;
 
-	for (size_t set_count = 0; set_count < all_descriptor_sets_count; ++set_count) {
-		descriptor_set *set = all_descriptor_sets[set_count];
+	for (size_t set_index = 0; set_index < all_descriptor_sets_count; ++set_index) {
+		descriptor_set *set = all_descriptor_sets[set_index];
 
 		bool has_sampler = false;
 		bool has_other   = false;
@@ -462,13 +462,13 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 
 					range_index += 1;
 				}
-
-				fprintf(output, "\n\tparams[%i].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;\n", table_index);
-				fprintf(output, "\tparams[%i].DescriptorTable.NumDescriptorRanges = %zu;\n", table_index, count);
-				fprintf(output, "\tparams[%i].DescriptorTable.pDescriptorRanges = ranges%i;\n", table_index, table_index);
-
-				table_index += 1;
 			}
+
+			fprintf(output, "\n\tparams[%i].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;\n", table_index);
+			fprintf(output, "\tparams[%i].DescriptorTable.NumDescriptorRanges = %zu;\n", table_index, count);
+			fprintf(output, "\tparams[%i].DescriptorTable.pDescriptorRanges = ranges%i;\n", table_index, table_index);
+
+			table_index += 1;
 		}
 
 		if (has_sampler) {
@@ -944,7 +944,7 @@ void kore3_export(char *directory, api_kind api) {
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-				fprintf(output, "void kore_set_ray_pipeline_%s(kore_gpu_command_list *list);\n\n", get_name(t->name));
+				fprintf(output, "void kong_set_ray_pipeline_%s(kore_gpu_command_list *list);\n\n", get_name(t->name));
 			}
 		}
 
@@ -1062,7 +1062,7 @@ void kore3_export(char *directory, api_kind api) {
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-				fprintf(output, "static_%s_ray_pipeline %s;\n\n", api_short, get_name(t->name));
+				fprintf(output, "static kore_%s_ray_pipeline %s;\n\n", api_short, get_name(t->name));
 				fprintf(output, "void kong_set_ray_pipeline_%s(kore_gpu_command_list *list) {\n", get_name(t->name));
 				fprintf(output, "\tkore_d3d12_command_list_set_ray_pipeline(list, &%s);\n", get_name(t->name));
 
@@ -1385,7 +1385,6 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\tkore_%s_descriptor_set_prepare_cbv_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short, get_name(g->name));
 					}
 				}
-
 				else if (is_texture(g->type)) {
 					type *t = get_type(g->type);
 					if (t->array_size == UINT32_MAX) {
@@ -1407,7 +1406,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 					}
 				}
-				else if (!is_sampler(g->type)) {
+				else if (!is_sampler(g->type) && g->type != bvh_type_id) {
 					if (has_attribute(&g->attributes, add_name("indexed"))) {
 						if (api == API_VULKAN) {
 							fprintf(output, "\tkore_vulkan_descriptor_set_prepare_buffer(list, set->%s);\n", get_name(g->name));
@@ -1945,6 +1944,7 @@ void kore3_export(char *directory, api_kind api) {
 		FILE *output = fopen(filename, "wb");
 
 		fprintf(output, "#include <kore3/gpu/device.h>\n\n");
+		fprintf(output, "#include <d3d12.h>\n\n");
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
