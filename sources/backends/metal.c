@@ -197,11 +197,19 @@ static void write_argument_buffers(char *code, size_t *offset) {
 				}
 			}
 			else if (is_texture(g->type)) {
-				if (writable) {
-					*offset += sprintf(&code[*offset], "\ttexture2d<float, access::write> _%" PRIu64 " [[id(%zu)]];\n", g->var_index, global_index);
+				if (g->type == tex2darray_type_id) {
+					*offset += sprintf(&code[*offset], "\ttexture2d_array<float> _%" PRIu64 " [[id(%zu)]];\n", g->var_index, global_index);
+				}
+				else if (g->type == texcube_type_id) {
+					*offset += sprintf(&code[*offset], "\ttexturecube<float> _%" PRIu64 " [[id(%zu)]];\n", g->var_index, global_index);
 				}
 				else {
-					*offset += sprintf(&code[*offset], "\ttexture2d<float> _%" PRIu64 " [[id(%zu)]];\n", g->var_index, global_index);
+					if (writable) {
+						*offset += sprintf(&code[*offset], "\ttexture2d<float, access::write> _%" PRIu64 " [[id(%zu)]];\n", g->var_index, global_index);
+					}
+					else {
+						*offset += sprintf(&code[*offset], "\ttexture2d<float> _%" PRIu64 " [[id(%zu)]];\n", g->var_index, global_index);
+					}
 				}
 			}
 			else if (is_sampler(g->type)) {
@@ -234,7 +242,7 @@ static void var_name(variable var, char *output_name) {
 		sprintf(output_name, "_%" PRIu64, var.index);
 	}
 	else {
-		sprintf(output_name, "attribute_buffer0._%" PRIu64, var.index);
+		sprintf(output_name, "argument_buffer0._%" PRIu64, var.index);
 	}
 }
 
@@ -427,10 +435,19 @@ static void write_functions(char *code, size_t *offset) {
 				debug_context context = {0};
 				if (o->op_call.func == add_name("sample")) {
 					check(o->op_call.parameters_size == 3, context, "sample requires three parameters");
+					
 					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = argument_buffer0._%" PRIu64 ".sample(argument_buffer0._%" PRIu64 ", _%" PRIu64 ");\n",
-					                   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index,
-					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index);
+					
+					if (o->op_call.parameters[0].type.type == tex2darray_type_id) {
+						*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = argument_buffer0._%" PRIu64 ".sample(argument_buffer0._%" PRIu64 ", _%" PRIu64 ".xy, _%" PRIu64 ".z);\n",
+										   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index,
+										   o->op_call.parameters[1].index, o->op_call.parameters[2].index, o->op_call.parameters[2].index);
+					}
+					else {
+						*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = argument_buffer0._%" PRIu64 ".sample(argument_buffer0._%" PRIu64 ", _%" PRIu64 ");\n",
+										   type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index,
+										   o->op_call.parameters[1].index, o->op_call.parameters[2].index);
+					}
 				}
 				else if (o->op_call.func == add_name("sample_lod")) {
 					check(o->op_call.parameters_size == 4, context, "sample_lod requires four parameters");
