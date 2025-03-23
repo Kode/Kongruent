@@ -137,6 +137,8 @@ static function_id vertex_functions[256];
 static size_t      vertex_functions_size = 0;
 static function_id fragment_functions[256];
 static size_t      fragment_functions_size = 0;
+static function_id compute_functions[256];
+static size_t      compute_functions_size = 0;
 
 static bool is_vertex_function(function_id f) {
 	for (size_t i = 0; i < vertex_functions_size; ++i) {
@@ -150,6 +152,15 @@ static bool is_vertex_function(function_id f) {
 static bool is_fragment_function(function_id f) {
 	for (size_t i = 0; i < fragment_functions_size; ++i) {
 		if (f == fragment_functions[i]) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool is_compute_function(function_id f) {
+	for (size_t i = 0; i < compute_functions_size; ++i) {
+		if (f == compute_functions[i]) {
 			return true;
 		}
 	}
@@ -273,9 +284,9 @@ static void write_functions(char *code, size_t *offset) {
 		}
 
 		char buffers[1024];
-		strcpy(buffers, "");
+		memset(buffers, 0, sizeof(buffers));
 
-		if (is_vertex_function(i) || is_fragment_function(i)) {
+		if (is_vertex_function(i) || is_fragment_function(i) || is_compute_function(i)) {
 			global_array globals = {0};
 			find_referenced_globals(f, &globals);
 
@@ -341,6 +352,13 @@ static void write_functions(char *code, size_t *offset) {
 				*offset += sprintf(&code[*offset], "%s) {\n", buffers);
 			}
 		}
+		else if (is_compute_function(i)) {
+			*offset += sprintf(&code[*offset], "kernel void %s(uint3 _kong_group_thread_id [[thread_position_in_threadgroup]], uint3 _kong_group_id [[threadgroup_position_in_grid]], uint _kong_group_index [[thread_index_in_threadgroup]], uint3 _kong_dispatch_thread_id [[thread_position_in_grid]]", get_name(f->name));
+			for (uint8_t parameter_index = 1; parameter_index < f->parameters_size; ++parameter_index) {
+				*offset += sprintf(&code[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[0].type), parameter_ids[0]);
+			}
+			*offset += sprintf(&code[*offset], "%s) {\n", buffers);
+		}
 		else {
 			*offset += sprintf(&code[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
@@ -392,6 +410,76 @@ static void write_functions(char *code, size_t *offset) {
 
 				break;
 			}
+			case OPCODE_STORE_MEMBER:
+			case OPCODE_SUB_AND_STORE_MEMBER:
+			case OPCODE_ADD_AND_STORE_MEMBER:
+			case OPCODE_DIVIDE_AND_STORE_MEMBER:
+			case OPCODE_MULTIPLY_AND_STORE_MEMBER: {
+				indent(code, offset, indentation);
+				
+				char to_name[256];
+				var_name(o->op_store_member.to, to_name);
+
+				*offset += sprintf(&code[*offset], "%s", to_name);
+				
+				type *s = get_type(o->op_store_member.to.type.type);
+				
+				for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
+					bool is_array = s->array_size > 0;
+					
+					if (is_array) {
+						if (o->op_store_member.dynamic_member[i]) {
+							*offset += sprintf(&code[*offset], "[_%" PRIu64 "]", o->op_store_member.dynamic_member_indices[i].index);
+						}
+						else {
+							*offset += sprintf(&code[*offset], "[%i]", o->op_store_member.static_member_indices[i]);
+						}
+						
+						s = get_type(s->base);
+					}
+					else if (is_texture(o->op_store_member.to.type.type)) {
+						if (o->op_store_member.dynamic_member[i]) {
+							*offset += sprintf(&code[*offset], ".write(_%" PRIu64 ", _%" PRIu64 ");\n", o->op_store_member.from.index, o->op_store_member.dynamic_member_indices[i].index);
+						}
+						else {
+							*offset += sprintf(&code[*offset], ".write(_%" PRIu64 ", %i);\n", o->op_store_member.from.index, o->op_store_member.static_member_indices[i]);
+						}
+					}
+					else {
+						debug_context context = {0};
+						check(!o->op_store_member.dynamic_member[i], context, "Unexpected dynamic member");
+						check(o->op_store_member.static_member_indices[i] < s->members.size, context, "Member index out of bounds");
+						
+						*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_store_member.static_member_indices[i]].name));
+						
+						s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
+					}
+				}
+				
+				if (!is_texture(o->op_store_member.to.type.type)) {
+					switch (o->type) {
+						case OPCODE_STORE_MEMBER:
+							*offset += sprintf(&code[*offset], " = _%" PRIu64 ";\n", o->op_store_member.from.index);
+							break;
+						case OPCODE_SUB_AND_STORE_MEMBER:
+							*offset += sprintf(&code[*offset], " -= _%" PRIu64 ";\n", o->op_store_member.from.index);
+							break;
+						case OPCODE_ADD_AND_STORE_MEMBER:
+							*offset += sprintf(&code[*offset], " += _%" PRIu64 ";\n", o->op_store_member.from.index);
+							break;
+						case OPCODE_DIVIDE_AND_STORE_MEMBER:
+							*offset += sprintf(&code[*offset], " /= _%" PRIu64 ";\n", o->op_store_member.from.index);
+							break;
+						case OPCODE_MULTIPLY_AND_STORE_MEMBER:
+							*offset += sprintf(&code[*offset], " *= _%" PRIu64 ";\n", o->op_store_member.from.index);
+							break;
+						default:
+							assert(false);
+							break;
+					}
+				}
+				break;
+			}
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
 					if (is_fragment_function(i) && get_type(f->return_type.type)->array_size > 0) {
@@ -433,10 +521,11 @@ static void write_functions(char *code, size_t *offset) {
 			}
 			case OPCODE_CALL: {
 				debug_context context = {0};
+
+				indent(code, offset, indentation);
+
 				if (o->op_call.func == add_name("sample")) {
 					check(o->op_call.parameters_size == 3, context, "sample requires three parameters");
-					
-					indent(code, offset, indentation);
 					
 					if (o->op_call.parameters[0].type.type == tex2darray_type_id) {
 						*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = argument_buffer0._%" PRIu64 ".sample(argument_buffer0._%" PRIu64 ", _%" PRIu64 ".xy, _%" PRIu64 ".z);\n",
@@ -451,15 +540,32 @@ static void write_functions(char *code, size_t *offset) {
 				}
 				else if (o->op_call.func == add_name("sample_lod")) {
 					check(o->op_call.parameters_size == 4, context, "sample_lod requires four parameters");
-					indent(code, offset, indentation);
+
 					*offset +=
 					    sprintf(&code[*offset],
 					            "%s _%" PRIu64 " = argument_buffer0._%" PRIu64 ".sample(argument_buffer0._%" PRIu64 ", _%" PRIu64 ", level(_%" PRIu64 "));\n",
 					            type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index,
 					            o->op_call.parameters[2].index, o->op_call.parameters[3].index);
 				}
+				else if (o->op_call.func == add_name("group_id")) {
+					check(o->op_call.parameters_size == 0, context, "group_id can not have a parameter");
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _kong_group_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+				}
+				else if (o->op_call.func == add_name("group_thread_id")) {
+					check(o->op_call.parameters_size == 0, context, "group_thread_id can not have a parameter");
+					*offset +=
+						sprintf(&code[*offset], "%s _%" PRIu64 " = _kong_group_thread_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+				}
+				else if (o->op_call.func == add_name("dispatch_thread_id")) {
+					check(o->op_call.parameters_size == 0, context, "dispatch_thread_id can not have a parameter");
+					*offset +=
+						sprintf(&code[*offset], "%s _%" PRIu64 " = _kong_dispatch_thread_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+				}
+				else if (o->op_call.func == add_name("group_index")) {
+					check(o->op_call.parameters_size == 0, context, "group_index can not have a parameter");
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _kong_group_index;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+				}
 				else {
-					indent(code, offset, indentation);
 					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index,
 					                   function_string(o->op_call.func));
 					if (o->op_call.parameters_size > 0) {
@@ -570,6 +676,14 @@ void metal_export(char *directory) {
 					fragment_inputs_size += 1;
 				}
 			}
+		}
+	}
+	
+	for (function_id i = 0; get_function(i) != NULL; ++i) {
+		function *f = get_function(i);
+		if (has_attribute(&f->attributes, add_name("compute"))) {
+			compute_functions[compute_functions_size] = i;
+			compute_functions_size += 1;
 		}
 	}
 
