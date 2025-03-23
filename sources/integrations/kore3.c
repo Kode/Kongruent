@@ -1878,14 +1878,15 @@ void kore3_export(char *directory, api_kind api) {
 						if (format != NULL) {
 							debug_context context = {0};
 							check(format->value.kind == TOKEN_IDENTIFIER, context, "format expects an identifier");
-							
+
 							if (strcmp(get_name(format->value.identifier), "framebuffer_format") == 0) {
-								fprintf(output, "\t%s_parameters.fragment.targets[%i].format = kore_gpu_device_framebuffer_format(device);\n", get_name(t->name), i);
+								fprintf(output, "\t%s_parameters.fragment.targets[%i].format = kore_gpu_device_framebuffer_format(device);\n",
+								        get_name(t->name), i);
 							}
 							else {
 								global *g = find_global(format->value.identifier);
 								fprintf(output, "\t%s_parameters.fragment.targets[%i].format = %s;\n", get_name(t->name), i,
-										convert_texture_format(g->value.value.ints[0]));
+								        convert_texture_format(g->value.value.ints[0]));
 							}
 						}
 						else {
