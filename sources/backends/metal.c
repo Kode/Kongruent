@@ -220,6 +220,24 @@ static void write_argument_buffers(char *code, size_t *offset) {
 	}
 }
 
+static void var_name(variable var, char* output_name) {
+	global *g = NULL;
+	
+	for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
+		if (get_global(j)->var_index == var.index) {
+			g = get_global(j);
+			break;
+		}
+	}
+	
+	if (g == NULL || has_attribute(&g->attributes, add_name("indexed"))) {
+		sprintf(output_name, "_%" PRIu64, var.index);
+	}
+	else {
+		sprintf(output_name, "attribute_buffer0._%" PRIu64, var.index);
+	}
+}
+
 static void write_functions(char *code, size_t *offset) {
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
@@ -248,6 +266,7 @@ static void write_functions(char *code, size_t *offset) {
 
 		char buffers[1024];
 		strcpy(buffers, "");
+		
 		if (is_vertex_function(i) || is_fragment_function(i)) {
 			global_array globals = {0};
 			find_referenced_globals(f, &globals);
@@ -261,6 +280,25 @@ static void write_functions(char *code, size_t *offset) {
 
 				buffers_offset +=
 				    sprintf(&buffers[buffers_offset], ", constant %s& argument_buffer%zu [[buffer(%zu)]]", get_name(set->name), set_index, set_index + 1);
+			}
+			
+			size_t buffer_index = set_group->size + 1;
+			
+			for (size_t set_index = 0; set_index < set_group->size; ++set_index) {
+				descriptor_set *set = set_group->values[set_index];
+				
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g = get_global(set->globals.globals[global_index]);
+					if (has_attribute(&g->attributes, add_name("indexed"))) {
+						char t[256];
+						type_name(g->type, t);
+						
+						buffers_offset +=
+						sprintf(&buffers[buffers_offset], ", constant %s *_%" PRIu64 " [[buffer(%zu)]]", t, g->var_index, buffer_index);
+						
+						buffer_index += 1;
+					}
+				}
 			}
 		}
 
@@ -316,28 +354,26 @@ static void write_functions(char *code, size_t *offset) {
 			opcode *o = (opcode *)&data[index];
 			switch (o->type) {
 			case OPCODE_LOAD_MEMBER: {
-				uint64_t global_var_index = 0;
+				global *g = NULL;
+				
 				for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
-					global *g = get_global(j);
-					if (o->op_load_member.from.index == g->var_index) {
-						global_var_index = g->var_index;
+					if (o->op_load_member.from.index == get_global(j)->var_index) {
+						g = get_global(j);
 						break;
 					}
 				}
+				
+				char from_name[256];
+				var_name(o->op_load_member.from, from_name);
 
 				indent(code, offset, indentation);
-				if (global_var_index != 0) {
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = argument_buffer0._%" PRIu64, type_string(o->op_load_member.to.type.type),
-					                   o->op_load_member.to.index, o->op_load_member.from.index);
-				}
-				else {
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
-					                   o->op_load_member.from.index);
-				}
+				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %s", type_string(o->op_load_member.to.type.type),
+									   o->op_load_member.to.index, from_name);
+
 				type *s = get_type(o->op_load_member.member_parent_type);
 
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
-					if (i == 0 && global_var_index != 0) {
+					if (i == 0 && g != NULL) {
 						*offset += sprintf(&code[*offset], "->%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
 					}
 					else {

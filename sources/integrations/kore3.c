@@ -1217,33 +1217,46 @@ void kore3_export(char *directory, api_kind api) {
 			if (api == API_METAL) {
 				fprintf(output, "\tid<MTLDevice> metal_device = (__bridge id<MTLDevice>)device->metal.device;\n\n");
 
+				size_t index = 0;
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					global *g = get_global(set->globals.globals[global_index]);
 
-					if (!get_type(g->type)->built_in) {
-						fprintf(output, "\tMTLArgumentDescriptor* descriptor%zu = [MTLArgumentDescriptor argumentDescriptor];\n", global_index);
-						fprintf(output, "\tdescriptor%zu.index = %zu;\n", global_index, global_index);
-						fprintf(output, "\tdescriptor%zu.dataType = MTLDataTypePointer;\n\n", global_index);
+					if (!get_type(g->type)->built_in && !has_attribute(&g->attributes, add_name("indexed"))) {
+						fprintf(output, "\tMTLArgumentDescriptor* descriptor%zu = [MTLArgumentDescriptor argumentDescriptor];\n", index);
+						fprintf(output, "\tdescriptor%zu.index = %zu;\n", index, index);
+						fprintf(output, "\tdescriptor%zu.dataType = MTLDataTypePointer;\n\n", index);
+						index += 1;
 					}
 					else if (is_texture(g->type)) {
-						fprintf(output, "\tMTLArgumentDescriptor* descriptor%zu = [MTLArgumentDescriptor argumentDescriptor];\n", global_index);
-						fprintf(output, "\tdescriptor%zu.index = %zu;\n", global_index, global_index);
-						fprintf(output, "\tdescriptor%zu.dataType = MTLDataTypeTexture;\n\n", global_index);
+						fprintf(output, "\tMTLArgumentDescriptor* descriptor%zu = [MTLArgumentDescriptor argumentDescriptor];\n", index);
+						fprintf(output, "\tdescriptor%zu.index = %zu;\n", index, index);
+						fprintf(output, "\tdescriptor%zu.dataType = MTLDataTypeTexture;\n\n", index);
+						index += 1;
 					}
 					else if (is_sampler(g->type)) {
-						fprintf(output, "\tMTLArgumentDescriptor* descriptor%zu = [MTLArgumentDescriptor argumentDescriptor];\n", global_index);
-						fprintf(output, "\tdescriptor%zu.index = %zu;\n", global_index, global_index);
-						fprintf(output, "\tdescriptor%zu.dataType = MTLDataTypeSampler;\n\n", global_index);
+						fprintf(output, "\tMTLArgumentDescriptor* descriptor%zu = [MTLArgumentDescriptor argumentDescriptor];\n", index);
+						fprintf(output, "\tdescriptor%zu.index = %zu;\n", index, index);
+						fprintf(output, "\tdescriptor%zu.dataType = MTLDataTypeSampler;\n\n", index);
+						index += 1;
 					}
 				}
 
 				fprintf(output, "\tid<MTLArgumentEncoder> argument_encoder = [metal_device newArgumentEncoderWithArguments: @[");
+
+				bool first = true;
+				index = 0;
+				
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
-					if (global_index == 0) {
-						fprintf(output, "descriptor%zu", global_index);
-					}
-					else {
-						fprintf(output, ", descriptor%zu", global_index);
+					global *g = get_global(set->globals.globals[global_index]);
+					if (!has_attribute(&g->attributes, add_name("indexed"))) {
+						if (first) {
+							fprintf(output, "descriptor%zu", index);
+							first = false;
+						}
+						else {
+							fprintf(output, ", descriptor%zu", index);
+						}
+						index += 1;
 					}
 				}
 				fprintf(output, "]];\n\n");
@@ -1253,26 +1266,29 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, "\tid<MTLBuffer> metal_argument_buffer = (__bridge id<MTLBuffer>)set->set.argument_buffer.metal.buffer;\n\n");
 				fprintf(output, "\t[argument_encoder setArgumentBuffer:metal_argument_buffer offset:0];\n\n");
 
+				index = 0;
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					global *g = get_global(set->globals.globals[global_index]);
 
 					fprintf(output, "\t{\n");
 
-					if (!get_type(g->type)->built_in) {
+					if (!get_type(g->type)->built_in && !has_attribute(&g->attributes, add_name("indexed"))) {
 						fprintf(output, "\t\tid<MTLBuffer> buffer = (__bridge id<MTLBuffer>)parameters->%s->metal.buffer;\n", get_name(g->name));
-						fprintf(output, "\t\t[argument_encoder setBuffer: buffer offset: 0 atIndex: %zu];\n", global_index);
-						fprintf(output, "\t\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+						fprintf(output, "\t\t[argument_encoder setBuffer: buffer offset: 0 atIndex: %zu];\n", index);
+						index += 1;
 					}
 					else if (is_texture(g->type)) {
 						fprintf(output, "\t\tid<MTLTexture> texture = (__bridge id<MTLTexture>)parameters->%s.texture->metal.texture;\n", get_name(g->name));
-						fprintf(output, "\t\t[argument_encoder setTexture: texture atIndex: %zu];\n", global_index);
-						fprintf(output, "\t\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+						fprintf(output, "\t\t[argument_encoder setTexture: texture atIndex: %zu];\n", index);
+						index += 1;
 					}
 					else if (is_sampler(g->type)) {
 						fprintf(output, "\t\tid<MTLSamplerState> sampler = (__bridge id<MTLSamplerState>)parameters->%s->metal.sampler;\n", get_name(g->name));
-						fprintf(output, "\t\t[argument_encoder setSamplerState: sampler atIndex: %zu];\n", global_index);
-						fprintf(output, "\t\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+						fprintf(output, "\t\t[argument_encoder setSamplerState: sampler atIndex: %zu];\n", index);
+						index += 1;
 					}
+					
+					fprintf(output, "\t\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 
 					fprintf(output, "\t}\n\n");
 				}
@@ -1457,7 +1473,10 @@ void kore3_export(char *directory, api_kind api) {
 				if (!get_type(g->type)->built_in) {
 					if (has_attribute(&g->attributes, add_name("indexed"))) {
 						if (api == API_VULKAN || api == API_METAL) {
-							fprintf(output, "\tkore_vulkan_descriptor_set_prepare_buffer(list, set->%s);\n", get_name(g->name));
+							fprintf(output,
+									"\tkore_%s_descriptor_set_prepare_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), "
+									"align_pow2((int)%i, 256));\n",
+									api_short, get_name(g->name), get_name(g->name), struct_size(g->type), struct_size(g->type));
 						}
 						else if (api == API_DIRECT3D12) {
 							fprintf(output,
@@ -1552,7 +1571,14 @@ void kore3_export(char *directory, api_kind api) {
 				}
 
 				if (api == API_METAL) {
-					fprintf(output, "\n\tkore_metal_command_list_set_descriptor_set(list, &set->set);\n");
+					fprintf(output, "\n\tkore_metal_command_list_set_descriptor_set(list, &set->set");
+					if (dynamic_count > 0) {
+						fprintf(output, ", dynamic_buffers, dynamic_offsets, dynamic_sizes, %u", dynamic_count);
+					}
+					else {
+						fprintf(output, ", NULL, NULL, NULL, 0");
+					}
+					fprintf(output, ");\n");
 				}
 				else {
 					fprintf(output, "\n\tkore_%s_command_list_set_descriptor_table(list, %s_table_index, &set->set", api_short, get_name(set->name));
