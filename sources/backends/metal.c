@@ -177,18 +177,32 @@ static void write_argument_buffers(char *code, size_t *offset) {
 				error(context, "More than one root constants struct found");
 			}
 
-			uint32_t  size = 0;
-			global_id g    = set->globals.globals[0];
+			global_id g_id     = set->globals.globals[0];
+			global   *g        = get_global(g_id);
 
-			if (get_type(get_global(g)->type)->built_in) {
-				debug_context context = {0};
-				error(context, "Unsupported type for a root constant");
+			if (!get_type(g->type)->built_in) {
+				if (has_attribute(&g->attributes, add_name("indexed"))) {
+					assert(false);
+				}
+				else {
+					type *t = get_type(g->type);
+					
+					for (size_t member_index = 0; member_index < t->members.size; ++member_index) {
+						
+						char name[256];
+						type_name(t->members.m[member_index].type.type, name);
+					
+						*offset += sprintf(&code[*offset], "constant %s %s_%s [[function_constant(%zu)]];\n", name, get_name(set->name), get_name(t->members.m[member_index].name),
+										   member_index);
+					}
+				}
 			}
-
-			size += struct_size(get_global(g)->type);
-
-			*offset += sprintf(&code[*offset], "\\\n, RootConstants(num32BitConstants=%i)", size / 4);
-
+			else {
+				assert(false);
+			}
+			
+			*offset += sprintf(&code[*offset], "\n");
+			
 			continue;
 		}
 
@@ -294,14 +308,19 @@ static void write_functions(char *code, size_t *offset) {
 
 			descriptor_set_group *set_group = get_descriptor_set_group(f->descriptor_set_group_index);
 
+			size_t buffer_index = 0;
+
 			for (size_t set_index = 0; set_index < set_group->size; ++set_index) {
 				descriptor_set *set = set_group->values[set_index];
 
+				if (set->name == add_name("root_constants")) {
+					continue;
+				}
+				
 				buffers_offset +=
-				    sprintf(&buffers[buffers_offset], ", constant %s& argument_buffer%zu [[buffer(%zu)]]", get_name(set->name), set_index, set_index + 1);
+				    sprintf(&buffers[buffers_offset], ", constant %s& argument_buffer%zu [[buffer(%zu)]]", get_name(set->name), buffer_index, buffer_index + 1);
+				buffer_index += 1;
 			}
-
-			size_t buffer_index = set_group->size + 1;
 
 			for (size_t set_index = 0; set_index < set_group->size; ++set_index) {
 				descriptor_set *set = set_group->values[set_index];
@@ -312,7 +331,7 @@ static void write_functions(char *code, size_t *offset) {
 						char t[256];
 						type_name(g->type, t);
 
-						buffers_offset += sprintf(&buffers[buffers_offset], ", constant %s *_%" PRIu64 " [[buffer(%zu)]]", t, g->var_index, buffer_index);
+						buffers_offset += sprintf(&buffers[buffers_offset], ", constant %s *_%" PRIu64 " [[buffer(%zu)]]", t, g->var_index, buffer_index + 1);
 
 						buffer_index += 1;
 					}
