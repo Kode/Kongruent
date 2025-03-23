@@ -1520,11 +1520,16 @@ void kore3_export(char *directory, api_kind api) {
 					}
 					else {
 						if (writable) {
-							fprintf(output, "\tkore_%s_descriptor_set_prepare_uav_texture(list, &set->%s);\n", api_short, get_name(g->name));
+							if (api == API_VULKAN || api == API_METAL) {
+								fprintf(output, "\tkore_%s_descriptor_set_prepare_texture(list, &set->%s, true);\n", api_short, get_name(g->name));
+							}
+							else {
+								fprintf(output, "\tkore_%s_descriptor_set_prepare_uav_texture(list, &set->%s);\n", api_short, get_name(g->name));
+							}
 						}
 						else {
 							if (api == API_VULKAN || api == API_METAL) {
-								fprintf(output, "\tkore_%s_descriptor_set_prepare_texture(list, &set->%s);\n", api_short, get_name(g->name));
+								fprintf(output, "\tkore_%s_descriptor_set_prepare_texture(list, &set->%s, false);\n", api_short, get_name(g->name));
 							}
 							else {
 								fprintf(output, "\tkore_%s_descriptor_set_prepare_srv_texture(list, &set->%s);\n", api_short, get_name(g->name));
@@ -1631,7 +1636,7 @@ void kore3_export(char *directory, api_kind api) {
 			if (has_attribute(&f->attributes, add_name("compute"))) {
 				fprintf(output, "static kore_%s_compute_pipeline %s;\n", api_short, get_name(f->name));
 				fprintf(output, "void kong_set_compute_shader_%s(kore_gpu_command_list *list) {\n", get_name(f->name));
-				fprintf(output, "\tkore_d3d12_command_list_set_compute_pipeline(list, &%s);\n", get_name(f->name));
+				fprintf(output, "\tkore_%s_command_list_set_compute_pipeline(list, &%s);\n", api_short, get_name(f->name));
 
 				descriptor_set_group *group = find_descriptor_set_group_for_function(f);
 				for (size_t group_index = 0; group_index < group->size; ++group_index) {
@@ -2019,8 +2024,13 @@ void kore3_export(char *directory, api_kind api) {
 			function *f = get_function(i);
 			if (has_attribute(&f->attributes, add_name("compute"))) {
 				fprintf(output, "\tkore_%s_compute_pipeline_parameters %s_parameters;\n", api_short, get_name(f->name));
-				fprintf(output, "\t%s_parameters.shader.data = %s_code;\n", get_name(f->name), get_name(f->name));
-				fprintf(output, "\t%s_parameters.shader.size = %s_code_size;\n", get_name(f->name), get_name(f->name));
+				if (api == API_METAL || api == API_WEBGPU) {
+					fprintf(output, "\t%s_parameters.shader.function_name = \"%s\";\n", get_name(f->name), get_name(f->name));
+				}
+				else {
+					fprintf(output, "\t%s_parameters.shader.data = %s_code;\n", get_name(f->name), get_name(f->name));
+					fprintf(output, "\t%s_parameters.shader.size = %s_code_size;\n", get_name(f->name), get_name(f->name));
+				}
 				fprintf(output, "\tkore_%s_compute_pipeline_init(&device->%s, &%s, &%s_parameters);\n", api_short, api_short, get_name(f->name),
 				        get_name(f->name));
 			}
