@@ -1244,8 +1244,8 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, "\tid<MTLArgumentEncoder> argument_encoder = [metal_device newArgumentEncoderWithArguments: @[");
 
 				bool first = true;
-				index = 0;
-				
+				index      = 0;
+
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					global *g = get_global(set->globals.globals[global_index]);
 					if (!has_attribute(&g->attributes, add_name("indexed"))) {
@@ -1287,7 +1287,7 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\t\t[argument_encoder setSamplerState: sampler atIndex: %zu];\n", index);
 						index += 1;
 					}
-					
+
 					fprintf(output, "\t\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 
 					fprintf(output, "\t}\n\n");
@@ -1474,9 +1474,9 @@ void kore3_export(char *directory, api_kind api) {
 					if (has_attribute(&g->attributes, add_name("indexed"))) {
 						if (api == API_VULKAN || api == API_METAL) {
 							fprintf(output,
-									"\tkore_%s_descriptor_set_prepare_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), "
-									"align_pow2((int)%i, 256));\n",
-									api_short, get_name(g->name), get_name(g->name), struct_size(g->type), struct_size(g->type));
+							        "\tkore_%s_descriptor_set_prepare_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), "
+							        "align_pow2((int)%i, 256));\n",
+							        api_short, get_name(g->name), get_name(g->name), struct_size(g->type), struct_size(g->type));
 						}
 						else if (api == API_DIRECT3D12) {
 							fprintf(output,
