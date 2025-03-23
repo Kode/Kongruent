@@ -634,6 +634,8 @@ void functions_init(void) {
 	add_func_float3_float3_float3("reflect");
 	add_func_uint("primitive_index");
 	add_func_float3_float3("abs");
+	add_func_float_float_float("step");
+	add_func_float_float_float("smoothstep");
 	add_func_float_float3_float3("dot");
 	add_func_float3_float3_float3("cross");
 	add_func_float3_float3("saturate3");
