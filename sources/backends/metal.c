@@ -177,8 +177,8 @@ static void write_argument_buffers(char *code, size_t *offset) {
 				error(context, "More than one root constants struct found");
 			}
 
-			global_id g_id     = set->globals.globals[0];
-			global   *g        = get_global(g_id);
+			global_id g_id = set->globals.globals[0];
+			global   *g    = get_global(g_id);
 
 			if (!get_type(g->type)->built_in) {
 				if (has_attribute(&g->attributes, add_name("indexed"))) {
@@ -186,23 +186,23 @@ static void write_argument_buffers(char *code, size_t *offset) {
 				}
 				else {
 					type *t = get_type(g->type);
-					
+
 					for (size_t member_index = 0; member_index < t->members.size; ++member_index) {
-						
+
 						char name[256];
 						type_name(t->members.m[member_index].type.type, name);
-					
-						*offset += sprintf(&code[*offset], "constant %s %s_%s [[function_constant(%zu)]];\n", name, get_name(g->name), get_name(t->members.m[member_index].name),
-										   member_index);
+
+						*offset += sprintf(&code[*offset], "constant %s %s_%s [[function_constant(%zu)]];\n", name, get_name(g->name),
+						                   get_name(t->members.m[member_index].name), member_index);
 					}
 				}
 			}
 			else {
 				assert(false);
 			}
-			
+
 			*offset += sprintf(&code[*offset], "\n");
-			
+
 			continue;
 		}
 
@@ -273,7 +273,7 @@ static bool var_name(variable var, char *output_name) {
 	else {
 		sprintf(output_name, "argument_buffer0._%" PRIu64, var.index);
 	}
-	
+
 	return false;
 }
 
@@ -322,7 +322,7 @@ static void write_functions(char *code, size_t *offset) {
 				if (set->name == add_name("root_constants")) {
 					continue;
 				}
-				
+
 				buffers_offset +=
 				    sprintf(&buffers[buffers_offset], ", constant %s& argument_buffer%zu [[buffer(%zu)]]", get_name(set->name), buffer_index, buffer_index + 1);
 				buffer_index += 1;
