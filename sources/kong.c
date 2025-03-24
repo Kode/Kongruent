@@ -95,12 +95,11 @@ int main(int argc, char **argv) {
 					else if (strcmp(&arg[2], "api") == 0) {
 						mode = MODE_API;
 					}
-					else if (strcmp(&arg[2], "integration")) {
+					else if (strcmp(&arg[2], "integration") == 0) {
 						mode = MODE_INTEGRATION;
 					}
 					else if (strcmp(&arg[2], "debug") == 0) {
 						debug = true;
-						return 0;
 					}
 					else if (strcmp(&arg[2], "help") == 0) {
 						help();
