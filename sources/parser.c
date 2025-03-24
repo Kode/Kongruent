@@ -496,7 +496,7 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		advance_state(state);
 
 		statement *statement = statement_allocate();
-		statement->kind = STATEMENT_DISCARD;
+		statement->kind      = STATEMENT_DISCARD;
 
 		return statement;
 	}
