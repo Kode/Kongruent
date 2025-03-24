@@ -74,6 +74,7 @@ int main(int argc, char **argv) {
 	char            *platform    = NULL;
 	api_kind         api         = API_DEFAULT;
 	integration_kind integration = INTEGRATION_KORE3;
+	bool             debug       = false;
 	char            *output      = NULL;
 
 	for (int i = 1; i < argc; ++i) {
@@ -96,6 +97,10 @@ int main(int argc, char **argv) {
 					}
 					else if (strcmp(&arg[2], "integration")) {
 						mode = MODE_INTEGRATION;
+					}
+					else if (strcmp(&arg[2], "debug") == 0) {
+						debug = true;
+						return 0;
 					}
 					else if (strcmp(&arg[2], "help") == 0) {
 						help();
@@ -311,7 +316,7 @@ int main(int argc, char **argv) {
 		wgsl_export(output);
 		break;
 	case API_VULKAN: {
-		spirv_export(output);
+		spirv_export(output, debug);
 		break;
 	}
 	default: {

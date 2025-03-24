@@ -65,7 +65,7 @@ static void write_buffer(FILE *file, uint8_t *output, size_t output_size) {
 }
 
 static void write_bytecode(char *directory, const char *filename, const char *name, instructions_buffer *header, instructions_buffer *decorations,
-                           instructions_buffer *constants, instructions_buffer *instructions) {
+                           instructions_buffer *constants, instructions_buffer *instructions, bool debug) {
 	uint8_t *output_header      = (uint8_t *)header->instructions;
 	size_t   output_header_size = header->offset * 4;
 
@@ -109,7 +109,10 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 	}
 
 #ifndef NDEBUG
-	{
+	debug = true;
+#endif
+
+	if (debug) {
 		sprintf(full_filename, "%s/%s.spirv", directory, filename);
 
 		FILE *file = fopen(full_filename, "wb");
@@ -133,7 +136,6 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 			error(context, "spirv_val check of %s failed.", filename);
 		}
 	}
-#endif
 }
 
 typedef enum spirv_opcode {
@@ -461,7 +463,7 @@ static struct {
 static spirv_id convert_type_to_spirv_id(type_id type) {
 	complex_type ct;
 	ct.type    = type;
-	ct.pointer = (uint16_t) false;
+	ct.pointer = (uint16_t)false;
 	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 
 	spirv_id spirv_index = hmget(type_map, ct);
@@ -475,7 +477,7 @@ static spirv_id convert_type_to_spirv_id(type_id type) {
 static spirv_id convert_pointer_type_to_spirv_id(type_id type, storage_class storage) {
 	complex_type ct;
 	ct.type    = type;
-	ct.pointer = (uint16_t) true;
+	ct.pointer = (uint16_t)true;
 	ct.storage = (uint16_t)storage;
 
 	spirv_id spirv_index = hmget(type_map, ct);
@@ -490,7 +492,7 @@ static spirv_id output_struct_pointer_type = {0};
 
 static void write_base_type(instructions_buffer *constants_block, type_id type, spirv_id spirv_type) {
 	complex_type ct;
-	ct.pointer = (uint16_t) false;
+	ct.pointer = (uint16_t)false;
 	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 	ct.type    = type;
 
@@ -503,7 +505,7 @@ static void write_base_types(instructions_buffer *constants_block) {
 	void_function_type = write_type_function(constants_block, void_type, NULL, 0);
 
 	complex_type ct;
-	ct.pointer = (uint16_t) false;
+	ct.pointer = (uint16_t)false;
 	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 
 	spirv_float_type = write_type_float(constants_block, 32);
@@ -554,7 +556,7 @@ static void write_types(instructions_buffer *constants, function *main) {
 
 			complex_type ct;
 			ct.type    = types[i];
-			ct.pointer = (uint16_t) false;
+			ct.pointer = (uint16_t)false;
 			ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 			hmput(type_map, ct, struct_type);
 		}
@@ -1233,14 +1235,14 @@ static void write_globals(instructions_buffer *instructions_block, function *mai
 
 			complex_type ct;
 			ct.type    = g->type;
-			ct.pointer = (uint16_t) false;
+			ct.pointer = (uint16_t)false;
 			ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 			hmput(type_map, ct, struct_type);
 
 			spirv_id struct_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM, struct_type);
 
 			ct.type    = g->type;
-			ct.pointer = (uint16_t) true;
+			ct.pointer = (uint16_t)true;
 			ct.storage = (uint16_t)STORAGE_CLASS_UNIFORM;
 			hmput(type_map, ct, struct_pointer_type);
 
@@ -1293,7 +1295,7 @@ void init_maps(void) {
 	init_float_constants();
 }
 
-static void spirv_export_vertex(char *directory, function *main) {
+static void spirv_export_vertex(char *directory, function *main, bool debug) {
 	init_maps();
 
 	instructions_buffer instructions = {0};
@@ -1389,10 +1391,10 @@ static void spirv_export_vertex(char *directory, function *main) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(directory, filename, var_name, &header, &decorations, &constants, &instructions);
+	write_bytecode(directory, filename, var_name, &header, &decorations, &constants, &instructions, debug);
 }
 
-static void spirv_export_fragment(char *directory, function *main) {
+static void spirv_export_fragment(char *directory, function *main, bool debug) {
 	init_maps();
 
 	instructions_buffer instructions = {0};
@@ -1457,10 +1459,10 @@ static void spirv_export_fragment(char *directory, function *main) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(directory, filename, var_name, &header, &decorations, &constants, &instructions);
+	write_bytecode(directory, filename, var_name, &header, &decorations, &constants, &instructions, debug);
 }
 
-void spirv_export(char *directory) {
+void spirv_export(char *directory, bool debug) {
 	int register_index = 0;
 
 	memset(global_register_indices, 0, sizeof(global_register_indices));
@@ -1541,11 +1543,11 @@ void spirv_export(char *directory) {
 
 	for (size_t i = 0; i < vertex_shaders_size; ++i) {
 		input_vars_count = 0;
-		spirv_export_vertex(directory, vertex_shaders[i]);
+		spirv_export_vertex(directory, vertex_shaders[i], debug);
 	}
 
 	for (size_t i = 0; i < fragment_shaders_size; ++i) {
 		input_vars_count = 0;
-		spirv_export_fragment(directory, fragment_shaders[i]);
+		spirv_export_fragment(directory, fragment_shaders[i], debug);
 	}
 }
