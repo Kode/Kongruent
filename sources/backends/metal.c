@@ -177,32 +177,6 @@ static void write_argument_buffers(char *code, size_t *offset) {
 				error(context, "More than one root constants struct found");
 			}
 
-			global_id g_id     = set->globals.globals[0];
-			global   *g        = get_global(g_id);
-
-			if (!get_type(g->type)->built_in) {
-				if (has_attribute(&g->attributes, add_name("indexed"))) {
-					assert(false);
-				}
-				else {
-					type *t = get_type(g->type);
-					
-					for (size_t member_index = 0; member_index < t->members.size; ++member_index) {
-						
-						char name[256];
-						type_name(t->members.m[member_index].type.type, name);
-					
-						*offset += sprintf(&code[*offset], "constant %s %s_%s [[function_constant(%zu)]];\n", name, get_name(g->name), get_name(t->members.m[member_index].name),
-										   member_index);
-					}
-				}
-			}
-			else {
-				assert(false);
-			}
-			
-			*offset += sprintf(&code[*offset], "\n");
-			
 			continue;
 		}
 
@@ -267,7 +241,7 @@ static bool var_name(variable var, char *output_name) {
 		sprintf(output_name, "_%" PRIu64, var.index);
 	}
 	else if (g->sets[0]->name == add_name("root_constants")) {
-		sprintf(output_name, "%s", get_name(g->name));
+		sprintf(output_name, "root_constants");
 		return true;
 	}
 	else {
@@ -314,17 +288,27 @@ static void write_functions(char *code, size_t *offset) {
 
 			descriptor_set_group *set_group = get_descriptor_set_group(f->descriptor_set_group_index);
 
-			size_t buffer_index = 0;
+			size_t buffer_index = 1;
+			size_t argument_buffer_index = 0;
 
 			for (size_t set_index = 0; set_index < set_group->size; ++set_index) {
 				descriptor_set *set = set_group->values[set_index];
-
+				
 				if (set->name == add_name("root_constants")) {
-					continue;
+					global *g = get_global(set->globals.globals[0]);
+					
+					char name[256];
+					type_name(g->type, name);
+					
+					buffers_offset +=
+					sprintf(&buffers[buffers_offset], ", constant %s& root_constants [[buffer(%zu)]]", name, buffer_index);
+				}
+				else {
+					buffers_offset +=
+					sprintf(&buffers[buffers_offset], ", constant %s& argument_buffer%zu [[buffer(%zu)]]", get_name(set->name), argument_buffer_index, buffer_index);
+					argument_buffer_index += 1;
 				}
 				
-				buffers_offset +=
-				    sprintf(&buffers[buffers_offset], ", constant %s& argument_buffer%zu [[buffer(%zu)]]", get_name(set->name), buffer_index, buffer_index + 1);
 				buffer_index += 1;
 			}
 
@@ -337,7 +321,7 @@ static void write_functions(char *code, size_t *offset) {
 						char t[256];
 						type_name(g->type, t);
 
-						buffers_offset += sprintf(&buffers[buffers_offset], ", constant %s *_%" PRIu64 " [[buffer(%zu)]]", t, g->var_index, buffer_index + 1);
+						buffers_offset += sprintf(&buffers[buffers_offset], ", constant %s *_%" PRIu64 " [[buffer(%zu)]]", t, g->var_index, buffer_index);
 
 						buffer_index += 1;
 					}
@@ -427,7 +411,7 @@ static void write_functions(char *code, size_t *offset) {
 
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
 					if (root_constant && i == 0) {
-						*offset += sprintf(&code[*offset], "_%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
+						*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
 					}
 					else if (is_texture(o->op_load_member.from.type.type) && i == 0) {
 						if (o->op_load_member.dynamic_member[i]) {
