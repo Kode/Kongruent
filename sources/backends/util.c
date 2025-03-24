@@ -3,6 +3,7 @@
 #include "../array.h"
 #include "../errors.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 void indent(char *code, size_t *offset, int indentation) {
@@ -95,8 +96,14 @@ bool execute_sync(const char *command, uint32_t *exit_code) {
 
 	return success != FALSE;
 #else
-	system(command);
-	*exit_code = 0;
+	int status = system(command);
+
+	if (status < 0) {
+		return false;
+	}
+
+	*exit_code = (uint32_t)status;
+
 	return true;
 #endif
 }
