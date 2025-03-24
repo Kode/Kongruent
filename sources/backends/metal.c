@@ -192,7 +192,7 @@ static void write_argument_buffers(char *code, size_t *offset) {
 						char name[256];
 						type_name(t->members.m[member_index].type.type, name);
 					
-						*offset += sprintf(&code[*offset], "constant %s %s_%s [[function_constant(%zu)]];\n", name, get_name(set->name), get_name(t->members.m[member_index].name),
+						*offset += sprintf(&code[*offset], "constant %s %s_%s [[function_constant(%zu)]];\n", name, get_name(g->name), get_name(t->members.m[member_index].name),
 										   member_index);
 					}
 				}
@@ -253,7 +253,7 @@ static void write_argument_buffers(char *code, size_t *offset) {
 	}
 }
 
-static void var_name(variable var, char *output_name) {
+static bool var_name(variable var, char *output_name) {
 	global *g = NULL;
 
 	for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
@@ -266,9 +266,15 @@ static void var_name(variable var, char *output_name) {
 	if (g == NULL || has_attribute(&g->attributes, add_name("indexed"))) {
 		sprintf(output_name, "_%" PRIu64, var.index);
 	}
+	else if (g->sets[0]->name == add_name("root_constants")) {
+		sprintf(output_name, "%s", get_name(g->name));
+		return true;
+	}
 	else {
 		sprintf(output_name, "argument_buffer0._%" PRIu64, var.index);
 	}
+	
+	return false;
 }
 
 static void write_functions(char *code, size_t *offset) {
@@ -412,7 +418,7 @@ static void write_functions(char *code, size_t *offset) {
 				}
 
 				char from_name[256];
-				var_name(o->op_load_member.from, from_name);
+				bool root_constant = var_name(o->op_load_member.from, from_name);
 
 				indent(code, offset, indentation);
 				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %s", type_string(o->op_load_member.to.type.type), o->op_load_member.to.index, from_name);
@@ -420,7 +426,26 @@ static void write_functions(char *code, size_t *offset) {
 				type *s = get_type(o->op_load_member.member_parent_type);
 
 				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
-					if (i == 0 && g != NULL) {
+					if (root_constant && i == 0) {
+						*offset += sprintf(&code[*offset], "_%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
+					}
+					else if (is_texture(o->op_load_member.from.type.type) && i == 0) {
+						if (o->op_load_member.dynamic_member[i]) {
+							*offset += sprintf(&code[*offset], ".read(_%" PRIu64 ")", o->op_load_member.dynamic_member_indices[i].index);
+						}
+						else {
+							*offset += sprintf(&code[*offset], "[%s]", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
+						}
+					}
+					else if (get_type(o->op_load_member.from.type.type)->array_size > 0 && i == 0) {
+						if (o->op_load_member.dynamic_member[i]) {
+							*offset += sprintf(&code[*offset], "[_%" PRIu64 "]", o->op_load_member.dynamic_member_indices[i].index);
+						}
+						else {
+							*offset += sprintf(&code[*offset], "[%s]", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
+						}
+					}
+					else if (i == 0 && g != NULL) {
 						*offset += sprintf(&code[*offset], "->%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
 					}
 					else {
