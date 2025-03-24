@@ -172,10 +172,7 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case MODE_API: {
-			if (strcmp(arg, "direct3d9") == 0) {
-				api = API_DIRECT3D9;
-			}
-			else if (strcmp(arg, "direct3d11") == 0) {
+			if (strcmp(arg, "direct3d11") == 0) {
 				api = API_DIRECT3D11;
 			}
 			else if (strcmp(arg, "direct3d12") == 0) {
@@ -301,7 +298,6 @@ int main(int argc, char **argv) {
 #endif
 
 	switch (api) {
-	case API_DIRECT3D9:
 	case API_DIRECT3D11:
 	case API_DIRECT3D12:
 		hlsl_export(output, api);

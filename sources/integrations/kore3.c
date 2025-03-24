@@ -539,11 +539,6 @@ void kore3_export(char *directory, api_kind api) {
 	char *api_long  = NULL;
 	char *api_caps  = NULL;
 	switch (api) {
-	case API_DIRECT3D9:
-		api_short = "d3d9";
-		api_long  = "direct3d9";
-		api_caps  = "D3D9";
-		break;
 	case API_DIRECT3D11:
 		api_short = "d3d11";
 		api_long  = "direct3d11";

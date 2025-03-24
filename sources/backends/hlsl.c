@@ -12,7 +12,6 @@
 #include "cstyle.h"
 #include "d3d11.h"
 #include "d3d12.h"
-#include "d3d9.h"
 #include "util.h"
 
 #include <assert.h>
@@ -1434,9 +1433,6 @@ static void hlsl_export_vertex(char *directory, api_kind d3d, function *main) {
 	size_t   output_size = 0;
 	int      result      = 1;
 	switch (d3d) {
-	case API_DIRECT3D9:
-		result = compile_hlsl_to_d3d9(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
-		break;
 	case API_DIRECT3D11:
 		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
 		break;
@@ -1543,9 +1539,6 @@ static void hlsl_export_fragment(char *directory, api_kind d3d, function *main) 
 	size_t   output_size = 0;
 	int      result      = 1;
 	switch (d3d) {
-	case API_DIRECT3D9:
-		result = compile_hlsl_to_d3d9(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
-		break;
 	case API_DIRECT3D11:
 		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
 		break;
@@ -1584,9 +1577,6 @@ static void hlsl_export_compute(char *directory, api_kind d3d, function *main) {
 	size_t   output_size = 0;
 	int      result      = 1;
 	switch (d3d) {
-	case API_DIRECT3D9:
-		error(context, "Compute shaders are not supported in Direct3D 9");
-		break;
 	case API_DIRECT3D11:
 		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_COMPUTE, false);
 		break;
