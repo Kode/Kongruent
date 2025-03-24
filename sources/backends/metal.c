@@ -247,7 +247,7 @@ static bool var_name(variable var, char *output_name) {
 	else {
 		sprintf(output_name, "argument_buffer0._%" PRIu64, var.index);
 	}
-	
+
 	return false;
 }
 
@@ -288,27 +288,26 @@ static void write_functions(char *code, size_t *offset) {
 
 			descriptor_set_group *set_group = get_descriptor_set_group(f->descriptor_set_group_index);
 
-			size_t buffer_index = 1;
+			size_t buffer_index          = 1;
 			size_t argument_buffer_index = 0;
 
 			for (size_t set_index = 0; set_index < set_group->size; ++set_index) {
 				descriptor_set *set = set_group->values[set_index];
-				
+
 				if (set->name == add_name("root_constants")) {
 					global *g = get_global(set->globals.globals[0]);
-					
+
 					char name[256];
 					type_name(g->type, name);
-					
-					buffers_offset +=
-					sprintf(&buffers[buffers_offset], ", constant %s& root_constants [[buffer(%zu)]]", name, buffer_index);
+
+					buffers_offset += sprintf(&buffers[buffers_offset], ", constant %s& root_constants [[buffer(%zu)]]", name, buffer_index);
 				}
 				else {
-					buffers_offset +=
-					sprintf(&buffers[buffers_offset], ", constant %s& argument_buffer%zu [[buffer(%zu)]]", get_name(set->name), argument_buffer_index, buffer_index);
+					buffers_offset += sprintf(&buffers[buffers_offset], ", constant %s& argument_buffer%zu [[buffer(%zu)]]", get_name(set->name),
+					                          argument_buffer_index, buffer_index);
 					argument_buffer_index += 1;
 				}
-				
+
 				buffer_index += 1;
 			}
 
