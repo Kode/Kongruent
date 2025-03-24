@@ -79,7 +79,7 @@ uint32_t struct_size(type_id id) {
 #endif
 
 bool execute_sync(const char *command, uint32_t *exit_code) {
-#ifdef _WIN32
+#if defined(_WIN32)
 	STARTUPINFOA startup_info = {0};
 	startup_info.cb           = sizeof(startup_info);
 
@@ -95,7 +95,7 @@ bool execute_sync(const char *command, uint32_t *exit_code) {
 	CloseHandle(process_info.hThread);
 
 	return success != FALSE;
-#else
+#elif defined(__APPLE__)
 	int status = system(command);
 
 	if (status < 0) {
@@ -103,6 +103,20 @@ bool execute_sync(const char *command, uint32_t *exit_code) {
 	}
 
 	*exit_code = (uint32_t)status;
+
+	return true;
+#else
+	int status = system(command);
+
+	if (status < 0) {
+		return false;
+	}
+
+	if ((status >> 8) == 0x7f) {
+		return false;
+	}
+
+	*exit_code = (uint32_t)(status >> 8);
 
 	return true;
 #endif
