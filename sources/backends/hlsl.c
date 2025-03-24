@@ -1408,7 +1408,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 	}
 }
 
-static void hlsl_export_vertex(char *directory, api_kind d3d, function *main) {
+static void hlsl_export_vertex(char *directory, api_kind d3d, function *main, bool debug) {
 	char  *hlsl   = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
@@ -1434,10 +1434,10 @@ static void hlsl_export_vertex(char *directory, api_kind d3d, function *main) {
 	int      result      = 1;
 	switch (d3d) {
 	case API_DIRECT3D11:
-		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
+		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, debug);
 		break;
 	case API_DIRECT3D12:
-		result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, false);
+		result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_VERTEX, debug);
 		break;
 	default:
 		error(context, "Unsupported API for HLSL");
@@ -1455,7 +1455,7 @@ static void hlsl_export_vertex(char *directory, api_kind d3d, function *main) {
 	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
 }
 
-static void hlsl_export_amplification(char *directory, function *main) {
+static void hlsl_export_amplification(char *directory, function *main, bool debug) {
 	char  *hlsl   = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
@@ -1467,7 +1467,7 @@ static void hlsl_export_amplification(char *directory, function *main) {
 
 	uint8_t *output      = NULL;
 	size_t   output_size = 0;
-	int      result      = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_AMPLIFICATION, false);
+	int      result      = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_AMPLIFICATION, debug);
 
 	debug_context context = {0};
 	check(result == 0, context, "HLSL compilation failed");
@@ -1483,7 +1483,7 @@ static void hlsl_export_amplification(char *directory, function *main) {
 	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
 }
 
-static void hlsl_export_mesh(char *directory, function *main) {
+static void hlsl_export_mesh(char *directory, function *main, bool debug) {
 	char  *hlsl   = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
@@ -1503,7 +1503,7 @@ static void hlsl_export_mesh(char *directory, function *main) {
 
 	uint8_t *output      = NULL;
 	size_t   output_size = 0;
-	int      result      = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_MESH, false);
+	int      result      = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_MESH, debug);
 
 	debug_context context = {0};
 	check(result == 0, context, "HLSL compilation failed");
@@ -1519,7 +1519,7 @@ static void hlsl_export_mesh(char *directory, function *main) {
 	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
 }
 
-static void hlsl_export_fragment(char *directory, api_kind d3d, function *main) {
+static void hlsl_export_fragment(char *directory, api_kind d3d, function *main, bool debug) {
 	char  *hlsl   = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
@@ -1540,10 +1540,10 @@ static void hlsl_export_fragment(char *directory, api_kind d3d, function *main) 
 	int      result      = 1;
 	switch (d3d) {
 	case API_DIRECT3D11:
-		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
+		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, debug);
 		break;
 	case API_DIRECT3D12:
-		result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, false);
+		result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_FRAGMENT, debug);
 		break;
 	default:
 		error(context, "Unsupported API for HLSL");
@@ -1561,7 +1561,7 @@ static void hlsl_export_fragment(char *directory, api_kind d3d, function *main) 
 	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
 }
 
-static void hlsl_export_compute(char *directory, api_kind d3d, function *main) {
+static void hlsl_export_compute(char *directory, api_kind d3d, function *main, bool debug) {
 	char  *hlsl   = (char *)calloc(1024 * 1024, 1);
 	size_t offset = 0;
 
@@ -1578,10 +1578,10 @@ static void hlsl_export_compute(char *directory, api_kind d3d, function *main) {
 	int      result      = 1;
 	switch (d3d) {
 	case API_DIRECT3D11:
-		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_COMPUTE, false);
+		result = compile_hlsl_to_d3d11(hlsl, &output, &output_size, SHADER_STAGE_COMPUTE, debug);
 		break;
 	case API_DIRECT3D12:
-		result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_COMPUTE, false);
+		result = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_COMPUTE, debug);
 		break;
 	default:
 		error(context, "Unsupported API for HLSL");
@@ -1599,7 +1599,7 @@ static void hlsl_export_compute(char *directory, api_kind d3d, function *main) {
 	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
 }
 
-static void hlsl_export_all_ray_shaders(char *directory) {
+static void hlsl_export_all_ray_shaders(char *directory, bool debug) {
 	char         *hlsl    = (char *)calloc(1024 * 1024, 1);
 	debug_context context = {0};
 	check(hlsl != NULL, context, "Could not allocate the hlsl string");
@@ -1660,7 +1660,7 @@ static void hlsl_export_all_ray_shaders(char *directory) {
 
 	uint8_t *output      = NULL;
 	size_t   output_size = 0;
-	int      result      = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_RAY_GENERATION, false);
+	int      result      = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_RAY_GENERATION, debug);
 	check(result == 0, context, "HLSL compilation failed");
 
 	char *name = "ray";
@@ -1674,7 +1674,7 @@ static void hlsl_export_all_ray_shaders(char *directory) {
 	write_bytecode(hlsl, directory, filename, var_name, output, output_size);
 }
 
-void hlsl_export(char *directory, api_kind d3d) {
+void hlsl_export(char *directory, api_kind d3d, bool debug) {
 	static_array(function *, shaders, 256);
 
 	shaders vertex_shaders;
@@ -1868,28 +1868,28 @@ void hlsl_export(char *directory, api_kind d3d) {
 	}
 
 	for (size_t i = 0; i < vertex_shaders.size; ++i) {
-		hlsl_export_vertex(directory, d3d, vertex_shaders.values[i]);
+		hlsl_export_vertex(directory, d3d, vertex_shaders.values[i], debug);
 	}
 
 	if (d3d == API_DIRECT3D12) {
 		for (size_t i = 0; i < amplification_shaders.size; ++i) {
-			hlsl_export_amplification(directory, amplification_shaders.values[i]);
+			hlsl_export_amplification(directory, amplification_shaders.values[i], debug);
 		}
 
 		for (size_t i = 0; i < mesh_shaders.size; ++i) {
-			hlsl_export_mesh(directory, mesh_shaders.values[i]);
+			hlsl_export_mesh(directory, mesh_shaders.values[i], debug);
 		}
 	}
 
 	for (size_t i = 0; i < fragment_shaders.size; ++i) {
-		hlsl_export_fragment(directory, d3d, fragment_shaders.values[i]);
+		hlsl_export_fragment(directory, d3d, fragment_shaders.values[i], debug);
 	}
 
 	for (size_t i = 0; i < compute_shaders_size; ++i) {
-		hlsl_export_compute(directory, d3d, compute_shaders[i]);
+		hlsl_export_compute(directory, d3d, compute_shaders[i], debug);
 	}
 
 	if (d3d == API_DIRECT3D12) {
-		hlsl_export_all_ray_shaders(directory);
+		hlsl_export_all_ray_shaders(directory, debug);
 	}
 }

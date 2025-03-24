@@ -45,14 +45,17 @@ int compile_hlsl_to_d3d12(const char *source, uint8_t **output, size_t *outputle
 	DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&compiler));
 
 	LPCWSTR compiler_args[] = {
-	    // L"myshader.hlsl",            // optional shader source file name for error reporting and for PIX shader source view
+	    L"-E", L"main",              // entry point
+	    L"-T", shader_string(stage), // target
+	    // L"-Qstrip_reflect",          // strip reflection into a seperate blob
+	};
+
+	LPCWSTR debug_compiler_args[] = {
 	    L"-E",  L"main",              // entry point
 	    L"-T",  shader_string(stage), // target
 	    L"-Zi",                       // enable debug info
-	                                  // L"-D", L"MYDEFINE=1",        // a single define
-	                                  // L"-Fo", L"myshader.bin",     // optional.  stored in the pdb.
-	    // L"-Fd", L"myshader.pdb",     // the file name of the pdb.  This must either be supplied or the auto generated file name must be used
-	    // L"-D", L"__XBOX_STRIP_DXIL", // strip DXIL
+	    // L"-Fd", L"myshader.pdb", // the file name of the pdb.  This must either be supplied or the auto generated file name must be used
+	    // L"myshader.hlsl", // optional shader source file name for error reporting and for PIX shader source view
 	    // L"-Qstrip_reflect",          // strip reflection into a seperate blob
 	};
 
@@ -62,11 +65,11 @@ int compile_hlsl_to_d3d12(const char *source, uint8_t **output, size_t *outputle
 	source_buffer.Encoding = DXC_CP_ACP; // assume BOM says UTF8 or UTF16 or this is ANSI text
 
 	CComPtr<IDxcResult> compiler_result;
-	compiler->Compile(&source_buffer,                // source buffer
-	                  compiler_args,                 // Array of pointers to arguments
-	                  _countof(compiler_args),       // Number of arguments
-	                  NULL,                          // user-provided interface to handle #include directives (optional)
-	                  IID_PPV_ARGS(&compiler_result) // Compiler output status, buffer, and errors
+	compiler->Compile(&source_buffer,                                                  // source buffer
+	                  debug ? debug_compiler_args : compiler_args,                     // Array of pointers to arguments
+	                  debug ? _countof(debug_compiler_args) : _countof(compiler_args), // Number of arguments
+	                  NULL,                                                            // user-provided interface to handle #include directives (optional)
+	                  IID_PPV_ARGS(&compiler_result)                                   // Compiler output status, buffer, and errors
 	);
 
 	CComPtr<IDxcBlobUtf8> errors = nullptr;

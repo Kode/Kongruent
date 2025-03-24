@@ -300,7 +300,7 @@ int main(int argc, char **argv) {
 	switch (api) {
 	case API_DIRECT3D11:
 	case API_DIRECT3D12:
-		hlsl_export(output, api);
+		hlsl_export(output, api, debug);
 		break;
 	case API_OPENGL:
 		glsl_export(output);

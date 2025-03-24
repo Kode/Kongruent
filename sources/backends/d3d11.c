@@ -59,8 +59,11 @@ int compile_hlsl_to_d3d11(const char *source, uint8_t **output, size_t *outputle
 	ID3DBlob *errorMessage = NULL;
 	ID3DBlob *shaderBuffer = NULL;
 	UINT      flags        = 0;
-	if (debug)
+
+	if (debug) {
 		flags |= D3DCOMPILE_DEBUG;
+	}
+
 	HRESULT hr = D3DCompile(source, length, "Unknown", NULL, NULL, "main", shaderString(stage, 4), flags, 0, &shaderBuffer, &errorMessage);
 	if (hr != S_OK) {
 		hr = D3DCompile(source, length, "Unknown", NULL, NULL, "main", shaderString(stage, 5), flags, 0, &shaderBuffer, &errorMessage);
