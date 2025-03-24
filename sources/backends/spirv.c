@@ -897,7 +897,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					storage = STORAGE_CLASS_INPUT;
 				}
 			}
-			spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(o->op_load_member.from.type.type, storage),
+			spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(o->op_load_member.to.type.type, storage),
 			                                         convert_kong_index_to_spirv_id(o->op_load_member.from.index), indices, indices_size);
 
 			spirv_id value = write_op_load(instructions, convert_type_to_spirv_id(o->op_load_member.to.type.type), pointer);
