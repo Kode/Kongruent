@@ -330,23 +330,3 @@ int main(int argc, char **argv) {
 
 	return 0;
 }
-
-#ifdef _WIN32
-#include <Windows.h>
-#endif
-
-void execute_sync(const char *command) {
-#ifdef _WIN32
-	STARTUPINFOA        startupInfo;
-	PROCESS_INFORMATION processInfo;
-	memset(&startupInfo, 0, sizeof(startupInfo));
-	memset(&processInfo, 0, sizeof(processInfo));
-	startupInfo.cb = sizeof(startupInfo);
-	CreateProcessA(NULL, (char *)command, NULL, NULL, FALSE, CREATE_DEFAULT_ERROR_MODE, "PATH=%PATH%;.\\cygwin\\bin\0", NULL, &startupInfo, &processInfo);
-	WaitForSingleObject(processInfo.hProcess, INFINITE);
-	CloseHandle(processInfo.hProcess);
-	CloseHandle(processInfo.hThread);
-#else
-	system(command);
-#endif
-}

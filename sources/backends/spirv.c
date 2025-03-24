@@ -4,6 +4,7 @@
 #include "../compiler.h"
 #include "../errors.h"
 #include "../functions.h"
+#include "../log.h"
 #include "../parser.h"
 #include "../shader_stage.h"
 #include "../types.h"
@@ -110,12 +111,27 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 #ifndef NDEBUG
 	{
 		sprintf(full_filename, "%s/%s.spirv", directory, filename);
+
 		FILE *file = fopen(full_filename, "wb");
 		fwrite(output_header, 1, output_header_size, file);
 		fwrite(output_decorations, 1, output_decorations_size, file);
 		fwrite(output_constants, 1, output_constants_size, file);
 		fwrite(output_instructions, 1, output_instructions_size, file);
 		fclose(file);
+
+		char command[1024];
+		snprintf(command, 1024, "spirv-val %s", full_filename);
+
+		uint32_t exit_code = 0;
+		bool     executed  = execute_sync(command, &exit_code);
+
+		if (!executed) {
+			kong_log(LOG_LEVEL_WARNING, "Could not run spirv_val.");
+		}
+		else if (exit_code != 0) {
+			debug_context context = {0};
+			error(context, "spirv_val check of %s failed.", filename);
+		}
 	}
 #endif
 }
@@ -445,7 +461,7 @@ static struct {
 static spirv_id convert_type_to_spirv_id(type_id type) {
 	complex_type ct;
 	ct.type    = type;
-	ct.pointer = (uint16_t) false;
+	ct.pointer = (uint16_t)false;
 	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 
 	spirv_id spirv_index = hmget(type_map, ct);
@@ -459,7 +475,7 @@ static spirv_id convert_type_to_spirv_id(type_id type) {
 static spirv_id convert_pointer_type_to_spirv_id(type_id type, storage_class storage) {
 	complex_type ct;
 	ct.type    = type;
-	ct.pointer = (uint16_t) true;
+	ct.pointer = (uint16_t)true;
 	ct.storage = (uint16_t)storage;
 
 	spirv_id spirv_index = hmget(type_map, ct);
@@ -474,7 +490,7 @@ static spirv_id output_struct_pointer_type = {0};
 
 static void write_base_type(instructions_buffer *constants_block, type_id type, spirv_id spirv_type) {
 	complex_type ct;
-	ct.pointer = (uint16_t) false;
+	ct.pointer = (uint16_t)false;
 	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 	ct.type    = type;
 
@@ -487,7 +503,7 @@ static void write_base_types(instructions_buffer *constants_block) {
 	void_function_type = write_type_function(constants_block, void_type, NULL, 0);
 
 	complex_type ct;
-	ct.pointer = (uint16_t) false;
+	ct.pointer = (uint16_t)false;
 	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 
 	spirv_float_type = write_type_float(constants_block, 32);
@@ -538,7 +554,7 @@ static void write_types(instructions_buffer *constants, function *main) {
 
 			complex_type ct;
 			ct.type    = types[i];
-			ct.pointer = (uint16_t) false;
+			ct.pointer = (uint16_t)false;
 			ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 			hmput(type_map, ct, struct_type);
 		}
@@ -1217,14 +1233,14 @@ static void write_globals(instructions_buffer *instructions_block, function *mai
 
 			complex_type ct;
 			ct.type    = g->type;
-			ct.pointer = (uint16_t) false;
+			ct.pointer = (uint16_t)false;
 			ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 			hmput(type_map, ct, struct_type);
 
 			spirv_id struct_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM, struct_type);
 
 			ct.type    = g->type;
-			ct.pointer = (uint16_t) true;
+			ct.pointer = (uint16_t)true;
 			ct.storage = (uint16_t)STORAGE_CLASS_UNIFORM;
 			hmput(type_map, ct, struct_pointer_type);
 

@@ -72,3 +72,31 @@ uint32_t struct_size(type_id id) {
 	}
 	return size;
 }
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
+bool execute_sync(const char *command, uint32_t *exit_code) {
+#ifdef _WIN32
+	STARTUPINFOA startup_info = {0};
+	startup_info.cb           = sizeof(startup_info);
+
+	PROCESS_INFORMATION process_info = {0};
+
+	BOOL success = CreateProcessA(NULL, (char *)command, NULL, NULL, FALSE, CREATE_DEFAULT_ERROR_MODE, NULL, NULL, &startup_info, &process_info);
+
+	WaitForSingleObject(process_info.hProcess, INFINITE);
+
+	GetExitCodeProcess(process_info.hProcess, exit_code);
+
+	CloseHandle(process_info.hProcess);
+	CloseHandle(process_info.hThread);
+
+	return success != FALSE;
+#else
+	system(command);
+	*exit_code = 0;
+	return true;
+#endif
+}
