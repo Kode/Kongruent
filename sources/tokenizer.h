@@ -60,7 +60,8 @@ typedef struct token {
 		TOKEN_FUNCTION,
 		TOKEN_VAR,
 		TOKEN_CONST,
-		TOKEN_RETURN
+		TOKEN_RETURN,
+		TOKEN_DISCARD
 	} kind;
 
 	union {

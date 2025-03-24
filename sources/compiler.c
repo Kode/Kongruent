@@ -638,6 +638,14 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 		emit_op(code, &o);
 		break;
 	}
+	case STATEMENT_DISCARD: {
+		opcode o;
+		o.type = OPCODE_DISCARD;
+		o.size = offsetof(opcode, op_nothing);
+
+		emit_op(code, &o);
+		break;
+	}
 	case STATEMENT_IF: {
 		struct previous_condition {
 			variable condition;
