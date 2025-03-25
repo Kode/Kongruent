@@ -191,6 +191,9 @@ static void tokens_add_identifier(tokenizer_state *state, tokens *tokens, tokeni
 	else if (tokenizer_buffer_equals(buffer, "return")) {
 		token = token_create(TOKEN_RETURN, state);
 	}
+	else if (tokenizer_buffer_equals(buffer, "discard")) {
+		token = token_create(TOKEN_DISCARD, state);
+	}
 	else {
 		token            = token_create(TOKEN_IDENTIFIER, state);
 		token.identifier = tokenizer_buffer_to_name(buffer);

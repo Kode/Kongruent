@@ -489,6 +489,17 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		statement->expression = expr;
 		return statement;
 	}
+	case TOKEN_DISCARD: {
+		advance_state(state);
+
+		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
+		advance_state(state);
+
+		statement *statement = statement_allocate();
+		statement->kind      = STATEMENT_DISCARD;
+
+		return statement;
+	}
 	default: {
 		expression *expr = parse_expression(state);
 		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");

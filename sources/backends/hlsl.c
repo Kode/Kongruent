@@ -1267,6 +1267,11 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				}
 				break;
 			}
+			case OPCODE_DISCARD: {
+				indent(hlsl, offset, indentation);
+				*offset += sprintf(&hlsl[*offset], "discard;\n");
+				break;
+			}
 			case OPCODE_MULTIPLY: {
 				if (o->op_binary.left.type.type == float4x4_id || o->op_binary.left.type.type == float3x3_id) {
 					indent(hlsl, offset, indentation);
