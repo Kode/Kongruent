@@ -634,6 +634,11 @@ void functions_init(void) {
 	add_func_float3_float3_float3("reflect");
 	add_func_uint("primitive_index");
 	add_func_float3_float3("abs");
+	add_func_float_float_float("floor");
+	add_func_float_float_float("ceil");
+	add_func_float_float_float("round");
+	add_func_float_float_float("sqrt");
+	add_func_float_float_float("rsqrt");
 	add_func_float_float_float("min");
 	add_func_float_float_float("max");
 	add_func_float_float_float("step");
