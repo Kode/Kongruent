@@ -130,7 +130,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			type_ref t;
 			init_type_ref(&t, NO_NAME);
 			t.type              = bool_id;
-			variable result_var = allocate_variable(t, VARIABLE_LOCAL);
+			variable result_var = allocate_variable(t, VARIABLE_INTERNAL);
 
 			opcode o;
 			switch (e->binary.op) {
@@ -180,7 +180,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		case OPERATOR_MOD: {
 			variable right_var  = emit_expression(code, parent, right);
 			variable left_var   = emit_expression(code, parent, left);
-			variable result_var = allocate_variable(e->type, VARIABLE_LOCAL);
+			variable result_var = allocate_variable(e->type, VARIABLE_INTERNAL);
 
 			opcode o;
 			switch (e->binary.op) {
@@ -386,7 +386,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			o.type           = OPCODE_NEGATE;
 			o.size           = OP_SIZE(o, op_negate);
 			o.op_negate.from = v;
-			o.op_negate.to   = allocate_variable(v.type, VARIABLE_LOCAL);
+			o.op_negate.to   = allocate_variable(v.type, VARIABLE_INTERNAL);
 			emit_op(code, &o);
 			return o.op_negate.to;
 		}
@@ -402,7 +402,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			o.type        = OPCODE_NOT;
 			o.size        = OP_SIZE(o, op_not);
 			o.op_not.from = v;
-			o.op_not.to   = allocate_variable(v.type, VARIABLE_LOCAL);
+			o.op_not.to   = allocate_variable(v.type, VARIABLE_INTERNAL);
 			emit_op(code, &o);
 			return o.op_not.to;
 		}
@@ -427,7 +427,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
 		t.type     = float_id;
-		variable v = allocate_variable(t, VARIABLE_LOCAL);
+		variable v = allocate_variable(t, VARIABLE_INTERNAL);
 
 		opcode o;
 		o.type                          = OPCODE_LOAD_BOOL_CONSTANT;
@@ -442,7 +442,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
 		t.type     = float_id;
-		variable v = allocate_variable(t, VARIABLE_LOCAL);
+		variable v = allocate_variable(t, VARIABLE_INTERNAL);
 
 		opcode o;
 		o.type                          = OPCODE_LOAD_FLOAT_CONSTANT;
@@ -457,7 +457,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
 		t.type     = int_id;
-		variable v = allocate_variable(t, VARIABLE_LOCAL);
+		variable v = allocate_variable(t, VARIABLE_INTERNAL);
 
 		opcode o;
 		o.type                        = OPCODE_LOAD_INT_CONSTANT;
@@ -480,7 +480,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		type_ref t;
 		init_type_ref(&t, NO_NAME);
 		t.type     = e->type.type;
-		variable v = allocate_variable(t, VARIABLE_LOCAL);
+		variable v = allocate_variable(t, VARIABLE_INTERNAL);
 
 		opcode o;
 		o.type         = OPCODE_CALL;
@@ -501,7 +501,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	}
 	case EXPRESSION_STATIC_MEMBER:
 	case EXPRESSION_DYNAMIC_MEMBER: {
-		variable v = allocate_variable(e->type, VARIABLE_LOCAL);
+		variable v = allocate_variable(e->type, VARIABLE_INTERNAL);
 
 		opcode o;
 		o.type = OPCODE_LOAD_MEMBER;
@@ -684,7 +684,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 				type_ref t;
 				init_type_ref(&t, NO_NAME);
 				t.type            = bool_id;
-				current_condition = allocate_variable(t, VARIABLE_LOCAL);
+				current_condition = allocate_variable(t, VARIABLE_INTERNAL);
 				o.op_not.to       = current_condition;
 				emit_op(code, &o);
 			}
@@ -702,7 +702,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 				type_ref t;
 				init_type_ref(&t, NO_NAME);
 				t.type             = bool_id;
-				summed_condition   = allocate_variable(t, VARIABLE_LOCAL);
+				summed_condition   = allocate_variable(t, VARIABLE_INTERNAL);
 				o.op_binary.result = summed_condition;
 				emit_op(code, &o);
 			}
@@ -724,7 +724,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 					type_ref t;
 					init_type_ref(&t, NO_NAME);
 					t.type             = bool_id;
-					else_test          = allocate_variable(t, VARIABLE_LOCAL);
+					else_test          = allocate_variable(t, VARIABLE_INTERNAL);
 					o.op_binary.result = else_test;
 					emit_op(code, &o);
 				}

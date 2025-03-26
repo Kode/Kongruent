@@ -463,7 +463,7 @@ static struct {
 static spirv_id convert_type_to_spirv_id(type_id type) {
 	complex_type ct;
 	ct.type    = type;
-	ct.pointer = (uint16_t) false;
+	ct.pointer = (uint16_t)false;
 	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 
 	spirv_id spirv_index = hmget(type_map, ct);
@@ -477,7 +477,7 @@ static spirv_id convert_type_to_spirv_id(type_id type) {
 static spirv_id convert_pointer_type_to_spirv_id(type_id type, storage_class storage) {
 	complex_type ct;
 	ct.type    = type;
-	ct.pointer = (uint16_t) true;
+	ct.pointer = (uint16_t)true;
 	ct.storage = (uint16_t)storage;
 
 	spirv_id spirv_index = hmget(type_map, ct);
@@ -492,7 +492,7 @@ static spirv_id output_struct_pointer_type = {0};
 
 static void write_base_type(instructions_buffer *constants_block, type_id type, spirv_id spirv_type) {
 	complex_type ct;
-	ct.pointer = (uint16_t) false;
+	ct.pointer = (uint16_t)false;
 	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 	ct.type    = type;
 
@@ -505,7 +505,7 @@ static void write_base_types(instructions_buffer *constants_block) {
 	void_function_type = write_type_function(constants_block, void_type, NULL, 0);
 
 	complex_type ct;
-	ct.pointer = (uint16_t) false;
+	ct.pointer = (uint16_t)false;
 	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 
 	spirv_float_type = write_type_float(constants_block, 32);
@@ -556,7 +556,7 @@ static void write_types(instructions_buffer *constants, function *main) {
 
 			complex_type ct;
 			ct.type    = types[i];
-			ct.pointer = (uint16_t) false;
+			ct.pointer = (uint16_t)false;
 			ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 			hmput(type_map, ct, struct_type);
 		}
@@ -980,6 +980,9 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			case VARIABLE_GLOBAL:
 				access_type = convert_pointer_type_to_spirv_id(access_kong_type, STORAGE_CLASS_OUTPUT);
 				break;
+			case VARIABLE_INTERNAL:
+				assert(false);
+				break;
 			}
 
 			int spirv_indices[256];
@@ -1046,7 +1049,14 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					// convert_kong_index_to_spirv_id(o->op_return.var.index)); write_op_store(instructions, output_var, object);
 				}
 				else {
-					write_op_store(instructions, output_var, convert_kong_index_to_spirv_id(o->op_return.var.index));
+					spirv_id loaded;
+					if (o->op_return.var.kind == VARIABLE_INTERNAL) {
+						loaded = convert_kong_index_to_spirv_id(o->op_return.var.index);
+					}
+					else {
+						loaded = write_op_load(instructions, convert_type_to_spirv_id(float4_id), convert_kong_index_to_spirv_id(o->op_return.var.index));
+					}
+					write_op_store(instructions, output_var, loaded);
 				}
 				write_op_return(instructions);
 			}
@@ -1235,14 +1245,14 @@ static void write_globals(instructions_buffer *instructions_block, function *mai
 
 			complex_type ct;
 			ct.type    = g->type;
-			ct.pointer = (uint16_t) false;
+			ct.pointer = (uint16_t)false;
 			ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 			hmput(type_map, ct, struct_type);
 
 			spirv_id struct_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM, struct_type);
 
 			ct.type    = g->type;
-			ct.pointer = (uint16_t) true;
+			ct.pointer = (uint16_t)true;
 			ct.storage = (uint16_t)STORAGE_CLASS_UNIFORM;
 			hmput(type_map, ct, struct_pointer_type);
 

@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef enum variable_kind { VARIABLE_GLOBAL, VARIABLE_LOCAL } variable_kind;
+typedef enum variable_kind { VARIABLE_GLOBAL, VARIABLE_LOCAL, VARIABLE_INTERNAL } variable_kind;
 
 typedef struct variable {
 	variable_kind kind;
