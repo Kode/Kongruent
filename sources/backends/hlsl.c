@@ -1303,7 +1303,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				else if (o->op_call.func == add_name("load")) {
 					check(o->op_call.parameters_size == 2, context, "load requires two parameters");
 					*offset +=
-						sprintf(&hlsl[*offset], "%s _%" PRIu64 " = _%" PRIu64 ".Load(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
+						sprintf(&hlsl[*offset], "%s _%" PRIu64 " = _%" PRIu64 ".Load(_%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
 								o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index);
 				}
 				else if (o->op_call.func == add_name("group_id")) {

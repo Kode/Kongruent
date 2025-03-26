@@ -247,7 +247,7 @@ void functions_init(void) {
 		init_type_ref(&f->return_type, add_name("float4"));
 		f->return_type.type   = find_type_by_ref(&f->return_type);
 		f->parameter_names[0] = add_name("tex_coord");
-		init_type_ref(&f->parameter_types[0], add_name("int2"));
+		init_type_ref(&f->parameter_types[0], add_name("int3"));
 		f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
 		f->parameters_size         = 1;
 		f->block                   = NULL;
