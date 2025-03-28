@@ -83,6 +83,13 @@ type_ref resolve_member_var_type(statement *parent_block, type_ref parent_type, 
 	}
 }
 
+bool is_vector(type_ref t) {
+	assert(t.type != NO_TYPE);
+
+	return t.type == float2_id || t.type == float3_id || t.type == float4_id || t.type == int2_id || t.type == int3_id || t.type == int4_id ||
+	       t.type == uint2_id || t.type == uint3_id || t.type == uint4_id || t.type == bool2_id || t.type == bool3_id || t.type == bool4_id;
+}
+
 void resolve_member_type(statement *parent_block, type_ref parent_type, expression *e) {
 	debug_context context = {0};
 	check(e->kind == EXPRESSION_STATIC_MEMBER || e->kind == EXPRESSION_DYNAMIC_MEMBER, context, "Malformed member");
@@ -90,6 +97,11 @@ void resolve_member_type(statement *parent_block, type_ref parent_type, expressi
 	type_ref t = resolve_member_var_type(parent_block, parent_type, e->member.left);
 
 	if (e->kind == EXPRESSION_STATIC_MEMBER && e->member.right->kind == EXPRESSION_VARIABLE) {
+		if (is_vector(t)) {
+			// swizzle
+			assert(false);
+		}
+
 		resolve_member_var_type(parent_block, t, e->member.right);
 		e->type = e->member.right->type;
 	}
