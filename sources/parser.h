@@ -16,6 +16,11 @@ typedef struct expressions {
 	size_t             size;
 } expressions;
 
+typedef struct swizzle {
+	uint32_t indices[4];
+	uint32_t size;
+} swizzle;
+
 typedef struct expression {
 	enum {
 		EXPRESSION_BINARY,
@@ -27,10 +32,9 @@ typedef struct expression {
 		EXPRESSION_VARIABLE,
 		EXPRESSION_GROUPING,
 		EXPRESSION_CALL,
-		EXPRESSION_STATIC_MEMBER,
-		EXPRESSION_DYNAMIC_MEMBER,
-		EXPRESSION_INDEX,
-		EXPRESSION_CONSTRUCTOR
+		EXPRESSION_MEMBER,
+		EXPRESSION_ELEMENT,
+		EXPRESSION_SWIZZLE
 	} kind;
 
 	type_ref type;
@@ -56,12 +60,17 @@ typedef struct expression {
 			expressions parameters;
 		} call;
 		struct {
-			struct expression *left;
-			struct expression *right;
+			struct expression *of;
+			name_id            member_name;
 		} member;
 		struct {
-			expressions parameters;
-		} constructor;
+			struct expression *of;
+			struct expression *element_index;
+		} element;
+		struct {
+			struct expression *of;
+			struct swizzle     swizz;
+		} swizzle;
 	};
 } expression;
 

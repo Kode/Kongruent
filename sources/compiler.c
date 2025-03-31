@@ -250,29 +250,29 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				emit_op(code, &o);
 				break;
 			}
-			case EXPRESSION_STATIC_MEMBER:
+			/*case EXPRESSION_STATIC_MEMBER:
 			case EXPRESSION_DYNAMIC_MEMBER: {
 				variable member_var = emit_expression(code, parent, left->member.left);
 
 				opcode o;
 				switch (e->binary.op) {
 				case OPERATOR_ASSIGN:
-					o.type = OPCODE_STORE_MEMBER;
-					break;
+				    o.type = OPCODE_STORE_MEMBER;
+				    break;
 				case OPERATOR_MINUS_ASSIGN:
-					o.type = OPCODE_SUB_AND_STORE_MEMBER;
-					break;
+				    o.type = OPCODE_SUB_AND_STORE_MEMBER;
+				    break;
 				case OPERATOR_PLUS_ASSIGN:
-					o.type = OPCODE_ADD_AND_STORE_MEMBER;
-					break;
+				    o.type = OPCODE_ADD_AND_STORE_MEMBER;
+				    break;
 				case OPERATOR_DIVIDE_ASSIGN:
-					o.type = OPCODE_DIVIDE_AND_STORE_MEMBER;
-					break;
+				    o.type = OPCODE_DIVIDE_AND_STORE_MEMBER;
+				    break;
 				case OPERATOR_MULTIPLY_ASSIGN:
-					o.type = OPCODE_MULTIPLY_AND_STORE_MEMBER;
-					break;
+				    o.type = OPCODE_MULTIPLY_AND_STORE_MEMBER;
+				    break;
 				default: {
-					error(context, "Unexpected operator");
+				    error(context, "Unexpected operator");
 				}
 				}
 				o.size                 = OP_SIZE(o, op_store_member);
@@ -288,72 +288,72 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				bool parent_dynamic = left->kind == EXPRESSION_DYNAMIC_MEMBER;
 
 				while (right->kind == EXPRESSION_STATIC_MEMBER || right->kind == EXPRESSION_DYNAMIC_MEMBER) {
-					debug_context context = {0};
-					check(right->type.type != NO_TYPE, context, "Part of the member does not have a type");
+				    debug_context context = {0};
+				    check(right->type.type != NO_TYPE, context, "Part of the member does not have a type");
 
-					if (right->member.left->kind == EXPRESSION_VARIABLE && !parent_dynamic) {
-						bool found = false;
-						for (size_t i = 0; i < prev_s->members.size; ++i) {
-							if (prev_s->members.m[i].name == right->member.left->variable) {
-								o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
-								o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)i;
-								++o.op_store_member.member_indices_size;
-								found = true;
-								break;
-							}
-						}
-						check(found, context, "Variable for a member not found");
-					}
-					else if (right->member.left->kind == EXPRESSION_INDEX) {
-						o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
-						o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)right->member.left->index;
-						++o.op_store_member.member_indices_size;
-					}
-					else {
-						variable sub_expression                                                         = emit_expression(code, parent, right->member.left);
-						o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]         = true;
-						o.op_store_member.dynamic_member_indices[o.op_store_member.member_indices_size] = sub_expression;
-						++o.op_store_member.member_indices_size;
-					}
+				    if (right->member.left->kind == EXPRESSION_VARIABLE && !parent_dynamic) {
+				        bool found = false;
+				        for (size_t i = 0; i < prev_s->members.size; ++i) {
+				            if (prev_s->members.m[i].name == right->member.left->variable) {
+				                o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
+				                o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)i;
+				                ++o.op_store_member.member_indices_size;
+				                found = true;
+				                break;
+				            }
+				        }
+				        check(found, context, "Variable for a member not found");
+				    }
+				    else if (right->member.left->kind == EXPRESSION_INDEX) {
+				        o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
+				        o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)right->member.left->index;
+				        ++o.op_store_member.member_indices_size;
+				    }
+				    else {
+				        variable sub_expression                                                         = emit_expression(code, parent, right->member.left);
+				        o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]         = true;
+				        o.op_store_member.dynamic_member_indices[o.op_store_member.member_indices_size] = sub_expression;
+				        ++o.op_store_member.member_indices_size;
+				    }
 
-					prev_struct    = right->member.left->type.type;
-					prev_s         = get_type(prev_struct);
-					parent_dynamic = right->kind == EXPRESSION_DYNAMIC_MEMBER;
-					right          = right->member.right;
+				    prev_struct    = right->member.left->type.type;
+				    prev_s         = get_type(prev_struct);
+				    parent_dynamic = right->kind == EXPRESSION_DYNAMIC_MEMBER;
+				    right          = right->member.right;
 				}
 
 				{
-					debug_context context = {0};
-					check(right->type.type != NO_TYPE, context, "Part of the member does not have a type");
-					if (right->kind == EXPRESSION_VARIABLE && !parent_dynamic) {
-						bool found = false;
-						for (size_t i = 0; i < prev_s->members.size; ++i) {
-							if (prev_s->members.m[i].name == right->variable) {
-								o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
-								o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)i;
-								++o.op_store_member.member_indices_size;
-								found = true;
-								break;
-							}
-						}
-						check(found, context, "Member not found");
-					}
-					else if (right->kind == EXPRESSION_INDEX) {
-						o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
-						o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)right->index;
-						++o.op_store_member.member_indices_size;
-					}
-					else {
-						variable sub_expression                                                         = emit_expression(code, parent, right);
-						o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]         = true;
-						o.op_store_member.dynamic_member_indices[o.op_store_member.member_indices_size] = sub_expression;
-						++o.op_store_member.member_indices_size;
-					}
+				    debug_context context = {0};
+				    check(right->type.type != NO_TYPE, context, "Part of the member does not have a type");
+				    if (right->kind == EXPRESSION_VARIABLE && !parent_dynamic) {
+				        bool found = false;
+				        for (size_t i = 0; i < prev_s->members.size; ++i) {
+				            if (prev_s->members.m[i].name == right->variable) {
+				                o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
+				                o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)i;
+				                ++o.op_store_member.member_indices_size;
+				                found = true;
+				                break;
+				            }
+				        }
+				        check(found, context, "Member not found");
+				    }
+				    else if (right->kind == EXPRESSION_INDEX) {
+				        o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
+				        o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)right->index;
+				        ++o.op_store_member.member_indices_size;
+				    }
+				    else {
+				        variable sub_expression                                                         = emit_expression(code, parent, right);
+				        o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]         = true;
+				        o.op_store_member.dynamic_member_indices[o.op_store_member.member_indices_size] = sub_expression;
+				        ++o.op_store_member.member_indices_size;
+				    }
 				}
 
 				emit_op(code, &o);
 				break;
-			}
+			}*/
 			default: {
 				debug_context context = {0};
 				error(context, "Expected a variable or a member");
@@ -499,7 +499,11 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 		return v;
 	}
-	case EXPRESSION_STATIC_MEMBER:
+	case EXPRESSION_ELEMENT:
+	case EXPRESSION_MEMBER:
+	case EXPRESSION_SWIZZLE:
+		break;
+	/*case EXPRESSION_STATIC_MEMBER:
 	case EXPRESSION_DYNAMIC_MEMBER: {
 		variable v = allocate_variable(e->type, VARIABLE_INTERNAL);
 
@@ -509,10 +513,10 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 		debug_context context = {0};
 		if (e->member.left->kind == EXPRESSION_VARIABLE) {
-			o.op_load_member.from = find_variable(parent, e->member.left->variable);
+		    o.op_load_member.from = find_variable(parent, e->member.left->variable);
 		}
 		else {
-			o.op_load_member.from = emit_expression(code, parent, e->member.left);
+		    o.op_load_member.from = emit_expression(code, parent, e->member.left);
 		}
 
 		check(o.op_load_member.from.index != 0, context, "Load var is broken");
@@ -528,77 +532,73 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		bool parent_dynamic = e->kind == EXPRESSION_DYNAMIC_MEMBER;
 
 		while (right->kind == EXPRESSION_STATIC_MEMBER || right->kind == EXPRESSION_DYNAMIC_MEMBER) {
-			debug_context context = {0};
-			check(right->type.type != NO_TYPE, context, "Part of the member does not have a type");
+		    debug_context context = {0};
+		    check(right->type.type != NO_TYPE, context, "Part of the member does not have a type");
 
-			if (right->member.left->kind == EXPRESSION_VARIABLE && !parent_dynamic) {
-				bool found = false;
-				for (size_t i = 0; i < prev_s->members.size; ++i) {
-					if (prev_s->members.m[i].name == right->member.left->variable) {
-						o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
-						o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)i;
-						++o.op_load_member.member_indices_size;
-						found = true;
-						break;
-					}
-				}
-				check(found, context, "Variable for a member not found");
-			}
-			else if (right->member.left->kind == EXPRESSION_INDEX) {
-				o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
-				o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)right->member.left->index;
-				++o.op_load_member.member_indices_size;
-			}
-			else {
-				variable sub_expression                                                       = emit_expression(code, parent, right->member.left);
-				o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]         = true;
-				o.op_load_member.dynamic_member_indices[o.op_load_member.member_indices_size] = sub_expression;
-				++o.op_load_member.member_indices_size;
-			}
+		    if (right->member.left->kind == EXPRESSION_VARIABLE && !parent_dynamic) {
+		        bool found = false;
+		        for (size_t i = 0; i < prev_s->members.size; ++i) {
+		            if (prev_s->members.m[i].name == right->member.left->variable) {
+		                o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
+		                o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)i;
+		                ++o.op_load_member.member_indices_size;
+		                found = true;
+		                break;
+		            }
+		        }
+		        check(found, context, "Variable for a member not found");
+		    }
+		    else if (right->member.left->kind == EXPRESSION_INDEX) {
+		        o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
+		        o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)right->member.left->index;
+		        ++o.op_load_member.member_indices_size;
+		    }
+		    else {
+		        variable sub_expression                                                       = emit_expression(code, parent, right->member.left);
+		        o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]         = true;
+		        o.op_load_member.dynamic_member_indices[o.op_load_member.member_indices_size] = sub_expression;
+		        ++o.op_load_member.member_indices_size;
+		    }
 
-			prev_struct    = right->member.left->type.type;
-			prev_s         = get_type(prev_struct);
-			parent_dynamic = right->kind == EXPRESSION_DYNAMIC_MEMBER;
-			right          = right->member.right;
+		    prev_struct    = right->member.left->type.type;
+		    prev_s         = get_type(prev_struct);
+		    parent_dynamic = right->kind == EXPRESSION_DYNAMIC_MEMBER;
+		    right          = right->member.right;
 		}
 
 		{
-			debug_context context = {0};
-			check(right->type.type != NO_TYPE, context, "Part of the member does not have a type");
-			if (right->kind == EXPRESSION_VARIABLE && !parent_dynamic) {
-				bool found = false;
-				for (size_t i = 0; i < prev_s->members.size; ++i) {
-					if (prev_s->members.m[i].name == right->variable) {
-						o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
-						o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)i;
-						++o.op_load_member.member_indices_size;
-						found = true;
-						break;
-					}
-				}
-				check(found, context, "Member not found");
-			}
-			else if (right->kind == EXPRESSION_INDEX) {
-				o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
-				o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)right->index;
-				++o.op_load_member.member_indices_size;
-			}
-			else {
-				variable sub_expression                                                       = emit_expression(code, parent, right);
-				o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]         = true;
-				o.op_load_member.dynamic_member_indices[o.op_load_member.member_indices_size] = sub_expression;
-				++o.op_load_member.member_indices_size;
-			}
+		    debug_context context = {0};
+		    check(right->type.type != NO_TYPE, context, "Part of the member does not have a type");
+		    if (right->kind == EXPRESSION_VARIABLE && !parent_dynamic) {
+		        bool found = false;
+		        for (size_t i = 0; i < prev_s->members.size; ++i) {
+		            if (prev_s->members.m[i].name == right->variable) {
+		                o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
+		                o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)i;
+		                ++o.op_load_member.member_indices_size;
+		                found = true;
+		                break;
+		            }
+		        }
+		        check(found, context, "Member not found");
+		    }
+		    else if (right->kind == EXPRESSION_INDEX) {
+		        o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
+		        o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)right->index;
+		        ++o.op_load_member.member_indices_size;
+		    }
+		    else {
+		        variable sub_expression                                                       = emit_expression(code, parent, right);
+		        o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]         = true;
+		        o.op_load_member.dynamic_member_indices[o.op_load_member.member_indices_size] = sub_expression;
+		        ++o.op_load_member.member_indices_size;
+		    }
 		}
 
 		emit_op(code, &o);
 
 		return v;
-	}
-	case EXPRESSION_CONSTRUCTOR: {
-		debug_context context = {0};
-		error(context, "not implemented");
-	}
+	}*/
 	default: {
 		debug_context context = {0};
 		error(context, "not implemented");
