@@ -16,11 +16,6 @@ typedef struct expressions {
 	size_t             size;
 } expressions;
 
-typedef struct swizzle {
-	uint32_t indices[4];
-	uint32_t size;
-} swizzle;
-
 typedef struct expression {
 	enum {
 		EXPRESSION_BINARY,

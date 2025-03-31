@@ -250,113 +250,85 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				emit_op(code, &o);
 				break;
 			}
-			/*case EXPRESSION_STATIC_MEMBER:
-			case EXPRESSION_DYNAMIC_MEMBER: {
-				variable member_var = emit_expression(code, parent, left->member.left);
-
+			case EXPRESSION_ELEMENT:
+			case EXPRESSION_MEMBER:
+			case EXPRESSION_SWIZZLE: {
 				opcode o;
 				switch (e->binary.op) {
 				case OPERATOR_ASSIGN:
-				    o.type = OPCODE_STORE_MEMBER;
-				    break;
+					o.type = OPCODE_STORE_ACCESS_LIST;
+					break;
 				case OPERATOR_MINUS_ASSIGN:
-				    o.type = OPCODE_SUB_AND_STORE_MEMBER;
-				    break;
+					o.type = OPCODE_SUB_AND_STORE_ACCESS_LIST;
+					break;
 				case OPERATOR_PLUS_ASSIGN:
-				    o.type = OPCODE_ADD_AND_STORE_MEMBER;
-				    break;
+					o.type = OPCODE_ADD_AND_STORE_ACCESS_LIST;
+					break;
 				case OPERATOR_DIVIDE_ASSIGN:
-				    o.type = OPCODE_DIVIDE_AND_STORE_MEMBER;
-				    break;
+					o.type = OPCODE_DIVIDE_AND_STORE_ACCESS_LIST;
+					break;
 				case OPERATOR_MULTIPLY_ASSIGN:
-				    o.type = OPCODE_MULTIPLY_AND_STORE_MEMBER;
-				    break;
+					o.type = OPCODE_MULTIPLY_AND_STORE_ACCESS_LIST;
+					break;
 				default: {
-				    error(context, "Unexpected operator");
+					error(context, "Unexpected operator");
 				}
 				}
-				o.size                 = OP_SIZE(o, op_store_member);
-				o.op_store_member.from = v;
-				o.op_store_member.to   = member_var;
-				// o.op_store_member.member = left->member.right;
+				o.size                      = OP_SIZE(o, op_store_access_list);
+				o.op_store_access_list.from = v;
 
-				o.op_store_member.member_indices_size = 0;
-				expression *right                     = left->member.right;
-				type_id     prev_struct               = left->member.left->type.type;
-				type       *prev_s                    = get_type(prev_struct);
+				expression *of = left;
 
-				bool parent_dynamic = left->kind == EXPRESSION_DYNAMIC_MEMBER;
+				access   access_list[64];
+				uint32_t access_list_size = 0;
 
-				while (right->kind == EXPRESSION_STATIC_MEMBER || right->kind == EXPRESSION_DYNAMIC_MEMBER) {
-				    debug_context context = {0};
-				    check(right->type.type != NO_TYPE, context, "Part of the member does not have a type");
+				while (of->kind == EXPRESSION_ELEMENT || of->kind == EXPRESSION_MEMBER || of->kind == EXPRESSION_SWIZZLE) {
+					access *a = &access_list[access_list_size];
 
-				    if (right->member.left->kind == EXPRESSION_VARIABLE && !parent_dynamic) {
-				        bool found = false;
-				        for (size_t i = 0; i < prev_s->members.size; ++i) {
-				            if (prev_s->members.m[i].name == right->member.left->variable) {
-				                o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
-				                o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)i;
-				                ++o.op_store_member.member_indices_size;
-				                found = true;
-				                break;
-				            }
-				        }
-				        check(found, context, "Variable for a member not found");
-				    }
-				    else if (right->member.left->kind == EXPRESSION_INDEX) {
-				        o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
-				        o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)right->member.left->index;
-				        ++o.op_store_member.member_indices_size;
-				    }
-				    else {
-				        variable sub_expression                                                         = emit_expression(code, parent, right->member.left);
-				        o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]         = true;
-				        o.op_store_member.dynamic_member_indices[o.op_store_member.member_indices_size] = sub_expression;
-				        ++o.op_store_member.member_indices_size;
-				    }
+					switch (of->kind) {
+					case EXPRESSION_ELEMENT:
+						a->kind                 = ACCESS_ELEMENT;
+						a->access_element.index = emit_expression(code, parent, of->element.element_index);
 
-				    prev_struct    = right->member.left->type.type;
-				    prev_s         = get_type(prev_struct);
-				    parent_dynamic = right->kind == EXPRESSION_DYNAMIC_MEMBER;
-				    right          = right->member.right;
+						of = of->element.of;
+
+						break;
+					case EXPRESSION_MEMBER:
+						a->kind               = ACCESS_MEMBER;
+						a->access_member.name = of->member.member_name;
+
+						of = of->member.of;
+
+						break;
+					case EXPRESSION_SWIZZLE:
+						a->kind                   = ACCESS_SWIZZLE;
+						a->access_swizzle.swizzle = of->swizzle.swizz;
+
+						of = of->swizzle.of;
+
+						break;
+					default:
+						assert(false);
+						break;
+					}
+
+					access_list_size += 1;
 				}
 
-				{
-				    debug_context context = {0};
-				    check(right->type.type != NO_TYPE, context, "Part of the member does not have a type");
-				    if (right->kind == EXPRESSION_VARIABLE && !parent_dynamic) {
-				        bool found = false;
-				        for (size_t i = 0; i < prev_s->members.size; ++i) {
-				            if (prev_s->members.m[i].name == right->variable) {
-				                o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
-				                o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)i;
-				                ++o.op_store_member.member_indices_size;
-				                found = true;
-				                break;
-				            }
-				        }
-				        check(found, context, "Member not found");
-				    }
-				    else if (right->kind == EXPRESSION_INDEX) {
-				        o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]        = false;
-				        o.op_store_member.static_member_indices[o.op_store_member.member_indices_size] = (uint16_t)right->index;
-				        ++o.op_store_member.member_indices_size;
-				    }
-				    else {
-				        variable sub_expression                                                         = emit_expression(code, parent, right);
-				        o.op_store_member.dynamic_member[o.op_store_member.member_indices_size]         = true;
-				        o.op_store_member.dynamic_member_indices[o.op_store_member.member_indices_size] = sub_expression;
-				        ++o.op_store_member.member_indices_size;
-				    }
+				o.op_store_access_list.access_list_size = access_list_size;
+
+				for (uint32_t access_index = 0; access_index < access_list_size; ++access_index) {
+					o.op_store_access_list.access_list[access_list_size - access_index - 1] = access_list[access_index];
 				}
+
+				o.op_store_access_list.to = emit_expression(code, parent, of);
 
 				emit_op(code, &o);
 				break;
-			}*/
+			}
 			default: {
 				debug_context context = {0};
-				error(context, "Expected a variable or a member");
+				error(context, "Expected a variable or an access");
 			}
 			}
 
@@ -501,104 +473,64 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 	}
 	case EXPRESSION_ELEMENT:
 	case EXPRESSION_MEMBER:
-	case EXPRESSION_SWIZZLE:
-		break;
-	/*case EXPRESSION_STATIC_MEMBER:
-	case EXPRESSION_DYNAMIC_MEMBER: {
-		variable v = allocate_variable(e->type, VARIABLE_INTERNAL);
-
+	case EXPRESSION_SWIZZLE: {
 		opcode o;
-		o.type = OPCODE_LOAD_MEMBER;
-		o.size = OP_SIZE(o, op_load_member);
+		o.type = OPCODE_LOAD_ACCESS_LIST;
+		o.size = OP_SIZE(o, op_load_access_list);
 
-		debug_context context = {0};
-		if (e->member.left->kind == EXPRESSION_VARIABLE) {
-		    o.op_load_member.from = find_variable(parent, e->member.left->variable);
-		}
-		else {
-		    o.op_load_member.from = emit_expression(code, parent, e->member.left);
-		}
+		variable v               = allocate_variable(e->type, VARIABLE_INTERNAL);
+		o.op_load_access_list.to = v;
 
-		check(o.op_load_member.from.index != 0, context, "Load var is broken");
-		o.op_load_member.to = v;
+		expression *of = e;
 
-		o.op_load_member.member_indices_size = 0;
-		expression *right                    = e->member.right;
-		type_id     prev_struct              = e->member.left->type.type;
-		type       *prev_s                   = get_type(prev_struct);
-		o.op_load_member.member_parent_type  = prev_struct;
-		o.op_load_member.member_parent_array = get_type(e->member.left->type.type)->array_size > 0 || e->member.left->type.type == tex2d_type_id;
+		access   access_list[64];
+		uint32_t access_list_size = 0;
 
-		bool parent_dynamic = e->kind == EXPRESSION_DYNAMIC_MEMBER;
+		while (of->kind == EXPRESSION_ELEMENT || of->kind == EXPRESSION_MEMBER || of->kind == EXPRESSION_SWIZZLE) {
+			access *a = &access_list[access_list_size];
 
-		while (right->kind == EXPRESSION_STATIC_MEMBER || right->kind == EXPRESSION_DYNAMIC_MEMBER) {
-		    debug_context context = {0};
-		    check(right->type.type != NO_TYPE, context, "Part of the member does not have a type");
+			switch (of->kind) {
+			case EXPRESSION_ELEMENT:
+				a->kind                 = ACCESS_ELEMENT;
+				a->access_element.index = emit_expression(code, parent, of->element.element_index);
 
-		    if (right->member.left->kind == EXPRESSION_VARIABLE && !parent_dynamic) {
-		        bool found = false;
-		        for (size_t i = 0; i < prev_s->members.size; ++i) {
-		            if (prev_s->members.m[i].name == right->member.left->variable) {
-		                o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
-		                o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)i;
-		                ++o.op_load_member.member_indices_size;
-		                found = true;
-		                break;
-		            }
-		        }
-		        check(found, context, "Variable for a member not found");
-		    }
-		    else if (right->member.left->kind == EXPRESSION_INDEX) {
-		        o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
-		        o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)right->member.left->index;
-		        ++o.op_load_member.member_indices_size;
-		    }
-		    else {
-		        variable sub_expression                                                       = emit_expression(code, parent, right->member.left);
-		        o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]         = true;
-		        o.op_load_member.dynamic_member_indices[o.op_load_member.member_indices_size] = sub_expression;
-		        ++o.op_load_member.member_indices_size;
-		    }
+				of = of->element.of;
 
-		    prev_struct    = right->member.left->type.type;
-		    prev_s         = get_type(prev_struct);
-		    parent_dynamic = right->kind == EXPRESSION_DYNAMIC_MEMBER;
-		    right          = right->member.right;
+				break;
+			case EXPRESSION_MEMBER:
+				a->kind               = ACCESS_MEMBER;
+				a->access_member.name = of->member.member_name;
+
+				of = of->member.of;
+
+				break;
+			case EXPRESSION_SWIZZLE:
+				a->kind                   = ACCESS_SWIZZLE;
+				a->access_swizzle.swizzle = of->swizzle.swizz;
+
+				of = of->swizzle.of;
+
+				break;
+			default:
+				assert(false);
+				break;
+			}
+
+			access_list_size += 1;
 		}
 
-		{
-		    debug_context context = {0};
-		    check(right->type.type != NO_TYPE, context, "Part of the member does not have a type");
-		    if (right->kind == EXPRESSION_VARIABLE && !parent_dynamic) {
-		        bool found = false;
-		        for (size_t i = 0; i < prev_s->members.size; ++i) {
-		            if (prev_s->members.m[i].name == right->variable) {
-		                o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
-		                o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)i;
-		                ++o.op_load_member.member_indices_size;
-		                found = true;
-		                break;
-		            }
-		        }
-		        check(found, context, "Member not found");
-		    }
-		    else if (right->kind == EXPRESSION_INDEX) {
-		        o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]        = false;
-		        o.op_load_member.static_member_indices[o.op_load_member.member_indices_size] = (uint16_t)right->index;
-		        ++o.op_load_member.member_indices_size;
-		    }
-		    else {
-		        variable sub_expression                                                       = emit_expression(code, parent, right);
-		        o.op_load_member.dynamic_member[o.op_load_member.member_indices_size]         = true;
-		        o.op_load_member.dynamic_member_indices[o.op_load_member.member_indices_size] = sub_expression;
-		        ++o.op_load_member.member_indices_size;
-		    }
+		o.op_load_access_list.access_list_size = access_list_size;
+
+		for (uint32_t access_index = 0; access_index < access_list_size; ++access_index) {
+			o.op_load_access_list.access_list[access_list_size - access_index - 1] = access_list[access_index];
 		}
+
+		o.op_load_access_list.from = emit_expression(code, parent, of);
 
 		emit_op(code, &o);
 
 		return v;
-	}*/
+	}
 	default: {
 		debug_context context = {0};
 		error(context, "not implemented");

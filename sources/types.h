@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KONG_TYPES_HEADER
+#define KONG_TYPES_HEADER
 
 #include "names.h"
 #include "tokenizer.h"
@@ -114,3 +115,10 @@ static inline bool is_cbv_srv_uav(type_id t) {
 static inline bool is_sampler(type_id t) {
 	return t == sampler_type_id;
 }
+
+typedef struct swizzle {
+	uint32_t indices[4];
+	uint32_t size;
+} swizzle;
+
+#endif

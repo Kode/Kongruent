@@ -14,6 +14,26 @@ typedef struct variable {
 	type_ref      type;
 } variable;
 
+typedef enum access_kind { ACCESS_MEMBER, ACCESS_ELEMENT, ACCESS_SWIZZLE } access_kind;
+
+typedef struct access {
+	access_kind kind;
+
+	union {
+		struct {
+			name_id name;
+		} access_member;
+
+		struct {
+			variable index;
+		} access_element;
+
+		struct {
+			swizzle swizzle;
+		} access_swizzle;
+	};
+} access;
+
 typedef struct opcode {
 	enum {
 		OPCODE_VAR,
@@ -25,14 +45,20 @@ typedef struct opcode {
 		OPCODE_DIVIDE_AND_STORE_VARIABLE,
 		OPCODE_MULTIPLY_AND_STORE_VARIABLE,
 		OPCODE_STORE_MEMBER,
+		OPCODE_STORE_ACCESS_LIST,
 		OPCODE_SUB_AND_STORE_MEMBER,
+		OPCODE_SUB_AND_STORE_ACCESS_LIST,
 		OPCODE_ADD_AND_STORE_MEMBER,
+		OPCODE_ADD_AND_STORE_ACCESS_LIST,
 		OPCODE_DIVIDE_AND_STORE_MEMBER,
+		OPCODE_DIVIDE_AND_STORE_ACCESS_LIST,
 		OPCODE_MULTIPLY_AND_STORE_MEMBER,
+		OPCODE_MULTIPLY_AND_STORE_ACCESS_LIST,
 		OPCODE_LOAD_FLOAT_CONSTANT,
 		OPCODE_LOAD_INT_CONSTANT,
 		OPCODE_LOAD_BOOL_CONSTANT,
 		OPCODE_LOAD_MEMBER,
+		OPCODE_LOAD_ACCESS_LIST,
 		OPCODE_RETURN,
 		OPCODE_DISCARD,
 		OPCODE_CALL,
@@ -88,6 +114,13 @@ typedef struct opcode {
 			uint8_t member_indices_size;
 		} op_store_member;
 		struct {
+			variable from;
+			variable to;
+
+			access  access_list[64];
+			uint8_t access_list_size;
+		} op_store_access_list;
+		struct {
 			float    number;
 			variable to;
 		} op_load_float_constant;
@@ -112,6 +145,13 @@ typedef struct opcode {
 
 			uint8_t member_indices_size;
 		} op_load_member;
+		struct {
+			variable from;
+			variable to;
+
+			access  access_list[64];
+			uint8_t access_list_size;
+		} op_load_access_list;
 		struct {
 			variable var;
 		} op_return;
