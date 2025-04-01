@@ -404,7 +404,7 @@ static void write_functions(char *code, size_t *offset) {
 				bool root_constant = var_name(o->op_load_access_list.from, from_name);
 
 				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%s", type_string(o->op_load_access_list.to.type.type), o->op_load_access_list.to.index,
+				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %s", type_string(o->op_load_access_list.to.type.type), o->op_load_access_list.to.index,
 				                   from_name);
 
 				type *s = get_type(o->op_load_access_list.from.type.type);
