@@ -45,20 +45,14 @@ typedef struct opcode {
 		OPCODE_ADD_AND_STORE_VARIABLE,
 		OPCODE_DIVIDE_AND_STORE_VARIABLE,
 		OPCODE_MULTIPLY_AND_STORE_VARIABLE,
-		OPCODE_STORE_MEMBER,
 		OPCODE_STORE_ACCESS_LIST,
-		OPCODE_SUB_AND_STORE_MEMBER,
 		OPCODE_SUB_AND_STORE_ACCESS_LIST,
-		OPCODE_ADD_AND_STORE_MEMBER,
 		OPCODE_ADD_AND_STORE_ACCESS_LIST,
-		OPCODE_DIVIDE_AND_STORE_MEMBER,
 		OPCODE_DIVIDE_AND_STORE_ACCESS_LIST,
-		OPCODE_MULTIPLY_AND_STORE_MEMBER,
 		OPCODE_MULTIPLY_AND_STORE_ACCESS_LIST,
 		OPCODE_LOAD_FLOAT_CONSTANT,
 		OPCODE_LOAD_INT_CONSTANT,
 		OPCODE_LOAD_BOOL_CONSTANT,
-		OPCODE_LOAD_MEMBER,
 		OPCODE_LOAD_ACCESS_LIST,
 		OPCODE_RETURN,
 		OPCODE_DISCARD,
@@ -107,17 +101,6 @@ typedef struct opcode {
 			variable from;
 			variable to;
 
-			bool     dynamic_member[64];
-			variable dynamic_member_indices[64];
-
-			uint32_t static_member_indices[64];
-
-			uint8_t member_indices_size;
-		} op_store_member;
-		struct {
-			variable from;
-			variable to;
-
 			access  access_list[64];
 			uint8_t access_list_size;
 		} op_store_access_list;
@@ -133,19 +116,6 @@ typedef struct opcode {
 			bool     boolean;
 			variable to;
 		} op_load_bool_constant;
-		struct {
-			variable from;
-			variable to;
-
-			bool     dynamic_member[64];
-			variable dynamic_member_indices[64];
-
-			uint32_t static_member_indices[64];
-			type_id  member_parent_type;
-			bool     member_parent_array;
-
-			uint8_t member_indices_size;
-		} op_load_member;
 		struct {
 			variable from;
 			variable to;

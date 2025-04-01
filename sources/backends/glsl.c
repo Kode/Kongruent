@@ -310,40 +310,60 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 				}
 				break;
 			}
-			case OPCODE_LOAD_MEMBER: {
+			case OPCODE_LOAD_ACCESS_LIST: {
 				uint64_t global_var_index = 0;
 				for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
 					global *g = get_global(j);
-					if (o->op_load_member.from.index == g->var_index) {
+					if (o->op_load_access_list.from.index == g->var_index) {
 						global_var_index = g->var_index;
 						break;
 					}
 				}
 
 				indent(code, offset, indentation);
-				if (f == main && o->op_load_member.member_parent_type == input) {
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %s", type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
-					                   type_string(o->op_load_member.member_parent_type));
+
+				if (f == main && o->op_load_access_list.from.type.type == input) {
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %s" PRIu64, type_string(o->op_load_access_list.to.type.type),
+					                   o->op_load_access_list.to.index, type_string(o->op_load_access_list.from.type.type));
 				}
 				else {
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
-					                   o->op_load_member.from.index);
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_access_list.to.type.type),
+					                   o->op_load_access_list.to.index, o->op_load_access_list.from.index);
 				}
 
-				type *s = get_type(o->op_load_member.member_parent_type);
-				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
-					if (f == main && o->op_load_member.member_parent_type == input && i == 0) {
-						*offset += sprintf(&code[*offset], "_%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
+				type *s = get_type(o->op_load_access_list.from.type.type);
+
+				for (size_t i = 0; i < o->op_load_access_list.access_list_size; ++i) {
+					switch (o->op_load_access_list.access_list[i].kind) {
+					case ACCESS_ELEMENT:
+						*offset += sprintf(&code[*offset], "[_%" PRIu64 "]", o->op_load_access_list.access_list[i].access_element.index.index);
+						break;
+					case ACCESS_MEMBER:
+						if (global_var_index != 0 || (f == main && o->op_load_access_list.from.type.type == input && i == 0)) {
+							*offset += sprintf(&code[*offset], "_%s", get_name(o->op_load_access_list.access_list[i].access_member.name));
+						}
+						else {
+							*offset += sprintf(&code[*offset], ".%s", get_name(o->op_load_access_list.access_list[i].access_member.name));
+						}
+						break;
+					case ACCESS_SWIZZLE: {
+						char swizzle[4];
+
+						for (uint32_t swizzle_index = 0; swizzle_index < o->op_load_access_list.access_list[i].access_swizzle.swizzle.size; ++swizzle_index) {
+							swizzle[swizzle_index] = "xyzw"[o->op_load_access_list.access_list[i].access_swizzle.swizzle.indices[swizzle_index]];
+						}
+						swizzle[o->op_load_access_list.access_list[i].access_swizzle.swizzle.size] = 0;
+
+						*offset += sprintf(&code[*offset], ".%s", swizzle);
+						break;
 					}
-					else if (global_var_index != 0) {
-						*offset += sprintf(&code[*offset], "_%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
 					}
-					else {
-						*offset += sprintf(&code[*offset], ".%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
-					}
-					s = get_type(s->members.m[o->op_load_member.static_member_indices[i]].type.type);
+
+					s = get_type(o->op_load_access_list.access_list[i].type);
 				}
+
 				*offset += sprintf(&code[*offset], ";\n");
+
 				break;
 			}
 			case OPCODE_RETURN: {

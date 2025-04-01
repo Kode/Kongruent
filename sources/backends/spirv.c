@@ -880,30 +880,60 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		case OPCODE_VAR: {
 			break;
 		}
-		case OPCODE_LOAD_MEMBER: {
-			int      indices[256];
-			uint16_t indices_size = o->op_load_member.member_indices_size;
-			for (size_t i = 0; i < indices_size; ++i) {
-				indices[i] = (int)o->op_load_member.static_member_indices[i];
+		case OPCODE_LOAD_ACCESS_LIST: {
+			int indices[256];
+
+			uint16_t indices_size = o->op_load_access_list.access_list_size;
+
+			for (uint16_t i = 0; i < indices_size; ++i) {
+				switch (o->op_load_access_list.access_list[i].kind) {
+				case ACCESS_ELEMENT:
+					assert(false);
+					break;
+				case ACCESS_MEMBER: {
+					type *t = get_type(o->op_load_access_list.access_list[i].type);
+
+					int  member_index = 0;
+					bool found        = false;
+
+					for (; member_index < t->members.size; ++member_index) {
+						if (t->members.m[member_index].name == o->op_load_access_list.access_list[i].access_member.name) {
+							found = true;
+							break;
+						}
+					}
+
+					assert(found);
+
+					indices[i] = member_index;
+
+					break;
+				}
+				case ACCESS_SWIZZLE: {
+					assert(false);
+					break;
+				}
+				}
 			}
 
 			storage_class storage;
-			if (o->op_load_member.from.index == parameter_ids[0]) {
+			if (o->op_load_access_list.from.index == parameter_ids[0]) {
 				storage = STORAGE_CLASS_FUNCTION;
 			}
 			else {
-				if (o->op_load_member.from.kind == VARIABLE_GLOBAL) {
+				if (o->op_load_access_list.from.kind == VARIABLE_GLOBAL) {
 					storage = STORAGE_CLASS_UNIFORM;
 				}
 				else {
 					storage = STORAGE_CLASS_INPUT;
 				}
 			}
-			spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(o->op_load_member.to.type.type, storage),
-			                                         convert_kong_index_to_spirv_id(o->op_load_member.from.index), indices, indices_size);
 
-			spirv_id value = write_op_load(instructions, convert_type_to_spirv_id(o->op_load_member.to.type.type), pointer);
-			hmput(index_map, o->op_load_member.to.index, value);
+			spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(o->op_load_access_list.to.type.type, storage),
+			                                         convert_kong_index_to_spirv_id(o->op_load_access_list.from.index), indices, indices_size);
+
+			spirv_id value = write_op_load(instructions, convert_type_to_spirv_id(o->op_load_access_list.to.type.type), pointer);
+			hmput(index_map, o->op_load_access_list.to.index, value);
 
 			break;
 		}
@@ -961,19 +991,47 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			}
 			break;
 		}
-		case OPCODE_STORE_MEMBER: {
-			int      indices[256];
-			uint16_t indices_size = o->op_store_member.member_indices_size;
-			for (size_t i = 0; i < indices_size; ++i) {
-				check(!o->op_store_member.dynamic_member[i], context, "TODO");
-				indices[i] = (int)o->op_store_member.static_member_indices[i];
+		case OPCODE_STORE_ACCESS_LIST: {
+			int indices[256];
+
+			uint16_t indices_size = o->op_store_access_list.access_list_size;
+
+			for (uint16_t i = 0; i < indices_size; ++i) {
+				switch (o->op_store_access_list.access_list[i].kind) {
+				case ACCESS_ELEMENT:
+					assert(false);
+					break;
+				case ACCESS_MEMBER: {
+					type *t = get_type(o->op_store_access_list.access_list[i].type);
+
+					int  member_index = 0;
+					bool found        = false;
+
+					for (; member_index < t->members.size; ++member_index) {
+						if (t->members.m[member_index].name == o->op_store_access_list.access_list[i].access_member.name) {
+							found = true;
+							break;
+						}
+					}
+
+					assert(found);
+
+					indices[i] = member_index;
+
+					break;
+				}
+				case ACCESS_SWIZZLE: {
+					assert(false);
+					break;
+				}
+				}
 			}
 
-			type_id access_kong_type = find_access_type(indices, indices_size, o->op_store_member.to.type.type);
+			type_id access_kong_type = find_access_type(indices, indices_size, o->op_store_access_list.to.type.type);
 
 			spirv_id access_type = {0};
 
-			switch (o->op_store_member.to.kind) {
+			switch (o->op_store_access_list.to.kind) {
 			case VARIABLE_LOCAL:
 				access_type = convert_pointer_type_to_spirv_id(access_kong_type, STORAGE_CLASS_FUNCTION);
 				break;
@@ -986,11 +1044,11 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			}
 
 			int spirv_indices[256];
-			vector_member_indices(indices, spirv_indices, indices_size, o->op_store_member.to.type.type);
+			vector_member_indices(indices, spirv_indices, indices_size, o->op_store_access_list.to.type.type);
 
 			spirv_id pointer =
-			    write_op_access_chain(instructions, access_type, convert_kong_index_to_spirv_id(o->op_store_member.to.index), spirv_indices, indices_size);
-			write_op_store(instructions, pointer, convert_kong_index_to_spirv_id(o->op_store_member.from.index));
+			    write_op_access_chain(instructions, access_type, convert_kong_index_to_spirv_id(o->op_store_access_list.to.index), spirv_indices, indices_size);
+			write_op_store(instructions, pointer, convert_kong_index_to_spirv_id(o->op_store_access_list.from.index));
 			break;
 		}
 		case OPCODE_STORE_VARIABLE: {
@@ -1228,7 +1286,8 @@ static void write_globals(instructions_buffer *instructions_block, function *mai
 			type *t = get_type(g->type);
 			for (size_t i = 0; i < t->members.size; ++i) {
 			    *offset +=
-			        sprintf(&hlsl[*offset], "\t%s _%" PRIu64 "_%s;\n", type_string(t->members.m[i].type.type), g->var_index, get_name(t->members.m[i].name));
+			        sprintf(&hlsl[*offset], "\t%s _%" PRIu64 "_%s;\n", type_string(t->members.m[i].type.type), g->var_index,
+			get_name(t->members.m[i].name));
 			}
 			*offset += sprintf(&hlsl[*offset], "}\n\n");*/
 
