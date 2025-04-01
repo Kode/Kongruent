@@ -191,38 +191,6 @@ static type_id find_access_type(int *indices, int indices_size, type_id base_typ
 	}
 }
 
-static void vector_member_indices(int *input_indices, int *output_indices, int indices_size, type_id base_type) {
-	if (base_type == float2_id || base_type == float3_id || base_type == float4_id) {
-		type *t = get_type(base_type);
-
-		if (strcmp(get_name(t->members.m[input_indices[0]].name), "x") == 0 || strcmp(get_name(t->members.m[input_indices[0]].name), "r") == 0) {
-			output_indices[0] = 0;
-		}
-		else if (strcmp(get_name(t->members.m[input_indices[0]].name), "y") == 0 || strcmp(get_name(t->members.m[input_indices[0]].name), "g") == 0) {
-			output_indices[0] = 1;
-		}
-		else if (strcmp(get_name(t->members.m[input_indices[0]].name), "z") == 0 || strcmp(get_name(t->members.m[input_indices[0]].name), "b") == 0) {
-			output_indices[0] = 2;
-		}
-		else if (strcmp(get_name(t->members.m[input_indices[0]].name), "w") == 0 || strcmp(get_name(t->members.m[input_indices[0]].name), "a") == 0) {
-			output_indices[0] = 3;
-		}
-		else {
-			// assert(false);
-			output_indices[0] = 0; // TODO
-		}
-	}
-	else {
-		output_indices[0] = input_indices[0];
-	}
-
-	if (indices_size > 1) {
-		type *t = get_type(base_type);
-		assert(input_indices[0] < t->members.size);
-		vector_member_indices(&input_indices[1], &output_indices[1], indices_size - 1, t->members.m[input_indices[0]].type.type);
-	}
-}
-
 typedef enum addressing_model { ADDRESSING_MODEL_LOGICAL = 0 } addressing_model;
 
 typedef enum memory_model { MEMORY_MODEL_SIMPLE = 0, MEMORY_MODEL_GLSL450 = 1 } memory_model;
@@ -885,19 +853,19 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 			uint16_t indices_size = o->op_load_access_list.access_list_size;
 
+			type *s = get_type(o->op_load_access_list.from.type.type);
+
 			for (uint16_t i = 0; i < indices_size; ++i) {
 				switch (o->op_load_access_list.access_list[i].kind) {
 				case ACCESS_ELEMENT:
 					assert(false);
 					break;
 				case ACCESS_MEMBER: {
-					type *t = get_type(o->op_load_access_list.access_list[i].type);
-
 					int  member_index = 0;
 					bool found        = false;
 
-					for (; member_index < t->members.size; ++member_index) {
-						if (t->members.m[member_index].name == o->op_load_access_list.access_list[i].access_member.name) {
+					for (; member_index < s->members.size; ++member_index) {
+						if (s->members.m[member_index].name == o->op_load_access_list.access_list[i].access_member.name) {
 							found = true;
 							break;
 						}
@@ -910,10 +878,15 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					break;
 				}
 				case ACCESS_SWIZZLE: {
-					assert(false);
+					assert(o->op_load_access_list.access_list[i].access_swizzle.swizzle.size == 1);
+
+					indices[i] = o->op_load_access_list.access_list[i].access_swizzle.swizzle.indices[0];
+
 					break;
 				}
 				}
+
+				s = get_type(o->op_load_access_list.access_list[i].type);
 			}
 
 			storage_class storage;
@@ -996,19 +969,19 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 			uint16_t indices_size = o->op_store_access_list.access_list_size;
 
+			type *s = get_type(o->op_store_access_list.to.type.type);
+
 			for (uint16_t i = 0; i < indices_size; ++i) {
 				switch (o->op_store_access_list.access_list[i].kind) {
 				case ACCESS_ELEMENT:
 					assert(false);
 					break;
 				case ACCESS_MEMBER: {
-					type *t = get_type(o->op_store_access_list.access_list[i].type);
-
 					int  member_index = 0;
 					bool found        = false;
 
-					for (; member_index < t->members.size; ++member_index) {
-						if (t->members.m[member_index].name == o->op_store_access_list.access_list[i].access_member.name) {
+					for (; member_index < s->members.size; ++member_index) {
+						if (s->members.m[member_index].name == o->op_store_access_list.access_list[i].access_member.name) {
 							found = true;
 							break;
 						}
@@ -1021,10 +994,15 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					break;
 				}
 				case ACCESS_SWIZZLE: {
-					assert(false);
+					assert(o->op_store_access_list.access_list[i].access_swizzle.swizzle.size == 1);
+
+					indices[i] = o->op_store_access_list.access_list[i].access_swizzle.swizzle.indices[0];
+
 					break;
 				}
 				}
+
+				s = get_type(o->op_store_access_list.access_list[i].type);
 			}
 
 			type_id access_kong_type = find_access_type(indices, indices_size, o->op_store_access_list.to.type.type);
@@ -1043,12 +1021,10 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				break;
 			}
 
-			int spirv_indices[256];
-			vector_member_indices(indices, spirv_indices, indices_size, o->op_store_access_list.to.type.type);
-
 			spirv_id pointer =
-			    write_op_access_chain(instructions, access_type, convert_kong_index_to_spirv_id(o->op_store_access_list.to.index), spirv_indices, indices_size);
+			    write_op_access_chain(instructions, access_type, convert_kong_index_to_spirv_id(o->op_store_access_list.to.index), indices, indices_size);
 			write_op_store(instructions, pointer, convert_kong_index_to_spirv_id(o->op_store_access_list.from.index));
+
 			break;
 		}
 		case OPCODE_STORE_VARIABLE: {
