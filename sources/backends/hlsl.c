@@ -1135,7 +1135,6 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				type *s = get_type(o->op_load_access_list.from.type.type);
 
 				for (size_t i = 0; i < o->op_load_access_list.access_list_size; ++i) {
-
 					switch (o->op_load_access_list.access_list[i].kind) {
 					case ACCESS_ELEMENT: {
 						type *from_type = get_type(o->op_load_access_list.from.type.type);
@@ -1154,10 +1153,10 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 					}
 					case ACCESS_MEMBER:
 						if (global_var_index != 0 && i == 0) {
-							*offset += sprintf(&hlsl[*offset], "_%s", get_name(o->op_load_access_list.access_list[i].access_member.name));
+							*offset += sprintf(&hlsl[*offset], "_%s", member_string(s, o->op_load_access_list.access_list[i].access_member.name));
 						}
 						else {
-							*offset += sprintf(&hlsl[*offset], ".%s", get_name(o->op_load_access_list.access_list[i].access_member.name));
+							*offset += sprintf(&hlsl[*offset], ".%s", member_string(s, o->op_load_access_list.access_list[i].access_member.name));
 						}
 						break;
 					case ACCESS_SWIZZLE: {
@@ -1217,7 +1216,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 						break;
 					}
 					case ACCESS_MEMBER:
-						*offset += sprintf(&hlsl[*offset], ".%s", get_name(o->op_store_access_list.access_list[i].access_member.name));
+						*offset += sprintf(&hlsl[*offset], ".%s", member_string(s, o->op_store_access_list.access_list[i].access_member.name));
 						break;
 					case ACCESS_SWIZZLE: {
 						char swizzle[4];
