@@ -323,7 +323,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 				indent(code, offset, indentation);
 
 				if (f == main && o->op_load_access_list.from.type.type == input) {
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %s" PRIu64, type_string(o->op_load_access_list.to.type.type),
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %s", type_string(o->op_load_access_list.to.type.type),
 					                   o->op_load_access_list.to.index, type_string(o->op_load_access_list.from.type.type));
 				}
 				else {
