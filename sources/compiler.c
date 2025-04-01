@@ -284,6 +284,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 				while (of->kind == EXPRESSION_ELEMENT || of->kind == EXPRESSION_MEMBER || of->kind == EXPRESSION_SWIZZLE) {
 					access *a = &access_list[access_list_size];
+					a->type   = of->type.type;
 
 					switch (of->kind) {
 					case EXPRESSION_ELEMENT:
@@ -488,6 +489,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 		while (of->kind == EXPRESSION_ELEMENT || of->kind == EXPRESSION_MEMBER || of->kind == EXPRESSION_SWIZZLE) {
 			access *a = &access_list[access_list_size];
+			a->type   = of->type.type;
 
 			switch (of->kind) {
 			case EXPRESSION_ELEMENT:

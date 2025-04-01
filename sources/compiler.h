@@ -18,6 +18,7 @@ typedef enum access_kind { ACCESS_MEMBER, ACCESS_ELEMENT, ACCESS_SWIZZLE } acces
 
 typedef struct access {
 	access_kind kind;
+	type_id     type;
 
 	union {
 		struct {

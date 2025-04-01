@@ -1114,12 +1114,12 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 		while (index < size) {
 			opcode *o = (opcode *)&data[index];
 			switch (o->type) {
-			case OPCODE_LOAD_MEMBER: {
+			case OPCODE_LOAD_ACCESS_LIST: {
 				uint64_t global_var_index = 0;
 				global  *g                = NULL;
 				for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
 					g = get_global(j);
-					if (o->op_load_member.from.index == g->var_index) {
+					if (o->op_load_access_list.from.index == g->var_index) {
 						global_var_index = g->var_index;
 						if (get_type(g->type)->built_in) {
 							global_var_index = 0;
@@ -1129,49 +1129,67 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				}
 
 				indent(hlsl, offset, indentation);
-				*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_member.to.type.type), o->op_load_member.to.index,
-				                   o->op_load_member.from.index);
-				type *s = get_type(o->op_load_member.member_parent_type);
-				for (size_t i = 0; i < o->op_load_member.member_indices_size; ++i) {
-					if (o->op_load_member.dynamic_member[i]) {
-						type *from_type = get_type(o->op_load_member.from.type.type);
+				*offset += sprintf(&hlsl[*offset], "%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_access_list.to.type.type),
+				                   o->op_load_access_list.to.index, o->op_load_access_list.from.index);
+
+				type *s = get_type(o->op_load_access_list.from.type.type);
+
+				for (size_t i = 0; i < o->op_load_access_list.access_list_size; ++i) {
+
+					switch (o->op_load_access_list.access_list[i].kind) {
+					case ACCESS_ELEMENT: {
+						type *from_type = get_type(o->op_load_access_list.from.type.type);
 
 						if (from_type->array_size == UINT32_MAX && from_type->base == tex2d_type_id) {
-							*offset += sprintf(&hlsl[*offset], "[NonUniformResourceIndex(_%" PRIu64 ")]", o->op_load_member.dynamic_member_indices[i].index);
+							*offset += sprintf(&hlsl[*offset], "[NonUniformResourceIndex(_%" PRIu64 ")]",
+							                   o->op_load_access_list.access_list[i].access_element.index.index);
 						}
 						else if (global_var_index != 0 && i == 0 && get_type(from_type->base)->built_in) {
-							*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "].data", o->op_load_member.dynamic_member_indices[i].index);
+							*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "].data", o->op_load_access_list.access_list[i].access_element.index.index);
 						}
 						else {
-							*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "]", o->op_load_member.dynamic_member_indices[i].index);
+							*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "]", o->op_load_access_list.access_list[i].access_element.index.index);
 						}
-
-						s = get_type(o->op_load_member.dynamic_member_indices[i].type.type);
+						break;
 					}
-					else {
+					case ACCESS_MEMBER:
 						if (global_var_index != 0 && i == 0) {
-							*offset += sprintf(&hlsl[*offset], "_%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
+							*offset += sprintf(&hlsl[*offset], "_%s", get_name(o->op_load_access_list.access_list[i].access_member.name));
 						}
 						else {
-							*offset += sprintf(&hlsl[*offset], ".%s", get_name(s->members.m[o->op_load_member.static_member_indices[i]].name));
+							*offset += sprintf(&hlsl[*offset], ".%s", get_name(o->op_load_access_list.access_list[i].access_member.name));
 						}
+						break;
+					case ACCESS_SWIZZLE: {
+						char swizzle[4];
 
-						s = get_type(s->members.m[o->op_load_member.static_member_indices[i]].type.type);
+						for (uint32_t swizzle_index = 0; swizzle_index < o->op_load_access_list.access_list[i].access_swizzle.swizzle.size; ++swizzle_index) {
+							swizzle[swizzle_index] = "xyzw"[o->op_load_access_list.access_list[i].access_swizzle.swizzle.indices[swizzle_index]];
+						}
+						swizzle[o->op_load_access_list.access_list[i].access_swizzle.swizzle.size] = 0;
+
+						*offset += sprintf(&hlsl[*offset], ".%s", swizzle);
+						break;
 					}
+					}
+
+					s = get_type(o->op_load_access_list.access_list[i].type);
 				}
+
 				*offset += sprintf(&hlsl[*offset], ";\n");
+
 				break;
 			}
-			case OPCODE_STORE_MEMBER:
-			case OPCODE_SUB_AND_STORE_MEMBER:
-			case OPCODE_ADD_AND_STORE_MEMBER:
-			case OPCODE_DIVIDE_AND_STORE_MEMBER:
-			case OPCODE_MULTIPLY_AND_STORE_MEMBER: {
+			case OPCODE_STORE_ACCESS_LIST:
+			case OPCODE_SUB_AND_STORE_ACCESS_LIST:
+			case OPCODE_ADD_AND_STORE_ACCESS_LIST:
+			case OPCODE_DIVIDE_AND_STORE_ACCESS_LIST:
+			case OPCODE_MULTIPLY_AND_STORE_ACCESS_LIST: {
 				uint64_t global_var_index = 0;
 				global  *g                = NULL;
 				for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
 					g = get_global(j);
-					if (o->op_store_member.to.index == g->var_index) {
+					if (o->op_store_access_list.to.index == g->var_index) {
 						global_var_index = g->var_index;
 						if (get_type(g->type)->built_in) {
 							global_var_index = 0;
@@ -1181,59 +1199,58 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				}
 
 				indent(hlsl, offset, indentation);
-				*offset += sprintf(&hlsl[*offset], "_%" PRIu64, o->op_store_member.to.index);
+				*offset += sprintf(&hlsl[*offset], "_%" PRIu64, o->op_store_access_list.to.index);
 
-				type *s = get_type(o->op_store_member.to.type.type);
+				type *s = get_type(o->op_store_access_list.to.type.type);
 
-				for (size_t i = 0; i < o->op_store_member.member_indices_size; ++i) {
-					bool is_array = s->array_size > 0 || o->op_store_member.to.type.type == tex2d_type_id;
-
-					if (is_array) {
+				for (size_t i = 0; i < o->op_store_access_list.access_list_size; ++i) {
+					switch (o->op_store_access_list.access_list[i].kind) {
+					case ACCESS_ELEMENT: {
 						type *from_type = get_type(s->base);
 
 						if (global_var_index != 0 && i == 0 && from_type->built_in) {
-							if (o->op_store_member.dynamic_member[i]) {
-								*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "].data", o->op_store_member.dynamic_member_indices[i].index);
-							}
-							else {
-								*offset += sprintf(&hlsl[*offset], "[%i].data", o->op_store_member.static_member_indices[i]);
-							}
-						}
-						else if (o->op_store_member.dynamic_member[i]) {
-							*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "]", o->op_store_member.dynamic_member_indices[i].index);
+							*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "].data", o->op_store_access_list.access_list[i].access_element.index.index);
 						}
 						else {
-							*offset += sprintf(&hlsl[*offset], "[%i]", o->op_store_member.static_member_indices[i]);
+							*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "]", o->op_store_access_list.access_list[i].access_element.index.index);
 						}
-
-						s = from_type;
+						break;
 					}
-					else {
-						debug_context context = {0};
-						check(!o->op_store_member.dynamic_member[i], context, "Unexpected dynamic member");
-						check(o->op_store_member.static_member_indices[i] < s->members.size, context, "Member index out of bounds");
+					case ACCESS_MEMBER:
+						*offset += sprintf(&hlsl[*offset], ".%s", get_name(o->op_store_access_list.access_list[i].access_member.name));
+						break;
+					case ACCESS_SWIZZLE: {
+						char swizzle[4];
 
-						*offset += sprintf(&hlsl[*offset], ".%s", member_string(s, s->members.m[o->op_store_member.static_member_indices[i]].name));
+						for (uint32_t swizzle_index = 0; swizzle_index < o->op_store_access_list.access_list[i].access_swizzle.swizzle.size; ++swizzle_index) {
+							swizzle[swizzle_index] = "xyzw"[o->op_store_access_list.access_list[i].access_swizzle.swizzle.indices[swizzle_index]];
+						}
+						swizzle[o->op_store_access_list.access_list[i].access_swizzle.swizzle.size] = 0;
 
-						s = get_type(s->members.m[o->op_store_member.static_member_indices[i]].type.type);
+						*offset += sprintf(&hlsl[*offset], ".%s", swizzle);
+
+						break;
 					}
+					}
+
+					s = get_type(o->op_store_access_list.access_list[i].type);
 				}
 
 				switch (o->type) {
-				case OPCODE_STORE_MEMBER:
-					*offset += sprintf(&hlsl[*offset], " = _%" PRIu64 ";\n", o->op_store_member.from.index);
+				case OPCODE_STORE_ACCESS_LIST:
+					*offset += sprintf(&hlsl[*offset], " = _%" PRIu64 ";\n", o->op_store_access_list.from.index);
 					break;
-				case OPCODE_SUB_AND_STORE_MEMBER:
-					*offset += sprintf(&hlsl[*offset], " -= _%" PRIu64 ";\n", o->op_store_member.from.index);
+				case OPCODE_SUB_AND_STORE_ACCESS_LIST:
+					*offset += sprintf(&hlsl[*offset], " -= _%" PRIu64 ";\n", o->op_store_access_list.from.index);
 					break;
-				case OPCODE_ADD_AND_STORE_MEMBER:
-					*offset += sprintf(&hlsl[*offset], " += _%" PRIu64 ";\n", o->op_store_member.from.index);
+				case OPCODE_ADD_AND_STORE_ACCESS_LIST:
+					*offset += sprintf(&hlsl[*offset], " += _%" PRIu64 ";\n", o->op_store_access_list.from.index);
 					break;
-				case OPCODE_DIVIDE_AND_STORE_MEMBER:
-					*offset += sprintf(&hlsl[*offset], " /= _%" PRIu64 ";\n", o->op_store_member.from.index);
+				case OPCODE_DIVIDE_AND_STORE_ACCESS_LIST:
+					*offset += sprintf(&hlsl[*offset], " /= _%" PRIu64 ";\n", o->op_store_access_list.from.index);
 					break;
-				case OPCODE_MULTIPLY_AND_STORE_MEMBER:
-					*offset += sprintf(&hlsl[*offset], " *= _%" PRIu64 ";\n", o->op_store_member.from.index);
+				case OPCODE_MULTIPLY_AND_STORE_ACCESS_LIST:
+					*offset += sprintf(&hlsl[*offset], " *= _%" PRIu64 ";\n", o->op_store_access_list.from.index);
 					break;
 				default:
 					assert(false);
