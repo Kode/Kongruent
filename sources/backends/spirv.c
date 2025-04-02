@@ -4,6 +4,7 @@
 #include "../compiler.h"
 #include "../errors.h"
 #include "../functions.h"
+#include "../hashmap.h"
 #include "../log.h"
 #include "../parser.h"
 #include "../shader_stage.h"
@@ -628,18 +629,25 @@ static void write_op_function_end(instructions_buffer *instructions) {
 	write_simple_instruction(instructions, SPIRV_OPCODE_FUNCTION_END);
 }
 
-static struct {
-	int      key;
-	spirv_id value;
-} *int_constants = NULL;
+typedef struct int_constant_container {
+	struct container container;
+	spirv_id         value;
+} int_constant_container;
+
+static struct hash_map *int_constants = NULL;
 
 static spirv_id get_int_constant(int value) {
-	spirv_id index = hmget(int_constants, value);
-	if (index.id == 0) {
-		index = allocate_index();
-		hmput(int_constants, value, index);
+	int_constant_container *container = (int_constant_container *)hash_map_get(int_constants, value);
+
+	if (container == NULL) {
+		container = (int_constant_container *)malloc(sizeof(int_constant_container));
+		assert(container != NULL);
+		container->container.key = value;
+		container->value         = allocate_index();
+		hash_map_add(int_constants, (struct container *)container);
 	}
-	return index;
+
+	return container->value;
 }
 
 static struct {
@@ -1184,13 +1192,17 @@ static void write_functions(instructions_buffer *instructions, function *main, s
 	write_function(instructions, main, entry_point, stage, true, input, output);
 }
 
-static void write_constants(instructions_buffer *instructions) {
-	size_t size = hmlenu(int_constants);
-	for (size_t i = 0; i < size; ++i) {
-		write_constant_int(instructions, int_constants[i].value, int_constants[i].key);
-	}
+static void write_int_constant(struct container *container, void *data) {
+	int_constant_container *int_constant = (int_constant_container *)container;
+	instructions_buffer    *instructions = (instructions_buffer *)data;
 
-	size = hmlenu(float_constants);
+	write_constant_int(instructions, int_constant->value, int_constant->container.key);
+}
+
+static void write_constants(instructions_buffer *instructions) {
+	hash_map_iterate(int_constants, write_int_constant, instructions);
+
+	size_t size = hmlenu(float_constants);
 	for (size_t i = 0; i < size; ++i) {
 		write_constant_float(instructions, float_constants[i].value, float_constants[i].key);
 	}
@@ -1316,12 +1328,8 @@ static void init_type_map(void) {
 }
 
 static void init_int_constants(void) {
-	spirv_id default_id = {0};
-	hmdefault(int_constants, default_id);
-	size_t size = hmlenu(int_constants);
-	for (size_t i = 0; i < size; ++i) {
-		hmdel(int_constants, int_constants[i].key);
-	}
+	hash_map_destroy(int_constants);
+	int_constants = hash_map_create();
 }
 
 static void init_float_constants(void) {
