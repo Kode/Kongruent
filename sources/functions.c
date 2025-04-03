@@ -671,6 +671,8 @@ void functions_init(void) {
 	add_func_float3_float3_float3("cross");
 	add_func_float3_float3("saturate3");
 	add_func_float_float("saturate");
+	add_func_float_float("ddx");
+	add_func_float_float("ddy");
 
 	add_func_void_uint_uint("set_mesh_output_counts");
 
