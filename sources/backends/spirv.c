@@ -395,6 +395,11 @@ static spirv_id write_type_struct(instructions_buffer *instructions, spirv_id *t
 }
 
 static spirv_id write_type_pointer(instructions_buffer *instructions, storage_class storage, spirv_id type) {
+	if (storage == STORAGE_CLASS_UNIFORM) {
+		int a = 3;
+		++a;
+	}
+
 	spirv_id pointer_type = allocate_index();
 
 	uint32_t operands[] = {pointer_type.id, (uint32_t)storage, type.id};
@@ -403,6 +408,11 @@ static spirv_id write_type_pointer(instructions_buffer *instructions, storage_cl
 }
 
 static spirv_id write_type_pointer_preallocated(instructions_buffer *instructions, storage_class storage, spirv_id type, spirv_id pointer_type) {
+	if (storage == STORAGE_CLASS_UNIFORM) {
+		int a = 3;
+		++a;
+	}
+
 	uint32_t operands[] = {pointer_type.id, (uint32_t)storage, type.id};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_POINTER, operands);
 	return pointer_type;
@@ -1285,6 +1295,15 @@ static void write_globals(instructions_buffer *instructions_block, function *mai
 			uint16_t member_types_size = 0;
 			for (size_t j = 0; j < t->members.size; ++j) {
 				member_types[member_types_size] = convert_type_to_spirv_id(t->members.m[j].type.type);
+
+				spirv_id member_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM, member_types[member_types_size]);
+
+				complex_type ct;
+				ct.type    = t->members.m[j].type.type;
+				ct.pointer = true;
+				ct.storage = (uint16_t)STORAGE_CLASS_UNIFORM;
+				hmput(type_map, ct, member_pointer_type);
+
 				member_types_size += 1;
 				assert(member_types_size < 256);
 			}
