@@ -166,6 +166,9 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_COMPOSITE_CONSTRUCT = 80,
 	SPIRV_OPCODE_COMPOSITE_EXTRACT   = 81,
 	SPIRV_OPCODE_F_MUL               = 133,
+	SPIRV_OPCODE_VECTOR_TIMES_MATRIX = 144,
+	SPIRV_OPCODE_MATRIX_TIMES_VECTOR = 145,
+	SPIRV_OPCODE_MATRIX_TIMES_MATRIX = 146,
 	SPIRV_OPCODE_F_ORD_LESS_THAN     = 184,
 	SPIRV_OPCODE_LOOP_MERGE          = 246,
 	SPIRV_OPCODE_SELECTION_MERGE     = 247,
@@ -751,6 +754,36 @@ static spirv_id write_op_f_mul(instructions_buffer *instructions, spirv_id type,
 	return result;
 }
 
+static spirv_id write_op_matrix_times_vector(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_MATRIX_TIMES_VECTOR, operands);
+
+	return result;
+}
+
+static spirv_id write_op_vector_times_matrix(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_VECTOR_TIMES_MATRIX, operands);
+
+	return result;
+}
+
+static spirv_id write_op_matrix_times_matrix(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_MATRIX_TIMES_MATRIX, operands);
+
+	return result;
+}
+
 static void write_op_selection_merge(instructions_buffer *instructions, spirv_id merge_block, selection_control control) {
 	uint32_t operands[] = {merge_block.id, (uint32_t)control};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_SELECTION_MERGE, operands);
@@ -1171,9 +1204,44 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_MULTIPLY: {
-			spirv_id result = write_op_f_mul(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type),
-			                                 convert_kong_index_to_spirv_id(o->op_binary.left.index), convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			spirv_id left;
+			if (o->op_binary.left.kind != VARIABLE_INTERNAL) {
+				left =
+				    write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.left.type.type), convert_kong_index_to_spirv_id(o->op_binary.left.index));
+			}
+			else {
+				left = convert_kong_index_to_spirv_id(o->op_binary.left.index);
+			}
+
+			spirv_id right;
+			if (o->op_binary.right.kind != VARIABLE_INTERNAL) {
+				right = write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.right.type.type),
+				                      convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			}
+			else {
+				right = convert_kong_index_to_spirv_id(o->op_binary.right.index);
+			}
+
+			bool left_is_matrix  = o->op_binary.left.type.type == float3x3_id || o->op_binary.left.type.type == float4x4_id;
+			bool right_is_matrix = o->op_binary.right.type.type == float3x3_id || o->op_binary.right.type.type == float4x4_id;
+
+			spirv_id result;
+
+			if (left_is_matrix && right_is_matrix) {
+				result = write_op_matrix_times_matrix(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
+			}
+			else if (left_is_matrix) {
+				result = write_op_matrix_times_vector(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
+			}
+			else if (right_is_matrix) {
+				result = write_op_vector_times_matrix(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
+			}
+			else {
+				result = write_op_f_mul(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
+			}
+
 			hmput(index_map, o->op_binary.result.index, result);
+
 			break;
 		}
 		case OPCODE_IF: {
