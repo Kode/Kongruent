@@ -180,8 +180,8 @@ typedef enum spirv_opcode {
 
 static type_id find_access_type(int *indices, int indices_size, type_id base_type) {
 	if (indices_size == 1) {
-		if (base_type == float2_id || base_type == float3_id || base_type == float4_id) {
-			return float_id;
+		if (is_vector(base_type)) {
+			return vector_base_type(base_type);
 		}
 		else {
 			type *t = get_type(base_type);

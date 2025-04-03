@@ -35,32 +35,6 @@ type_ref find_local_var_type(block *b, name_id name) {
 
 void resolve_types_in_expression(statement *parent, expression *e);
 
-bool is_vector(type_id t) {
-	return t == float_id || t == float2_id || t == float3_id || t == float4_id || t == int_id || t == int2_id || t == int3_id || t == int4_id || t == uint_id ||
-	       t == uint2_id || t == uint3_id || t == uint4_id || t == bool_id || t == bool2_id || t == bool3_id || t == bool4_id;
-}
-
-uint32_t vector_size(type_id t) {
-	if (t == float_id || t == int_id || t == uint_id || t == bool_id) {
-		return 1u;
-	}
-
-	if (t == float2_id || t == int2_id || t == uint2_id || t == bool2_id) {
-		return 2u;
-	}
-
-	if (t == float3_id || t == int3_id || t == uint3_id || t == bool3_id) {
-		return 3u;
-	}
-
-	if (t == float4_id || t == int4_id || t == uint4_id || t == bool4_id) {
-		return 4u;
-	}
-
-	assert(false);
-	return 0;
-}
-
 static void resolve_types_in_element(statement *parent_block, expression *element) {
 	resolve_types_in_expression(parent_block, element->element.of);
 	resolve_types_in_expression(parent_block, element->element.element_index);
@@ -97,7 +71,7 @@ static void resolve_types_in_member(statement *parent_block, expression *member)
 
 	assert(of_type != NO_TYPE);
 
-	if (is_vector(of_type)) {
+	if (is_vector_or_scalar(of_type)) {
 		expression *of = member->member.of;
 
 		member->kind       = EXPRESSION_SWIZZLE;

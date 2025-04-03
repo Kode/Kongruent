@@ -276,3 +276,52 @@ attribute *find_attribute(attribute_list *attributes, name_id name) {
 	}
 	return NULL;
 }
+
+bool is_vector_or_scalar(type_id t) {
+	return t == float_id || t == float2_id || t == float3_id || t == float4_id || t == int_id || t == int2_id || t == int3_id || t == int4_id || t == uint_id ||
+	       t == uint2_id || t == uint3_id || t == uint4_id || t == bool_id || t == bool2_id || t == bool3_id || t == bool4_id;
+}
+
+bool is_vector(type_id t) {
+	return t == float2_id || t == float3_id || t == float4_id || t == int2_id || t == int3_id || t == int4_id || t == uint2_id || t == uint3_id ||
+	       t == uint4_id || t == bool2_id || t == bool3_id || t == bool4_id;
+}
+
+uint32_t vector_size(type_id t) {
+	if (t == float_id || t == int_id || t == uint_id || t == bool_id) {
+		return 1u;
+	}
+
+	if (t == float2_id || t == int2_id || t == uint2_id || t == bool2_id) {
+		return 2u;
+	}
+
+	if (t == float3_id || t == int3_id || t == uint3_id || t == bool3_id) {
+		return 3u;
+	}
+
+	if (t == float4_id || t == int4_id || t == uint4_id || t == bool4_id) {
+		return 4u;
+	}
+
+	assert(false);
+	return 0;
+}
+
+type_id vector_base_type(type_id vector_type) {
+	if (vector_type == float2_id || vector_type == float3_id || vector_type == float4_id) {
+		return float_id;
+	}
+	if (vector_type == int2_id || vector_type == int3_id || vector_type == int4_id) {
+		return int_id;
+	}
+	if (vector_type == uint2_id || vector_type == uint3_id || vector_type == uint4_id) {
+		return uint_id;
+	}
+	if (vector_type == bool2_id || vector_type == bool3_id || vector_type == bool4_id) {
+		return bool_id;
+	}
+
+	assert(false);
+	return float_id;
+}

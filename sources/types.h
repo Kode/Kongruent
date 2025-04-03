@@ -121,4 +121,12 @@ typedef struct swizzle {
 	uint32_t size;
 } swizzle;
 
+bool is_vector_or_scalar(type_id t);
+
+bool is_vector(type_id t);
+
+uint32_t vector_size(type_id t);
+
+type_id vector_base_type(type_id vector_type);
+
 #endif
