@@ -177,3 +177,7 @@ void allocate_globals(void);
 struct statement;
 
 void compile_function_block(opcodes *code, struct statement *block);
+
+variable allocate_variable(type_ref type, variable_kind kind);
+
+#define OP_SIZE(op, opmember) offsetof(opcode, opmember) + sizeof(op.opmember)

@@ -1,5 +1,6 @@
 #include "transformer.h"
 
+#include "compiler.h"
 #include "functions.h"
 
 #include <assert.h>
@@ -42,11 +43,33 @@ void transform(uint32_t flags) {
 
 				if (a.kind == ACCESS_SWIZZLE && a.access_swizzle.swizzle.size > 1) {
 					for (uint32_t swizzle_index = 0; swizzle_index < a.access_swizzle.swizzle.size; ++swizzle_index) {
+						type_ref t;
+						init_type_ref(&t, NO_NAME);
+						t.type = float_id;
+
+						variable from = allocate_variable(t, o->op_store_access_list.from.kind);
+
+						opcode from_opcode;
+						from_opcode.type                                                               = OPCODE_LOAD_ACCESS_LIST;
+						from_opcode.size                                                               = OP_SIZE(from_opcode, op_load_access_list);
+						from_opcode.op_load_access_list.from                                           = o->op_store_access_list.from;
+						from_opcode.op_load_access_list.to                                             = from;
+						from_opcode.op_load_access_list.access_list_size                               = 1;
+						from_opcode.op_load_access_list.access_list->kind                              = ACCESS_SWIZZLE;
+						from_opcode.op_load_access_list.access_list->access_swizzle.swizzle.size       = 1;
+						from_opcode.op_load_access_list.access_list->access_swizzle.swizzle.indices[0] = swizzle_index;
+						from_opcode.op_load_access_list.access_list->type                              = float_id;
+
+						copy_opcode(&from_opcode);
+
 						opcode new_opcode = *o;
+
+						new_opcode.op_store_access_list.from = from;
 
 						access *new_access = &new_opcode.op_store_access_list.access_list[new_opcode.op_store_access_list.access_list_size - 1];
 						new_access->access_swizzle.swizzle.size       = 1;
 						new_access->access_swizzle.swizzle.indices[0] = a.access_swizzle.swizzle.indices[swizzle_index];
+						new_access->type                              = float_id;
 
 						copy_opcode(&new_opcode);
 					}

@@ -164,6 +164,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_DECORATE            = 71,
 	SPIRV_OPCODE_MEMBER_DECORATE     = 72,
 	SPIRV_OPCODE_COMPOSITE_CONSTRUCT = 80,
+	SPIRV_OPCODE_COMPOSITE_EXTRACT   = 81,
 	SPIRV_OPCODE_F_MUL               = 133,
 	SPIRV_OPCODE_F_ORD_LESS_THAN     = 184,
 	SPIRV_OPCODE_LOOP_MERGE          = 246,
@@ -395,11 +396,6 @@ static spirv_id write_type_struct(instructions_buffer *instructions, spirv_id *t
 }
 
 static spirv_id write_type_pointer(instructions_buffer *instructions, storage_class storage, spirv_id type) {
-	if (storage == STORAGE_CLASS_UNIFORM) {
-		int a = 3;
-		++a;
-	}
-
 	spirv_id pointer_type = allocate_index();
 
 	uint32_t operands[] = {pointer_type.id, (uint32_t)storage, type.id};
@@ -408,11 +404,6 @@ static spirv_id write_type_pointer(instructions_buffer *instructions, storage_cl
 }
 
 static spirv_id write_type_pointer_preallocated(instructions_buffer *instructions, storage_class storage, spirv_id type, spirv_id pointer_type) {
-	if (storage == STORAGE_CLASS_UNIFORM) {
-		int a = 3;
-		++a;
-	}
-
 	uint32_t operands[] = {pointer_type.id, (uint32_t)storage, type.id};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_POINTER, operands);
 	return pointer_type;
@@ -727,6 +718,19 @@ static spirv_id write_op_composite_construct(instructions_buffer *instructions, 
 	return result;
 }
 
+static spirv_id write_op_composite_extract(instructions_buffer *instructions, spirv_id type, spirv_id composite, uint32_t *indices, uint16_t indices_size) {
+	spirv_id result = allocate_index();
+
+	operands_buffer[0] = type.id;
+	operands_buffer[1] = result.id;
+	operands_buffer[2] = composite.id;
+	for (uint16_t i = 0; i < indices_size; ++i) {
+		operands_buffer[i + 3] = indices[i];
+	}
+	write_instruction(instructions, 4 + indices_size, SPIRV_OPCODE_COMPOSITE_EXTRACT, operands_buffer);
+	return result;
+}
+
 static spirv_id write_op_f_ord_less_than(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
 	spirv_id result = allocate_index();
 
@@ -867,65 +871,110 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_LOAD_ACCESS_LIST: {
-			int indices[256];
-
 			uint16_t indices_size = o->op_load_access_list.access_list_size;
 
-			type *s = get_type(o->op_load_access_list.from.type.type);
+			if (o->op_load_access_list.from.kind == VARIABLE_INTERNAL) {
+				uint32_t indices[256];
 
-			for (uint16_t i = 0; i < indices_size; ++i) {
-				switch (o->op_load_access_list.access_list[i].kind) {
-				case ACCESS_ELEMENT:
-					assert(false);
-					break;
-				case ACCESS_MEMBER: {
-					int  member_index = 0;
-					bool found        = false;
+				type *s = get_type(o->op_load_access_list.from.type.type);
 
-					for (; member_index < s->members.size; ++member_index) {
-						if (s->members.m[member_index].name == o->op_load_access_list.access_list[i].access_member.name) {
-							found = true;
-							break;
+				for (uint16_t i = 0; i < indices_size; ++i) {
+					switch (o->op_load_access_list.access_list[i].kind) {
+					case ACCESS_ELEMENT:
+						assert(false);
+						break;
+					case ACCESS_MEMBER: {
+						uint32_t member_index = 0;
+						bool     found        = false;
+
+						for (; member_index < s->members.size; ++member_index) {
+							if (s->members.m[member_index].name == o->op_load_access_list.access_list[i].access_member.name) {
+								found = true;
+								break;
+							}
 						}
+
+						assert(found);
+
+						indices[i] = member_index;
+
+						break;
+					}
+					case ACCESS_SWIZZLE: {
+						assert(o->op_load_access_list.access_list[i].access_swizzle.swizzle.size == 1);
+
+						indices[i] = o->op_load_access_list.access_list[i].access_swizzle.swizzle.indices[0];
+
+						break;
+					}
 					}
 
-					assert(found);
-
-					indices[i] = member_index;
-
-					break;
-				}
-				case ACCESS_SWIZZLE: {
-					assert(o->op_load_access_list.access_list[i].access_swizzle.swizzle.size == 1);
-
-					indices[i] = o->op_load_access_list.access_list[i].access_swizzle.swizzle.indices[0];
-
-					break;
-				}
+					s = get_type(o->op_load_access_list.access_list[i].type);
 				}
 
-				s = get_type(o->op_load_access_list.access_list[i].type);
-			}
+				spirv_id value = write_op_composite_extract(instructions, convert_type_to_spirv_id(o->op_load_access_list.to.type.type),
+				                                            convert_kong_index_to_spirv_id(o->op_load_access_list.from.index), indices, indices_size);
 
-			storage_class storage;
-			if (o->op_load_access_list.from.index == parameter_ids[0]) {
-				storage = STORAGE_CLASS_FUNCTION;
+				hmput(index_map, o->op_load_access_list.to.index, value);
 			}
 			else {
-				if (o->op_load_access_list.from.kind == VARIABLE_GLOBAL) {
-					storage = STORAGE_CLASS_UNIFORM;
+				int indices[256];
+
+				type *s = get_type(o->op_load_access_list.from.type.type);
+
+				for (uint16_t i = 0; i < indices_size; ++i) {
+					switch (o->op_load_access_list.access_list[i].kind) {
+					case ACCESS_ELEMENT:
+						assert(false);
+						break;
+					case ACCESS_MEMBER: {
+						int  member_index = 0;
+						bool found        = false;
+
+						for (; member_index < s->members.size; ++member_index) {
+							if (s->members.m[member_index].name == o->op_load_access_list.access_list[i].access_member.name) {
+								found = true;
+								break;
+							}
+						}
+
+						assert(found);
+
+						indices[i] = member_index;
+
+						break;
+					}
+					case ACCESS_SWIZZLE: {
+						assert(o->op_load_access_list.access_list[i].access_swizzle.swizzle.size == 1);
+
+						indices[i] = o->op_load_access_list.access_list[i].access_swizzle.swizzle.indices[0];
+
+						break;
+					}
+					}
+
+					s = get_type(o->op_load_access_list.access_list[i].type);
+				}
+
+				storage_class storage;
+				if (o->op_load_access_list.from.index == parameter_ids[0]) {
+					storage = STORAGE_CLASS_FUNCTION;
 				}
 				else {
-					storage = STORAGE_CLASS_INPUT;
+					if (o->op_load_access_list.from.kind == VARIABLE_GLOBAL) {
+						storage = STORAGE_CLASS_UNIFORM;
+					}
+					else {
+						storage = STORAGE_CLASS_INPUT;
+					}
 				}
+
+				spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(o->op_load_access_list.to.type.type, storage),
+				                                         convert_kong_index_to_spirv_id(o->op_load_access_list.from.index), indices, indices_size);
+
+				spirv_id value = write_op_load(instructions, convert_type_to_spirv_id(o->op_load_access_list.to.type.type), pointer);
+				hmput(index_map, o->op_load_access_list.to.index, value);
 			}
-
-			spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(o->op_load_access_list.to.type.type, storage),
-			                                         convert_kong_index_to_spirv_id(o->op_load_access_list.from.index), indices, indices_size);
-
-			spirv_id value = write_op_load(instructions, convert_type_to_spirv_id(o->op_load_access_list.to.type.type), pointer);
-			hmput(index_map, o->op_load_access_list.to.index, value);
-
 			break;
 		}
 		case OPCODE_LOAD_FLOAT_CONSTANT: {

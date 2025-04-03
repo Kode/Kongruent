@@ -105,8 +105,6 @@ opcode *emit_op(opcodes *code, opcode *o) {
 	return (opcode *)location;
 }
 
-#define OP_SIZE(op, opmember) offsetof(opcode, opmember) + sizeof(o.opmember)
-
 variable emit_expression(opcodes *code, block *parent, expression *e) {
 	switch (e->kind) {
 	case EXPRESSION_BINARY: {
