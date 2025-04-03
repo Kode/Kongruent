@@ -8,6 +8,7 @@
 #include "names.h"
 #include "parser.h"
 #include "tokenizer.h"
+#include "transformer.h"
 #include "typer.h"
 #include "types.h"
 
@@ -291,6 +292,12 @@ int main(int argc, char **argv) {
 	}
 
 	analyze();
+
+	switch (api) {
+	case API_VULKAN:
+		transform(TRANSFORM_FLAG_ONE_COMPONENT_SWIZZLE);
+		break;
+	}
 
 #ifndef NDEBUG
 	disassemble();
