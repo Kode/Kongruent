@@ -2012,14 +2012,21 @@ void kore3_export(char *directory, api_kind api) {
 
 					fprintf(output, "\t{\n");
 
-					fprintf(output, "\t\tVkDescriptorSetLayout layouts[%zu];\n", group->size);
-
-					for (size_t layout_index = 0; layout_index < group->size; ++layout_index) {
-						fprintf(output, "\t\tlayouts[%zu] = %s_set_layout;\n", layout_index, get_name(group->values[layout_index]->name));
+					if (group->size == 0) {
+						fprintf(output, "\t\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters, NULL, 0);\n", api_short, api_short,
+						        get_name(t->name), get_name(t->name));
 					}
+					else {
 
-					fprintf(output, "\t\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters, layouts, %zu);\n", api_short, api_short,
-					        get_name(t->name), get_name(t->name), group->size);
+						fprintf(output, "\t\tVkDescriptorSetLayout layouts[%zu];\n", group->size);
+
+						for (size_t layout_index = 0; layout_index < group->size; ++layout_index) {
+							fprintf(output, "\t\tlayouts[%zu] = %s_set_layout;\n", layout_index, get_name(group->values[layout_index]->name));
+						}
+
+						fprintf(output, "\t\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters, layouts, %zu);\n", api_short, api_short,
+						        get_name(t->name), get_name(t->name), group->size);
+					}
 
 					fprintf(output, "\t}\n");
 				}
