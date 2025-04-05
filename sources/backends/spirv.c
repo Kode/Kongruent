@@ -204,7 +204,16 @@ typedef enum capability { CAPABILITY_SHADER = 1 } capability;
 
 typedef enum execution_model { EXECUTION_MODEL_VERTEX = 0, EXECUTION_MODEL_FRAGMENT = 4 } execution_model;
 
-typedef enum decoration { DECORATION_BLOCK = 2, DECORATION_BUILTIN = 11, DECORATION_LOCATION = 30 } decoration;
+typedef enum decoration {
+	DECORATION_BLOCK          = 2,
+	DECORATION_COL_MAJOR      = 5,
+	DECORATION_MATRIX_STRIDE  = 7,
+	DECORATION_BUILTIN        = 11,
+	DECORATION_LOCATION       = 30,
+	DECORATION_BINDING        = 33,
+	DECORATION_DESCRIPTOR_SET = 34,
+	DECORATION_OFFSET         = 35
+} decoration;
 
 typedef enum builtin { BUILTIN_POSITION = 0 } builtin;
 
@@ -587,6 +596,26 @@ static void write_vertex_input_decorations(instructions_buffer *instructions, sp
 static void write_fragment_output_decorations(instructions_buffer *instructions, spirv_id output) {
 	uint32_t operands[] = {output.id, (uint32_t)DECORATION_LOCATION, 0};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_DECORATE, operands);
+}
+
+static void write_op_decorate(instructions_buffer *instructions, spirv_id target, decoration decor) {
+	uint32_t operands[] = {target.id, (uint32_t)decor};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_DECORATE, operands);
+}
+
+static void write_op_decorate_value(instructions_buffer *instructions, spirv_id target, decoration decor, uint32_t value) {
+	uint32_t operands[] = {target.id, (uint32_t)decor, value};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_DECORATE, operands);
+}
+
+static void write_op_member_decorate(instructions_buffer *instructions, spirv_id structure_type, uint32_t member, decoration decor) {
+	uint32_t operands[] = {structure_type.id, member, (uint32_t)decor};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_MEMBER_DECORATE, operands);
+}
+
+static void write_op_member_decorate_value(instructions_buffer *instructions, spirv_id structure_type, uint32_t member, decoration decor, uint32_t value) {
+	uint32_t operands[] = {structure_type.id, member, (uint32_t)decor, value};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_MEMBER_DECORATE, operands);
 }
 
 static spirv_id write_op_function_preallocated(instructions_buffer *instructions, spirv_id result_type, function_control control, spirv_id function_type,
@@ -1342,7 +1371,7 @@ static void write_constants(instructions_buffer *instructions) {
 
 static int global_register_indices[512];
 
-static void write_globals(instructions_buffer *instructions_block, function *main) {
+static void write_globals(instructions_buffer *decorations, instructions_buffer *instructions_block, function *main) {
 	global_array globals = {0};
 
 	if (main != NULL) {
@@ -1411,12 +1440,14 @@ static void write_globals(instructions_buffer *instructions_block, function *mai
 			spirv_id member_types[256];
 			uint16_t member_types_size = 0;
 			for (size_t j = 0; j < t->members.size; ++j) {
-				member_types[member_types_size] = convert_type_to_spirv_id(t->members.m[j].type.type);
+				type_id member_type = t->members.m[j].type.type;
+
+				member_types[member_types_size] = convert_type_to_spirv_id(member_type);
 
 				spirv_id member_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM, member_types[member_types_size]);
 
 				complex_type ct;
-				ct.type    = t->members.m[j].type.type;
+				ct.type    = member_type;
 				ct.pointer = true;
 				ct.storage = (uint16_t)STORAGE_CLASS_UNIFORM;
 				hmput(type_map, ct, member_pointer_type);
@@ -1424,7 +1455,26 @@ static void write_globals(instructions_buffer *instructions_block, function *mai
 				member_types_size += 1;
 				assert(member_types_size < 256);
 			}
+
 			spirv_id struct_type = write_type_struct(instructions_block, member_types, member_types_size);
+
+			uint32_t offset = 0;
+			for (uint32_t j = 0; j < (uint32_t)t->members.size; ++j) {
+				type_id member_type = t->members.m[j].type.type;
+
+				if (member_type == float3x3_id || member_type == float4x4_id) {
+					write_op_member_decorate(decorations, struct_type, j, DECORATION_COL_MAJOR);
+				}
+				write_op_member_decorate_value(decorations, struct_type, j, DECORATION_OFFSET, offset);
+				if (member_type == float3x3_id) {
+					write_op_member_decorate_value(decorations, struct_type, j, DECORATION_MATRIX_STRIDE, 12);
+					offset += 12;
+				}
+				if (member_type == float4x4_id) {
+					write_op_member_decorate_value(decorations, struct_type, j, DECORATION_MATRIX_STRIDE, 16);
+					offset += 16;
+				}
+			}
 
 			complex_type ct;
 			ct.type    = g->type;
@@ -1441,6 +1491,10 @@ static void write_globals(instructions_buffer *instructions_block, function *mai
 
 			spirv_id spirv_var_id = convert_kong_index_to_spirv_id(g->var_index);
 			write_op_variable_preallocated(instructions_block, struct_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM);
+
+			write_op_decorate(decorations, struct_type, DECORATION_BLOCK);
+			write_op_decorate_value(decorations, spirv_var_id, DECORATION_DESCRIPTOR_SET, 0);
+			write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, 0);
 		}
 	}
 }
@@ -1531,7 +1585,7 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 
 	write_base_types(&constants);
 
-	write_globals(&constants, main);
+	write_globals(&decorations, &constants, main);
 
 	spirv_id types[]       = {spirv_float4_type};
 	spirv_id output_struct = write_type_struct(&constants, types, 1);

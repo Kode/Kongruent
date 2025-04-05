@@ -1366,7 +1366,7 @@ void kore3_export(char *directory, api_kind api) {
 
 					if (!get_type(g->type)->built_in) {
 						if (!has_attribute(&g->attributes, add_name("indexed"))) {
-							if (api == API_METAL) {
+							if (api == API_METAL || api == API_VULKAN) {
 								fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view(device, &set->set, parameters->%s, %zu);\n", api_short,
 								        get_name(g->name), other_index);
 							}
@@ -1597,6 +1597,16 @@ void kore3_export(char *directory, api_kind api) {
 					}
 					fprintf(output, ");\n");
 				}
+				else if (api == API_VULKAN) {
+					fprintf(output, "\n\tkore_%s_command_list_set_descriptor_set(list, %s_table_index, &set->set", api_short, get_name(set->name));
+					if (dynamic_count > 0) {
+						fprintf(output, ", dynamic_buffers, dynamic_offsets, dynamic_sizes");
+					}
+					else {
+						fprintf(output, ", NULL, NULL, NULL");
+					}
+					fprintf(output, ");\n");
+				}
 				else {
 					fprintf(output, "\n\tkore_%s_command_list_set_descriptor_table(list, %s_table_index, &set->set", api_short, get_name(set->name));
 					if (dynamic_count > 0) {
@@ -1657,7 +1667,15 @@ void kore3_export(char *directory, api_kind api) {
 			}
 		}
 
+		if (api == API_VULKAN) {
+			fprintf(output, "\nvoid create_descriptor_set_layouts(kore_gpu_device *device);\n");
+		}
+
 		fprintf(output, "\nvoid kong_init(kore_gpu_device *device) {\n");
+
+		if (api == API_VULKAN) {
+			fprintf(output, "\tcreate_descriptor_set_layouts(device);\n\n");
+		}
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
@@ -1989,8 +2007,26 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t%s_parameters.fragment.targets[0].write_mask = 0xf;\n\n", get_name(t->name));
 				}
 
-				fprintf(output, "\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters);\n\n", api_short, api_short, get_name(t->name),
-				        get_name(t->name));
+				if (api == API_VULKAN) {
+					descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
+
+					fprintf(output, "\t{\n");
+
+					fprintf(output, "\t\tVkDescriptorSetLayout layouts[%zu];\n", group->size);
+
+					for (size_t layout_index = 0; layout_index < group->size; ++layout_index) {
+						fprintf(output, "\t\tlayouts[%zu] = %s_set_layout;\n", layout_index, get_name(group->values[layout_index]->name));
+					}
+
+					fprintf(output, "\t\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters, layouts, %zu);\n", api_short, api_short,
+					        get_name(t->name), get_name(t->name), group->size);
+
+					fprintf(output, "\t}\n");
+				}
+				else {
+					fprintf(output, "\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters);\n\n", api_short, api_short, get_name(t->name),
+					        get_name(t->name));
+				}
 
 				if (api == API_OPENGL) {
 					global_array globals = {0};
