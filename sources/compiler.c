@@ -171,27 +171,13 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 			return result_var;
 		}
-		case OPERATOR_LEFT_SHIFT:
-		case OPERATOR_RIGHT_SHIFT: {
-			variable right_var  = emit_expression(code, parent, right);
-			variable left_var   = emit_expression(code, parent, left);
-			variable result_var = allocate_variable(e->type, VARIABLE_INTERNAL);
-
-			opcode o;
-			o.type             = e->binary.op == OPERATOR_LEFT_SHIFT ? OPCODE_LEFT_SHIFT : OPCODE_RIGHT_SHIFT;
-			o.size             = OP_SIZE(o, op_binary);
-			o.op_binary.right  = right_var;
-			o.op_binary.left   = left_var;
-			o.op_binary.result = result_var;
-			emit_op(code, &o);
-
-			return result_var;
-        }
 		case OPERATOR_MINUS:
 		case OPERATOR_PLUS:
 		case OPERATOR_DIVIDE:
 		case OPERATOR_MULTIPLY:
-		case OPERATOR_MOD: {
+		case OPERATOR_MOD:
+		case OPERATOR_LEFT_SHIFT:
+		case OPERATOR_RIGHT_SHIFT: {
 			variable right_var  = emit_expression(code, parent, right);
 			variable left_var   = emit_expression(code, parent, left);
 			variable result_var = allocate_variable(e->type, VARIABLE_INTERNAL);
@@ -212,6 +198,12 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				break;
 			case OPERATOR_MOD:
 				o.type = OPCODE_MOD;
+				break;
+			case OPERATOR_LEFT_SHIFT:
+				o.type = OPCODE_LEFT_SHIFT;
+				break;
+			case OPERATOR_RIGHT_SHIFT:
+				o.type = OPCODE_RIGHT_SHIFT;
 				break;
 			default: {
 				error(context, "Unexpected operator");
