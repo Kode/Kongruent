@@ -200,6 +200,10 @@ static void write_functions(void) {
 				break;
 			case OPCODE_XOR:
 				break;
+			case OPCODE_BITWISE_AND:
+				break;
+			case OPCODE_BITWISE_OR:
+				break;
 			case OPCODE_LEFT_SHIFT:
 				break;
 			case OPCODE_RIGHT_SHIFT:

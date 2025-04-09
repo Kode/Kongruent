@@ -244,6 +244,18 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 		break;
 	}
+	case OPCODE_BITWISE_AND: {
+		indent(code, offset, *indentation);
+		*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64 " & _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+		                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
+		break;
+	}
+	case OPCODE_BITWISE_OR: {
+		indent(code, offset, *indentation);
+		*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64 " | _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
+		                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
+		break;
+	}
 	case OPCODE_LEFT_SHIFT: {
 		indent(code, offset, *indentation);
 		*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64 " << _%" PRIu64 ";\n", type_string(o->op_binary.result.type.type),
