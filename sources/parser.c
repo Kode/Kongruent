@@ -586,7 +586,7 @@ static expression *parse_bitwise(state_t *state) {
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
-			if (op == OPERATOR_XOR || op == OPERATOR_BITWISE_OR || op == OPERATOR_BITWISE_AND) {
+			if (op == OPERATOR_BITWISE_XOR || op == OPERATOR_BITWISE_OR || op == OPERATOR_BITWISE_AND) {
 				advance_state(state);
 				expression *right        = parse_equality(state);
 				expression *expression   = expression_allocate();

@@ -172,7 +172,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		case OPERATOR_DIVIDE:
 		case OPERATOR_MULTIPLY:
 		case OPERATOR_MOD:
-		case OPERATOR_XOR:
+		case OPERATOR_BITWISE_XOR:
 		case OPERATOR_BITWISE_AND:
 		case OPERATOR_BITWISE_OR:
 		case OPERATOR_LEFT_SHIFT:
@@ -198,7 +198,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			case OPERATOR_MOD:
 				o.type = OPCODE_MOD;
 				break;
-			case OPERATOR_XOR:
+			case OPERATOR_BITWISE_XOR:
 				o.type = OPCODE_XOR;
 				break;
 			case OPERATOR_BITWISE_AND:
@@ -395,7 +395,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		}
 		case OPERATOR_OR:
 			error(context, "not implemented");
-		case OPERATOR_XOR:
+		case OPERATOR_BITWISE_XOR:
 			error(context, "not implemented");
 		case OPERATOR_BITWISE_AND:
 			error(context, "not implemented");
