@@ -121,8 +121,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		case OPERATOR_LESS:
 		case OPERATOR_LESS_EQUAL:
 		case OPERATOR_AND:
-		case OPERATOR_OR:
-		case OPERATOR_XOR: {
+		case OPERATOR_OR: {
 			variable right_var = emit_expression(code, parent, right);
 			variable left_var  = emit_expression(code, parent, left);
 			type_ref t;
@@ -156,9 +155,6 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 			case OPERATOR_OR:
 				o.type = OPCODE_OR;
 				break;
-			case OPERATOR_XOR:
-				o.type = OPCODE_XOR;
-				break;
 			default: {
 				error(context, "Unexpected operator");
 			}
@@ -176,6 +172,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		case OPERATOR_DIVIDE:
 		case OPERATOR_MULTIPLY:
 		case OPERATOR_MOD:
+		case OPERATOR_XOR:
 		case OPERATOR_BITWISE_AND:
 		case OPERATOR_BITWISE_OR:
 		case OPERATOR_LEFT_SHIFT:
@@ -200,6 +197,9 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				break;
 			case OPERATOR_MOD:
 				o.type = OPCODE_MOD;
+				break;
+			case OPERATOR_XOR:
+				o.type = OPCODE_XOR;
 				break;
 			case OPERATOR_BITWISE_AND:
 				o.type = OPCODE_BITWISE_AND;

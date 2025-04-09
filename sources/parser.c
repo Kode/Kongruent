@@ -557,7 +557,7 @@ static expression *parse_logical(state_t *state) {
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
-			if (op == OPERATOR_OR || op == OPERATOR_AND || op == OPERATOR_XOR) {
+			if (op == OPERATOR_OR || op == OPERATOR_AND) {
 				advance_state(state);
 				expression *right        = parse_equality(state);
 				expression *expression   = expression_allocate();
@@ -674,7 +674,7 @@ static expression *parse_multiplication(state_t *state) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
 			if (op == OPERATOR_DIVIDE || op == OPERATOR_MULTIPLY || op == OPERATOR_MOD ||
-				op == OPERATOR_BITWISE_AND || op == OPERATOR_BITWISE_OR ||
+				op == OPERATOR_XOR || op == OPERATOR_BITWISE_AND || op == OPERATOR_BITWISE_OR ||
 				op == OPERATOR_LEFT_SHIFT || op == OPERATOR_RIGHT_SHIFT) {
 				advance_state(state);
 				expression *right        = parse_unary(state);
