@@ -549,15 +549,44 @@ static expression *parse_assign(state_t *state) {
 	return expr;
 }
 
-static expression *parse_equality(state_t *state);
+static expression *parse_bitwise(state_t *state);
 
 static expression *parse_logical(state_t *state) {
+	expression *expr = parse_bitwise(state);
+	bool        done = false;
+	while (!done) {
+		if (current(state).kind == TOKEN_OPERATOR) {
+			operatorr op = current(state).op;
+			if (op == OPERATOR_OR || op == OPERATOR_AND) {
+				advance_state(state);
+				expression *right        = parse_bitwise(state);
+				expression *expression   = expression_allocate();
+				expression->kind         = EXPRESSION_BINARY;
+				expression->binary.left  = expr;
+				expression->binary.op    = op;
+				expression->binary.right = right;
+				expr                     = expression;
+			}
+			else {
+				done = true;
+			}
+		}
+		else {
+			done = true;
+		}
+	}
+	return expr;
+}
+
+static expression *parse_equality(state_t *state);
+
+static expression *parse_bitwise(state_t *state) {
 	expression *expr = parse_equality(state);
 	bool        done = false;
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
-			if (op == OPERATOR_OR || op == OPERATOR_AND || op == OPERATOR_XOR) {
+			if (op == OPERATOR_BITWISE_XOR || op == OPERATOR_BITWISE_OR || op == OPERATOR_BITWISE_AND) {
 				advance_state(state);
 				expression *right        = parse_equality(state);
 				expression *expression   = expression_allocate();
@@ -607,15 +636,45 @@ static expression *parse_equality(state_t *state) {
 	return expr;
 }
 
-static expression *parse_addition(state_t *state);
+static expression *parse_shift(state_t *state);
 
 static expression *parse_comparison(state_t *state) {
+	expression *expr = parse_shift(state);
+	bool        done = false;
+	while (!done) {
+		if (current(state).kind == TOKEN_OPERATOR) {
+			operatorr op = current(state).op;
+			if (op == OPERATOR_GREATER || op == OPERATOR_GREATER_EQUAL ||
+				op == OPERATOR_LESS || op == OPERATOR_LESS_EQUAL) {
+				advance_state(state);
+				expression *right        = parse_shift(state);
+				expression *expression   = expression_allocate();
+				expression->kind         = EXPRESSION_BINARY;
+				expression->binary.left  = expr;
+				expression->binary.op    = op;
+				expression->binary.right = right;
+				expr                     = expression;
+			}
+			else {
+				done = true;
+			}
+		}
+		else {
+			done = true;
+		}
+	}
+	return expr;
+}
+
+static expression *parse_addition(state_t *state);
+
+static expression *parse_shift(state_t *state) {
 	expression *expr = parse_addition(state);
 	bool        done = false;
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
-			if (op == OPERATOR_GREATER || op == OPERATOR_GREATER_EQUAL || op == OPERATOR_LESS || op == OPERATOR_LESS_EQUAL) {
+			if (op == OPERATOR_LEFT_SHIFT || op == OPERATOR_RIGHT_SHIFT) {
 				advance_state(state);
 				expression *right        = parse_addition(state);
 				expression *expression   = expression_allocate();
