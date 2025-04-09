@@ -171,6 +171,22 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 			return result_var;
 		}
+		case OPERATOR_LEFT_SHIFT:
+		case OPERATOR_RIGHT_SHIFT: {
+			variable right_var  = emit_expression(code, parent, right);
+			variable left_var   = emit_expression(code, parent, left);
+			variable result_var = allocate_variable(e->type, VARIABLE_INTERNAL);
+
+			opcode o;
+			o.type             = e->binary.op == OPERATOR_LEFT_SHIFT ? OPCODE_LEFT_SHIFT : OPCODE_RIGHT_SHIFT;
+			o.size             = OP_SIZE(o, op_binary);
+			o.op_binary.right  = right_var;
+			o.op_binary.left   = left_var;
+			o.op_binary.result = result_var;
+			emit_op(code, &o);
+
+			return result_var;
+        }
 		case OPERATOR_MINUS:
 		case OPERATOR_PLUS:
 		case OPERATOR_DIVIDE:
@@ -380,6 +396,10 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		case OPERATOR_OR:
 			error(context, "not implemented");
 		case OPERATOR_XOR:
+			error(context, "not implemented");
+		case OPERATOR_LEFT_SHIFT:
+			error(context, "not implemented");
+		case OPERATOR_RIGHT_SHIFT:
 			error(context, "not implemented");
 		case OPERATOR_AND:
 			error(context, "not implemented");

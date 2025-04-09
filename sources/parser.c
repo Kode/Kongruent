@@ -673,7 +673,8 @@ static expression *parse_multiplication(state_t *state) {
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
-			if (op == OPERATOR_DIVIDE || op == OPERATOR_MULTIPLY || op == OPERATOR_MOD) {
+			if (op == OPERATOR_DIVIDE || op == OPERATOR_MULTIPLY || op == OPERATOR_MOD ||
+				op == OPERATOR_LEFT_SHIFT || op == OPERATOR_RIGHT_SHIFT) {
 				advance_state(state);
 				expression *right        = parse_unary(state);
 				expression *expression   = expression_allocate();
