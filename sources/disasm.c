@@ -198,7 +198,7 @@ static void write_functions(void) {
 				break;
 			case OPCODE_OR:
 				break;
-			case OPCODE_XOR:
+			case OPCODE_BITWISE_XOR:
 				break;
 			case OPCODE_BITWISE_AND:
 				break;

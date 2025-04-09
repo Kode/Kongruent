@@ -199,7 +199,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				o.type = OPCODE_MOD;
 				break;
 			case OPERATOR_BITWISE_XOR:
-				o.type = OPCODE_XOR;
+				o.type = OPCODE_BITWISE_XOR;
 				break;
 			case OPERATOR_BITWISE_AND:
 				o.type = OPCODE_BITWISE_AND;
