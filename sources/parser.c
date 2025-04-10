@@ -644,8 +644,7 @@ static expression *parse_comparison(state_t *state) {
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
 			operatorr op = current(state).op;
-			if (op == OPERATOR_GREATER || op == OPERATOR_GREATER_EQUAL ||
-				op == OPERATOR_LESS || op == OPERATOR_LESS_EQUAL) {
+			if (op == OPERATOR_GREATER || op == OPERATOR_GREATER_EQUAL || op == OPERATOR_LESS || op == OPERATOR_LESS_EQUAL) {
 				advance_state(state);
 				expression *right        = parse_shift(state);
 				expression *expression   = expression_allocate();

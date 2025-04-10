@@ -374,7 +374,7 @@ tokens tokenize(const char *filename, const char *source) {
 				if (strcmp(long_op, "==") == 0 || strcmp(long_op, "!=") == 0 || strcmp(long_op, "<=") == 0 || strcmp(long_op, ">=") == 0 ||
 				    strcmp(long_op, "||") == 0 || strcmp(long_op, "&&") == 0 || strcmp(long_op, "->") == 0 || strcmp(long_op, "-=") == 0 ||
 				    strcmp(long_op, "+=") == 0 || strcmp(long_op, "/=") == 0 || strcmp(long_op, "*=") == 0 || strcmp(long_op, "<<") == 0 ||
-					strcmp(long_op, ">>") == 0) {
+				    strcmp(long_op, ">>") == 0) {
 					tokenizer_buffer_add(&buffer, ch);
 					tokenizer_state_advance(&context, &state);
 				}
