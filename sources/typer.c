@@ -581,6 +581,9 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		resolve_types_in_element(parent, e);
 		break;
 	}
+	case EXPRESSION_SWIZZLE:
+		assert(false); // swizzle is created in the typer
+		break;
 	}
 
 	if (e->type.type == NO_TYPE) {
@@ -597,6 +600,8 @@ void resolve_types_in_block(statement *parent, statement *block) {
 	for (size_t i = 0; i < block->block.statements.size; ++i) {
 		statement *s = block->block.statements.s[i];
 		switch (s->kind) {
+		case STATEMENT_DISCARD:
+			break;
 		case STATEMENT_EXPRESSION: {
 			resolve_types_in_expression(block, s->expression);
 			break;

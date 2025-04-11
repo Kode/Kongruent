@@ -297,6 +297,8 @@ int main(int argc, char **argv) {
 	case API_VULKAN:
 		transform(TRANSFORM_FLAG_ONE_COMPONENT_SWIZZLE);
 		break;
+	default:
+		break;
 	}
 
 #ifndef NDEBUG

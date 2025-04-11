@@ -14,9 +14,7 @@ static void copy_opcode(opcode *o) {
 
 	assert(new_code.size + o->size < OPCODES_SIZE);
 
-	uint8_t *location = &new_code.o[new_code.size];
-
-	memcpy(&new_code.o[new_code.size], o, o->size);
+	memcpy(new_data, o, o->size);
 
 	new_code.size += o->size;
 }
