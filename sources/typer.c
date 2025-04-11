@@ -40,11 +40,9 @@ static void resolve_types_in_element(statement *parent_block, expression *elemen
 	resolve_types_in_expression(parent_block, element->element.element_index);
 
 	type_id     of_type       = element->element.of->type.type;
-	expression *element_index = element->element.element_index;
 
 	assert(of_type != NO_TYPE);
-	assert(element_index->type.type == NO_TYPE);
-
+	
 	if (of_type == tex2d_type_id) {
 		element->type.type = float4_id;
 	}
