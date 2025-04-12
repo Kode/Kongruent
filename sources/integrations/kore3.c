@@ -1893,7 +1893,7 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t%s_parameters.depth_stencil.format = %s;\n", get_name(t->name), convert_texture_format(g->value.value.ints[0]));
 				}
 				else {
-					fprintf(output, "\t%s_parameters.depth_stencil.format = KORE_GPU_TEXTURE_FORMAT_DEPTH32FLOAT;\n", get_name(t->name));
+					fprintf(output, "\t%s_parameters.depth_stencil.format = KORE_GPU_TEXTURE_FORMAT_UNDEFINED;\n", get_name(t->name));
 				}
 
 				member *depth_write = find_member(t, "depth_write");
