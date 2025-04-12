@@ -1559,6 +1559,7 @@ void init_maps(void) {
 }
 
 static void spirv_export_vertex(char *directory, function *main, bool debug) {
+	next_index = 1;
 	init_maps();
 
 	instructions_buffer instructions = {
@@ -1700,6 +1701,7 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 }
 
 static void spirv_export_fragment(char *directory, function *main, bool debug) {
+	next_index = 1;
 	init_maps();
 
 	instructions_buffer instructions = {
