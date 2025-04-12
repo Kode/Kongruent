@@ -140,42 +140,47 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 }
 
 typedef enum spirv_opcode {
-	SPIRV_OPCODE_EXT_INST_IMPORT     = 11,
-	SPIRV_OPCODE_MEMORY_MODEL        = 14,
-	SPIRV_OPCODE_ENTRY_POINT         = 15,
-	SPIRV_OPCODE_EXECUTION_MODE      = 16,
-	SPIRV_OPCODE_CAPABILITY          = 17,
-	SPIRV_OPCODE_TYPE_VOID           = 19,
-	SPIRV_OPCODE_TYPE_BOOL           = 20,
-	SPIRV_OPCODE_TYPE_INT            = 21,
-	SPIRV_OPCODE_TYPE_FLOAT          = 22,
-	SPIRV_OPCODE_TYPE_VECTOR         = 23,
-	SPIRV_OPCODE_TYPE_MATRIX         = 24,
-	SPIRV_OPCODE_TYPE_STRUCT         = 30,
-	SPIRV_OPCODE_TYPE_POINTER        = 32,
-	SPIRV_OPCODE_TYPE_FUNCTION       = 33,
-	SPIRV_OPCODE_CONSTANT            = 43,
-	SPIRV_OPCODE_FUNCTION            = 54,
-	SPIRV_OPCODE_FUNCTION_END        = 56,
-	SPIRV_OPCODE_VARIABLE            = 59,
-	SPIRV_OPCODE_LOAD                = 61,
-	SPIRV_OPCODE_STORE               = 62,
-	SPIRV_OPCODE_ACCESS_CHAIN        = 65,
-	SPIRV_OPCODE_DECORATE            = 71,
-	SPIRV_OPCODE_MEMBER_DECORATE     = 72,
-	SPIRV_OPCODE_COMPOSITE_CONSTRUCT = 80,
-	SPIRV_OPCODE_COMPOSITE_EXTRACT   = 81,
-	SPIRV_OPCODE_F_MUL               = 133,
-	SPIRV_OPCODE_VECTOR_TIMES_MATRIX = 144,
-	SPIRV_OPCODE_MATRIX_TIMES_VECTOR = 145,
-	SPIRV_OPCODE_MATRIX_TIMES_MATRIX = 146,
-	SPIRV_OPCODE_F_ORD_LESS_THAN     = 184,
-	SPIRV_OPCODE_LOOP_MERGE          = 246,
-	SPIRV_OPCODE_SELECTION_MERGE     = 247,
-	SPIRV_OPCODE_LABEL               = 248,
-	SPIRV_OPCODE_BRANCH              = 249,
-	SPIRV_OPCODE_BRANCH_CONDITIONAL  = 250,
-	SPIRV_OPCODE_RETURN              = 253,
+	SPIRV_OPCODE_EXT_INST_IMPORT           = 11,
+	SPIRV_OPCODE_MEMORY_MODEL              = 14,
+	SPIRV_OPCODE_ENTRY_POINT               = 15,
+	SPIRV_OPCODE_EXECUTION_MODE            = 16,
+	SPIRV_OPCODE_CAPABILITY                = 17,
+	SPIRV_OPCODE_TYPE_VOID                 = 19,
+	SPIRV_OPCODE_TYPE_BOOL                 = 20,
+	SPIRV_OPCODE_TYPE_INT                  = 21,
+	SPIRV_OPCODE_TYPE_FLOAT                = 22,
+	SPIRV_OPCODE_TYPE_VECTOR               = 23,
+	SPIRV_OPCODE_TYPE_MATRIX               = 24,
+	SPIRV_OPCODE_TYPE_IMAGE                = 25,
+	SPIRV_OPCODE_TYPE_SAMPLER              = 26,
+	SPIRV_OPCODE_TYPE_SAMPLED_IMAGE        = 27,
+	SPIRV_OPCODE_TYPE_STRUCT               = 30,
+	SPIRV_OPCODE_TYPE_POINTER              = 32,
+	SPIRV_OPCODE_TYPE_FUNCTION             = 33,
+	SPIRV_OPCODE_CONSTANT                  = 43,
+	SPIRV_OPCODE_FUNCTION                  = 54,
+	SPIRV_OPCODE_FUNCTION_END              = 56,
+	SPIRV_OPCODE_VARIABLE                  = 59,
+	SPIRV_OPCODE_LOAD                      = 61,
+	SPIRV_OPCODE_STORE                     = 62,
+	SPIRV_OPCODE_ACCESS_CHAIN              = 65,
+	SPIRV_OPCODE_DECORATE                  = 71,
+	SPIRV_OPCODE_MEMBER_DECORATE           = 72,
+	SPIRV_OPCODE_COMPOSITE_CONSTRUCT       = 80,
+	SPIRV_OPCODE_COMPOSITE_EXTRACT         = 81,
+	SPIRV_OPCODE_SAMPLED_IMAGE             = 86,
+	SPIRV_OPCODE_IMAGE_SAMPLE_IMPLICIT_LOD = 87,
+	SPIRV_OPCODE_F_MUL                     = 133,
+	SPIRV_OPCODE_VECTOR_TIMES_MATRIX       = 144,
+	SPIRV_OPCODE_MATRIX_TIMES_VECTOR       = 145,
+	SPIRV_OPCODE_MATRIX_TIMES_MATRIX       = 146,
+	SPIRV_OPCODE_F_ORD_LESS_THAN           = 184,
+	SPIRV_OPCODE_LOOP_MERGE                = 246,
+	SPIRV_OPCODE_SELECTION_MERGE           = 247,
+	SPIRV_OPCODE_LABEL                     = 248,
+	SPIRV_OPCODE_BRANCH                    = 249,
+	SPIRV_OPCODE_BRANCH_CONDITIONAL        = 250,
+	SPIRV_OPCODE_RETURN                    = 253,
 } spirv_opcode;
 
 static type_id find_access_type(int *indices, int indices_size, type_id base_type) {
@@ -218,11 +223,12 @@ typedef enum decoration {
 typedef enum builtin { BUILTIN_POSITION = 0 } builtin;
 
 typedef enum storage_class {
-	STORAGE_CLASS_INPUT    = 1,
-	STORAGE_CLASS_UNIFORM  = 2,
-	STORAGE_CLASS_OUTPUT   = 3,
-	STORAGE_CLASS_FUNCTION = 7,
-	STORAGE_CLASS_NONE     = 9999
+	STORAGE_CLASS_UNIFORM_CONSTANT = 0,
+	STORAGE_CLASS_INPUT            = 1,
+	STORAGE_CLASS_UNIFORM          = 2,
+	STORAGE_CLASS_OUTPUT           = 3,
+	STORAGE_CLASS_FUNCTION         = 7,
+	STORAGE_CLASS_NONE             = 9999
 } storage_class;
 
 typedef enum selection_control { SELECTION_CONTROL_NONE = 0, SELCTION_CONTROL_FLATTEN = 1, SELECTION_CONTROL_DONT_FLATTEN = 2 } selection_control;
@@ -232,6 +238,22 @@ typedef enum loop_control { LOOP_CONTROL_NONE = 0, LOOP_CONTROL_UNROLL = 1, LOOP
 typedef enum function_control { FUNCTION_CONTROL_NONE } function_control;
 
 typedef enum execution_mode { EXECUTION_MODE_ORIGIN_UPPER_LEFT = 7 } execution_mode;
+
+typedef enum dim {
+	DIM_1D   = 0,
+	DIM_2D   = 1,
+	DIM_3D   = 2,
+	DIM_CUBE = 3,
+} dim;
+
+typedef enum image_format {
+	IMAGE_FORMAT_UNKNOWN     = 0,
+	IMAGE_FORMAT_RGBA32F     = 1,
+	IMAGE_FORMAT_RGBA16F     = 2,
+	IMAGE_FORMAT_R32F        = 3,
+	IMAGE_FORMAT_RGBA8       = 4,
+	IMAGE_FORMAT_RGBA8_SNORM = 5,
+} image_format;
 
 static uint32_t operands_buffer[4096];
 
@@ -396,6 +418,31 @@ static spirv_id write_type_bool(instructions_buffer *instructions) {
 	return bool_type;
 }
 
+static spirv_id write_type_image(instructions_buffer *instructions, spirv_id sampled_type, dim dimensionality, uint32_t depth, uint32_t arrayed, uint32_t ms,
+                                 uint32_t sampled, image_format img_format) {
+	spirv_id image_type = allocate_index();
+
+	uint32_t operands[] = {image_type.id, sampled_type.id, (uint32_t)dimensionality, depth, arrayed, ms, sampled, (uint32_t)img_format};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_IMAGE, operands);
+	return image_type;
+}
+
+static spirv_id write_type_sampler(instructions_buffer *instructions) {
+	spirv_id sampler_type = allocate_index();
+
+	uint32_t operands[] = {sampler_type.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_SAMPLER, operands);
+	return sampler_type;
+}
+
+static spirv_id write_type_sampled_image(instructions_buffer *instructions, spirv_id image_type) {
+	spirv_id sampled_image_type = allocate_index();
+
+	uint32_t operands[] = {sampled_image_type.id, image_type.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_SAMPLED_IMAGE, operands);
+	return sampled_image_type;
+}
+
 static spirv_id write_type_struct(instructions_buffer *instructions, spirv_id *types, uint16_t types_size) {
 	spirv_id struct_type = allocate_index();
 
@@ -430,6 +477,9 @@ static spirv_id spirv_float2_type;
 static spirv_id spirv_float3_type;
 static spirv_id spirv_float4_type;
 static spirv_id spirv_bool_type;
+static spirv_id spirv_sampler_type;
+static spirv_id spirv_image_type;
+static spirv_id spirv_sampled_image_type;
 
 typedef struct complex_type {
 	type_id  type;
@@ -472,7 +522,7 @@ static spirv_id convert_pointer_type_to_spirv_id(type_id type, storage_class sto
 
 static spirv_id output_struct_pointer_type = {0};
 
-static void write_base_type(instructions_buffer *constants_block, type_id type, spirv_id spirv_type) {
+static void store_base_type_mapping(instructions_buffer *constants_block, type_id type, spirv_id spirv_type) {
 	complex_type ct;
 	ct.pointer = false;
 	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
@@ -491,31 +541,37 @@ static void write_base_types(instructions_buffer *constants_block) {
 	ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 
 	spirv_float_type = write_type_float(constants_block, 32);
-	write_base_type(constants_block, float_id, spirv_float_type);
+	store_base_type_mapping(constants_block, float_id, spirv_float_type);
 
 	spirv_float2_type = convert_type_to_spirv_id(float2_id);
 	write_type_vector_preallocated(constants_block, spirv_float_type, 2, spirv_float2_type);
-	write_base_type(constants_block, float2_id, spirv_float2_type);
+	store_base_type_mapping(constants_block, float2_id, spirv_float2_type);
 
 	spirv_float3_type = convert_type_to_spirv_id(float3_id);
 	write_type_vector_preallocated(constants_block, spirv_float_type, 3, spirv_float3_type);
-	write_base_type(constants_block, float3_id, spirv_float3_type);
+	store_base_type_mapping(constants_block, float3_id, spirv_float3_type);
 
 	spirv_float4_type = convert_type_to_spirv_id(float4_id);
 	write_type_vector_preallocated(constants_block, spirv_float_type, 4, spirv_float4_type);
-	write_base_type(constants_block, float4_id, spirv_float4_type);
+	store_base_type_mapping(constants_block, float4_id, spirv_float4_type);
 
 	spirv_uint_type = write_type_int(constants_block, 32, false);
-	write_base_type(constants_block, uint_id, spirv_uint_type);
+	store_base_type_mapping(constants_block, uint_id, spirv_uint_type);
 
 	spirv_int_type = write_type_int(constants_block, 32, true);
-	write_base_type(constants_block, int_id, spirv_int_type);
+	store_base_type_mapping(constants_block, int_id, spirv_int_type);
 
 	spirv_bool_type = write_type_bool(constants_block);
-	write_base_type(constants_block, bool_id, spirv_bool_type);
+	store_base_type_mapping(constants_block, bool_id, spirv_bool_type);
 
-	write_base_type(constants_block, float3x3_id, write_type_matrix(constants_block, spirv_float3_type, 3));
-	write_base_type(constants_block, float4x4_id, write_type_matrix(constants_block, spirv_float4_type, 4));
+	spirv_sampler_type = write_type_sampler(constants_block);
+
+	spirv_image_type = write_type_image(constants_block, spirv_float_type, DIM_2D, 0, 0, 0, 1, IMAGE_FORMAT_UNKNOWN);
+
+	spirv_sampled_image_type = write_type_sampled_image(constants_block, spirv_image_type);
+
+	store_base_type_mapping(constants_block, float3x3_id, write_type_matrix(constants_block, spirv_float3_type, 3));
+	store_base_type_mapping(constants_block, float4x4_id, write_type_matrix(constants_block, spirv_float4_type, 4));
 }
 
 static void write_types(instructions_buffer *constants, function *main) {
@@ -547,7 +603,7 @@ static void write_types(instructions_buffer *constants, function *main) {
 	size_t size = hmlenu(type_map);
 	for (size_t i = 0; i < size; ++i) {
 		complex_type type = type_map[i].key;
-		if (type.pointer && type.storage != STORAGE_CLASS_UNIFORM) {
+		if (type.pointer && type.storage != STORAGE_CLASS_UNIFORM && type.storage != STORAGE_CLASS_UNIFORM_CONSTANT) {
 			write_type_pointer_preallocated(constants, type.storage, convert_type_to_spirv_id(type.type), type_map[i].value);
 		}
 	}
@@ -835,6 +891,26 @@ static void write_op_branch_conditional(instructions_buffer *instructions, spirv
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_BRANCH_CONDITIONAL, operands);
 }
 
+static spirv_id write_op_sampled_image(instructions_buffer *instructions, spirv_id result_type, spirv_id image, spirv_id sampler) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {result_type.id, result.id, image.id, sampler.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_SAMPLED_IMAGE, operands);
+
+	return result;
+}
+
+static spirv_id write_op_image_sample_implicit_lod(instructions_buffer *instructions, spirv_id result_type, spirv_id sampled_image, spirv_id coordinate) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {result_type.id, result.id, sampled_image.id, coordinate.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_IMAGE_SAMPLE_IMPLICIT_LOD, operands);
+
+	return result;
+}
+
 static spirv_id write_op_variable(instructions_buffer *instructions, spirv_id result_type, storage_class storage) {
 	spirv_id result = allocate_index();
 
@@ -843,10 +919,9 @@ static spirv_id write_op_variable(instructions_buffer *instructions, spirv_id re
 	return result;
 }
 
-static spirv_id write_op_variable_preallocated(instructions_buffer *instructions, spirv_id result_type, spirv_id result, storage_class storage) {
+static void write_op_variable_preallocated(instructions_buffer *instructions, spirv_id result_type, spirv_id result, storage_class storage) {
 	uint32_t operands[] = {result_type.id, result.id, (uint32_t)storage};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_VARIABLE, operands);
-	return result;
 }
 
 // static spirv_id write_op_variable_with_initializer(instructions_buffer *instructions, uint32_t result_type, storage_class storage, uint32_t initializer) {
@@ -1078,45 +1153,43 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		}
 		case OPCODE_CALL: {
 			if (o->op_call.func == add_name("sample")) {
+				spirv_id image = write_op_load(instructions, spirv_image_type, convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+
+				spirv_id sampler = write_op_load(instructions, spirv_sampler_type, convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+
+				spirv_id sampled_image = write_op_sampled_image(instructions, spirv_sampled_image_type, image, sampler);
+				spirv_id id            = write_op_image_sample_implicit_lod(instructions, spirv_float4_type, sampled_image,
+				                                                            convert_kong_index_to_spirv_id(o->op_call.parameters[2].index));
+				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (o->op_call.func == add_name("sample_lod")) {
 			}
+			else if (o->op_call.func == add_name("float2")) {
+				spirv_id constituents[2];
+				for (int i = 0; i < o->op_call.parameters_size; ++i) {
+					constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
+				}
+				spirv_id id = write_op_composite_construct(instructions, spirv_float2_type, constituents, o->op_call.parameters_size);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (o->op_call.func == add_name("float3")) {
+				spirv_id constituents[3];
+				for (int i = 0; i < o->op_call.parameters_size; ++i) {
+					constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
+				}
+				spirv_id id = write_op_composite_construct(instructions, spirv_float3_type, constituents, o->op_call.parameters_size);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (o->op_call.func == add_name("float4")) {
+				spirv_id constituents[4];
+				for (int i = 0; i < o->op_call.parameters_size; ++i) {
+					constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
+				}
+				spirv_id id = write_op_composite_construct(instructions, spirv_float4_type, constituents, o->op_call.parameters_size);
+				hmput(index_map, o->op_call.var.index, id);
+			}
 			else {
-				if (o->op_call.func == add_name("float2")) {
-					spirv_id constituents[2];
-					for (int i = 0; i < o->op_call.parameters_size; ++i) {
-						constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
-					}
-					spirv_id id = write_op_composite_construct(instructions, spirv_float2_type, constituents, o->op_call.parameters_size);
-					hmput(index_map, o->op_call.var.index, id);
-				}
-				else if (o->op_call.func == add_name("float3")) {
-					spirv_id constituents[3];
-					for (int i = 0; i < o->op_call.parameters_size; ++i) {
-						constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
-					}
-					spirv_id id = write_op_composite_construct(instructions, spirv_float3_type, constituents, o->op_call.parameters_size);
-					hmput(index_map, o->op_call.var.index, id);
-				}
-				else if (o->op_call.func == add_name("float4")) {
-					spirv_id constituents[4];
-					for (int i = 0; i < o->op_call.parameters_size; ++i) {
-						constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
-					}
-					spirv_id id = write_op_composite_construct(instructions, spirv_float4_type, constituents, o->op_call.parameters_size);
-					hmput(index_map, o->op_call.var.index, id);
-				}
-				else {
-				}
-
-				/**offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index,
-				                   function_string(o->op_call.func));
-				if (o->op_call.parameters_size > 0) {
-				    *offset += sprintf(&code[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
-				    for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
-				        *offset += sprintf(&code[*offset], ", _%" PRIu64, o->op_call.parameters[i].index);
-				    }
-				}*/
+				assert(false);
 			}
 			break;
 		}
@@ -1406,7 +1479,19 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 		type_id base_type = t->array_size > 0 ? t->base : g->type;
 
 		if (base_type == sampler_type_id) {
-			//*offset += sprintf(&hlsl[*offset], "SamplerState _%" PRIu64 " : register(s%i);\n\n", g->var_index, register_index);
+			spirv_id sampler_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM_CONSTANT, spirv_sampler_type);
+
+			complex_type ct;
+			ct.type    = g->type;
+			ct.pointer = true;
+			ct.storage = (uint16_t)STORAGE_CLASS_UNIFORM_CONSTANT;
+			hmput(type_map, ct, spirv_sampler_type);
+
+			spirv_id spirv_var_id = convert_kong_index_to_spirv_id(g->var_index);
+			write_op_variable_preallocated(instructions_block, sampler_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM_CONSTANT);
+
+			write_op_decorate_value(decorations, spirv_var_id, DECORATION_DESCRIPTOR_SET, 0);
+			write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, 0);
 		}
 		else if (base_type == tex2d_type_id) {
 			if (has_attribute(&g->attributes, add_name("write"))) {
@@ -1417,7 +1502,19 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 					//*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 "[] : register(t%i, space1);\n\n", g->var_index, register_index);
 				}
 				else {
-					//*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
+					spirv_id image_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM_CONSTANT, spirv_image_type);
+
+					complex_type ct;
+					ct.type    = g->type;
+					ct.pointer = true;
+					ct.storage = (uint16_t)STORAGE_CLASS_UNIFORM_CONSTANT;
+					hmput(type_map, ct, spirv_image_type);
+
+					spirv_id spirv_var_id = convert_kong_index_to_spirv_id(g->var_index);
+					write_op_variable_preallocated(instructions_block, image_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM_CONSTANT);
+
+					write_op_decorate_value(decorations, spirv_var_id, DECORATION_DESCRIPTOR_SET, 0);
+					write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, 0);
 				}
 			}
 		}
