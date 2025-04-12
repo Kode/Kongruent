@@ -1647,14 +1647,14 @@ void kore3_export(char *directory, api_kind api) {
 						debug_context context = {0};
 						error(context, "Compute function requires a threads attribute with three parameters");
 					}
-					
-					fprintf(output, "\tkore_%s_command_list_set_compute_pipeline(list, &%s, %u, %u, %u);\n", api_short, get_name(f->name), (uint32_t)threads_attribute->parameters[0],
-							(uint32_t)threads_attribute->parameters[1], (uint32_t)threads_attribute->parameters[2]);
+
+					fprintf(output, "\tkore_%s_command_list_set_compute_pipeline(list, &%s, %u, %u, %u);\n", api_short, get_name(f->name),
+					        (uint32_t)threads_attribute->parameters[0], (uint32_t)threads_attribute->parameters[1], (uint32_t)threads_attribute->parameters[2]);
 				}
 				else {
 					fprintf(output, "\tkore_%s_command_list_set_compute_pipeline(list, &%s);\n", api_short, get_name(f->name));
 				}
-				
+
 				descriptor_set_group *group = find_descriptor_set_group_for_function(f);
 				for (size_t group_index = 0; group_index < group->size; ++group_index) {
 					fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
