@@ -1126,7 +1126,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				}
 				else {
 					if (o->op_load_access_list.from.kind == VARIABLE_GLOBAL) {
-						storage = STORAGE_CLASS_UNIFORM_CONSTANT;
+						storage = STORAGE_CLASS_UNIFORM;
 					}
 					else {
 						storage = STORAGE_CLASS_INPUT;
@@ -1561,12 +1561,12 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 
 				member_types[member_types_size] = convert_type_to_spirv_id(member_type);
 
-				spirv_id member_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM_CONSTANT, member_types[member_types_size]);
+				spirv_id member_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM, member_types[member_types_size]);
 
 				complex_type ct;
 				ct.type    = member_type;
 				ct.pointer = true;
-				ct.storage = (uint16_t)STORAGE_CLASS_UNIFORM_CONSTANT;
+				ct.storage = (uint16_t)STORAGE_CLASS_UNIFORM;
 				hmput(type_map, ct, member_pointer_type);
 
 				member_types_size += 1;
@@ -1599,15 +1599,15 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 			ct.storage = (uint16_t)STORAGE_CLASS_NONE;
 			hmput(type_map, ct, struct_type);
 
-			spirv_id struct_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM_CONSTANT, struct_type);
+			spirv_id struct_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM, struct_type);
 
 			ct.type    = g->type;
 			ct.pointer = true;
-			ct.storage = (uint16_t)STORAGE_CLASS_UNIFORM_CONSTANT;
+			ct.storage = (uint16_t)STORAGE_CLASS_UNIFORM;
 			hmput(type_map, ct, struct_pointer_type);
 
 			spirv_id spirv_var_id = convert_kong_index_to_spirv_id(g->var_index);
-			write_op_variable_preallocated(instructions_block, struct_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM_CONSTANT);
+			write_op_variable_preallocated(instructions_block, struct_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM);
 
 			write_op_decorate(decorations, struct_type, DECORATION_BLOCK);
 			write_op_decorate_value(decorations, spirv_var_id, DECORATION_DESCRIPTOR_SET, 0);
