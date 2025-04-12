@@ -1307,9 +1307,8 @@ void kore3_export(char *directory, api_kind api) {
 
 				fprintf(output, "}\n\n");
 			}
-			else {
+			else if (api == API_VULKAN) {
 				size_t other_count    = 0;
-				size_t sampler_count  = 0;
 				size_t dynamic_count  = 0;
 				size_t bindless_count = 0;
 
@@ -1333,10 +1332,8 @@ void kore3_export(char *directory, api_kind api) {
 							other_count += 1;
 						}
 					}
-					else if (is_sampler(g->type))
-
-					{
-						sampler_count += 1;
+					else if (is_sampler(g->type)) {
+						other_count += 1;
 					}
 					else {
 						if (has_attribute(&g->attributes, add_name("indexed"))) {
@@ -1348,16 +1345,9 @@ void kore3_export(char *directory, api_kind api) {
 					}
 				}
 
-				if (api == API_VULKAN) {
-					fprintf(output, "\tkore_vulkan_device_create_descriptor_set(device, &%s_set_layout, &set->set);\n", get_name(set->name));
-				}
-				else {
-					fprintf(output, "\tkore_%s_device_create_descriptor_set(device, %zu, %zu, %zu, %zu, &set->set);\n", api_short, other_count, dynamic_count,
-					        bindless_count, sampler_count);
-				}
+				fprintf(output, "\tkore_vulkan_device_create_descriptor_set(device, &%s_set_layout, &set->set);\n", get_name(set->name));
 
-				size_t other_index   = 0;
-				size_t sampler_index = 0;
+				size_t other_index = 0;
 
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					global *g            = get_global(set->globals.globals[global_index]);
@@ -1366,14 +1356,8 @@ void kore3_export(char *directory, api_kind api) {
 
 					if (!get_type(g->type)->built_in) {
 						if (!has_attribute(&g->attributes, add_name("indexed"))) {
-							if (api == API_METAL || api == API_VULKAN) {
-								fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view(device, &set->set, parameters->%s, %zu);\n", api_short,
-								        get_name(g->name), other_index);
-							}
-							else {
-								fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %zu);\n", api_short,
-								        get_name(g->name), other_index);
-							}
+							fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
+							        other_index);
 							other_index += 1;
 						}
 						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
@@ -1406,16 +1390,144 @@ void kore3_export(char *directory, api_kind api) {
 								        get_name(g->name), other_index);
 							}
 							else {
-								if (api == API_VULKAN) {
-									fprintf(output, "\tkore_vulkan_descriptor_set_set_texture_view(device, &set->set, &parameters->%s, %zu);\n",
-									        get_name(g->name), global_index);
-								}
-								else {
-									fprintf(output,
-									        "\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %zu, "
-									        "&parameters->%s);\n",
-									        api_short, other_index, get_name(g->name));
-								}
+								fprintf(output, "\tkore_vulkan_descriptor_set_set_texture_view(device, &set->set, &parameters->%s, %zu);\n", get_name(g->name),
+								        global_index);
+							}
+
+							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+
+							other_index += 1;
+						}
+					}
+					else if (base_type_id == tex2darray_type_id) {
+						if (writable) {
+							debug_context context = {0};
+							error(context, "Texture arrays can not be writable");
+						}
+
+						fprintf(output, "\tkore_%s_descriptor_set_set_texture_array_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
+						        get_name(g->name), other_index);
+
+						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+						other_index += 1;
+					}
+					else if (base_type_id == texcube_type_id) {
+						if (writable) {
+							debug_context context = {0};
+							error(context, "Cube maps can not be writable");
+						}
+						fprintf(output, "\tkore_%s_descriptor_set_set_texture_cube_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
+						        get_name(g->name), other_index);
+
+						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+						other_index += 1;
+					}
+					else if (is_sampler(g->type)) {
+						fprintf(output, "\tkore_%s_descriptor_set_set_sampler(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
+						        other_index);
+						other_index += 1;
+					}
+					else {
+						if (!has_attribute(&g->attributes, add_name("indexed"))) {
+							fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_uav(device, &set->set, parameters->%s, %zu);\n", api_short,
+							        get_name(g->name), other_index);
+							other_index += 1;
+						}
+						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+					}
+				}
+				fprintf(output, "}\n\n");
+			}
+			else {
+				size_t other_count    = 0;
+				size_t sampler_count  = 0;
+				size_t dynamic_count  = 0;
+				size_t bindless_count = 0;
+
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g = get_global(set->globals.globals[global_index]);
+
+					if (!get_type(g->type)->built_in) {
+						if (has_attribute(&g->attributes, add_name("indexed"))) {
+							dynamic_count += 1;
+						}
+						else {
+							other_count += 1;
+						}
+					}
+					else if (is_texture(g->type)) {
+						type *t = get_type(g->type);
+						if (t->array_size == UINT32_MAX) {
+							bindless_count += 1;
+						}
+						else {
+							other_count += 1;
+						}
+					}
+					else if (is_sampler(g->type)) {
+						sampler_count += 1;
+					}
+					else {
+						if (has_attribute(&g->attributes, add_name("indexed"))) {
+							dynamic_count += 1;
+						}
+						else {
+							other_count += 1;
+						}
+					}
+				}
+
+				fprintf(output, "\tkore_%s_device_create_descriptor_set(device, %zu, %zu, %zu, %zu, &set->set);\n", api_short, other_count, dynamic_count,
+				        bindless_count, sampler_count);
+
+				size_t other_index   = 0;
+				size_t sampler_index = 0;
+
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g            = get_global(set->globals.globals[global_index]);
+					bool    writable     = set->globals.writable[global_index];
+					type_id base_type_id = get_type(g->type)->base != NO_TYPE ? get_type(g->type)->base : g->type;
+
+					if (!get_type(g->type)->built_in) {
+						if (!has_attribute(&g->attributes, add_name("indexed"))) {
+							fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %zu);\n", api_short,
+							        get_name(g->name), other_index);
+							other_index += 1;
+						}
+						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+					}
+					else if (base_type_id == bvh_type_id) {
+						fprintf(output, "\tkore_%s_descriptor_set_set_bvh_view_srv(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
+						        other_index);
+						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+						other_index += 1;
+					}
+					else if (base_type_id == tex2d_type_id) {
+						type *t = get_type(g->type);
+						if (t->array_size == UINT32_MAX) {
+							fprintf(output, "\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) * parameters->textures_count);\n",
+							        get_name(g->name));
+							fprintf(output, "\tassert(set->%s != NULL);\n", get_name(g->name));
+							fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
+							fprintf(output,
+							        "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
+							        "&parameters->%s[index]);\n",
+							        api_short, get_name(g->name));
+							fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(g->name), get_name(g->name));
+							fprintf(output, "\t}\n");
+
+							fprintf(output, "\tset->%s_count = parameters->%s_count;\n", get_name(g->name), get_name(g->name));
+						}
+						else {
+							if (writable) {
+								fprintf(output, "\tkore_%s_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %zu);\n", api_short,
+								        get_name(g->name), other_index);
+							}
+							else {
+								fprintf(output,
+								        "\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %zu, "
+								        "&parameters->%s);\n",
+								        api_short, other_index, get_name(g->name));
 							}
 
 							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
