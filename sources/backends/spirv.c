@@ -574,7 +574,7 @@ static spirv_id write_constant_bool(instructions_buffer *instructions, spirv_id 
 	return write_constant(instructions, spirv_bool_type, value_id, uint32_value);
 }
 
-static void write_vertex_output_decorations(instructions_buffer *instructions, spirv_id output_struct) {
+static void write_vertex_output_decorations(instructions_buffer *instructions, spirv_id output_struct, spirv_id *outputs, uint32_t outputs_size) {
 	{
 		uint32_t operands[] = {output_struct.id, 0, (uint32_t)DECORATION_BUILTIN, (uint32_t)BUILTIN_POSITION};
 		write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_MEMBER_DECORATE, operands);
@@ -582,6 +582,11 @@ static void write_vertex_output_decorations(instructions_buffer *instructions, s
 
 	{
 		uint32_t operands[] = {output_struct.id, (uint32_t)DECORATION_BLOCK};
+		write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_DECORATE, operands);
+	}
+
+	for (uint32_t i = 1; i < outputs_size; ++i) {
+		uint32_t operands[] = {outputs[i].id, (uint32_t)DECORATION_LOCATION, i - 1};
 		write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_DECORATE, operands);
 	}
 }
@@ -859,7 +864,11 @@ static spirv_id convert_kong_index_to_spirv_id(uint64_t index) {
 	return id;
 }
 
-static spirv_id output_var       = {0};
+static spirv_id per_vertex_var    = {0};
+static spirv_id output_vars[256]  = {0};
+static type_id  output_types[256] = {0};
+static size_t   output_vars_count = 0;
+
 static spirv_id input_vars[256]  = {0};
 static type_id  input_types[256] = {0};
 static size_t   input_vars_count = 0;
@@ -1166,42 +1175,35 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				for (size_t i = 0; i < output_type->members.size; ++i) {
 					member m = output_type->members.m[i];
+
+					int      indices = (int)i;
+					spirv_id spirv_type;
 					if (m.type.type == float2_id) {
-						int indices = (int)i;
-
-						spirv_id load_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(float2_id, STORAGE_CLASS_FUNCTION),
-						                                              convert_kong_index_to_spirv_id(o->op_return.var.index), &indices, 1);
-						spirv_id value        = write_op_load(instructions, spirv_float2_type, load_pointer);
-
-						spirv_id store_pointer =
-						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(float2_id, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
-						write_op_store(instructions, store_pointer, value);
+						spirv_type = spirv_float2_type;
 					}
 					else if (m.type.type == float3_id) {
-						int indices = (int)i;
-
-						spirv_id load_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(float3_id, STORAGE_CLASS_FUNCTION),
-						                                              convert_kong_index_to_spirv_id(o->op_return.var.index), &indices, 1);
-						spirv_id value        = write_op_load(instructions, spirv_float3_type, load_pointer);
-
-						spirv_id store_pointer =
-						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(float3_id, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
-						write_op_store(instructions, store_pointer, value);
+						spirv_type = spirv_float3_type;
 					}
 					else if (m.type.type == float4_id) {
-						int indices = (int)i;
-
-						spirv_id load_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_FUNCTION),
-						                                              convert_kong_index_to_spirv_id(o->op_return.var.index), &indices, 1);
-						spirv_id value        = write_op_load(instructions, spirv_float4_type, load_pointer);
-
-						spirv_id store_pointer =
-						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_OUTPUT), output_var, &indices, 1);
-						write_op_store(instructions, store_pointer, value);
+						spirv_type = spirv_float4_type;
 					}
 					else {
 						debug_context context = {0};
 						error(context, "Type unsupported for input in SPIR-V");
+					}
+
+					spirv_id load_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(m.type.type, STORAGE_CLASS_FUNCTION),
+					                                              convert_kong_index_to_spirv_id(o->op_return.var.index), &indices, 1);
+					spirv_id value        = write_op_load(instructions, spirv_type, load_pointer);
+
+					if (i == 0) {
+						// position
+						spirv_id store_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(m.type.type, STORAGE_CLASS_OUTPUT),
+						                                               output_vars[i], &indices, 1);
+						write_op_store(instructions, store_pointer, value);
+					}
+					else {
+						write_op_store(instructions, output_vars[i], value);
 					}
 				}
 				write_op_return(instructions);
@@ -1219,7 +1221,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					else {
 						loaded = write_op_load(instructions, convert_type_to_spirv_id(float4_id), convert_kong_index_to_spirv_id(o->op_return.var.index));
 					}
-					write_op_store(instructions, output_var, loaded);
+					write_op_store(instructions, output_vars[0], loaded);
 				}
 				write_op_return(instructions);
 			}
@@ -1565,34 +1567,42 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 	write_op_ext_inst_import(&decorations, "GLSL.std.450");
 	write_op_memory_model(&decorations, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
 
-	type *input = get_type(vertex_input);
+	type *input  = get_type(vertex_input);
+	type *output = get_type(vertex_output);
 
 	spirv_id entry_point = allocate_index();
-	output_var           = allocate_index();
 
 	input_vars_count = input->members.size;
 	for (size_t input_var_index = 0; input_var_index < input_vars_count; ++input_var_index) {
 		input_vars[input_var_index] = allocate_index();
 	}
-	spirv_id interfaces[256];
-	interfaces[0] = output_var;
-	for (size_t input_var_index = 0; input_var_index < input_vars_count; ++input_var_index) {
-		interfaces[input_var_index + 1] = input_vars[input_var_index];
+
+	output_vars_count = output->members.size;
+	for (size_t output_var_index = 0; output_var_index < output_vars_count; ++output_var_index) {
+		output_vars[output_var_index] = allocate_index();
 	}
-	write_op_entry_point(&decorations, EXECUTION_MODEL_VERTEX, entry_point, "main", interfaces, (uint16_t)(input_vars_count + 1));
+	per_vertex_var = output_vars[0];
+
+	spirv_id interfaces[256];
+	size_t   interfaces_count = 0;
+
+	for (size_t input_var_index = 0; input_var_index < input_vars_count; ++input_var_index) {
+		interfaces[interfaces_count] = input_vars[input_var_index];
+		interfaces_count += 1;
+	}
+
+	for (size_t output_var_index = 0; output_var_index < output_vars_count; ++output_var_index) {
+		interfaces[interfaces_count] = output_vars[output_var_index];
+		interfaces_count += 1;
+	}
+
+	write_op_entry_point(&decorations, EXECUTION_MODEL_VERTEX, entry_point, "main", interfaces, (uint16_t)interfaces_count);
 
 	write_vertex_input_decorations(&decorations, input_vars, (uint32_t)input_vars_count);
 
 	write_base_types(&constants);
 
 	write_globals(&decorations, &constants, main);
-
-	spirv_id types[]       = {spirv_float4_type};
-	spirv_id output_struct = write_type_struct(&constants, types, 1);
-	write_vertex_output_decorations(&decorations, output_struct);
-
-	output_struct_pointer_type = write_type_pointer(&constants, STORAGE_CLASS_OUTPUT, output_struct);
-	write_op_variable_preallocated(&instructions, output_struct_pointer_type, output_var, STORAGE_CLASS_OUTPUT);
 
 	for (size_t i = 0; i < input->members.size; ++i) {
 		member m       = input->members.m[i];
@@ -1606,6 +1616,36 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 		}
 		else if (m.type.type == float4_id) {
 			write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_INPUT), input_vars[i], STORAGE_CLASS_INPUT);
+		}
+		else {
+			debug_context context = {0};
+			error(context, "Type unsupported for input in SPIR-V");
+		}
+	}
+
+	spirv_id types[]       = {spirv_float4_type};
+	spirv_id output_struct = write_type_struct(&constants, types, 1);
+	write_vertex_output_decorations(&decorations, output_struct, output_vars, (uint32_t)output_vars_count);
+
+	output_struct_pointer_type = write_type_pointer(&constants, STORAGE_CLASS_OUTPUT, output_struct);
+	write_op_variable_preallocated(&instructions, output_struct_pointer_type, per_vertex_var, STORAGE_CLASS_OUTPUT);
+
+	// special handling for the first one (position) via per_vertex_var
+	for (size_t i = 1; i < output->members.size; ++i) {
+		member m        = output->members.m[i];
+		output_types[i] = m.type.type;
+
+		if (m.type.type == float2_id) {
+			write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float2_id, STORAGE_CLASS_OUTPUT), output_vars[i],
+			                               STORAGE_CLASS_OUTPUT);
+		}
+		else if (m.type.type == float3_id) {
+			write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float3_id, STORAGE_CLASS_OUTPUT), output_vars[i],
+			                               STORAGE_CLASS_OUTPUT);
+		}
+		else if (m.type.type == float4_id) {
+			write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_OUTPUT), output_vars[i],
+			                               STORAGE_CLASS_OUTPUT);
 		}
 		else {
 			debug_context context = {0};
@@ -1662,13 +1702,14 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 	write_op_ext_inst_import(&decorations, "GLSL.std.450");
 	write_op_memory_model(&decorations, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
 	spirv_id entry_point = allocate_index();
-	output_var           = allocate_index();
+	output_vars[0]       = allocate_index();
+	output_vars_count    = 1;
 	// input_var = allocate_index();
-	spirv_id interfaces[] = {output_var /*, input_var*/};
+	spirv_id interfaces[] = {output_vars[0] /*, input_var*/};
 	write_op_entry_point(&decorations, EXECUTION_MODEL_FRAGMENT, entry_point, "main", interfaces, sizeof(interfaces) / 4);
 	write_op_execution_mode(&decorations, entry_point, EXECUTION_MODE_ORIGIN_UPPER_LEFT);
 
-	write_fragment_output_decorations(&decorations, output_var);
+	write_fragment_output_decorations(&decorations, output_vars[0]);
 
 	/*uint32_t output_struct = allocate_index();
 	write_vertex_output_decorations(&decorations, output_struct);
@@ -1679,7 +1720,7 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 
 	write_base_types(&constants);
 
-	write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_OUTPUT), output_var, STORAGE_CLASS_OUTPUT);
+	write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_OUTPUT), output_vars[0], STORAGE_CLASS_OUTPUT);
 
 	write_functions(&instructions, main, entry_point, SHADER_STAGE_FRAGMENT, pixel_input, NO_TYPE);
 
