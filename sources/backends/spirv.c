@@ -1462,18 +1462,118 @@ static void write_constants(instructions_buffer *instructions) {
 	}
 }
 
-static int global_register_indices[512];
+static void assign_bindings(uint32_t *bindings, function *shader) {
+	descriptor_set_group *set_group = get_descriptor_set_group(shader->descriptor_set_group_index);
+
+	for (size_t group_index = 0; group_index < set_group->size; ++group_index) {
+		uint32_t binding = 0;
+
+		descriptor_set *set = set_group->values[group_index];
+
+		if (set->name == add_name("root_constants")) {
+			if (set->globals.size != 1) {
+				debug_context context = {0};
+				error(context, "More than one root constants struct found");
+			}
+
+			global_id g_id = set->globals.globals[0];
+			global   *g    = get_global(g_id);
+
+			if (get_type(g->type)->built_in) {
+				debug_context context = {0};
+				error(context, "Unsupported type for a root constant");
+			}
+
+			bindings[g_id] = binding;
+			binding += 1;
+
+			continue;
+		}
+
+		for (size_t g_index = 0; g_index < set->globals.size; ++g_index) {
+			global_id global_index = set->globals.globals[g_index];
+			bool      writable     = set->globals.writable[g_index];
+
+			global *g = get_global(global_index);
+
+			type   *t         = get_type(g->type);
+			type_id base_type = t->array_size > 0 ? t->base : g->type;
+
+			if (base_type == sampler_type_id) {
+				bindings[global_index] = binding;
+				binding += 1;
+			}
+			else if (base_type == tex2d_type_id) {
+				if (t->array_size == UINT32_MAX) {
+					bindings[global_index] = 0;
+				}
+				else if (writable) {
+					bindings[global_index] = binding;
+					binding += 1;
+				}
+				else {
+					bindings[global_index] = binding;
+					binding += 1;
+				}
+			}
+			else if (base_type == texcube_type_id || base_type == tex2darray_type_id || base_type == bvh_type_id) {
+				bindings[global_index] = binding;
+				binding += 1;
+			}
+			else if (get_type(g->type)->built_in) {
+				if (get_type(g->type)->array_size > 0) {
+					bindings[global_index] = binding;
+					binding += 1;
+				}
+			}
+			else {
+				if (get_type(g->type)->array_size > 0) {
+					bindings[global_index] = binding;
+					binding += 1;
+				}
+				else {
+					bindings[global_index] = binding;
+					binding += 1;
+				}
+			}
+		}
+	}
+}
 
 static void write_globals(instructions_buffer *decorations, instructions_buffer *instructions_block, function *main) {
+	uint32_t bindings[512] = {0};
+	assign_bindings(bindings, main);
+
 	global_array globals = {0};
 
 	if (main != NULL) {
 		find_referenced_globals(main, &globals);
 	}
+	// for (size_t rayshader_index = 0; rayshader_index < rayshaders_count; ++rayshader_index) {
+	//	find_referenced_globals(rayshaders[rayshader_index], &globals);
+	// }
+
+	descriptor_set_group *group = find_descriptor_set_group_for_function(main);
+	for (size_t descriptor_set_index = 0; descriptor_set_index < group->size; ++descriptor_set_index) {
+		descriptor_set *set = group->values[descriptor_set_index];
+		for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+			global_id id = set->globals.globals[global_index];
+			for (size_t function_global_index = 0; function_global_index < globals.size; ++function_global_index) {
+				global_id function_global_id = globals.globals[function_global_index];
+
+				if (id == function_global_id) {
+					if (set->globals.writable[global_index]) {
+						globals.writable[function_global_index] = true;
+					}
+					break;
+				}
+			}
+		}
+	}
 
 	for (size_t i = 0; i < globals.size; ++i) {
-		global *g = get_global(globals.globals[i]);
-		// int     register_index = global_register_indices[globals.globals[i]];
+		global  *g       = get_global(globals.globals[i]);
+		uint32_t binding = bindings[globals.globals[i]];
 
 		type   *t         = get_type(g->type);
 		type_id base_type = t->array_size > 0 ? t->base : g->type;
@@ -1491,7 +1591,7 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 			write_op_variable_preallocated(instructions_block, sampler_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM_CONSTANT);
 
 			write_op_decorate_value(decorations, spirv_var_id, DECORATION_DESCRIPTOR_SET, 0);
-			write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, 0);
+			write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, binding);
 		}
 		else if (base_type == tex2d_type_id) {
 			if (has_attribute(&g->attributes, add_name("write"))) {
@@ -1514,7 +1614,7 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 					write_op_variable_preallocated(instructions_block, image_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM_CONSTANT);
 
 					write_op_decorate_value(decorations, spirv_var_id, DECORATION_DESCRIPTOR_SET, 0);
-					write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, 0);
+					write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, binding);
 				}
 			}
 		}
@@ -1611,7 +1711,7 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 
 			write_op_decorate(decorations, struct_type, DECORATION_BLOCK);
 			write_op_decorate_value(decorations, spirv_var_id, DECORATION_DESCRIPTOR_SET, 0);
-			write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, 0);
+			write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, binding);
 		}
 	}
 }
@@ -1921,45 +2021,6 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 }
 
 void spirv_export(char *directory, bool debug) {
-	int register_index = 0;
-
-	memset(global_register_indices, 0, sizeof(global_register_indices));
-
-	for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
-		global *g = get_global(i);
-
-		type   *t         = get_type(g->type);
-		type_id base_type = t->array_size > 0 ? t->base : g->type;
-
-		if (base_type == sampler_type_id) {
-			global_register_indices[i] = register_index;
-			register_index += 1;
-		}
-		else if (base_type == tex2d_type_id) {
-			if (t->array_size == UINT32_MAX) {
-				global_register_indices[i] = 0;
-			}
-			else if (has_attribute(&g->attributes, add_name("write"))) {
-				global_register_indices[i] = register_index;
-				register_index += 1;
-			}
-			else {
-				global_register_indices[i] = register_index;
-				register_index += 1;
-			}
-		}
-		else if (base_type == texcube_type_id || base_type == tex2darray_type_id || base_type == bvh_type_id) {
-			global_register_indices[i] = register_index;
-			register_index += 1;
-		}
-		else if (get_type(g->type)->built_in) {
-		}
-		else {
-			global_register_indices[i] = register_index;
-			register_index += 1;
-		}
-	}
-
 	function *vertex_shaders[256];
 	size_t    vertex_shaders_size = 0;
 
