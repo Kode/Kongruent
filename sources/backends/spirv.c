@@ -1121,16 +1121,16 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				}
 
 				storage_class storage;
-				if (o->op_load_access_list.from.index == parameter_ids[0]) {
+				switch (o->op_load_access_list.from.kind) {
+				case VARIABLE_LOCAL:
 					storage = STORAGE_CLASS_FUNCTION;
-				}
-				else {
-					if (o->op_load_access_list.from.kind == VARIABLE_GLOBAL) {
-						storage = STORAGE_CLASS_UNIFORM;
-					}
-					else {
-						storage = STORAGE_CLASS_INPUT;
-					}
+					break;
+				case VARIABLE_GLOBAL:
+					storage = STORAGE_CLASS_UNIFORM;
+					break;
+				default:
+					storage = STORAGE_CLASS_INPUT;
+					break;
 				}
 
 				spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(o->op_load_access_list.to.type.type, storage),
