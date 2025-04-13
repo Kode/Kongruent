@@ -1549,9 +1549,6 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 	if (main != NULL) {
 		find_referenced_globals(main, &globals);
 	}
-	// for (size_t rayshader_index = 0; rayshader_index < rayshaders_count; ++rayshader_index) {
-	//	find_referenced_globals(rayshaders[rayshader_index], &globals);
-	// }
 
 	descriptor_set_group *group = find_descriptor_set_group_for_function(main);
 	for (size_t descriptor_set_index = 0; descriptor_set_index < group->size; ++descriptor_set_index) {
@@ -1595,11 +1592,11 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 		}
 		else if (base_type == tex2d_type_id) {
 			if (has_attribute(&g->attributes, add_name("write"))) {
-				//*offset += sprintf(&hlsl[*offset], "RWTexture2D<float4> _%" PRIu64 " : register(u%i);\n\n", g->var_index, register_index);
+				assert(false);
 			}
 			else {
 				if (t->array_size == UINT32_MAX) {
-					//*offset += sprintf(&hlsl[*offset], "Texture2D<float4> _%" PRIu64 "[] : register(t%i, space1);\n\n", g->var_index, register_index);
+					assert(false);
 				}
 				else {
 					spirv_id image_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM_CONSTANT, spirv_image_type);
@@ -1619,39 +1616,27 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 			}
 		}
 		else if (base_type == tex2darray_type_id) {
-			//*offset += sprintf(&hlsl[*offset], "Texture2DArray<float4> _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
+			assert(false);
 		}
 		else if (base_type == texcube_type_id) {
-			//*offset += sprintf(&hlsl[*offset], "TextureCube<float4> _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
+			assert(false);
 		}
 		else if (base_type == bvh_type_id) {
-			//*offset += sprintf(&hlsl[*offset], "RaytracingAccelerationStructure  _%" PRIu64 " : register(t%i);\n\n", g->var_index, register_index);
+			assert(false);
 		}
 		else if (base_type == float_id) {
-			//*offset += sprintf(&hlsl[*offset], "static const float _%" PRIu64 " = %f;\n\n", g->var_index, g->value.value.floats[0]);
+			assert(false);
 		}
 		else if (base_type == float2_id) {
-			//*offset += sprintf(&hlsl[*offset], "static const float2 _%" PRIu64 " = float2(%f, %f);\n\n", g->var_index, g->value.value.floats[0],
-			// g->value.value.floats[1]);
+			assert(false);
 		}
 		else if (base_type == float3_id) {
-			//*offset += sprintf(&hlsl[*offset], "static const float3 _%" PRIu64 " = float3(%f, %f, %f);\n\n", g->var_index, g->value.value.floats[0],
-			// g->value.value.floats[1], g->value.value.floats[2]);
+			assert(false);
 		}
 		else if (base_type == float4_id) {
-			//*offset += sprintf(&hlsl[*offset], "static const float4 _%" PRIu64 " = float4(%f, %f, %f, %f);\n\n", g->var_index, g->value.value.floats[0],
-			// g->value.value.floats[1], g->value.value.floats[2], g->value.value.floats[3]);
+			assert(false);
 		}
 		else {
-			/**offset += sprintf(&hlsl[*offset], "cbuffer _%" PRIu64 " : register(b%i) {\n", g->var_index, register_index);
-			type *t = get_type(g->type);
-			for (size_t i = 0; i < t->members.size; ++i) {
-			    *offset +=
-			        sprintf(&hlsl[*offset], "\t%s _%" PRIu64 "_%s;\n", type_string(t->members.m[i].type.type), g->var_index,
-			get_name(t->members.m[i].name));
-			}
-			*offset += sprintf(&hlsl[*offset], "}\n\n");*/
-
 			type *t = get_type(g->type);
 
 			spirv_id member_types[256];
