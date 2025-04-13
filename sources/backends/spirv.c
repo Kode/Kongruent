@@ -1669,7 +1669,7 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 				}
 				write_op_member_decorate_value(decorations, struct_type, j, DECORATION_OFFSET, offset);
 				if (member_type == float3x3_id) {
-					write_op_member_decorate_value(decorations, struct_type, j, DECORATION_MATRIX_STRIDE, 12);
+					write_op_member_decorate_value(decorations, struct_type, j, DECORATION_MATRIX_STRIDE, 16);
 					offset += 12;
 				}
 				if (member_type == float4x4_id) {
