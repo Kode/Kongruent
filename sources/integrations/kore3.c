@@ -1355,12 +1355,16 @@ void kore3_export(char *directory, api_kind api) {
 					type_id base_type_id = get_type(g->type)->base != NO_TYPE ? get_type(g->type)->base : g->type;
 
 					if (!get_type(g->type)->built_in) {
-						if (!has_attribute(&g->attributes, add_name("indexed"))) {
-							fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
-							        other_index);
-							other_index += 1;
+						if (has_attribute(&g->attributes, add_name("indexed"))) {
+							fprintf(output, "\tkore_%s_descriptor_set_set_dynamic_uniform_buffer_descriptor(device, &set->set, parameters->%s, %u, %zu);\n",
+							        api_short, get_name(g->name), struct_size(g->type), other_index);
+						}
+						else {
+							fprintf(output, "\tkore_%s_descriptor_set_set_uniform_buffer_descriptor(device, &set->set, parameters->%s, %zu);\n", api_short,
+							        get_name(g->name), other_index);
 						}
 						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+						other_index += 1;
 					}
 					else if (base_type_id == bvh_type_id) {
 						fprintf(output, "\tkore_%s_descriptor_set_set_bvh_view_srv(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
@@ -1390,8 +1394,8 @@ void kore3_export(char *directory, api_kind api) {
 								        get_name(g->name), other_index);
 							}
 							else {
-								fprintf(output, "\tkore_vulkan_descriptor_set_set_texture_view(device, &set->set, &parameters->%s, %zu);\n", get_name(g->name),
-								        global_index);
+								fprintf(output, "\tkore_vulkan_descriptor_set_set_texture_descriptor(device, &set->set, &parameters->%s, %zu);\n",
+								        get_name(g->name), other_index);
 							}
 
 							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
@@ -1428,12 +1432,16 @@ void kore3_export(char *directory, api_kind api) {
 						other_index += 1;
 					}
 					else {
-						if (!has_attribute(&g->attributes, add_name("indexed"))) {
-							fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_uav(device, &set->set, parameters->%s, %zu);\n", api_short,
+						if (has_attribute(&g->attributes, add_name("indexed"))) {
+							fprintf(output, "\tkore_%s_descriptor_set_set_dynamic_storage_buffer_descriptor(device, &set->set, parameters->%s, %zu);\n",
+							        api_short, get_name(g->name), other_index);
+						}
+						else {
+							fprintf(output, "\tkore_%s_descriptor_set_set_storage_buffer_descriptor(device, &set->set, parameters->%s, %zu);\n", api_short,
 							        get_name(g->name), other_index);
-							other_index += 1;
 						}
 						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+						other_index += 1;
 					}
 				}
 				fprintf(output, "}\n\n");
@@ -1710,12 +1718,12 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, ");\n");
 				}
 				else if (api == API_VULKAN) {
-					fprintf(output, "\n\tkore_%s_command_list_set_descriptor_set(list, %s_table_index, &set->set", api_short, get_name(set->name));
+					fprintf(output, "\n\tkore_vulkan_command_list_set_descriptor_set(list, %s_table_index, &set->set", get_name(set->name));
 					if (dynamic_count > 0) {
-						fprintf(output, ", dynamic_buffers, dynamic_offsets, dynamic_sizes");
+						fprintf(output, ", %u, dynamic_offsets", dynamic_count);
 					}
 					else {
-						fprintf(output, ", NULL, NULL, NULL");
+						fprintf(output, ", 0, NULL");
 					}
 					fprintf(output, ");\n");
 				}
