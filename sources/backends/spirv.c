@@ -183,21 +183,43 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_RETURN                    = 253,
 } spirv_opcode;
 
-static type_id find_access_type(int *indices, int indices_size, type_id base_type) {
+static type_id find_access_type(int *indices, access_kind *access_kinds, int indices_size, type_id base_type) {
 	if (indices_size == 1) {
-		if (is_vector(base_type)) {
-			return vector_base_type(base_type);
+		switch (access_kinds[0]) {
+		case ACCESS_ELEMENT: {
+			type *t = get_type(base_type);
+			return t->base;
 		}
-		else {
+		case ACCESS_SWIZZLE:
+			return vector_base_type(base_type);
+		case ACCESS_MEMBER: {
 			type *t = get_type(base_type);
 			assert(indices[0] < t->members.size);
 			return t->members.m[indices[0]].type.type;
 		}
+		}
+
+		assert(false);
+		return base_type;
 	}
 	else {
-		type *t = get_type(base_type);
-		assert(indices[0] < t->members.size);
-		return find_access_type(&indices[1], indices_size - 1, t->members.m[indices[0]].type.type);
+		switch (access_kinds[0]) {
+		case ACCESS_ELEMENT: {
+			type *t = get_type(base_type);
+			return find_access_type(&indices[1], &access_kinds[1], indices_size - 1, t->base);
+		}
+		case ACCESS_SWIZZLE:
+			assert(false);
+			return base_type;
+		case ACCESS_MEMBER: {
+			type *t = get_type(base_type);
+			assert(indices[0] < t->members.size);
+			return find_access_type(&indices[1], &access_kinds[1], indices_size - 1, t->members.m[indices[0]].type.type);
+		}
+		}
+
+		assert(false);
+		return base_type;
 	}
 }
 
@@ -779,14 +801,14 @@ static spirv_id get_bool_constant(bool value) {
 	return index;
 }
 
-static spirv_id write_op_access_chain(instructions_buffer *instructions, spirv_id result_type, spirv_id base, int *indices, uint16_t indices_size) {
+static spirv_id write_op_access_chain(instructions_buffer *instructions, spirv_id result_type, spirv_id base, spirv_id *indices, uint16_t indices_size) {
 	spirv_id pointer = allocate_index();
 
 	operands_buffer[0] = result_type.id;
 	operands_buffer[1] = pointer.id;
 	operands_buffer[2] = base.id;
 	for (uint16_t i = 0; i < indices_size; ++i) {
-		operands_buffer[i + 3] = get_int_constant(indices[i]).id;
+		operands_buffer[i + 3] = indices[i].id;
 	}
 
 	write_instruction(instructions, 4 + indices_size, SPIRV_OPCODE_ACCESS_CHAIN, operands_buffer);
@@ -1007,7 +1029,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 	// transfer input values into the input variable
 	if (stage == SHADER_STAGE_FRAGMENT) {
 		for (size_t i = 0; i < input_vars_count; ++i) {
-			int      index  = (int)(i + 1); // jump over the pos member
+			spirv_id index  = get_int_constant((int)(i + 1)); // jump over the pos member
 			spirv_id loaded = write_op_load(instructions, convert_type_to_spirv_id(input_types[i]), input_vars[i]);
 			spirv_id pointer =
 			    write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(input_types[i], STORAGE_CLASS_FUNCTION), spirv_parameter_id, &index, 1);
@@ -1016,7 +1038,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 	}
 	else {
 		for (size_t i = 0; i < input_vars_count; ++i) {
-			int      index  = (int)i;
+			spirv_id index  = get_int_constant((int)i);
 			spirv_id loaded = write_op_load(instructions, convert_type_to_spirv_id(input_types[i]), input_vars[i]);
 			spirv_id pointer =
 			    write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(input_types[i], STORAGE_CLASS_FUNCTION), spirv_parameter_id, &index, 1);
@@ -1082,14 +1104,18 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				hmput(index_map, o->op_load_access_list.to.index, value);
 			}
 			else {
-				int indices[256];
+				spirv_id    indices[256];
+				int         plain_indices[256];
+				access_kind access_kinds[256];
 
 				type *s = get_type(o->op_load_access_list.from.type.type);
 
 				for (uint16_t i = 0; i < indices_size; ++i) {
 					switch (o->op_load_access_list.access_list[i].kind) {
 					case ACCESS_ELEMENT:
-						assert(false);
+						access_kinds[i]  = ACCESS_SWIZZLE;
+						plain_indices[i] = 0; // unused
+						indices[i]       = convert_kong_index_to_spirv_id(o->op_load_access_list.access_list[i].access_element.index.index);
 						break;
 					case ACCESS_MEMBER: {
 						int  member_index = 0;
@@ -1104,14 +1130,18 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 						assert(found);
 
-						indices[i] = member_index;
+						access_kinds[i]  = ACCESS_MEMBER;
+						plain_indices[i] = member_index;
+						indices[i]       = get_int_constant(member_index);
 
 						break;
 					}
 					case ACCESS_SWIZZLE: {
 						assert(o->op_load_access_list.access_list[i].access_swizzle.swizzle.size == 1);
 
-						indices[i] = o->op_load_access_list.access_list[i].access_swizzle.swizzle.indices[0];
+						access_kinds[i]  = ACCESS_SWIZZLE;
+						plain_indices[i] = 0; // unused
+						indices[i]       = get_int_constant(o->op_load_access_list.access_list[i].access_swizzle.swizzle.indices[0]);
 
 						break;
 					}
@@ -1120,21 +1150,24 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					s = get_type(o->op_load_access_list.access_list[i].type);
 				}
 
-				storage_class storage;
-				switch (o->op_load_access_list.from.kind) {
+				type_id access_kong_type = find_access_type(plain_indices, access_kinds, indices_size, o->op_store_access_list.from.type.type);
+
+				spirv_id access_type = {0};
+
+				switch (o->op_store_access_list.from.kind) {
 				case VARIABLE_LOCAL:
-					storage = STORAGE_CLASS_FUNCTION;
+					access_type = convert_pointer_type_to_spirv_id(access_kong_type, STORAGE_CLASS_FUNCTION);
 					break;
 				case VARIABLE_GLOBAL:
-					storage = STORAGE_CLASS_UNIFORM;
+					access_type = convert_pointer_type_to_spirv_id(access_kong_type, STORAGE_CLASS_UNIFORM);
 					break;
-				default:
-					storage = STORAGE_CLASS_INPUT;
+				case VARIABLE_INTERNAL:
+					access_type = convert_pointer_type_to_spirv_id(access_kong_type, STORAGE_CLASS_INPUT);
 					break;
 				}
 
-				spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(o->op_load_access_list.to.type.type, storage),
-				                                         convert_kong_index_to_spirv_id(o->op_load_access_list.from.index), indices, indices_size);
+				spirv_id pointer =
+				    write_op_access_chain(instructions, access_type, convert_kong_index_to_spirv_id(o->op_load_access_list.from.index), indices, indices_size);
 
 				spirv_id value = write_op_load(instructions, convert_type_to_spirv_id(o->op_load_access_list.to.type.type), pointer);
 				hmput(index_map, o->op_load_access_list.to.index, value);
@@ -1144,6 +1177,11 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		case OPCODE_LOAD_FLOAT_CONSTANT: {
 			spirv_id id = get_float_constant(o->op_load_float_constant.number);
 			hmput(index_map, o->op_load_float_constant.to.index, id);
+			break;
+		}
+		case OPCODE_LOAD_INT_CONSTANT: {
+			spirv_id id = get_int_constant(o->op_load_int_constant.number);
+			hmput(index_map, o->op_load_int_constant.to.index, id);
 			break;
 		}
 		case OPCODE_LOAD_BOOL_CONSTANT: {
@@ -1194,7 +1232,9 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_STORE_ACCESS_LIST: {
-			int indices[256];
+			spirv_id    indices[256];
+			int         plain_indices[256];
+			access_kind access_kinds[256];
 
 			uint16_t indices_size = o->op_store_access_list.access_list_size;
 
@@ -1203,7 +1243,11 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			for (uint16_t i = 0; i < indices_size; ++i) {
 				switch (o->op_store_access_list.access_list[i].kind) {
 				case ACCESS_ELEMENT:
-					assert(false);
+					access_kinds[i]  = ACCESS_ELEMENT;
+					plain_indices[i] = 0; // unused
+
+					indices[i] = convert_kong_index_to_spirv_id(o->op_store_access_list.access_list[i].access_element.index.index);
+
 					break;
 				case ACCESS_MEMBER: {
 					int  member_index = 0;
@@ -1218,14 +1262,20 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 					assert(found);
 
-					indices[i] = member_index;
+					access_kinds[i]  = ACCESS_MEMBER;
+					plain_indices[i] = member_index;
+
+					indices[i] = get_int_constant(member_index);
 
 					break;
 				}
 				case ACCESS_SWIZZLE: {
 					assert(o->op_store_access_list.access_list[i].access_swizzle.swizzle.size == 1);
 
-					indices[i] = o->op_store_access_list.access_list[i].access_swizzle.swizzle.indices[0];
+					access_kinds[i]  = ACCESS_SWIZZLE;
+					plain_indices[i] = 0; // unused
+
+					indices[i] = get_int_constant(o->op_store_access_list.access_list[i].access_swizzle.swizzle.indices[0]);
 
 					break;
 				}
@@ -1234,7 +1284,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				s = get_type(o->op_store_access_list.access_list[i].type);
 			}
 
-			type_id access_kong_type = find_access_type(indices, indices_size, o->op_store_access_list.to.type.type);
+			type_id access_kong_type = find_access_type(plain_indices, access_kinds, indices_size, o->op_store_access_list.to.type.type);
 
 			spirv_id access_type = {0};
 
@@ -1267,7 +1317,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				for (size_t i = 0; i < output_type->members.size; ++i) {
 					member m = output_type->members.m[i];
 
-					int      indices = (int)i;
+					spirv_id index = get_int_constant((int)i);
 					spirv_id spirv_type;
 					if (m.type.type == float2_id) {
 						spirv_type = spirv_float2_type;
@@ -1284,13 +1334,13 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					}
 
 					spirv_id load_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(m.type.type, STORAGE_CLASS_FUNCTION),
-					                                              convert_kong_index_to_spirv_id(o->op_return.var.index), &indices, 1);
+					                                              convert_kong_index_to_spirv_id(o->op_return.var.index), &index, 1);
 					spirv_id value        = write_op_load(instructions, spirv_type, load_pointer);
 
 					if (i == 0) {
 						// position
-						spirv_id store_pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(m.type.type, STORAGE_CLASS_OUTPUT),
-						                                               output_vars[i], &indices, 1);
+						spirv_id store_pointer =
+						    write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(m.type.type, STORAGE_CLASS_OUTPUT), output_vars[i], &index, 1);
 						write_op_store(instructions, store_pointer, value);
 					}
 					else {
