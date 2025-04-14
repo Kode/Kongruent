@@ -683,9 +683,11 @@ static void write_fragment_input_decorations(instructions_buffer *instructions, 
 	}
 }
 
-static void write_fragment_output_decorations(instructions_buffer *instructions, spirv_id output) {
-	uint32_t operands[] = {output.id, (uint32_t)DECORATION_LOCATION, 0};
-	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_DECORATE, operands);
+static void write_fragment_output_decorations(instructions_buffer *instructions, spirv_id *outputs, uint32_t outputs_size) {
+	for (uint32_t output_index = 0; output_index < outputs_size; ++output_index) {
+		uint32_t operands[] = {outputs[output_index].id, (uint32_t)DECORATION_LOCATION, output_index};
+		write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_DECORATE, operands);
+	}
 }
 
 static void write_op_decorate(instructions_buffer *instructions, spirv_id target, decoration decor) {
@@ -1350,9 +1352,18 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				write_op_return(instructions);
 			}
 			else if (stage == SHADER_STAGE_FRAGMENT && main) {
-				if (false /*TODO*/) {
-					// spirv_id object = write_op_load(instructions, convert_type_to_spirv_id(o->op_return.var.type.type),
-					// convert_kong_index_to_spirv_id(o->op_return.var.index)); write_op_store(instructions, output_var, object);
+				type_id pixel_output = f->return_type.type;
+				type   *output       = get_type(pixel_output);
+
+				if (output->array_size > 0) {
+					for (uint32_t array_index = 0; array_index < output->array_size; ++array_index) {
+						spirv_id index  = get_int_constant((int)array_index);
+						spirv_id chain  = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(pixel_output, STORAGE_CLASS_FUNCTION),
+						                                        convert_kong_index_to_spirv_id(o->op_return.var.index), &index, 1);
+						spirv_id loaded = write_op_load(instructions, convert_type_to_spirv_id(float4_id), chain);
+
+						write_op_store(instructions, output_vars[array_index], loaded);
+					}
 				}
 				else {
 					spirv_id loaded;
@@ -1974,15 +1985,17 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 		input_vars[input_var_index] = allocate_index();
 	}
 
-	if (output->built_in) {
-		output_vars_count = 1;
-		output_vars[0]    = allocate_index();
-	}
-	else {
-		output_vars_count = output->members.size;
-		for (size_t output_var_index = 0; output_var_index < output_vars_count; ++output_var_index) {
+	assert(output->built_in); // has to be a float4 or a float4[]
+
+	if (output->array_size > 0) {
+		output_vars_count = output->array_size;
+		for (size_t output_var_index = 0; output_var_index < output->array_size; ++output_var_index) {
 			output_vars[output_var_index] = allocate_index();
 		}
+	}
+	else {
+		output_vars_count = 1;
+		output_vars[0]    = allocate_index();
 	}
 
 	spirv_id interfaces[256];
@@ -2027,9 +2040,11 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 		}
 	}
 
-	write_fragment_output_decorations(&decorations, output_vars[0]);
+	write_fragment_output_decorations(&decorations, output_vars, (uint32_t)output_vars_count);
 
-	write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_OUTPUT), output_vars[0], STORAGE_CLASS_OUTPUT);
+	for (size_t i = 0; i < output_vars_count; ++i) {
+		write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_OUTPUT), output_vars[i], STORAGE_CLASS_OUTPUT);
+	}
 
 	write_functions(&instructions, main, entry_point, SHADER_STAGE_FRAGMENT, pixel_input, NO_TYPE);
 
