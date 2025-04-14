@@ -243,7 +243,7 @@ typedef enum memory_model { MEMORY_MODEL_SIMPLE = 0, MEMORY_MODEL_GLSL450 = 1 } 
 
 typedef enum capability { CAPABILITY_SHADER = 1 } capability;
 
-typedef enum execution_model { EXECUTION_MODEL_VERTEX = 0, EXECUTION_MODEL_FRAGMENT = 4 } execution_model;
+typedef enum execution_model { EXECUTION_MODEL_VERTEX = 0, EXECUTION_MODEL_FRAGMENT = 4, EXECUTION_MODEL_GLCOMPUTE = 5 } execution_model;
 
 typedef enum decoration {
 	DECORATION_BLOCK          = 2,
@@ -2121,12 +2121,87 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 	write_bytecode(directory, filename, var_name, &header, &decorations, &base_types, &constants, &aggregate_types, &instructions, debug);
 }
 
+static void spirv_export_compute(char *directory, function *main, bool debug) {
+	next_index = 1;
+	init_maps();
+
+	instructions_buffer instructions = {
+	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
+	};
+
+	instructions_buffer header = {
+	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
+	};
+
+	instructions_buffer decorations = {
+	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
+	};
+
+	instructions_buffer base_types = {
+	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
+	};
+
+	instructions_buffer constants = {
+	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
+	};
+
+	instructions_buffer aggregate_types = {
+	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
+	};
+
+	assert(main->parameters_size == 0);
+
+	write_capabilities(&decorations);
+	write_op_ext_inst_import(&decorations, "GLSL.std.450");
+	write_op_memory_model(&decorations, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
+
+	spirv_id entry_point = allocate_index();
+
+	input_vars_count  = 0;
+	output_vars_count = 0;
+
+	spirv_id interfaces[256];
+	size_t   interfaces_count = 0;
+
+	write_op_entry_point(&decorations, EXECUTION_MODEL_GLCOMPUTE, entry_point, "main", interfaces, (uint16_t)interfaces_count);
+
+	write_base_types(&base_types);
+
+	write_globals(&decorations, &aggregate_types, main);
+
+	write_functions(&instructions, main, entry_point, SHADER_STAGE_COMPUTE, NO_TYPE, NO_TYPE);
+
+	write_types(&aggregate_types, main);
+
+	// header
+	write_magic_number(&header);
+	write_version_number(&header);
+	write_generator_magic_number(&header);
+	write_bound(&header);
+	write_instruction_schema(&header);
+
+	write_constants(&constants);
+
+	char *name = get_name(main->name);
+
+	char filename[512];
+	sprintf(filename, "kong_%s", name);
+
+	char var_name[256];
+	sprintf(var_name, "%s_code", name);
+
+	write_bytecode(directory, filename, var_name, &header, &decorations, &base_types, &constants, &aggregate_types, &instructions, debug);
+}
+
 void spirv_export(char *directory, bool debug) {
 	function *vertex_shaders[256];
 	size_t    vertex_shaders_size = 0;
 
 	function *fragment_shaders[256];
 	size_t    fragment_shaders_size = 0;
+
+	function *compute_shaders[256];
+	size_t    compute_shaders_size = 0;
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
@@ -2161,6 +2236,14 @@ void spirv_export(char *directory, bool debug) {
 		}
 	}
 
+	for (function_id i = 0; get_function(i) != NULL; ++i) {
+		function *f = get_function(i);
+		if (has_attribute(&f->attributes, add_name("compute"))) {
+			compute_shaders[compute_shaders_size] = f;
+			compute_shaders_size += 1;
+		}
+	}
+
 	for (size_t i = 0; i < vertex_shaders_size; ++i) {
 		input_vars_count = 0;
 		spirv_export_vertex(directory, vertex_shaders[i], debug);
@@ -2169,5 +2252,10 @@ void spirv_export(char *directory, bool debug) {
 	for (size_t i = 0; i < fragment_shaders_size; ++i) {
 		input_vars_count = 0;
 		spirv_export_fragment(directory, fragment_shaders[i], debug);
+	}
+
+	for (size_t i = 0; i < compute_shaders_size; ++i) {
+		input_vars_count = 0;
+		spirv_export_compute(directory, compute_shaders[i], debug);
 	}
 }
