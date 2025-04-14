@@ -113,7 +113,9 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 		write_buffer(file, output_instructions, output_instructions_size);
 		fprintf(file, "\";\n");
 
-		fprintf(file, "size_t %s_size = %zu;\n\n", name, output_header_size + output_decorations_size + output_constants_size + output_instructions_size);
+		fprintf(file, "size_t %s_size = %zu;\n\n", name,
+		        output_header_size + output_decorations_size + output_base_types_size + output_constants_size + output_aggregate_types_size +
+		            output_instructions_size);
 
 		fclose(file);
 	}
