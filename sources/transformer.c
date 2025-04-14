@@ -52,16 +52,28 @@ void transform(uint32_t flags) {
 					variable from = allocate_variable(t, o->op_store_access_list.from.kind);
 
 					for (uint32_t swizzle_index = 0; swizzle_index < a.access_swizzle.swizzle.size; ++swizzle_index) {
-						opcode from_opcode;
-						from_opcode.type                                                               = OPCODE_LOAD_ACCESS_LIST;
-						from_opcode.size                                                               = OP_SIZE(from_opcode, op_load_access_list);
-						from_opcode.op_load_access_list.from                                           = o->op_store_access_list.from;
-						from_opcode.op_load_access_list.to                                             = from;
-						from_opcode.op_load_access_list.access_list_size                               = 1;
-						from_opcode.op_load_access_list.access_list->kind                              = ACCESS_SWIZZLE;
-						from_opcode.op_load_access_list.access_list->access_swizzle.swizzle.size       = 1;
-						from_opcode.op_load_access_list.access_list->access_swizzle.swizzle.indices[0] = swizzle_index;
-						from_opcode.op_load_access_list.access_list->type                              = from_type;
+						opcode from_opcode = {
+						    .type = OPCODE_LOAD_ACCESS_LIST,
+						    .op_load_access_list =
+						        {
+						            .from             = o->op_store_access_list.from,
+						            .to               = from,
+						            .access_list_size = 1,
+						            .access_list      = {{
+						                     .type = from_type,
+						                     .kind = ACCESS_SWIZZLE,
+						                     .access_swizzle =
+                                            {
+						                             .swizzle =
+                                                    {
+						                                     .size    = 1,
+						                                     .indices = {swizzle_index},
+                                                    },
+                                            },
+                                    }},
+						        },
+						};
+						from_opcode.size = OP_SIZE(from_opcode, op_load_access_list);
 
 						copy_opcode(&from_opcode);
 
