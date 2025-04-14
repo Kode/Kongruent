@@ -41,17 +41,17 @@ void transform(uint32_t flags) {
 				access a = o->op_store_access_list.access_list[o->op_store_access_list.access_list_size - 1];
 
 				if (a.kind == ACCESS_SWIZZLE && a.access_swizzle.swizzle.size > 1) {
+					assert(is_vector(o->op_store_access_list.from.type.type));
+
+					type_id from_type = vector_base_type(o->op_store_access_list.from.type.type);
+
+					type_ref t;
+					init_type_ref(&t, NO_NAME);
+					t.type = from_type;
+
+					variable from = allocate_variable(t, o->op_store_access_list.from.kind);
+
 					for (uint32_t swizzle_index = 0; swizzle_index < a.access_swizzle.swizzle.size; ++swizzle_index) {
-						assert(is_vector(o->op_store_access_list.from.type.type));
-
-						type_id from_type = vector_base_type(o->op_store_access_list.from.type.type);
-
-						type_ref t;
-						init_type_ref(&t, NO_NAME);
-						t.type = from_type;
-
-						variable from = allocate_variable(t, o->op_store_access_list.from.kind);
-
 						opcode from_opcode;
 						from_opcode.type                                                               = OPCODE_LOAD_ACCESS_LIST;
 						from_opcode.size                                                               = OP_SIZE(from_opcode, op_load_access_list);
@@ -86,15 +86,44 @@ void transform(uint32_t flags) {
 				access a = o->op_load_access_list.access_list[o->op_load_access_list.access_list_size - 1];
 
 				if (a.kind == ACCESS_SWIZZLE && a.access_swizzle.swizzle.size > 1) {
+					assert(is_vector(o->op_load_access_list.to.type.type));
+
+					type_id to_type = vector_base_type(o->op_load_access_list.to.type.type);
+
+					type_ref t;
+					init_type_ref(&t, NO_NAME);
+					t.type = to_type;
+
+					variable to[4];
+
 					for (uint32_t swizzle_index = 0; swizzle_index < a.access_swizzle.swizzle.size; ++swizzle_index) {
+
+						to[swizzle_index] = allocate_variable(t, o->op_load_access_list.to.kind);
+
 						opcode new_opcode = *o;
+
+						new_opcode.op_load_access_list.to = to[swizzle_index];
 
 						access *new_access = &new_opcode.op_load_access_list.access_list[new_opcode.op_load_access_list.access_list_size - 1];
 						new_access->access_swizzle.swizzle.size       = 1;
 						new_access->access_swizzle.swizzle.indices[0] = a.access_swizzle.swizzle.indices[swizzle_index];
+						new_access->type                              = to_type;
 
 						copy_opcode(&new_opcode);
 					}
+
+					opcode constructor_call = {
+					    .type = OPCODE_CALL,
+					    .op_call =
+					        {
+					            .func            = get_type(o->op_load_access_list.to.type.type)->name,
+					            .parameters      = {to[0], to[1], to[2], to[3]},
+					            .parameters_size = a.access_swizzle.swizzle.size,
+					            .var             = o->op_load_access_list.to,
+					        },
+					};
+					constructor_call.size = OP_SIZE(constructor_call, op_call);
+					copy_opcode(&constructor_call);
 				}
 				else {
 					copy_opcode(o);
