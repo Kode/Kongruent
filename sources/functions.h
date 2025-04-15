@@ -10,6 +10,12 @@ typedef uint32_t function_id;
 
 struct statement;
 
+typedef struct builtins {
+	bool builtins_analyzed;
+	bool dispatch_thread_id;
+	bool group_thread_id;
+} builtins;
+
 typedef struct function {
 	attribute_list    attributes;
 	name_id           name;
@@ -21,6 +27,8 @@ typedef struct function {
 	struct statement *block;
 
 	uint32_t descriptor_set_group_index;
+
+	builtins used_builtins;
 
 	opcodes code;
 } function;

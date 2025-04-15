@@ -152,6 +152,58 @@ void find_referenced_functions(function *f, function **functions, size_t *functi
 	}
 }
 
+void find_referenced_builtins(function *f) {
+	if (f->block == NULL) {
+		// built-in
+		return;
+	}
+
+	if (f->used_builtins.builtins_analyzed) {
+		return;
+	}
+
+	f->used_builtins.builtins_analyzed = true;
+
+	uint8_t *data = f->code.o;
+	size_t   size = f->code.size;
+
+	size_t index = 0;
+	while (index < size) {
+		opcode *o = (opcode *)&data[index];
+		switch (o->type) {
+		case OPCODE_CALL: {
+			char *func_name = get_name(o->op_call.func);
+
+			name_id func = o->op_call.func;
+
+			if (func == add_name("dispatch_thread_id")) {
+				f->used_builtins.dispatch_thread_id = true;
+			}
+
+			if (func == add_name("group_thread_id")) {
+				f->used_builtins.group_thread_id = true;
+			}
+
+			for (function_id i = 0; get_function(i) != NULL; ++i) {
+				function *called = get_function(i);
+				if (called->name == o->op_call.func) {
+					find_referenced_builtins(f);
+
+					f->used_builtins.dispatch_thread_id |= called->used_builtins.dispatch_thread_id;
+
+					break;
+				}
+			}
+			break;
+		}
+		default:
+			break;
+		}
+
+		index += o->size;
+	}
+}
+
 static void add_found_type(type_id t, type_id *types, size_t *types_size) {
 	for (size_t i = 0; i < *types_size; ++i) {
 		if (types[i] == t) {
