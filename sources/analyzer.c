@@ -184,12 +184,18 @@ void find_referenced_builtins(function *f) {
 				f->used_builtins.group_thread_id = true;
 			}
 
+			if (func == add_name("group_id")) {
+				f->used_builtins.group_id = true;
+			}
+
 			for (function_id i = 0; get_function(i) != NULL; ++i) {
 				function *called = get_function(i);
 				if (called->name == o->op_call.func) {
 					find_referenced_builtins(f);
 
 					f->used_builtins.dispatch_thread_id |= called->used_builtins.dispatch_thread_id;
+					f->used_builtins.group_thread_id |= called->used_builtins.group_thread_id;
+					f->used_builtins.group_id |= called->used_builtins.group_id;
 
 					break;
 				}

@@ -14,6 +14,7 @@ typedef struct builtins {
 	bool builtins_analyzed;
 	bool dispatch_thread_id;
 	bool group_thread_id;
+	bool group_id;
 } builtins;
 
 typedef struct function {
