@@ -556,6 +556,11 @@ static void write_functions(char *code, size_t *offset) {
 				}
 				break;
 			}
+			case OPCODE_DISCARD: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "discard_fragment();\n");
+				break;
+			}
 			case OPCODE_CALL: {
 				debug_context context = {0};
 
