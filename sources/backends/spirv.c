@@ -209,6 +209,11 @@ typedef enum spirv_glsl_std {
 } spirv_glsl_std;
 
 static type_id find_access_type(int *indices, access_kind *access_kinds, int indices_size, type_id base_type) {
+	if (base_type == tex2d_type_id) {
+		assert(indices_size == 1);
+		return float4_id;
+	}
+
 	if (indices_size == 1) {
 		switch (access_kinds[0]) {
 		case ACCESS_ELEMENT: {
@@ -566,6 +571,8 @@ static struct {
 } *type_map = NULL;
 
 static void add_to_type_map(type_id kong_type, bool pointer, storage_class storage, spirv_id spirv_type) {
+	assert(kong_type != NO_TYPE);
+
 	complex_type ct = {
 	    .type    = kong_type,
 	    .pointer = pointer,
@@ -1150,9 +1157,12 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 	}
 
 	// create variable for the input parameter
-	spirv_id spirv_parameter_id = convert_kong_index_to_spirv_id(parameter_ids[0]);
-	write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_types[0], STORAGE_CLASS_FUNCTION), spirv_parameter_id,
-	                               STORAGE_CLASS_FUNCTION);
+	spirv_id spirv_parameter_id = {0};
+	if (stage == SHADER_STAGE_VERTEX || stage == SHADER_STAGE_FRAGMENT) {
+		spirv_parameter_id = convert_kong_index_to_spirv_id(parameter_ids[0]);
+		write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_types[0], STORAGE_CLASS_FUNCTION), spirv_parameter_id,
+		                               STORAGE_CLASS_FUNCTION);
+	}
 
 	// all vars have to go first
 	size_t index = 0;
@@ -1182,7 +1192,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			write_op_store(instructions, pointer, loaded);
 		}
 	}
-	else {
+	else if (stage == SHADER_STAGE_VERTEX) {
 		for (size_t i = 0; i < input_vars_count; ++i) {
 			spirv_id index  = get_int_constant((int)i);
 			spirv_id loaded = write_op_load(instructions, convert_type_to_spirv_id(input_types[i]), input_vars[i]);
@@ -1297,6 +1307,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				}
 
 				type_id access_kong_type = find_access_type(plain_indices, access_kinds, indices_size, o->op_store_access_list.from.type.type);
+				assert(access_kong_type != NO_TYPE);
 
 				spirv_id access_type = {0};
 
@@ -1516,6 +1527,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			}
 
 			type_id access_kong_type = find_access_type(plain_indices, access_kinds, indices_size, o->op_store_access_list.to.type.type);
+			assert(access_kong_type != NO_TYPE);
 
 			spirv_id access_type = {0};
 
@@ -1793,11 +1805,9 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 	if (!ends_with_return) {
 		if (main) {
-			// TODO
+			assert(stage == SHADER_STAGE_COMPUTE);
 		}
-		else {
-			write_op_return(instructions);
-		}
+		write_op_return(instructions);
 	}
 	write_op_function_end(instructions);
 }
@@ -2045,17 +2055,18 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 	}
 
 	if (main->used_builtins.dispatch_thread_id) {
-		dispatch_thread_id_variable = write_op_variable(instructions_block, convert_type_to_spirv_id(uint3_id), STORAGE_CLASS_INPUT);
+		dispatch_thread_id_variable =
+		    write_op_variable(instructions_block, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), STORAGE_CLASS_INPUT);
 		write_op_decorate_value(decorations, dispatch_thread_id_variable, DECORATION_BUILTIN, BUILTIN_GLOBAL_INVOCATION_ID);
 	}
 
 	if (main->used_builtins.group_thread_id) {
-		group_thread_id_variable = write_op_variable(instructions_block, convert_type_to_spirv_id(uint3_id), STORAGE_CLASS_INPUT);
+		group_thread_id_variable = write_op_variable(instructions_block, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), STORAGE_CLASS_INPUT);
 		write_op_decorate_value(decorations, group_thread_id_variable, DECORATION_BUILTIN, BUILTIN_LOCAL_INVOCATION_ID);
 	}
 
 	if (main->used_builtins.group_id) {
-		group_id_variable = write_op_variable(instructions_block, convert_type_to_spirv_id(uint3_id), STORAGE_CLASS_INPUT);
+		group_id_variable = write_op_variable(instructions_block, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), STORAGE_CLASS_INPUT);
 		write_op_decorate_value(decorations, group_id_variable, DECORATION_BUILTIN, BUILTIN_WORKGROUP_ID);
 	}
 }
@@ -2429,10 +2440,7 @@ static void spirv_export_compute(char *directory, function *main, bool debug) {
 	input_vars_count  = 0;
 	output_vars_count = 0;
 
-	spirv_id interfaces[256];
-	size_t   interfaces_count = 0;
-
-	write_op_entry_point(&decorations, EXECUTION_MODEL_GLCOMPUTE, entry_point, "main", interfaces, (uint16_t)interfaces_count);
+	write_op_entry_point(&decorations, EXECUTION_MODEL_GLCOMPUTE, entry_point, "main", NULL, 0);
 
 	write_base_types(&base_types);
 
