@@ -67,7 +67,7 @@ static void write_buffer(FILE *file, uint8_t *output, size_t output_size) {
 
 static void write_bytecode(char *directory, const char *filename, const char *name, instructions_buffer *header, instructions_buffer *decorations,
                            instructions_buffer *base_types, instructions_buffer *constants, instructions_buffer *aggregate_types,
-                           instructions_buffer *instructions, bool debug) {
+                           instructions_buffer *global_vars, instructions_buffer *instructions, bool debug) {
 	uint8_t *output_header      = (uint8_t *)header->instructions;
 	size_t   output_header_size = header->offset * 4;
 
@@ -82,6 +82,9 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 
 	uint8_t *output_aggregate_types      = (uint8_t *)aggregate_types->instructions;
 	size_t   output_aggregate_types_size = aggregate_types->offset * 4;
+
+	uint8_t *output_global_vars      = (uint8_t *)global_vars->instructions;
+	size_t   output_global_vars_size = global_vars->offset * 4;
 
 	uint8_t *output_instructions      = (uint8_t *)instructions->instructions;
 	size_t   output_instructions_size = instructions->offset * 4;
@@ -110,12 +113,13 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 		write_buffer(file, output_base_types, output_base_types_size);
 		write_buffer(file, output_constants, output_constants_size);
 		write_buffer(file, output_aggregate_types, output_aggregate_types_size);
+		write_buffer(file, output_global_vars, output_global_vars_size);
 		write_buffer(file, output_instructions, output_instructions_size);
 		fprintf(file, "\";\n");
 
 		fprintf(file, "size_t %s_size = %zu;\n\n", name,
 		        output_header_size + output_decorations_size + output_base_types_size + output_constants_size + output_aggregate_types_size +
-		            output_instructions_size);
+		            output_global_vars_size + output_instructions_size);
 
 		fclose(file);
 	}
@@ -133,6 +137,7 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 		fwrite(output_base_types, 1, output_base_types_size, file);
 		fwrite(output_constants, 1, output_constants_size, file);
 		fwrite(output_aggregate_types, 1, output_aggregate_types_size, file);
+		fwrite(output_global_vars, 1, output_global_vars_size, file);
 		fwrite(output_instructions, 1, output_instructions_size, file);
 		fclose(file);
 
@@ -1447,15 +1452,15 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("dispatch_thread_id")) {
-				spirv_id id = write_op_load(instructions, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), dispatch_thread_id_variable);
+				spirv_id id = write_op_load(instructions, convert_type_to_spirv_id(uint3_id), dispatch_thread_id_variable);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("group_thread_id")) {
-				spirv_id id = write_op_load(instructions, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), group_thread_id_variable);
+				spirv_id id = write_op_load(instructions, convert_type_to_spirv_id(uint3_id), group_thread_id_variable);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("group_id")) {
-				spirv_id id = write_op_load(instructions, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), group_id_variable);
+				spirv_id id = write_op_load(instructions, convert_type_to_spirv_id(uint3_id), group_id_variable);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("length")) {
@@ -1915,7 +1920,7 @@ static void assign_bindings(uint32_t *bindings, function *shader) {
 	}
 }
 
-static void write_globals(instructions_buffer *decorations, instructions_buffer *instructions_block, function *main) {
+static void write_globals(instructions_buffer *decorations, instructions_buffer *instructions_block, instructions_buffer *global_vars_block, function *main) {
 	uint32_t bindings[512] = {0};
 	assign_bindings(bindings, main);
 
@@ -2046,7 +2051,7 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 			add_to_type_map(g->type, true, STORAGE_CLASS_UNIFORM, struct_pointer_type);
 
 			spirv_id spirv_var_id = convert_kong_index_to_spirv_id(g->var_index);
-			write_op_variable_preallocated(instructions_block, struct_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM);
+			write_op_variable_preallocated(global_vars_block, struct_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM);
 
 			write_op_decorate(decorations, struct_type, DECORATION_BLOCK);
 			write_op_decorate_value(decorations, spirv_var_id, DECORATION_DESCRIPTOR_SET, 0);
@@ -2056,17 +2061,17 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 
 	if (main->used_builtins.dispatch_thread_id) {
 		dispatch_thread_id_variable =
-		    write_op_variable(instructions_block, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), STORAGE_CLASS_INPUT);
+		    write_op_variable(global_vars_block, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), STORAGE_CLASS_INPUT);
 		write_op_decorate_value(decorations, dispatch_thread_id_variable, DECORATION_BUILTIN, BUILTIN_GLOBAL_INVOCATION_ID);
 	}
 
 	if (main->used_builtins.group_thread_id) {
-		group_thread_id_variable = write_op_variable(instructions_block, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), STORAGE_CLASS_INPUT);
+		group_thread_id_variable = write_op_variable(global_vars_block, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), STORAGE_CLASS_INPUT);
 		write_op_decorate_value(decorations, group_thread_id_variable, DECORATION_BUILTIN, BUILTIN_LOCAL_INVOCATION_ID);
 	}
 
 	if (main->used_builtins.group_id) {
-		group_id_variable = write_op_variable(instructions_block, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), STORAGE_CLASS_INPUT);
+		group_id_variable = write_op_variable(global_vars_block, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), STORAGE_CLASS_INPUT);
 		write_op_decorate_value(decorations, group_id_variable, DECORATION_BUILTIN, BUILTIN_WORKGROUP_ID);
 	}
 }
@@ -2116,10 +2121,6 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 
 	find_referenced_builtins(main);
 
-	instructions_buffer instructions = {
-	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
-	};
-
 	instructions_buffer header = {
 	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
 	};
@@ -2137,6 +2138,14 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 	};
 
 	instructions_buffer aggregate_types = {
+	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
+	};
+
+	instructions_buffer global_vars = {
+	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
+	};
+
+	instructions_buffer instructions = {
 	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
 	};
 
@@ -2187,7 +2196,7 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 
 	write_base_types(&base_types);
 
-	write_globals(&decorations, &aggregate_types, main);
+	write_globals(&decorations, &aggregate_types, &global_vars, main);
 
 	for (size_t i = 0; i < input_vars_count; ++i) {
 		member m       = input->members.m[i];
@@ -2259,7 +2268,7 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(directory, filename, var_name, &header, &decorations, &base_types, &constants, &aggregate_types, &instructions, debug);
+	write_bytecode(directory, filename, var_name, &header, &decorations, &base_types, &constants, &aggregate_types, &global_vars, &instructions, debug);
 }
 
 static void spirv_export_fragment(char *directory, function *main, bool debug) {
@@ -2267,10 +2276,6 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 	init_maps();
 
 	find_referenced_builtins(main);
-
-	instructions_buffer instructions = {
-	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
-	};
 
 	instructions_buffer header = {
 	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
@@ -2289,6 +2294,14 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 	};
 
 	instructions_buffer aggregate_types = {
+	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
+	};
+
+	instructions_buffer global_vars = {
+	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
+	};
+
+	instructions_buffer instructions = {
 	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
 	};
 
@@ -2348,7 +2361,7 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 
 	write_base_types(&base_types);
 
-	write_globals(&decorations, &aggregate_types, main);
+	write_globals(&decorations, &aggregate_types, &global_vars, main);
 
 	for (size_t i = 0; i < input_vars_count; ++i) {
 		member m       = input->members.m[i + 1]; // jump over pos input
@@ -2396,7 +2409,7 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(directory, filename, var_name, &header, &decorations, &base_types, &constants, &aggregate_types, &instructions, debug);
+	write_bytecode(directory, filename, var_name, &header, &decorations, &base_types, &constants, &aggregate_types, &global_vars, &instructions, debug);
 }
 
 static void spirv_export_compute(char *directory, function *main, bool debug) {
@@ -2404,10 +2417,6 @@ static void spirv_export_compute(char *directory, function *main, bool debug) {
 	init_maps();
 
 	find_referenced_builtins(main);
-
-	instructions_buffer instructions = {
-	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
-	};
 
 	instructions_buffer header = {
 	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
@@ -2429,6 +2438,14 @@ static void spirv_export_compute(char *directory, function *main, bool debug) {
 	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
 	};
 
+	instructions_buffer global_vars = {
+	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
+	};
+
+	instructions_buffer instructions = {
+	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
+	};
+
 	assert(main->parameters_size == 0);
 
 	write_capabilities(&decorations);
@@ -2444,7 +2461,7 @@ static void spirv_export_compute(char *directory, function *main, bool debug) {
 
 	write_base_types(&base_types);
 
-	write_globals(&decorations, &aggregate_types, main);
+	write_globals(&decorations, &aggregate_types, &global_vars, main);
 
 	write_functions(&instructions, main, entry_point, SHADER_STAGE_COMPUTE, NO_TYPE, NO_TYPE);
 
@@ -2467,7 +2484,7 @@ static void spirv_export_compute(char *directory, function *main, bool debug) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_bytecode(directory, filename, var_name, &header, &decorations, &base_types, &constants, &aggregate_types, &instructions, debug);
+	write_bytecode(directory, filename, var_name, &header, &decorations, &base_types, &constants, &aggregate_types, &global_vars, &instructions, debug);
 }
 
 void spirv_export(char *directory, bool debug) {
