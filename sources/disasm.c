@@ -99,6 +99,8 @@ static void write_functions(void) {
 				char parameters[256];
 				int  offset = 0;
 
+				parameters[0] = 0;
+
 				for (int i = 0; i < o->op_call.parameters_size; ++i) {
 					offset += sprintf(&parameters[offset], "$%" PRIu64, o->op_call.parameters[i].index);
 
