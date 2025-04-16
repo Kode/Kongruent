@@ -334,7 +334,7 @@ static void write_functions(char *code, size_t *offset) {
 			for (uint8_t parameter_index = 1; parameter_index < f->parameters_size; ++parameter_index) {
 				*offset += sprintf(&code[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[0].type), parameter_ids[0]);
 			}
-			*offset += sprintf(&code[*offset], "%s) {\n", buffers);
+			*offset += sprintf(&code[*offset], "%s, uint _kong_vertex_id [[vertex_id]]) {\n", buffers);
 		}
 		else if (is_fragment_function(i)) {
 			if (get_type(f->return_type.type)->array_size > 0) {
@@ -609,6 +609,26 @@ static void write_functions(char *code, size_t *offset) {
 				else if (o->op_call.func == add_name("group_index")) {
 					check(o->op_call.parameters_size == 0, context, "group_index can not have a parameter");
 					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _kong_group_index;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+				}
+				else if (o->op_call.func == add_name("vertex_id")) {
+					check(o->op_call.parameters_size == 0, context, "vertex_id can not have a parameter");
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _kong_vertex_id;\n", type_string(o->op_call.var.type.type), o->op_call.var.index);
+				}
+				else if (o->op_call.func == add_name("lerp")) {
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = mix(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
+					                   o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index, o->op_call.parameters[2].index);
+				}
+				else if (o->op_call.func == add_name("frac")) {
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = fract(_%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
+					                   o->op_call.var.index, o->op_call.parameters[0].index);
+				}
+				else if (o->op_call.func == add_name("ddx")) {
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = dfdx(_%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
+					                   o->op_call.var.index, o->op_call.parameters[0].index);
+				}
+				else if (o->op_call.func == add_name("ddy")) {
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = dfdy(_%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
+					                   o->op_call.var.index, o->op_call.parameters[0].index);
 				}
 				else {
 					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index,
