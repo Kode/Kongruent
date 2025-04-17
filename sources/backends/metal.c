@@ -227,6 +227,36 @@ static void write_argument_buffers(char *code, size_t *offset) {
 	}
 }
 
+static void write_globals(char *code, size_t *offset) {
+	global_array globals = {0};
+	for (function_id i = 0; get_function(i) != NULL; ++i) {
+		function *f = get_function(i);
+		find_referenced_globals(f, &globals);
+	}
+
+	for (size_t i = 0; i < globals.size; ++i) {
+		global *g         = get_global(globals.globals[i]);
+		type   *t         = get_type(g->type);
+		type_id base_type = t->array_size > 0 ? t->base : g->type;
+
+		if (base_type == float_id) {
+			*offset += sprintf(&code[*offset], "constant float _%" PRIu64 " = %f;\n\n", g->var_index, g->value.value.floats[0]);
+		}
+		else if (base_type == float2_id) {
+			*offset += sprintf(&code[*offset], "constant float2 _%" PRIu64 " = float2(%f, %f);\n\n", g->var_index, g->value.value.floats[0],
+			                   g->value.value.floats[1]);
+		}
+		else if (base_type == float3_id) {
+			*offset += sprintf(&code[*offset], "constant float3 _%" PRIu64 " = float3(%f, %f, %f);\n\n", g->var_index, g->value.value.floats[0],
+			                   g->value.value.floats[1], g->value.value.floats[2]);
+		}
+		else if (base_type == float4_id) {
+			*offset += sprintf(&code[*offset], "constant float4 _%" PRIu64 " = float4(%f, %f, %f, %f);\n\n", g->var_index, g->value.value.floats[0],
+				               g->value.value.floats[1], g->value.value.floats[2], g->value.value.floats[3]);
+		}
+	}
+}
+
 static bool var_name(variable var, char *output_name) {
 	global *g = NULL;
 
@@ -673,6 +703,8 @@ static void metal_export_everything(char *directory) {
 	write_types(metal, &offset);
 
 	write_argument_buffers(metal, &offset);
+
+	write_globals(metal, &offset);
 
 	write_functions(metal, &offset);
 
