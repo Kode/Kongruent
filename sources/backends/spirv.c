@@ -178,6 +178,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_TYPE_POINTER              = 32,
 	SPIRV_OPCODE_TYPE_FUNCTION             = 33,
 	SPIRV_OPCODE_CONSTANT                  = 43,
+	SPIRV_OPCODE_CONSTANT_COMPOSITE        = 44,
 	SPIRV_OPCODE_FUNCTION                  = 54,
 	SPIRV_OPCODE_FUNCTION_END              = 56,
 	SPIRV_OPCODE_VARIABLE                  = 59,
@@ -300,13 +301,24 @@ typedef enum storage_class {
 	STORAGE_CLASS_NONE             = 9999
 } storage_class;
 
-typedef enum selection_control { SELECTION_CONTROL_NONE = 0, SELCTION_CONTROL_FLATTEN = 1, SELECTION_CONTROL_DONT_FLATTEN = 2 } selection_control;
+typedef enum selection_control {
+	SELECTION_CONTROL_NONE         = 0,
+	SELCTION_CONTROL_FLATTEN       = 1,
+	SELECTION_CONTROL_DONT_FLATTEN = 2,
+} selection_control;
 
-typedef enum loop_control { LOOP_CONTROL_NONE = 0, LOOP_CONTROL_UNROLL = 1, LOOP_CONTROL_DONT_UNROLL = 2 } loop_control;
+typedef enum loop_control {
+	LOOP_CONTROL_NONE        = 0,
+	LOOP_CONTROL_UNROLL      = 1,
+	LOOP_CONTROL_DONT_UNROLL = 2,
+} loop_control;
 
 typedef enum function_control { FUNCTION_CONTROL_NONE } function_control;
 
-typedef enum execution_mode { EXECUTION_MODE_ORIGIN_UPPER_LEFT = 7 } execution_mode;
+typedef enum execution_mode {
+	EXECUTION_MODE_ORIGIN_UPPER_LEFT = 7,
+	EXECUTION_MODE_LOCAL_SIZE        = 17,
+} execution_mode;
 
 typedef enum dim {
 	DIM_1D   = 0,
@@ -410,11 +422,17 @@ static void write_op_entry_point(instructions_buffer *instructions, execution_mo
 	write_instruction(instructions, 3 + name_length + interfaces_size, SPIRV_OPCODE_ENTRY_POINT, operands_buffer);
 }
 
-static void write_op_execution_mode(instructions_buffer *instructions, spirv_id entry_point, execution_mode mode) {
-	operands_buffer[0] = entry_point.id;
-	operands_buffer[1] = (uint32_t)mode;
+#define WORD_COUNT(operands) (1 + sizeof(operands) / 4)
 
-	write_instruction(instructions, 3, SPIRV_OPCODE_EXECUTION_MODE, operands_buffer);
+static void write_op_execution_mode(instructions_buffer *instructions, spirv_id entry_point, execution_mode mode) {
+	uint32_t operands[] = {entry_point.id, (uint32_t)mode};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_EXECUTION_MODE, operands);
+}
+
+static void write_op_execution_mode3(instructions_buffer *instructions, spirv_id entry_point, execution_mode mode, uint32_t param0, uint32_t param1,
+                                     uint32_t param2) {
+	uint32_t operands[] = {entry_point.id, (uint32_t)mode, param0, param1, param2};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_EXECUTION_MODE, operands);
 }
 
 static void write_capabilities(instructions_buffer *instructions) {
@@ -426,8 +444,6 @@ static spirv_id write_type_void(instructions_buffer *instructions) {
 	write_instruction(instructions, 2, SPIRV_OPCODE_TYPE_VOID, &void_type.id);
 	return void_type;
 }
-
-#define WORD_COUNT(operands) (1 + sizeof(operands) / 4)
 
 static spirv_id write_type_function(instructions_buffer *instructions, spirv_id return_type, spirv_id *parameter_types, uint16_t parameter_types_size) {
 	spirv_id function_type = allocate_index();
@@ -570,6 +586,7 @@ static spirv_id glsl_import;
 static spirv_id dispatch_thread_id_variable;
 static spirv_id group_thread_id_variable;
 static spirv_id group_id_variable;
+static spirv_id work_group_size_variable;
 
 typedef struct complex_type {
 	type_id  type;
@@ -754,6 +771,10 @@ static spirv_id write_constant_int(instructions_buffer *instructions, spirv_id v
 	return write_constant(instructions, spirv_int_type, value_id, uint32_value);
 }
 
+static spirv_id write_constant_uint(instructions_buffer *instructions, spirv_id value_id, uint32_t value) {
+	return write_constant(instructions, spirv_uint_type, value_id, value);
+}
+
 static spirv_id write_constant_float(instructions_buffer *instructions, spirv_id value_id, float value) {
 	uint32_t uint32_value = *(uint32_t *)&value;
 	return write_constant(instructions, spirv_float_type, value_id, uint32_value);
@@ -762,6 +783,12 @@ static spirv_id write_constant_float(instructions_buffer *instructions, spirv_id
 static spirv_id write_constant_bool(instructions_buffer *instructions, spirv_id value_id, bool value) {
 	uint32_t uint32_value = *(uint32_t *)&value;
 	return write_constant(instructions, spirv_bool_type, value_id, uint32_value);
+}
+
+static void write_constant_composite_preallocated3(instructions_buffer *instructions, spirv_id result_type, spirv_id result, spirv_id consituent0,
+                                                   spirv_id consituent1, spirv_id consituent2) {
+	uint32_t operands[] = {result_type.id, result.id, consituent0.id, consituent1.id, consituent2.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_CONSTANT_COMPOSITE, operands);
 }
 
 static void write_vertex_output_decorations(instructions_buffer *instructions, spirv_id output_struct, spirv_id *outputs, uint32_t outputs_size) {
@@ -885,6 +912,20 @@ static spirv_id get_int_constant(int value) {
 	}
 
 	return container->value;
+}
+
+static struct {
+	uint32_t key;
+	spirv_id value;
+} *uint_constants = NULL;
+
+static spirv_id get_uint_constant(uint32_t value) {
+	spirv_id index = hmget(uint_constants, value);
+	if (index.id == 0) {
+		index = allocate_index();
+		hmput(uint_constants, value, index);
+	}
+	return index;
 }
 
 static struct {
@@ -1975,7 +2016,12 @@ static void write_int_constant(struct container *container, void *data) {
 static void write_constants(instructions_buffer *instructions) {
 	hash_map_iterate(int_constants, write_int_constant, instructions);
 
-	size_t size = hmlenu(float_constants);
+	size_t size = hmlenu(uint_constants);
+	for (size_t i = 0; i < size; ++i) {
+		write_constant_uint(instructions, uint_constants[i].value, uint_constants[i].key);
+	}
+
+	size = hmlenu(float_constants);
 	for (size_t i = 0; i < size; ++i) {
 		write_constant_float(instructions, float_constants[i].value, float_constants[i].key);
 	}
@@ -2064,7 +2110,8 @@ static void assign_bindings(uint32_t *bindings, function *shader) {
 	}
 }
 
-static void write_globals(instructions_buffer *decorations, instructions_buffer *instructions_block, instructions_buffer *global_vars_block, function *main) {
+static void write_globals(instructions_buffer *decorations, instructions_buffer *instructions_block, instructions_buffer *global_vars_block, function *main,
+                          shader_stage stage) {
 	uint32_t bindings[512] = {0};
 	assign_bindings(bindings, main);
 
@@ -2207,19 +2254,25 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 	}
 
 	if (main->used_builtins.dispatch_thread_id) {
-		dispatch_thread_id_variable =
-		    write_op_variable(global_vars_block, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), STORAGE_CLASS_INPUT);
+		write_op_variable_preallocated(global_vars_block, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), dispatch_thread_id_variable,
+		                               STORAGE_CLASS_INPUT);
 		write_op_decorate_value(decorations, dispatch_thread_id_variable, DECORATION_BUILTIN, BUILTIN_GLOBAL_INVOCATION_ID);
 	}
 
 	if (main->used_builtins.group_thread_id) {
-		group_thread_id_variable = write_op_variable(global_vars_block, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), STORAGE_CLASS_INPUT);
+		write_op_variable_preallocated(global_vars_block, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), group_thread_id_variable,
+		                               STORAGE_CLASS_INPUT);
 		write_op_decorate_value(decorations, group_thread_id_variable, DECORATION_BUILTIN, BUILTIN_LOCAL_INVOCATION_ID);
 	}
 
 	if (main->used_builtins.group_id) {
-		group_id_variable = write_op_variable(global_vars_block, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), STORAGE_CLASS_INPUT);
+		write_op_variable_preallocated(global_vars_block, convert_pointer_type_to_spirv_id(uint3_id, STORAGE_CLASS_INPUT), group_id_variable,
+		                               STORAGE_CLASS_INPUT);
 		write_op_decorate_value(decorations, group_id_variable, DECORATION_BUILTIN, BUILTIN_WORKGROUP_ID);
+	}
+
+	if (stage == SHADER_STAGE_COMPUTE) {
+		write_op_decorate_value(decorations, work_group_size_variable, DECORATION_BUILTIN, BUILTIN_WORKGROUP_SIZE);
 	}
 }
 
@@ -2343,7 +2396,7 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 
 	write_base_types(&base_types);
 
-	write_globals(&decorations, &aggregate_types, &global_vars, main);
+	write_globals(&decorations, &aggregate_types, &global_vars, main, SHADER_STAGE_VERTEX);
 
 	for (size_t i = 0; i < input_vars_count; ++i) {
 		member m       = input->members.m[i];
@@ -2508,7 +2561,7 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 
 	write_base_types(&base_types);
 
-	write_globals(&decorations, &aggregate_types, &global_vars, main);
+	write_globals(&decorations, &aggregate_types, &global_vars, main, SHADER_STAGE_FRAGMENT);
 
 	for (size_t i = 0; i < input_vars_count; ++i) {
 		member m       = input->members.m[i + 1]; // jump over pos input
@@ -2604,15 +2657,55 @@ static void spirv_export_compute(char *directory, function *main, bool debug) {
 	input_vars_count  = 0;
 	output_vars_count = 0;
 
-	write_op_entry_point(&decorations, EXECUTION_MODEL_GLCOMPUTE, entry_point, "main", NULL, 0);
+	work_group_size_variable = allocate_index();
+
+	spirv_id interfaces[256];
+	size_t   interfaces_count = 0;
+
+	if (main->used_builtins.dispatch_thread_id) {
+		dispatch_thread_id_variable = allocate_index();
+
+		interfaces[interfaces_count] = dispatch_thread_id_variable;
+		interfaces_count += 1;
+	}
+
+	if (main->used_builtins.group_thread_id) {
+		group_thread_id_variable = allocate_index();
+
+		interfaces[interfaces_count] = group_thread_id_variable;
+		interfaces_count += 1;
+	}
+
+	if (main->used_builtins.group_id) {
+		group_id_variable = allocate_index();
+
+		interfaces[interfaces_count] = group_id_variable;
+		interfaces_count += 1;
+	}
+
+	write_op_entry_point(&decorations, EXECUTION_MODEL_GLCOMPUTE, entry_point, "main", interfaces, (uint16_t)interfaces_count);
+
+	attribute *threads_attribute = find_attribute(&main->attributes, add_name("threads"));
+	if (threads_attribute == NULL || threads_attribute->paramters_count != 3) {
+		debug_context context = {0};
+		error(context, "Compute function requires a threads attribute with three parameters");
+	}
+
+	assert(threads_attribute != NULL);
+	write_op_execution_mode3(&decorations, entry_point, EXECUTION_MODE_LOCAL_SIZE, (uint32_t)threads_attribute->parameters[0],
+	                         (uint32_t)threads_attribute->parameters[1], (uint32_t)threads_attribute->parameters[2]);
 
 	write_base_types(&base_types);
 
-	write_globals(&decorations, &aggregate_types, &global_vars, main);
+	write_globals(&decorations, &aggregate_types, &global_vars, main, SHADER_STAGE_COMPUTE);
 
 	write_functions(&instructions, main, entry_point, SHADER_STAGE_COMPUTE, NO_TYPE, NO_TYPE);
 
 	write_types(&aggregate_types, main);
+
+	spirv_id work_group_x = get_uint_constant((uint32_t)threads_attribute->parameters[0]);
+	spirv_id work_group_y = get_uint_constant((uint32_t)threads_attribute->parameters[1]);
+	spirv_id work_group_z = get_uint_constant((uint32_t)threads_attribute->parameters[2]);
 
 	// header
 	write_magic_number(&header);
@@ -2622,6 +2715,8 @@ static void spirv_export_compute(char *directory, function *main, bool debug) {
 	write_instruction_schema(&header);
 
 	write_constants(&constants);
+
+	write_constant_composite_preallocated3(&constants, spirv_uint3_type, work_group_size_variable, work_group_x, work_group_y, work_group_z);
 
 	char *name = get_name(main->name);
 
