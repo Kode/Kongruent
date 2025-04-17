@@ -674,6 +674,12 @@ static void write_functions(char *code, size_t *offset) {
 				}
 				break;
 			}
+			case OPCODE_MOD: {
+				indent(code, offset, &indentation);
+				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = fmod(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_binary.result.type.type),
+				                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
+				break;
+			}
 			default:
 				cstyle_write_opcode(code, offset, o, type_string, &indentation);
 				break;
