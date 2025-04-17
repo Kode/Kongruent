@@ -195,6 +195,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_CONVERT_S_TO_F            = 111,
 	SPIRV_OPCODE_CONVERT_U_TO_F            = 112,
 	SPIRV_OPCODE_BITCAST                   = 124,
+	SPIRV_OPCODE_I_ADD                     = 128,
 	SPIRV_OPCODE_F_ADD                     = 129,
 	SPIRV_OPCODE_I_SUB                     = 130,
 	SPIRV_OPCODE_F_SUB                     = 131,
@@ -972,6 +973,16 @@ static spirv_id write_op_f_ord_less_than(instructions_buffer *instructions, spir
 	return result;
 }
 
+static spirv_id write_op_i_add(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_I_ADD, operands);
+
+	return result;
+}
+
 static spirv_id write_op_f_add(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
 	spirv_id result = allocate_index();
 
@@ -1431,12 +1442,31 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				}
 			}
 			else if (func == add_name("float2")) {
-				spirv_id constituents[2];
-				for (int i = 0; i < o->op_call.parameters_size; ++i) {
-					constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
+				if (o->op_call.parameters_size == 1) {
+					variable parameter = o->op_call.parameters[0];
+					if (parameter.type.type == int2_id) {
+						spirv_id id = write_op_convert_s_to_f(instructions, spirv_float2_type, convert_kong_index_to_spirv_id(parameter.index));
+						hmput(index_map, o->op_call.var.index, id);
+					}
+					else if (parameter.type.type == uint2_id) {
+						spirv_id id = write_op_convert_u_to_f(instructions, spirv_float2_type, convert_kong_index_to_spirv_id(parameter.index));
+						hmput(index_map, o->op_call.var.index, id);
+					}
+					else {
+						assert(false);
+					}
 				}
-				spirv_id id = write_op_composite_construct(instructions, spirv_float2_type, constituents, o->op_call.parameters_size);
-				hmput(index_map, o->op_call.var.index, id);
+				else if (o->op_call.parameters_size == 2) {
+					spirv_id constituents[2];
+					for (int i = 0; i < o->op_call.parameters_size; ++i) {
+						constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
+					}
+					spirv_id id = write_op_composite_construct(instructions, spirv_float2_type, constituents, o->op_call.parameters_size);
+					hmput(index_map, o->op_call.var.index, id);
+				}
+				else {
+					assert(false);
+				}
 			}
 			else if (func == add_name("float3")) {
 				spirv_id constituents[3];
@@ -1719,9 +1749,17 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				right = convert_kong_index_to_spirv_id(o->op_binary.right.index);
 			}
 
-			spirv_id result = write_op_f_add(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
-
-			hmput(index_map, o->op_binary.result.index, result);
+			if (vector_base_type(o->op_binary.result.type.type) == float_id) {
+				spirv_id result = write_op_f_add(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
+				hmput(index_map, o->op_binary.result.index, result);
+			}
+			else if (vector_base_type(o->op_binary.result.type.type) == int_id || vector_base_type(o->op_binary.result.type.type) == uint_id) {
+				spirv_id result = write_op_i_add(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
+				hmput(index_map, o->op_binary.result.index, result);
+			}
+			else {
+				assert(false);
+			}
 
 			break;
 		}
