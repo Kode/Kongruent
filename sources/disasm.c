@@ -170,17 +170,22 @@ static void write_functions(void) {
 				kong_log(LOG_LEVEL_INFO, "$%zu = LOAD_FLOAT_CONSTANT %f", o->op_load_float_constant.to.index, o->op_load_float_constant.number);
 				break;
 			case OPCODE_LOAD_INT_CONSTANT:
+				kong_log(LOG_LEVEL_INFO, "$%zu = LOAD_INT_CONSTANT %i", o->op_load_int_constant.to.index, o->op_load_int_constant.number);
 				break;
 			case OPCODE_LOAD_BOOL_CONSTANT:
+				kong_log(LOG_LEVEL_INFO, "$%zu = LOAD_BOOL_CONSTANT %i", o->op_load_bool_constant.to.index, o->op_load_bool_constant.boolean ? 1 : 0);
 				break;
 			case OPCODE_ADD:
+				kong_log(LOG_LEVEL_INFO, "$%zu = ADD $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_SUB:
+				kong_log(LOG_LEVEL_INFO, "$%zu = SUB $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_MULTIPLY:
 				kong_log(LOG_LEVEL_INFO, "$%zu = MULTIPLY $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_DIVIDE:
+				kong_log(LOG_LEVEL_INFO, "$%zu = DIVIDE $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_MOD:
 				break;

@@ -40,7 +40,7 @@ void transform(uint32_t flags) {
 			case OPCODE_STORE_ACCESS_LIST: {
 				access a = o->op_store_access_list.access_list[o->op_store_access_list.access_list_size - 1];
 
-				if (a.kind == ACCESS_SWIZZLE && a.access_swizzle.swizzle.size > 1) {
+				if ((flags & TRANSFORM_FLAG_ONE_COMPONENT_SWIZZLE) != 0 && a.kind == ACCESS_SWIZZLE && a.access_swizzle.swizzle.size > 1) {
 					assert(is_vector(o->op_store_access_list.from.type.type));
 
 					type_id from_type = vector_base_type(o->op_store_access_list.from.type.type);
@@ -97,7 +97,7 @@ void transform(uint32_t flags) {
 			case OPCODE_LOAD_ACCESS_LIST: {
 				access a = o->op_load_access_list.access_list[o->op_load_access_list.access_list_size - 1];
 
-				if (a.kind == ACCESS_SWIZZLE && a.access_swizzle.swizzle.size > 1) {
+				if ((flags & TRANSFORM_FLAG_ONE_COMPONENT_SWIZZLE) != 0 && a.kind == ACCESS_SWIZZLE && a.access_swizzle.swizzle.size > 1) {
 					assert(is_vector(o->op_load_access_list.to.type.type));
 
 					type_id to_type = vector_base_type(o->op_load_access_list.to.type.type);
@@ -109,7 +109,6 @@ void transform(uint32_t flags) {
 					variable to[4];
 
 					for (uint32_t swizzle_index = 0; swizzle_index < a.access_swizzle.swizzle.size; ++swizzle_index) {
-
 						to[swizzle_index] = allocate_variable(t, o->op_load_access_list.to.kind);
 
 						opcode new_opcode = *o;
@@ -142,9 +141,185 @@ void transform(uint32_t flags) {
 				}
 				break;
 			}
-			default: {
-				copy_opcode(o);
+			case OPCODE_ADD:
+			case OPCODE_SUB:
+			case OPCODE_MULTIPLY:
+			case OPCODE_DIVIDE: {
+				type_id left_type  = o->op_binary.left.type.type;
+				type_id right_type = o->op_binary.right.type.type;
+
+				if (is_matrix(left_type) || is_matrix(right_type)) {
+					copy_opcode(o);
+					break;
+				}
+
+				uint32_t left_size  = vector_size(left_type);
+				uint32_t right_size = vector_size(right_type);
+
+				if ((flags & TRANSFORM_FLAG_BINARY_UNIFY_LENGTH) != 0 && left_size != right_size) {
+					if (left_size < right_size) {
+						variable last;
+
+						if (is_vector(left_type)) {
+							type_ref t;
+							init_type_ref(&t, NO_NAME);
+							t.type = vector_base_type(left_type);
+
+							last = allocate_variable(t, o->op_binary.left.kind);
+
+							opcode load_call = {
+							    .type = OPCODE_LOAD_ACCESS_LIST,
+							    .op_load_access_list =
+							        {
+							            .from = o->op_binary.left,
+							            .to   = last,
+							            .access_list =
+							                {
+							                    {
+							                        .kind = ACCESS_SWIZZLE,
+							                        .type = t.type,
+							                        .access_swizzle =
+							                            {
+							                                .swizzle =
+							                                    {
+							                                        .indices = {left_size - 1},
+							                                        .size    = 1,
+							                                    },
+							                            },
+							                    },
+							                },
+							            .access_list_size = 1,
+							        },
+							};
+							load_call.size = OP_SIZE(load_call, op_load_access_list);
+
+							copy_opcode(&load_call);
+						}
+						else {
+							last = o->op_binary.left;
+						}
+
+						variable vec;
+						{
+							type_ref t;
+							init_type_ref(&t, NO_NAME);
+							t.type = vector_to_size(left_type, right_size);
+
+							vec = allocate_variable(t, o->op_binary.left.kind);
+
+							opcode constructor_call = {
+							    .type = OPCODE_CALL,
+							    .op_call =
+							        {
+							            .func            = get_type(o->op_load_access_list.to.type.type)->name,
+							            .parameters_size = right_size,
+							            .var             = vec,
+							        },
+							};
+							constructor_call.size = OP_SIZE(constructor_call, op_call);
+
+							constructor_call.op_call.parameters[0] = o->op_binary.left;
+
+							for (uint32_t index = left_size; index < right_size; ++index) {
+								constructor_call.op_call.parameters[index] = last;
+							}
+
+							copy_opcode(&constructor_call);
+						}
+
+						{
+							opcode bin         = *o;
+							bin.op_binary.left = vec;
+
+							copy_opcode(&bin);
+						}
+					}
+					else {
+						variable last;
+
+						if (is_vector(right_type)) {
+							type_ref t;
+							init_type_ref(&t, NO_NAME);
+							t.type = vector_base_type(right_type);
+
+							last = allocate_variable(t, o->op_binary.right.kind);
+
+							opcode load_call = {
+							    .type = OPCODE_LOAD_ACCESS_LIST,
+							    .op_load_access_list =
+							        {
+							            .from = o->op_binary.right,
+							            .to   = last,
+							            .access_list =
+							                {
+							                    {
+							                        .kind = ACCESS_SWIZZLE,
+							                        .type = t.type,
+							                        .access_swizzle =
+							                            {
+							                                .swizzle =
+							                                    {
+							                                        .indices = {right_size - 1},
+							                                        .size    = 1,
+							                                    },
+							                            },
+							                    },
+							                },
+							            .access_list_size = 1,
+							        },
+							};
+							load_call.size = OP_SIZE(load_call, op_load_access_list);
+
+							copy_opcode(&load_call);
+						}
+						else {
+							last = o->op_binary.right;
+						}
+
+						variable vec;
+						{
+							type_ref t;
+							init_type_ref(&t, NO_NAME);
+							t.type = vector_to_size(left_type, left_size);
+
+							vec = allocate_variable(t, o->op_binary.right.kind);
+
+							opcode constructor_call = {
+							    .type = OPCODE_CALL,
+							    .op_call =
+							        {
+							            .func            = get_type(o->op_load_access_list.to.type.type)->name,
+							            .parameters_size = left_size,
+							            .var             = vec,
+							        },
+							};
+							constructor_call.size = OP_SIZE(constructor_call, op_call);
+
+							constructor_call.op_call.parameters[0] = o->op_binary.right;
+
+							for (uint32_t index = right_size; index < left_size; ++index) {
+								constructor_call.op_call.parameters[index] = last;
+							}
+
+							copy_opcode(&constructor_call);
+						}
+
+						{
+							opcode bin          = *o;
+							bin.op_binary.right = vec;
+
+							copy_opcode(&bin);
+						}
+					}
+				}
+				else {
+					copy_opcode(o);
+				}
+				break;
 			}
+			default:
+				copy_opcode(o);
+				break;
 			}
 
 			index += o->size;
