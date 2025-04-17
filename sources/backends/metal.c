@@ -402,14 +402,13 @@ static void write_functions(char *code, size_t *offset) {
 			*offset += sprintf(&code[*offset], "%s) {\n", buffers);
 		}
 		else {
-			*offset += sprintf(&code[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
+			descriptor_set_group *set_group = get_descriptor_set_group(0);
+			descriptor_set *set = set_group->values[0];
+
+			*offset += sprintf(&code[*offset], "%s %s(constant %s& argument_buffer0", type_string(f->return_type.type), get_name(f->name), get_name(set->name));
+
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
-				if (parameter_index == 0) {
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
-				}
-				else {
-					*offset += sprintf(&code[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
-				}
+				*offset += sprintf(&code[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 			}
 			*offset += sprintf(&code[*offset], ") {\n");
 		}
@@ -664,6 +663,23 @@ static void write_functions(char *code, size_t *offset) {
 				else {
 					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %s(", type_string(o->op_call.var.type.type), o->op_call.var.index,
 					                   function_string(o->op_call.func));
+
+					bool is_built_in = true;
+					for (function_id i = 0; get_function(i) != NULL; ++i) {
+						function *f = get_function(i);
+						if (o->op_call.func == f->name && f->block != NULL) {
+							is_built_in = false;
+							break;
+						}
+					}
+
+					if (!is_built_in) {
+						*offset += sprintf(&code[*offset], "argument_buffer0");
+						if (o->op_call.parameters_size > 0) {
+							*offset += sprintf(&code[*offset], ", ");
+						}
+					}
+
 					if (o->op_call.parameters_size > 0) {
 						*offset += sprintf(&code[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
 						for (uint8_t i = 1; i < o->op_call.parameters_size; ++i) {
@@ -672,6 +688,12 @@ static void write_functions(char *code, size_t *offset) {
 					}
 					*offset += sprintf(&code[*offset], ");\n");
 				}
+				break;
+			}
+			case OPCODE_MOD: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = fmod(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_binary.result.type.type),
+				                   o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			default:
