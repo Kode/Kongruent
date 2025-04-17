@@ -687,7 +687,14 @@ static void write_base_types(instructions_buffer *buffer) {
 
 	spirv_sampled_image_type = write_type_sampled_image(buffer, spirv_image_type);
 
+	store_base_type_mapping(float2x2_id, write_type_matrix(buffer, spirv_float2_type, 2));
+	store_base_type_mapping(float2x3_id, write_type_matrix(buffer, spirv_float3_type, 2));
+	store_base_type_mapping(float3x2_id, write_type_matrix(buffer, spirv_float2_type, 3));
 	store_base_type_mapping(float3x3_id, write_type_matrix(buffer, spirv_float3_type, 3));
+	store_base_type_mapping(float2x4_id, write_type_matrix(buffer, spirv_float4_type, 2));
+	store_base_type_mapping(float4x2_id, write_type_matrix(buffer, spirv_float2_type, 4));
+	store_base_type_mapping(float3x4_id, write_type_matrix(buffer, spirv_float4_type, 3));
+	store_base_type_mapping(float4x3_id, write_type_matrix(buffer, spirv_float3_type, 4));
 	store_base_type_mapping(float4x4_id, write_type_matrix(buffer, spirv_float4_type, 4));
 }
 
@@ -1770,8 +1777,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				right = convert_kong_index_to_spirv_id(o->op_binary.right.index);
 			}
 
-			bool left_is_matrix  = o->op_binary.left.type.type == float3x3_id || o->op_binary.left.type.type == float4x4_id;
-			bool right_is_matrix = o->op_binary.right.type.type == float3x3_id || o->op_binary.right.type.type == float4x4_id;
+			bool left_is_matrix  = is_matrix(o->op_binary.left.type.type);
+			bool right_is_matrix = is_matrix(o->op_binary.right.type.type);
 
 			spirv_id result;
 
