@@ -190,6 +190,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_COMPOSITE_EXTRACT         = 81,
 	SPIRV_OPCODE_SAMPLED_IMAGE             = 86,
 	SPIRV_OPCODE_IMAGE_SAMPLE_IMPLICIT_LOD = 87,
+	SPIRV_OPCODE_IMAGE_WRITE               = 99,
 	SPIRV_OPCODE_CONVERT_F_TO_U            = 109,
 	SPIRV_OPCODE_CONVERT_F_TO_S            = 110,
 	SPIRV_OPCODE_CONVERT_S_TO_F            = 111,
@@ -561,6 +562,7 @@ static spirv_id spirv_uint4_type;
 static spirv_id spirv_bool_type;
 static spirv_id spirv_sampler_type;
 static spirv_id spirv_image_type;
+static spirv_id spirv_writable_image_type;
 static spirv_id spirv_sampled_image_type;
 
 static spirv_id glsl_import;
@@ -685,6 +687,8 @@ static void write_base_types(instructions_buffer *buffer) {
 	spirv_sampler_type = write_type_sampler(buffer);
 
 	spirv_image_type = write_type_image(buffer, spirv_float_type, DIM_2D, 0, 0, 0, 1, IMAGE_FORMAT_UNKNOWN);
+
+	spirv_writable_image_type = write_type_image(buffer, spirv_float_type, DIM_2D, 0, 0, 0, 2, IMAGE_FORMAT_UNKNOWN);
 
 	spirv_sampled_image_type = write_type_sampled_image(buffer, spirv_image_type);
 
@@ -1153,6 +1157,12 @@ static spirv_id write_op_ext_inst(instructions_buffer *instructions, spirv_id re
 	return result;
 }
 
+static void write_op_image_write(instructions_buffer *instructions, spirv_id image, spirv_id coordinate, spirv_id texel) {
+	uint32_t operands[] = {image.id, coordinate.id, texel.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_IMAGE_WRITE, operands);
+}
+
 static spirv_id write_op_variable(instructions_buffer *instructions, spirv_id result_type, storage_class storage) {
 	spirv_id result = allocate_index();
 
@@ -1585,71 +1595,91 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 			type *s = get_type(o->op_store_access_list.to.type.type);
 
-			for (uint16_t i = 0; i < indices_size; ++i) {
-				switch (o->op_store_access_list.access_list[i].kind) {
-				case ACCESS_ELEMENT:
-					access_kinds[i]  = ACCESS_ELEMENT;
-					plain_indices[i] = 0; // unused
+			if (o->op_store_access_list.to.type.type == tex2d_type_id) {
+				assert(indices_size == 1);
+				assert(o->op_store_access_list.access_list[0].kind == ACCESS_ELEMENT);
 
-					indices[i] = convert_kong_index_to_spirv_id(o->op_store_access_list.access_list[i].access_element.index.index);
+				spirv_id image = write_op_load(instructions, spirv_writable_image_type, convert_kong_index_to_spirv_id(o->op_store_access_list.to.index));
 
-					break;
-				case ACCESS_MEMBER: {
-					int  member_index = 0;
-					bool found        = false;
+				variable coordinate_var = o->op_store_access_list.access_list[0].access_element.index;
 
-					for (; member_index < s->members.size; ++member_index) {
-						if (s->members.m[member_index].name == o->op_store_access_list.access_list[i].access_member.name) {
-							found = true;
-							break;
+				spirv_id coordinate;
+				if (coordinate_var.kind != VARIABLE_INTERNAL) {
+					coordinate =
+					    write_op_load(instructions, convert_type_to_spirv_id(coordinate_var.type.type), convert_kong_index_to_spirv_id(coordinate_var.index));
+				}
+				else {
+					coordinate = convert_kong_index_to_spirv_id(coordinate_var.index);
+				}
+
+				write_op_image_write(instructions, image, coordinate, convert_kong_index_to_spirv_id(o->op_store_access_list.from.index));
+			}
+			else {
+				for (uint16_t i = 0; i < indices_size; ++i) {
+					switch (o->op_store_access_list.access_list[i].kind) {
+					case ACCESS_ELEMENT:
+						access_kinds[i]  = ACCESS_ELEMENT;
+						plain_indices[i] = 0; // unused
+
+						indices[i] = convert_kong_index_to_spirv_id(o->op_store_access_list.access_list[i].access_element.index.index);
+
+						break;
+					case ACCESS_MEMBER: {
+						int  member_index = 0;
+						bool found        = false;
+
+						for (; member_index < s->members.size; ++member_index) {
+							if (s->members.m[member_index].name == o->op_store_access_list.access_list[i].access_member.name) {
+								found = true;
+								break;
+							}
 						}
+
+						assert(found);
+
+						access_kinds[i]  = ACCESS_MEMBER;
+						plain_indices[i] = member_index;
+
+						indices[i] = get_int_constant(member_index);
+
+						break;
+					}
+					case ACCESS_SWIZZLE: {
+						assert(o->op_store_access_list.access_list[i].access_swizzle.swizzle.size == 1);
+
+						access_kinds[i]  = ACCESS_SWIZZLE;
+						plain_indices[i] = 0; // unused
+
+						indices[i] = get_int_constant(o->op_store_access_list.access_list[i].access_swizzle.swizzle.indices[0]);
+
+						break;
+					}
 					}
 
-					assert(found);
+					s = get_type(o->op_store_access_list.access_list[i].type);
+				}
 
-					access_kinds[i]  = ACCESS_MEMBER;
-					plain_indices[i] = member_index;
+				type_id access_kong_type = find_access_type(plain_indices, access_kinds, indices_size, o->op_store_access_list.to.type.type);
+				assert(access_kong_type != NO_TYPE);
 
-					indices[i] = get_int_constant(member_index);
+				spirv_id access_type = {0};
 
+				switch (o->op_store_access_list.to.kind) {
+				case VARIABLE_LOCAL:
+					access_type = convert_pointer_type_to_spirv_id(access_kong_type, STORAGE_CLASS_FUNCTION);
+					break;
+				case VARIABLE_GLOBAL:
+					access_type = convert_pointer_type_to_spirv_id(access_kong_type, STORAGE_CLASS_OUTPUT);
+					break;
+				case VARIABLE_INTERNAL:
+					assert(false);
 					break;
 				}
-				case ACCESS_SWIZZLE: {
-					assert(o->op_store_access_list.access_list[i].access_swizzle.swizzle.size == 1);
 
-					access_kinds[i]  = ACCESS_SWIZZLE;
-					plain_indices[i] = 0; // unused
-
-					indices[i] = get_int_constant(o->op_store_access_list.access_list[i].access_swizzle.swizzle.indices[0]);
-
-					break;
-				}
-				}
-
-				s = get_type(o->op_store_access_list.access_list[i].type);
+				spirv_id pointer =
+				    write_op_access_chain(instructions, access_type, convert_kong_index_to_spirv_id(o->op_store_access_list.to.index), indices, indices_size);
+				write_op_store(instructions, pointer, convert_kong_index_to_spirv_id(o->op_store_access_list.from.index));
 			}
-
-			type_id access_kong_type = find_access_type(plain_indices, access_kinds, indices_size, o->op_store_access_list.to.type.type);
-			assert(access_kong_type != NO_TYPE);
-
-			spirv_id access_type = {0};
-
-			switch (o->op_store_access_list.to.kind) {
-			case VARIABLE_LOCAL:
-				access_type = convert_pointer_type_to_spirv_id(access_kong_type, STORAGE_CLASS_FUNCTION);
-				break;
-			case VARIABLE_GLOBAL:
-				access_type = convert_pointer_type_to_spirv_id(access_kong_type, STORAGE_CLASS_OUTPUT);
-				break;
-			case VARIABLE_INTERNAL:
-				assert(false);
-				break;
-			}
-
-			spirv_id pointer =
-			    write_op_access_chain(instructions, access_type, convert_kong_index_to_spirv_id(o->op_store_access_list.to.index), indices, indices_size);
-			write_op_store(instructions, pointer, convert_kong_index_to_spirv_id(o->op_store_access_list.from.index));
-
 			break;
 		}
 		case OPCODE_STORE_VARIABLE: {
@@ -2066,6 +2096,7 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 
 		type   *t         = get_type(g->type);
 		type_id base_type = t->array_size > 0 ? t->base : g->type;
+		bool    writable  = globals.writable[i];
 
 		if (base_type == sampler_type_id) {
 			spirv_id sampler_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM_CONSTANT, spirv_sampler_type);
@@ -2079,24 +2110,26 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 			write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, binding);
 		}
 		else if (base_type == tex2d_type_id) {
-			if (has_attribute(&g->attributes, add_name("write"))) {
+			if (t->array_size == UINT32_MAX) {
 				assert(false);
 			}
 			else {
-				if (t->array_size == UINT32_MAX) {
-					assert(false);
+				spirv_id image_pointer_type;
+
+				if (writable) {
+					image_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM_CONSTANT, spirv_writable_image_type);
+					add_to_type_map(g->type, true, STORAGE_CLASS_UNIFORM_CONSTANT, spirv_writable_image_type);
 				}
 				else {
-					spirv_id image_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM_CONSTANT, spirv_image_type);
-
+					image_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM_CONSTANT, spirv_image_type);
 					add_to_type_map(g->type, true, STORAGE_CLASS_UNIFORM_CONSTANT, spirv_image_type);
-
-					spirv_id spirv_var_id = convert_kong_index_to_spirv_id(g->var_index);
-					write_op_variable_preallocated(instructions_block, image_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM_CONSTANT);
-
-					write_op_decorate_value(decorations, spirv_var_id, DECORATION_DESCRIPTOR_SET, 0);
-					write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, binding);
 				}
+
+				spirv_id spirv_var_id = convert_kong_index_to_spirv_id(g->var_index);
+				write_op_variable_preallocated(instructions_block, image_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM_CONSTANT);
+
+				write_op_decorate_value(decorations, spirv_var_id, DECORATION_DESCRIPTOR_SET, 0);
+				write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, binding);
 			}
 		}
 		else if (base_type == tex2darray_type_id) {
