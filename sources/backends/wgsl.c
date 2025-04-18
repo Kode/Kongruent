@@ -1,5 +1,6 @@
 #include "wgsl.h"
 
+#include "../analyzer.h"
 #include "../compiler.h"
 #include "../errors.h"
 #include "../functions.h"
@@ -168,21 +169,98 @@ static void write_types(char *wgsl, size_t *offset) {
 	}
 }
 
-static int global_register_indices[512];
+static void assign_bindings(uint32_t *bindings) {
+	for (size_t set_index = 0; set_index < get_sets_count(); ++set_index) {
+		uint32_t binding = 0;
+
+		descriptor_set *set = get_set(set_index);
+
+		if (set->name == add_name("root_constants")) {
+			if (set->globals.size != 1) {
+				debug_context context = {0};
+				error(context, "More than one root constants struct found");
+			}
+
+			global_id g_id = set->globals.globals[0];
+			global   *g    = get_global(g_id);
+
+			if (get_type(g->type)->built_in) {
+				debug_context context = {0};
+				error(context, "Unsupported type for a root constant");
+			}
+
+			bindings[g_id] = binding;
+			binding += 1;
+
+			continue;
+		}
+
+		for (size_t g_index = 0; g_index < set->globals.size; ++g_index) {
+			global_id global_index = set->globals.globals[g_index];
+			bool      writable     = set->globals.writable[g_index];
+
+			global *g = get_global(global_index);
+
+			type   *t         = get_type(g->type);
+			type_id base_type = t->array_size > 0 ? t->base : g->type;
+
+			if (base_type == sampler_type_id) {
+				bindings[global_index] = binding;
+				binding += 1;
+			}
+			else if (base_type == tex2d_type_id) {
+				if (t->array_size == UINT32_MAX) {
+					bindings[global_index] = 0;
+				}
+				else if (writable) {
+					bindings[global_index] = binding;
+					binding += 1;
+				}
+				else {
+					bindings[global_index] = binding;
+					binding += 1;
+				}
+			}
+			else if (base_type == texcube_type_id || base_type == tex2darray_type_id || base_type == bvh_type_id) {
+				bindings[global_index] = binding;
+				binding += 1;
+			}
+			else if (get_type(g->type)->built_in) {
+				if (get_type(g->type)->array_size > 0) {
+					bindings[global_index] = binding;
+					binding += 1;
+				}
+			}
+			else {
+				if (get_type(g->type)->array_size > 0) {
+					bindings[global_index] = binding;
+					binding += 1;
+				}
+				else {
+					bindings[global_index] = binding;
+					binding += 1;
+				}
+			}
+		}
+	}
+}
 
 static void write_globals(char *wgsl, size_t *offset) {
+	uint32_t bindings[512] = {0};
+	assign_bindings(bindings);
+
 	for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
-		global *g              = get_global(i);
-		int     register_index = global_register_indices[i];
+		global  *g       = get_global(i);
+		uint32_t binding = bindings[i];
 
 		if (g->type == sampler_type_id) {
-			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%i) var _%" PRIu64 ": sampler;\n\n", register_index, g->var_index);
+			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%u) var _%" PRIu64 ": sampler;\n\n", binding, g->var_index);
 		}
 		else if (g->type == tex2d_type_id) {
-			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%i) var _%" PRIu64 ": texture_2d<f32>;\n\n", register_index, g->var_index);
+			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%u) var _%" PRIu64 ": texture_2d<f32>;\n\n", binding, g->var_index);
 		}
 		else if (g->type == texcube_type_id) {
-			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%i) var _%" PRIu64 ": texture_cube<f32>;\n\n", register_index, g->var_index);
+			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%u) var _%" PRIu64 ": texture_cube<f32>;\n\n", binding, g->var_index);
 		}
 		else if (g->type == float_id) {
 		}
@@ -197,7 +275,7 @@ static void write_globals(char *wgsl, size_t *offset) {
 			else {
 				sprintf(type_name, "_%" PRIu64 "_type", g->var_index);
 			}
-			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%i) var<uniform> _%" PRIu64 ": %s;\n\n", register_index, g->var_index, type_name);
+			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%u) var<uniform> _%" PRIu64 ": %s;\n\n", binding, g->var_index, type_name);
 		}
 	}
 }
@@ -553,28 +631,6 @@ static void wgsl_export_everything(char *directory) {
 }
 
 void wgsl_export(char *directory) {
-	int binding_index = 0;
-
-	memset(global_register_indices, 0, sizeof(global_register_indices));
-
-	for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
-		global *g = get_global(i);
-		if (g->type == sampler_type_id) {
-			global_register_indices[i] = binding_index;
-			binding_index += 1;
-		}
-		else if (g->type == tex2d_type_id || g->type == texcube_type_id) {
-			global_register_indices[i] = binding_index;
-			binding_index += 1;
-		}
-		else if (g->type == float_id) {
-		}
-		else {
-			global_register_indices[i] = binding_index;
-			binding_index += 1;
-		}
-	}
-
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
