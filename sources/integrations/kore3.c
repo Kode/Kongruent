@@ -1143,7 +1143,7 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "}\n\n");
 
 					fprintf(output, "void %s_buffer_unlock(kore_gpu_buffer *buffer) {\n", type_name);
-					if (api != API_OPENGL) {
+					if (api != API_OPENGL && api != API_WEBGPU) {
 						bool has_matrices = false;
 						for (size_t j = 0; j < t->members.size; ++j) {
 							if (t->members.m[j].type.type == float4x4_id || t->members.m[j].type.type == float3x3_id) {
@@ -1221,6 +1221,9 @@ void kore3_export(char *directory, api_kind api) {
 
 			if (api == API_VULKAN) {
 				fprintf(output, "extern VkDescriptorSetLayout %s_set_layout;\n\n", get_name(set->name));
+			}
+			else if (api == API_WEBGPU) {
+				fprintf(output, "extern WGPUBindGroupLayout %s_set_layout;\n\n", get_name(set->name));
 			}
 
 			fprintf(output, "void kong_create_%s_set(kore_gpu_device *device, const %s_parameters *parameters, %s_set *set) {\n", get_name(set->name),
@@ -2540,6 +2543,29 @@ void kore3_export(char *directory, api_kind api) {
 
 					fprintf(output, "\t}\n");
 				}
+				else if (api == API_WEBGPU) {
+					descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
+
+					fprintf(output, "\t{\n");
+
+					if (group->size == 0) {
+						fprintf(output, "\t\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters, NULL, 0);\n", api_short, api_short,
+						        get_name(t->name), get_name(t->name));
+					}
+					else {
+
+						fprintf(output, "\t\tWGPUBindGroupLayout layouts[%zu];\n", group->size);
+
+						for (size_t layout_index = 0; layout_index < group->size; ++layout_index) {
+							fprintf(output, "\t\tlayouts[%zu] = %s_set_layout;\n", layout_index, get_name(group->values[layout_index]->name));
+						}
+
+						fprintf(output, "\t\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters, layouts, %zu);\n", api_short, api_short,
+						        get_name(t->name), get_name(t->name), group->size);
+					}
+
+					fprintf(output, "\t}\n");
+				}
 				else {
 					fprintf(output, "\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters);\n\n", api_short, api_short, get_name(t->name),
 					        get_name(t->name));
@@ -2699,6 +2725,124 @@ void kore3_export(char *directory, api_kind api) {
 			descriptor_set *set = sets[set_index];
 
 			fprintf(output, "VkDescriptorSetLayout %s_set_layout;\n", get_name(set->name));
+		}
+
+		fprintf(output, "\n");
+
+		fprintf(output, "void create_descriptor_set_layouts(kore_gpu_device *device) {\n");
+
+		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
+			descriptor_set *set = sets[set_index];
+
+			fprintf(output, "\t{\n");
+
+			fprintf(output, "\t\tVkDescriptorSetLayoutBinding layout_bindings[%zu] = {\n", set->globals.size);
+
+			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+				global *g        = get_global(set->globals.globals[global_index]);
+				bool    writable = set->globals.writable[global_index];
+
+				if (g->type == tex2d_type_id) {
+					fprintf(output, "\t\t\t{\n");
+					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
+					if (writable) {
+						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
+					}
+					else {
+						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
+					}
+					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
+					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
+					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t\t},\n");
+				}
+				else if (g->type == tex2darray_type_id) {
+					fprintf(output, "\t\t\t{\n");
+					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
+					if (writable) {
+						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
+					}
+					else {
+						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
+					}
+					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
+					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
+					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t\t},\n");
+				}
+				else if (g->type == texcube_type_id) {
+				}
+				else if (is_sampler(g->type)) {
+					fprintf(output, "\t\t\t{\n");
+					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
+					fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,\n");
+					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
+					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
+					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t\t},\n");
+				}
+				else if (!get_type(g->type)->built_in) {
+					fprintf(output, "\t\t\t{\n");
+					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
+					if (writable) {
+						if (has_attribute(&g->attributes, add_name("indexed"))) {
+							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,\n");
+						}
+						else {
+							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,\n");
+						}
+					}
+					else {
+						if (has_attribute(&g->attributes, add_name("indexed"))) {
+							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,\n");
+						}
+						else {
+							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,\n");
+						}
+					}
+					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
+					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
+					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t\t},\n");
+				}
+			}
+
+			fprintf(output, "\t\t};\n");
+
+			fprintf(output, "\n");
+
+			fprintf(output, "\t\tVkDescriptorSetLayoutCreateInfo layout_create_info = {\n");
+			fprintf(output, "\t\t\t.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,\n");
+			fprintf(output, "\t\t\t.pNext = NULL,\n");
+			fprintf(output, "\t\t\t.bindingCount = %zu,\n", set->globals.size);
+			fprintf(output, "\t\t\t.pBindings = layout_bindings,\n");
+			fprintf(output, "\t\t};\n");
+
+			fprintf(output, "\t\tVkResult result = vkCreateDescriptorSetLayout(device->vulkan.device, &layout_create_info, NULL, &%s_set_layout);\n",
+			        get_name(set->name));
+			fprintf(output, "\t\tassert(result == VK_SUCCESS);\n");
+
+			fprintf(output, "\t}\n");
+		}
+
+		fprintf(output, "}\n");
+
+		fclose(output);
+	}
+	else if (api == API_WEBGPU) {
+		char filename[512];
+		sprintf(filename, "%s/%s", directory, "kong_bind_groups.c");
+
+		FILE *output = fopen(filename, "wb");
+
+		fprintf(output, "#include <kore3/gpu/device.h>\n\n");
+
+		fprintf(output, "#include <assert.h>\n\n");
+
+		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
+			descriptor_set *set = sets[set_index];
+
+			fprintf(output, "WGPUBindGroupLayout %s_set_layout;\n", get_name(set->name));
 		}
 
 		fprintf(output, "\n");
