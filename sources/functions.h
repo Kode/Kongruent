@@ -17,6 +17,11 @@ typedef struct builtins {
 	bool group_id;
 } builtins;
 
+typedef struct capabilities {
+	bool capabilities_analyzed;
+	bool image_write;
+} capabilities;
+
 typedef struct function {
 	attribute_list    attributes;
 	name_id           name;
@@ -29,7 +34,8 @@ typedef struct function {
 
 	uint32_t descriptor_set_group_index;
 
-	builtins used_builtins;
+	builtins     used_builtins;
+	capabilities used_capabilities;
 
 	opcodes code;
 } function;

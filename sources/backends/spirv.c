@@ -269,7 +269,10 @@ typedef enum addressing_model { ADDRESSING_MODEL_LOGICAL = 0 } addressing_model;
 
 typedef enum memory_model { MEMORY_MODEL_SIMPLE = 0, MEMORY_MODEL_GLSL450 = 1 } memory_model;
 
-typedef enum capability { CAPABILITY_SHADER = 1 } capability;
+typedef enum capability {
+	CAPABILITY_SHADER                             = 1,
+	CAPABILITY_STORAGE_IMAGE_WRITE_WITHOUT_FORMAT = 56,
+} capability;
 
 typedef enum execution_model { EXECUTION_MODEL_VERTEX = 0, EXECUTION_MODEL_FRAGMENT = 4, EXECUTION_MODEL_GLCOMPUTE = 5 } execution_model;
 
@@ -435,8 +438,11 @@ static void write_op_execution_mode3(instructions_buffer *instructions, spirv_id
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_EXECUTION_MODE, operands);
 }
 
-static void write_capabilities(instructions_buffer *instructions) {
+static void write_capabilities(instructions_buffer *instructions, const capabilities *caps) {
 	write_capability(instructions, CAPABILITY_SHADER);
+	if (caps->image_write) {
+		write_capability(instructions, CAPABILITY_STORAGE_IMAGE_WRITE_WITHOUT_FORMAT);
+	}
 }
 
 static spirv_id write_type_void(instructions_buffer *instructions) {
@@ -2319,7 +2325,8 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 	next_index = 1;
 	init_maps();
 
-	find_referenced_builtins(main);
+	find_used_builtins(main);
+	find_used_capabilities(main);
 
 	instructions_buffer header = {
 	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
@@ -2357,7 +2364,7 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 	check(vertex_input != NO_TYPE, context, "vertex input missing");
 	check(vertex_output != NO_TYPE, context, "vertex output missing");
 
-	write_capabilities(&decorations);
+	write_capabilities(&decorations, &main->used_capabilities);
 	glsl_import = write_op_ext_inst_import(&decorations, "GLSL.std.450");
 	write_op_memory_model(&decorations, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
 
@@ -2475,7 +2482,8 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 	next_index = 1;
 	init_maps();
 
-	find_referenced_builtins(main);
+	find_used_builtins(main);
+	find_used_capabilities(main);
 
 	instructions_buffer header = {
 	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
@@ -2513,7 +2521,7 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 	check(pixel_input != NO_TYPE, context, "fragment input missing");
 	check(pixel_output != NO_TYPE, context, "fragment output missing");
 
-	write_capabilities(&decorations);
+	write_capabilities(&decorations, &main->used_capabilities);
 	glsl_import = write_op_ext_inst_import(&decorations, "GLSL.std.450");
 	write_op_memory_model(&decorations, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
 
@@ -2616,7 +2624,8 @@ static void spirv_export_compute(char *directory, function *main, bool debug) {
 	next_index = 1;
 	init_maps();
 
-	find_referenced_builtins(main);
+	find_used_builtins(main);
+	find_used_capabilities(main);
 
 	instructions_buffer header = {
 	    .instructions = (uint32_t *)calloc(1024 * 1024, 1),
@@ -2648,7 +2657,7 @@ static void spirv_export_compute(char *directory, function *main, bool debug) {
 
 	assert(main->parameters_size == 0);
 
-	write_capabilities(&decorations);
+	write_capabilities(&decorations, &main->used_capabilities);
 	glsl_import = write_op_ext_inst_import(&decorations, "GLSL.std.450");
 	write_op_memory_model(&decorations, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
 

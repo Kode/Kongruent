@@ -152,7 +152,7 @@ void find_referenced_functions(function *f, function **functions, size_t *functi
 	}
 }
 
-void find_referenced_builtins(function *f) {
+void find_used_builtins(function *f) {
 	if (f->block == NULL) {
 		// built-in
 		return;
@@ -191,11 +191,60 @@ void find_referenced_builtins(function *f) {
 			for (function_id i = 0; get_function(i) != NULL; ++i) {
 				function *called = get_function(i);
 				if (called->name == o->op_call.func) {
-					find_referenced_builtins(f);
+					find_used_builtins(f);
 
 					f->used_builtins.dispatch_thread_id |= called->used_builtins.dispatch_thread_id;
 					f->used_builtins.group_thread_id |= called->used_builtins.group_thread_id;
 					f->used_builtins.group_id |= called->used_builtins.group_id;
+
+					break;
+				}
+			}
+			break;
+		}
+		default:
+			break;
+		}
+
+		index += o->size;
+	}
+}
+
+void find_used_capabilities(function *f) {
+	if (f->block == NULL) {
+		// built-in
+		return;
+	}
+
+	if (f->used_capabilities.capabilities_analyzed) {
+		return;
+	}
+
+	f->used_capabilities.capabilities_analyzed = true;
+
+	uint8_t *data = f->code.o;
+	size_t   size = f->code.size;
+
+	size_t index = 0;
+	while (index < size) {
+		opcode *o = (opcode *)&data[index];
+		switch (o->type) {
+		case OPCODE_STORE_ACCESS_LIST: {
+			type_id to = o->op_store_access_list.to.type.type;
+			if (is_texture(to)) {
+				f->used_capabilities.image_write = true;
+			}
+			break;
+		}
+		case OPCODE_CALL: {
+			char *func_name = get_name(o->op_call.func);
+
+			for (function_id i = 0; get_function(i) != NULL; ++i) {
+				function *called = get_function(i);
+				if (called->name == o->op_call.func) {
+					find_used_capabilities(f);
+
+					f->used_capabilities.image_write |= called->used_capabilities.image_write;
 
 					break;
 				}

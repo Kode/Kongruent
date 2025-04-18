@@ -810,6 +810,7 @@ function_id add_function(name_id name) {
 	functions[f].code.size                  = 0;
 	functions[f].descriptor_set_group_index = UINT32_MAX;
 	functions[f].used_builtins              = (builtins){0};
+	functions[f].used_capabilities          = (capabilities){0};
 
 	return f;
 }
