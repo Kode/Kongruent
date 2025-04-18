@@ -1409,7 +1409,7 @@ void kore3_export(char *directory, api_kind api) {
 							error(context, "Texture arrays can not be writable");
 						}
 
-						fprintf(output, "\tkore_%s_descriptor_set_set_texture_array_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
+						fprintf(output, "\tkore_vulkan_descriptor_set_set_sampled_image_array_descriptor(device, &set->set, &parameters->%s, %zu);\n",
 						        get_name(g->name), other_index);
 
 						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
@@ -2353,6 +2353,18 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t},\n");
 				}
 				else if (g->type == tex2darray_type_id) {
+					fprintf(output, "\t\t\t{\n");
+					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
+					if (writable) {
+						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
+					}
+					else {
+						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
+					}
+					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
+					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
+					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t\t},\n");
 				}
 				else if (g->type == texcube_type_id) {
 				}
