@@ -2183,11 +2183,17 @@ void kore3_export(char *directory, api_kind api) {
 		if (api == API_VULKAN) {
 			fprintf(output, "\nvoid create_descriptor_set_layouts(kore_gpu_device *device);\n");
 		}
+		else if (api == API_WEBGPU) {
+			fprintf(output, "\nvoid create_bind_group_layouts(kore_gpu_device *device);\n");
+		}
 
 		fprintf(output, "\nvoid kong_init(kore_gpu_device *device) {\n");
 
 		if (api == API_VULKAN) {
 			fprintf(output, "\tcreate_descriptor_set_layouts(device);\n\n");
+		}
+		else if (api == API_WEBGPU) {
+			fprintf(output, "\tcreate_bind_group_layouts(device);\n\n");
 		}
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
@@ -2847,14 +2853,14 @@ void kore3_export(char *directory, api_kind api) {
 
 		fprintf(output, "\n");
 
-		fprintf(output, "void create_descriptor_set_layouts(kore_gpu_device *device) {\n");
+		fprintf(output, "void create_bind_group_layouts(kore_gpu_device *device) {\n");
 
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
 
 			fprintf(output, "\t{\n");
 
-			fprintf(output, "\t\tVkDescriptorSetLayoutBinding layout_bindings[%zu] = {\n", set->globals.size);
+			fprintf(output, "\t\tWGPUBindGroupLayoutEntry layout_entries[%zu] = {\n", set->globals.size);
 
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 				global *g        = get_global(set->globals.globals[global_index]);
@@ -2864,28 +2870,24 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 					if (writable) {
-						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
+						fprintf(output, "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2D},\n");
 					}
 					else {
-						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
+						fprintf(output, "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_2D},\n");
 					}
-					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
-					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
-					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
 					fprintf(output, "\t\t\t},\n");
 				}
 				else if (g->type == tex2darray_type_id) {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 					if (writable) {
-						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
+						fprintf(output, "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2D},\n");
 					}
 					else {
-						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
+						fprintf(output, "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_2D},\n");
 					}
-					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
-					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
-					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
 					fprintf(output, "\t\t\t},\n");
 				}
 				else if (g->type == texcube_type_id) {
@@ -2893,10 +2895,8 @@ void kore3_export(char *directory, api_kind api) {
 				else if (is_sampler(g->type)) {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
-					fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,\n");
-					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
-					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
-					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t\t\t.sampler = {.type = WGPUSamplerBindingType_Filtering},\n");
+					fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
 					fprintf(output, "\t\t\t},\n");
 				}
 				else if (!get_type(g->type)->built_in) {
@@ -2904,23 +2904,21 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 					if (writable) {
 						if (has_attribute(&g->attributes, add_name("indexed"))) {
-							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,\n");
+							fprintf(output, "\t\t\t\t.buffer = {.type = WGPUBufferBindingType_Storage, .hasDynamicOffset: true},\n");
 						}
 						else {
-							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,\n");
+							fprintf(output, "\t\t\t\t.buffer = {.type = WGPUBufferBindingType_Storage},\n");
 						}
 					}
 					else {
 						if (has_attribute(&g->attributes, add_name("indexed"))) {
-							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,\n");
+							fprintf(output, "\t\t\t\t.buffer = {.type = WGPUBufferBindingType_Uniform, .hasDynamicOffset: true},\n");
 						}
 						else {
-							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,\n");
+							fprintf(output, "\t\t\t\t.buffer = {.type = WGPUBufferBindingType_Uniform},\n");
 						}
 					}
-					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
-					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
-					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
 					fprintf(output, "\t\t\t},\n");
 				}
 			}
@@ -2929,16 +2927,13 @@ void kore3_export(char *directory, api_kind api) {
 
 			fprintf(output, "\n");
 
-			fprintf(output, "\t\tVkDescriptorSetLayoutCreateInfo layout_create_info = {\n");
-			fprintf(output, "\t\t\t.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,\n");
-			fprintf(output, "\t\t\t.pNext = NULL,\n");
-			fprintf(output, "\t\t\t.bindingCount = %zu,\n", set->globals.size);
-			fprintf(output, "\t\t\t.pBindings = layout_bindings,\n");
+			fprintf(output, "\t\tWGPUBindGroupLayoutDescriptor bind_group_layout_descriptor = {\n");
+			fprintf(output, "\t\t\t.entryCount = %zu,\n", set->globals.size);
+			fprintf(output, "\t\t\t.entries = layout_entries,\n");
 			fprintf(output, "\t\t};\n");
 
-			fprintf(output, "\t\tVkResult result = vkCreateDescriptorSetLayout(device->vulkan.device, &layout_create_info, NULL, &%s_set_layout);\n",
+			fprintf(output, "\t\t%s_set_layout = wgpuDeviceCreateBindGroupLayout(device->webgpu.device, &bind_group_layout_descriptor);\n",
 			        get_name(set->name));
-			fprintf(output, "\t\tassert(result == VK_SUCCESS);\n");
 
 			fprintf(output, "\t}\n");
 		}
