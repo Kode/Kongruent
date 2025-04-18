@@ -2348,7 +2348,7 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
 					}
 					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
-					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
+					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
 					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
 					fprintf(output, "\t\t\t},\n");
 				}
@@ -2361,7 +2361,7 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 					fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,\n");
 					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
-					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
+					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
 					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
 					fprintf(output, "\t\t\t},\n");
 				}
@@ -2385,7 +2385,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 					}
 					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
-					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,\n");
+					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
 					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
 					fprintf(output, "\t\t\t},\n");
 				}
