@@ -216,6 +216,7 @@ typedef enum spirv_opcode {
 } spirv_opcode;
 
 typedef enum spirv_glsl_std {
+	SPIRV_GLSL_STD_FLOOR  = 8,
 	SPIRV_GLSL_STD_SIN    = 13,
 	SPIRV_GLSL_STD_LENGTH = 66,
 } spirv_glsl_std;
@@ -584,8 +585,10 @@ static spirv_id spirv_uint4_type;
 static spirv_id spirv_bool_type;
 static spirv_id spirv_sampler_type;
 static spirv_id spirv_image_type;
+static spirv_id spirv_image2darray_type;
 static spirv_id spirv_writable_image_type;
 static spirv_id spirv_sampled_image_type;
+static spirv_id spirv_sampled_image2darray_type;
 
 static spirv_id glsl_import;
 
@@ -711,9 +714,13 @@ static void write_base_types(instructions_buffer *buffer) {
 
 	spirv_image_type = write_type_image(buffer, spirv_float_type, DIM_2D, 0, 0, 0, 1, IMAGE_FORMAT_UNKNOWN);
 
+	spirv_image2darray_type = write_type_image(buffer, spirv_float_type, DIM_2D, 0, 1, 0, 1, IMAGE_FORMAT_UNKNOWN);
+
 	spirv_writable_image_type = write_type_image(buffer, spirv_float_type, DIM_2D, 0, 0, 0, 2, IMAGE_FORMAT_UNKNOWN);
 
 	spirv_sampled_image_type = write_type_sampled_image(buffer, spirv_image_type);
+
+	spirv_sampled_image2darray_type = write_type_sampled_image(buffer, spirv_image2darray_type);
 
 	store_base_type_mapping(float2x2_id, write_type_matrix(buffer, spirv_float2_type, 2));
 	store_base_type_mapping(float2x3_id, write_type_matrix(buffer, spirv_float3_type, 2));
@@ -1473,17 +1480,34 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		case OPCODE_CALL: {
 			name_id func = o->op_call.func;
 
+			char *func_name = get_name(func);
+
 			if (func == add_name("sample")) {
-				spirv_id image = write_op_load(instructions, spirv_image_type, convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				variable image_var = o->op_call.parameters[0];
+
+				spirv_id image_type;
+				spirv_id sampled_image_type;
+
+				if (image_var.type.type == tex2d_type_id) {
+					image_type         = spirv_image_type;
+					sampled_image_type = spirv_sampled_image_type;
+				}
+				else if (image_var.type.type == tex2darray_type_id) {
+					image_type         = spirv_image2darray_type;
+					sampled_image_type = spirv_sampled_image2darray_type;
+				}
+
+				spirv_id image = write_op_load(instructions, image_type, convert_kong_index_to_spirv_id(image_var.index));
 
 				spirv_id sampler = write_op_load(instructions, spirv_sampler_type, convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 
-				spirv_id sampled_image = write_op_sampled_image(instructions, spirv_sampled_image_type, image, sampler);
+				spirv_id sampled_image = write_op_sampled_image(instructions, sampled_image_type, image, sampler);
 				spirv_id id            = write_op_image_sample_implicit_lod(instructions, spirv_float4_type, sampled_image,
 				                                                            convert_kong_index_to_spirv_id(o->op_call.parameters[2].index));
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("sample_lod")) {
+				assert(false);
 			}
 			else if (func == add_name("float")) {
 				if (o->op_call.parameters[0].type.type == int_id) {
@@ -1625,6 +1649,11 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			}
 			else if (func == add_name("sin")) {
 				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_SIN,
+				                                convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("floor")) {
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FLOOR,
 				                                convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				hmput(index_map, o->op_call.var.index, id);
 			}
@@ -2186,7 +2215,26 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 			}
 		}
 		else if (base_type == tex2darray_type_id) {
-			assert(false);
+			if (t->array_size == UINT32_MAX) {
+				assert(false);
+			}
+			else {
+				spirv_id image_pointer_type;
+
+				if (writable) {
+					assert(false);
+				}
+				else {
+					image_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM_CONSTANT, spirv_image2darray_type);
+					add_to_type_map(g->type, true, STORAGE_CLASS_UNIFORM_CONSTANT, spirv_image2darray_type);
+				}
+
+				spirv_id spirv_var_id = convert_kong_index_to_spirv_id(g->var_index);
+				write_op_variable_preallocated(instructions_block, image_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM_CONSTANT);
+
+				write_op_decorate_value(decorations, spirv_var_id, DECORATION_DESCRIPTOR_SET, 0);
+				write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, binding);
+			}
 		}
 		else if (base_type == texcube_type_id) {
 			assert(false);
