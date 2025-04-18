@@ -43,15 +43,15 @@ void transform(uint32_t flags) {
 				if ((flags & TRANSFORM_FLAG_ONE_COMPONENT_SWIZZLE) != 0 && a.kind == ACCESS_SWIZZLE && a.access_swizzle.swizzle.size > 1) {
 					assert(is_vector(o->op_store_access_list.from.type.type));
 
-					type_id from_type = vector_base_type(o->op_store_access_list.from.type.type);
+					type_id from_base_type = vector_base_type(o->op_store_access_list.from.type.type);
 
-					type_ref t;
-					init_type_ref(&t, NO_NAME);
-					t.type = from_type;
-
-					variable from = allocate_variable(t, o->op_store_access_list.from.kind);
+					type_ref from_base_type_ref;
+					init_type_ref(&from_base_type_ref, NO_NAME);
+					from_base_type_ref.type = from_base_type;
 
 					for (uint32_t swizzle_index = 0; swizzle_index < a.access_swizzle.swizzle.size; ++swizzle_index) {
+						variable from = allocate_variable(from_base_type_ref, o->op_store_access_list.from.kind);
+
 						opcode from_opcode = {
 						    .type = OPCODE_LOAD_ACCESS_LIST,
 						    .op_load_access_list =
@@ -60,7 +60,7 @@ void transform(uint32_t flags) {
 						            .to               = from,
 						            .access_list_size = 1,
 						            .access_list      = {{
-						                     .type = from_type,
+						                     .type = from_base_type,
 						                     .kind = ACCESS_SWIZZLE,
 						                     .access_swizzle =
                                             {
@@ -84,7 +84,7 @@ void transform(uint32_t flags) {
 						access *new_access = &new_opcode.op_store_access_list.access_list[new_opcode.op_store_access_list.access_list_size - 1];
 						new_access->access_swizzle.swizzle.size       = 1;
 						new_access->access_swizzle.swizzle.indices[0] = a.access_swizzle.swizzle.indices[swizzle_index];
-						new_access->type                              = from_type;
+						new_access->type                              = from_base_type;
 
 						copy_opcode(&new_opcode);
 					}

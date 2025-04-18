@@ -297,6 +297,9 @@ int main(int argc, char **argv) {
 	case API_VULKAN:
 		transform(TRANSFORM_FLAG_ONE_COMPONENT_SWIZZLE | TRANSFORM_FLAG_BINARY_UNIFY_LENGTH);
 		break;
+	case API_WEBGPU:
+		transform(TRANSFORM_FLAG_ONE_COMPONENT_SWIZZLE);
+		break;
 	default:
 		break;
 	}
