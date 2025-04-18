@@ -1390,11 +1390,11 @@ void kore3_export(char *directory, api_kind api) {
 						}
 						else {
 							if (writable) {
-								fprintf(output, "\tkore_%s_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %zu);\n", api_short,
+								fprintf(output, "\tkore_vulkan_descriptor_set_set_storage_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
 								        get_name(g->name), other_index);
 							}
 							else {
-								fprintf(output, "\tkore_vulkan_descriptor_set_set_texture_descriptor(device, &set->set, &parameters->%s, %zu);\n",
+								fprintf(output, "\tkore_vulkan_descriptor_set_set_sampled_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
 								        get_name(g->name), other_index);
 							}
 
@@ -2201,8 +2201,33 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t%s_parameters.shader.data = %s_code;\n", get_name(f->name), get_name(f->name));
 					fprintf(output, "\t%s_parameters.shader.size = %s_code_size;\n", get_name(f->name), get_name(f->name));
 				}
-				fprintf(output, "\tkore_%s_compute_pipeline_init(&device->%s, &%s, &%s_parameters);\n", api_short, api_short, get_name(f->name),
-				        get_name(f->name));
+				if (api == API_VULKAN) {
+					descriptor_set_group *group = find_descriptor_set_group_for_function(f);
+
+					fprintf(output, "\t{\n");
+
+					if (group->size == 0) {
+						fprintf(output, "\t\tkore_%s_compute_pipeline_init(&device->%s, &%s, &%s_parameters, NULL, 0);\n", api_short, api_short,
+						        get_name(f->name), get_name(f->name));
+					}
+					else {
+
+						fprintf(output, "\t\tVkDescriptorSetLayout layouts[%zu];\n", group->size);
+
+						for (size_t layout_index = 0; layout_index < group->size; ++layout_index) {
+							fprintf(output, "\t\tlayouts[%zu] = %s_set_layout;\n", layout_index, get_name(group->values[layout_index]->name));
+						}
+
+						fprintf(output, "\t\tkore_%s_compute_pipeline_init(&device->%s, &%s, &%s_parameters, layouts, %zu);\n", api_short, api_short,
+						        get_name(f->name), get_name(f->name), group->size);
+					}
+
+					fprintf(output, "\t}\n");
+				}
+				else {
+					fprintf(output, "\tkore_%s_compute_pipeline_init(&device->%s, &%s, &%s_parameters);\n", api_short, api_short, get_name(f->name),
+					        get_name(f->name));
+				}
 			}
 		}
 
