@@ -235,7 +235,10 @@ void find_used_capabilities(function *f) {
 	uint8_t *data = f->code.o;
 	size_t   size = f->code.size;
 
-	size_t index = 0;
+	size_t   index                  = 0;
+	variable last_base_texture_from = {0};
+	variable last_base_texture_to   = {0};
+
 	while (index < size) {
 		opcode *o = (opcode *)&data[index];
 		switch (o->type) {
@@ -244,6 +247,8 @@ void find_used_capabilities(function *f) {
 			type_id  to_type = to.type.type;
 
 			if (is_texture(to_type)) {
+				assert(get_type(to_type)->array_size == 0);
+
 				f->used_capabilities.image_write = true;
 
 				global *g = find_global_by_var(to);
@@ -257,18 +262,37 @@ void find_used_capabilities(function *f) {
 			type_id  from_type = from.type.type;
 
 			if (is_texture(from_type)) {
-				global *g = find_global_by_var(from);
-				assert(g != NULL);
-				g->usage |= GLOBAL_USAGE_TEXTURE_READ;
+				if (get_type(from_type)->array_size > 0) {
+					last_base_texture_from = from;
+					last_base_texture_to   = o->op_load_access_list.to;
+				}
+				else {
+					global *g = find_global_by_var(from);
+					assert(g != NULL);
+					g->usage |= GLOBAL_USAGE_TEXTURE_READ;
+				}
 			}
+
 			break;
 		}
 		case OPCODE_CALL: {
 			name_id func_name = o->op_call.func;
 
 			if (func_name == add_name("sample") || func_name == add_name("sample_lod")) {
-				global *g = find_global_by_var(o->op_call.parameters[0]);
+				variable tex_parameter = o->op_call.parameters[0];
+
+				global *g = NULL;
+
+				if (tex_parameter.kind == VARIABLE_INTERNAL) {
+					assert(last_base_texture_to.index == tex_parameter.index);
+					g = find_global_by_var(last_base_texture_from);
+				}
+				else {
+					g = find_global_by_var(tex_parameter);
+				}
+
 				assert(g != NULL);
+
 				g->usage |= GLOBAL_USAGE_TEXTURE_SAMPLE;
 			}
 
