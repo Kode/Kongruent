@@ -700,7 +700,7 @@ void kore3_export(char *directory, api_kind api) {
 			type_id base_type = get_type(g->type)->array_size > 0 ? get_type(g->type)->base : g->type;
 
 			if (is_texture(g->type)) {
-				fprintf(output, "uint32_t %s_texture_usage_flags(void);\n", get_name(get_type(g->type)->name));
+				fprintf(output, "uint32_t %s_texture_usage_flags(void);\n", get_name(g->name));
 			}
 			else if (!get_type(base_type)->built_in) {
 				type *t = get_type(base_type);
@@ -1121,6 +1121,7 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\tusage |= KORE_%s_TEXTURE_USAGE_READ_WRITE;\n", api_caps);
 					}
 				}
+				fprintf(output, "\treturn usage;\n");
 				fprintf(output, "}\n\n");
 			}
 			else if (!get_type(base_type)->built_in) {
