@@ -694,7 +694,8 @@ void kore3_export(char *directory, api_kind api) {
 
 			type_id base_type = get_type(g->type)->array_size > 0 ? get_type(g->type)->base : g->type;
 
-			if (is_texture(base_type) || base_type == sampler_type_id) {
+			if (is_texture(g->type)) {
+				fprintf(output, "uint32_t %s_texture_usage_flags(void);\n", get_name(get_type(g->type)->name));
 			}
 			else if (!get_type(base_type)->built_in) {
 				type *t = get_type(base_type);
@@ -729,6 +730,7 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "void kong_set_root_constants_%s(kore_gpu_command_list *list, %s *constants);\n", get_name(g->name), name);
 				}
 				else {
+					fprintf(output, "uint32_t %s_buffer_usage_flags(void);\n", name);
 					fprintf(output, "void %s_buffer_create(kore_gpu_device *device, kore_gpu_buffer *buffer, uint32_t count);\n", name);
 					fprintf(output, "void %s_buffer_destroy(kore_gpu_buffer *buffer);\n", name);
 					fprintf(output, "%s *%s_buffer_lock(kore_gpu_buffer *buffer, uint32_t index, uint32_t count);\n", name, name);
@@ -918,6 +920,7 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "\tsize_t count;\n");
 			fprintf(output, "} %s_buffer;\n\n", get_name(t->name));
 
+			fprintf(output, "uint32_t kong_%s_buffer_usage_flags(void);\n", get_name(t->name));
 			fprintf(output, "void kong_create_buffer_%s(kore_gpu_device * device, size_t count, %s_buffer *buffer);\n", get_name(t->name), get_name(t->name));
 			fprintf(output, "%s *kong_%s_buffer_lock(%s_buffer *buffer);\n", get_name(t->name), get_name(t->name), get_name(t->name));
 			fprintf(output, "%s *kong_%s_buffer_try_to_lock(%s_buffer *buffer);\n", get_name(t->name), get_name(t->name), get_name(t->name));
@@ -1019,10 +1022,14 @@ void kore3_export(char *directory, api_kind api) {
 		for (size_t i = 0; i < vertex_inputs_size; ++i) {
 			type *t = get_type(vertex_inputs[i]);
 
+			fprintf(output, "uint32_t kong_%s_buffer_usage_flags(void) {\n", get_name(t->name));
+			fprintf(output, "\treturn KORE_%s_BUFFER_USAGE_VERTEX;\n", api_caps);
+			fprintf(output, "}\n\n");
+
 			fprintf(output, "void kong_create_buffer_%s(kore_gpu_device * device, size_t count, %s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
 			fprintf(output, "\tkore_gpu_buffer_parameters parameters;\n");
 			fprintf(output, "\tparameters.size = count * sizeof(%s);\n", get_name(t->name));
-			fprintf(output, "\tparameters.usage_flags = KORE_GPU_BUFFER_USAGE_VERTEX | KORE_GPU_BUFFER_USAGE_CPU_WRITE;\n");
+			fprintf(output, "\tparameters.usage_flags = KORE_GPU_BUFFER_USAGE_CPU_WRITE | kong_%s_buffer_usage_flags();\n", get_name(t->name));
 			fprintf(output, "\tkore_gpu_device_create_buffer(device, &parameters, &buffer->buffer);\n");
 			fprintf(output, "\tbuffer->count = count;\n");
 			fprintf(output, "}\n\n");
@@ -1090,7 +1097,18 @@ void kore3_export(char *directory, api_kind api) {
 
 			type_id base_type = get_type(g->type)->array_size > 0 ? get_type(g->type)->base : g->type;
 
-			if (!get_type(base_type)->built_in) {
+			if (is_texture(g->type)) {
+				fprintf(output, "uint32_t %s_texture_usage_flags(void) {\n", get_name(get_type(g->type)->name));
+				fprintf(output, "\tuint32_t usage = 0u;\n");
+				if (global_has_usage(i, GLOBAL_USAGE_TEXTURE_SAMPLE)) {
+					fprintf(output, "usage |= KORE_%s_TEXTURE_USAGE_SAMPLE;\n", api_caps);
+				}
+				if (global_has_usage(i, GLOBAL_USAGE_TEXTURE_READ) || global_has_usage(i, GLOBAL_USAGE_TEXTURE_WRITE)) {
+					fprintf(output, "usage |= KORE_%s_TEXTURE_USAGE_READ_WRITE;\n", api_caps);
+				}
+				fprintf(output, "}\n\n");
+			}
+			else if (!get_type(base_type)->built_in) {
 				type *t = get_type(g->type);
 
 				char type_name[256];
@@ -1116,10 +1134,21 @@ void kore3_export(char *directory, api_kind api) {
 					strcpy(root_constants_type_name, type_name);
 				}
 				else {
-					fprintf(output, "\nvoid %s_buffer_create(kore_gpu_device *device, kore_gpu_buffer *buffer, uint32_t count) {\n", type_name);
+					if (api == API_WEBGPU) {
+						fprintf(output, "uint32_t %s_buffer_usage_flags(void) {\n", type_name);
+						fprintf(output, "\treturn KORE_WEBGPU_BUFFER_USAGE_UNIFORM;\n");
+						fprintf(output, "}\n\n");
+					}
+					else {
+						fprintf(output, "uint32_t %s_buffer_usage_flags(void) {\n", type_name);
+						fprintf(output, "\treturn 0u;\n");
+						fprintf(output, "}\n\n");
+					}
+
+					fprintf(output, "void %s_buffer_create(kore_gpu_device *device, kore_gpu_buffer *buffer, uint32_t count) {\n", type_name);
 					fprintf(output, "\tkore_gpu_buffer_parameters parameters;\n");
 					fprintf(output, "\tparameters.size = align_pow2(%i, 256) * count;\n", struct_size(g->type));
-					fprintf(output, "\tparameters.usage_flags = KORE_GPU_BUFFER_USAGE_CPU_WRITE;\n");
+					fprintf(output, "\tparameters.usage_flags = KORE_GPU_BUFFER_USAGE_CPU_WRITE | %s_buffer_usage_flags();\n", type_name);
 					fprintf(output, "\tkore_gpu_device_create_buffer(device, &parameters, buffer);\n");
 					fprintf(output, "}\n\n");
 

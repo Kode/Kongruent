@@ -163,6 +163,7 @@ global_id add_global(type_id type, attribute_list attributes, name_id name) {
 	globals[index].value.kind = GLOBAL_VALUE_NONE;
 	globals[index].attributes = attributes;
 	globals[index].sets_count = 0;
+	globals[index].usage      = 0;
 	globals_size += 1;
 	return index;
 }
@@ -175,8 +176,13 @@ global_id add_global_with_value(type_id type, attribute_list attributes, name_id
 	globals[index].value      = value;
 	globals[index].attributes = attributes;
 	globals[index].sets_count = 0;
+	globals[index].usage      = 0;
 	globals_size += 1;
 	return index;
+}
+
+bool global_has_usage(global_id g, global_usage usage) {
+	return (get_global(g)->usage & usage) == usage;
 }
 
 global *find_global(name_id name) {

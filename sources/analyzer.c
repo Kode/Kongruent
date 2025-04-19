@@ -210,6 +210,16 @@ void find_used_builtins(function *f) {
 	}
 }
 
+static global *find_global_by_var(variable var) {
+	for (global_id global_index = 0; get_global(global_index) != NULL && get_global(global_index)->type != NO_TYPE; ++global_index) {
+		if (var.index == get_global(global_index)->var_index) {
+			return get_global(global_index);
+		}
+	}
+
+	return NULL;
+}
+
 void find_used_capabilities(function *f) {
 	if (f->block == NULL) {
 		// built-in
@@ -230,18 +240,41 @@ void find_used_capabilities(function *f) {
 		opcode *o = (opcode *)&data[index];
 		switch (o->type) {
 		case OPCODE_STORE_ACCESS_LIST: {
-			type_id to = o->op_store_access_list.to.type.type;
-			if (is_texture(to)) {
+			variable to      = o->op_store_access_list.to;
+			type_id  to_type = to.type.type;
+
+			if (is_texture(to_type)) {
 				f->used_capabilities.image_write = true;
+
+				global *g = find_global_by_var(to);
+				assert(g != NULL);
+				g->usage |= GLOBAL_USAGE_TEXTURE_WRITE;
+			}
+			break;
+		}
+		case OPCODE_LOAD_ACCESS_LIST: {
+			variable from      = o->op_load_access_list.from;
+			type_id  from_type = from.type.type;
+
+			if (is_texture(from_type)) {
+				global *g = find_global_by_var(from);
+				assert(g != NULL);
+				g->usage |= GLOBAL_USAGE_TEXTURE_READ;
 			}
 			break;
 		}
 		case OPCODE_CALL: {
-			char *func_name = get_name(o->op_call.func);
+			name_id func_name = o->op_call.func;
+
+			if (func_name == add_name("sample") || func_name == add_name("sample_lod")) {
+				global *g = find_global_by_var(o->op_call.parameters[0]);
+				assert(g != NULL);
+				g->usage |= GLOBAL_USAGE_TEXTURE_SAMPLE;
+			}
 
 			for (function_id i = 0; get_function(i) != NULL; ++i) {
 				function *called = get_function(i);
-				if (called->name == o->op_call.func) {
+				if (called->name == func_name) {
 					find_used_capabilities(f);
 
 					f->used_capabilities.image_write |= called->used_capabilities.image_write;
