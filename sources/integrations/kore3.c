@@ -927,6 +927,7 @@ void kore3_export(char *directory, api_kind api) {
 
 			fprintf(output, "uint32_t kong_%s_buffer_usage_flags(void);\n", get_name(t->name));
 			fprintf(output, "void kong_create_buffer_%s(kore_gpu_device * device, size_t count, %s_buffer *buffer);\n", get_name(t->name), get_name(t->name));
+			fprintf(output, "void kong_destroy_buffer_%s(%s_buffer *buffer);\n", get_name(t->name), get_name(t->name));
 			fprintf(output, "%s *kong_%s_buffer_lock(%s_buffer *buffer);\n", get_name(t->name), get_name(t->name), get_name(t->name));
 			fprintf(output, "%s *kong_%s_buffer_try_to_lock(%s_buffer *buffer);\n", get_name(t->name), get_name(t->name), get_name(t->name));
 			fprintf(output, "void kong_%s_buffer_unlock(%s_buffer *buffer);\n", get_name(t->name), get_name(t->name));
@@ -1038,6 +1039,10 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "\tparameters.usage_flags = KORE_GPU_BUFFER_USAGE_CPU_WRITE | kong_%s_buffer_usage_flags();\n", get_name(t->name));
 			fprintf(output, "\tkore_gpu_device_create_buffer(device, &parameters, &buffer->buffer);\n");
 			fprintf(output, "\tbuffer->count = count;\n");
+			fprintf(output, "}\n\n");
+
+			fprintf(output, "void kong_destroy_buffer_%s(%s_buffer *buffer) {\n", get_name(t->name), get_name(t->name));
+			fprintf(output, "\tkore_%s_buffer_destroy(&buffer->buffer);\n", api_short);
 			fprintf(output, "}\n\n");
 
 			fprintf(output, "%s *kong_%s_buffer_lock(%s_buffer *buffer) {\n", get_name(t->name), get_name(t->name), get_name(t->name));
