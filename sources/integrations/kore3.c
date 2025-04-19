@@ -533,6 +533,11 @@ static void to_upper(char *from, char *to) {
 static int global_register_indices[512];
 
 void kore3_export(char *directory, api_kind api) {
+	for (function_id i = 0; get_function(i) != NULL; ++i) {
+		function *f = get_function(i);
+		find_used_capabilities(f);
+	}
+
 	memset(global_register_indices, 0, sizeof(global_register_indices));
 
 	char *api_short = NULL;
@@ -1098,13 +1103,23 @@ void kore3_export(char *directory, api_kind api) {
 			type_id base_type = get_type(g->type)->array_size > 0 ? get_type(g->type)->base : g->type;
 
 			if (is_texture(g->type)) {
-				fprintf(output, "uint32_t %s_texture_usage_flags(void) {\n", get_name(get_type(g->type)->name));
+				fprintf(output, "uint32_t %s_texture_usage_flags(void) {\n", get_name(g->name));
 				fprintf(output, "\tuint32_t usage = 0u;\n");
-				if (global_has_usage(i, GLOBAL_USAGE_TEXTURE_SAMPLE)) {
-					fprintf(output, "usage |= KORE_%s_TEXTURE_USAGE_SAMPLE;\n", api_caps);
+				if (api == API_DIRECT3D12) {
+					if (global_has_usage(i, GLOBAL_USAGE_TEXTURE_SAMPLE)) {
+						fprintf(output, "\tusage |= KORE_D3D12_TEXTURE_USAGE_SRV;\n");
+					}
+					if (global_has_usage(i, GLOBAL_USAGE_TEXTURE_READ) || global_has_usage(i, GLOBAL_USAGE_TEXTURE_WRITE)) {
+						fprintf(output, "\tusage |= KORE_D3D12_TEXTURE_USAGE_UAV;\n");
+					}
 				}
-				if (global_has_usage(i, GLOBAL_USAGE_TEXTURE_READ) || global_has_usage(i, GLOBAL_USAGE_TEXTURE_WRITE)) {
-					fprintf(output, "usage |= KORE_%s_TEXTURE_USAGE_READ_WRITE;\n", api_caps);
+				else {
+					if (global_has_usage(i, GLOBAL_USAGE_TEXTURE_SAMPLE)) {
+						fprintf(output, "\tusage |= KORE_%s_TEXTURE_USAGE_SAMPLE;\n", api_caps);
+					}
+					if (global_has_usage(i, GLOBAL_USAGE_TEXTURE_READ) || global_has_usage(i, GLOBAL_USAGE_TEXTURE_WRITE)) {
+						fprintf(output, "\tusage |= KORE_%s_TEXTURE_USAGE_READ_WRITE;\n", api_caps);
+					}
 				}
 				fprintf(output, "}\n\n");
 			}

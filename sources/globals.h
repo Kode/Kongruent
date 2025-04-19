@@ -33,9 +33,10 @@ typedef struct global_value {
 struct descriptor_set;
 
 typedef enum global_usage {
-	GLOBAL_USAGE_TEXTURE_SAMPLE = 0x0001,
-	GLOBAL_USAGE_TEXTURE_READ   = 0x0002,
-	GLOBAL_USAGE_TEXTURE_WRITE  = 0x0004,
+	GLOBAL_USAGE_TEXTURE_SAMPLE = 0x00000001,
+	GLOBAL_USAGE_TEXTURE_READ   = 0x00000002,
+	GLOBAL_USAGE_TEXTURE_WRITE  = 0x00000004,
+	GLOBAL_USAGE_BUFFER_WRITE   = 0x00000008,
 } global_usage;
 
 typedef struct global {
