@@ -1016,6 +1016,7 @@ void kore3_export(char *directory, api_kind api) {
 		fprintf(output, "#include <kore3/%s/device_functions.h>\n", api_long);
 		fprintf(output, "#include <kore3/%s/descriptorset_functions.h>\n", api_long);
 		fprintf(output, "#include <kore3/%s/pipeline_functions.h>\n", api_long);
+		fprintf(output, "#include <kore3/%s/texture_functions.h>\n", api_long);
 		fprintf(output, "#include <kore3/util/align.h>\n\n");
 		fprintf(output, "#include <assert.h>\n");
 		fprintf(output, "#include <stdlib.h>\n\n");
@@ -1644,6 +1645,19 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, "}\n\n");
 			}
 			else if (api == API_WEBGPU) {
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g = get_global(set->globals.globals[global_index]);
+
+					if (is_texture(g->type)) {
+						fprintf(output, "\tWGPUTextureViewDescriptor texture_view_descriptor%zu = {\n", global_index);
+						fprintf(output, "\t\t.format = kore_webgpu_convert_texture_format(parameters->%s.texture->webgpu.format),\n", get_name(g->name));
+						fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2D,\n");
+						fprintf(output, "\t\t.arrayLayerCount = 1,\n");
+						fprintf(output, "\t\t.mipLevelCount   = 1,\n");
+						fprintf(output, "\t};\n\n");
+					}
+				}
+
 				size_t index = 0;
 
 				fprintf(output, "\tconst WGPUBindGroupEntry entries[] = {\n");
@@ -1664,20 +1678,17 @@ void kore3_export(char *directory, api_kind api) {
 					else if (is_texture(g->type)) {
 						fprintf(output, "\t\t{\n");
 						fprintf(output, "\t\t\t.binding = %zu,\n", index);
+						fprintf(output, "\t\t\t.textureView = wgpuTextureCreateView(parameters->%s.texture->webgpu.texture, &texture_view_descriptor%zu),\n",
+						        get_name(g->name), global_index);
 						fprintf(output, "\t\t},\n");
-
-						fprintf(output, "\t\tid<MTLTexture> texture = (__bridge id<MTLTexture>)parameters->%s.texture->metal.texture;\n", get_name(g->name));
-						fprintf(output, "\t\t[argument_encoder setTexture: texture atIndex: %zu];\n", index);
 
 						index += 1;
 					}
 					else if (is_sampler(g->type)) {
 						fprintf(output, "\t\t{\n");
 						fprintf(output, "\t\t\t.binding = %zu,\n", index);
+						fprintf(output, "\t\t\t.sampler = parameters->%s->webgpu.sampler,\n", get_name(g->name));
 						fprintf(output, "\t\t},\n");
-
-						fprintf(output, "\t\tid<MTLSamplerState> sampler = (__bridge id<MTLSamplerState>)parameters->%s->metal.sampler;\n", get_name(g->name));
-						fprintf(output, "\t\t[argument_encoder setSamplerState: sampler atIndex: %zu];\n", index);
 
 						index += 1;
 					}
