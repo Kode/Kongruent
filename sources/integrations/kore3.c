@@ -1139,6 +1139,11 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\treturn KORE_WEBGPU_BUFFER_USAGE_UNIFORM;\n");
 						fprintf(output, "}\n\n");
 					}
+					else if (api == API_DIRECT3D12) {
+						fprintf(output, "uint32_t %s_buffer_usage_flags(void) {\n", type_name);
+						fprintf(output, "\treturn KORE_D3D12_BUFFER_USAGE_CBV;\n");
+						fprintf(output, "}\n\n");
+					}
 					else {
 						fprintf(output, "uint32_t %s_buffer_usage_flags(void) {\n", type_name);
 						fprintf(output, "\treturn 0u;\n");
