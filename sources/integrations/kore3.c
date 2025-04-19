@@ -1113,6 +1113,14 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\tusage |= KORE_D3D12_TEXTURE_USAGE_UAV;\n");
 					}
 				}
+				else if (api == API_VULKAN || api == API_WEBGPU || api == API_OPENGL) {
+					if (global_has_usage(i, GLOBAL_USAGE_TEXTURE_SAMPLE)) {
+						fprintf(output, "\tusage |= KORE_%s_TEXTURE_USAGE_SAMPLED;\n", api_caps);
+					}
+					if (global_has_usage(i, GLOBAL_USAGE_TEXTURE_READ) || global_has_usage(i, GLOBAL_USAGE_TEXTURE_WRITE)) {
+						fprintf(output, "\tusage |= KORE_%s_TEXTURE_USAGE_STORAGE;\n", api_caps);
+					}
+				}
 				else {
 					if (global_has_usage(i, GLOBAL_USAGE_TEXTURE_SAMPLE)) {
 						fprintf(output, "\tusage |= KORE_%s_TEXTURE_USAGE_SAMPLE;\n", api_caps);
