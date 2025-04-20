@@ -1662,8 +1662,10 @@ void kore3_export(char *directory, api_kind api) {
 						else {
 							fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2D,\n");
 						}
-						fprintf(output, "\t\t.arrayLayerCount = 1,\n");
-						fprintf(output, "\t\t.mipLevelCount   = 1,\n");
+						fprintf(output, "\t\t.baseArrayLayer = parameters->%s.base_array_layer,\n", get_name(g->name));
+						fprintf(output, "\t\t.arrayLayerCount = parameters->%s.array_layer_count,\n", get_name(g->name));
+						fprintf(output, "\t\t.baseMipLevel   = parameters->%s.base_mip_level,\n", get_name(g->name));
+						fprintf(output, "\t\t.mipLevelCount   = parameters->%s.mip_level_count,\n", get_name(g->name));
 						fprintf(output, "\t};\n\n");
 					}
 				}
@@ -2622,8 +2624,8 @@ void kore3_export(char *directory, api_kind api) {
 						else if (g->type == float_id) {
 						}
 						else {
-							fprintf(output, "\tkore_opengl_setup_uniform_block(%s.impl.programId, \"_%" PRIu64 "\", %i);\n\n", get_name(t->name),
-							        g->var_index, global_register_indices[i]);
+							fprintf(output, "\tkore_opengl_setup_uniform_block(%s.impl.programId, \"_%" PRIu64 "\", %i);\n\n", get_name(t->name), g->var_index,
+							        global_register_indices[i]);
 						}
 					}
 				}
