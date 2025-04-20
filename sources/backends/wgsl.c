@@ -31,6 +31,60 @@ static char *type_string(type_id type) {
 	if (type == float4_id) {
 		return "vec4<f32>";
 	}
+	if (type == int_id) {
+		return "i32";
+	}
+	if (type == int2_id) {
+		return "vec2<i32>";
+	}
+	if (type == int3_id) {
+		return "vec3<i32>";
+	}
+	if (type == int4_id) {
+		return "vec4<i32>";
+	}
+	if (type == uint_id) {
+		return "u32";
+	}
+	if (type == uint2_id) {
+		return "vec2<u32>";
+	}
+	if (type == uint3_id) {
+		return "vec3<u32>";
+	}
+	if (type == uint4_id) {
+		return "vec4<u32>";
+	}
+	if (type == bool_id) {
+		return "bool";
+	}
+	if (type == bool2_id) {
+		return "vec2<bool>";
+	}
+	if (type == bool3_id) {
+		return "vec3<bool>";
+	}
+	if (type == bool4_id) {
+		return "vec4<bool>";
+	}
+	if (type == float2x2_id) {
+		return "mat2x2<f32>";
+	}
+	if (type == float2x3_id) {
+		return "mat2x3<f32>";
+	}
+	if (type == float3x2_id) {
+		return "mat3x2<f32>";
+	}
+	if (type == float3x3_id) {
+		return "mat3x3<f32>";
+	}
+	if (type == float4x3_id) {
+		return "mat4x3<f32>";
+	}
+	if (type == float3x4_id) {
+		return "mat3x4<f32>";
+	}
 	if (type == float4x4_id) {
 		return "mat4x4<f32>";
 	}
@@ -345,24 +399,26 @@ static void write_functions(char *code, size_t *offset) {
 		}
 		else if (is_fragment_function(i)) {
 			if (get_type(f->return_type.type)->array_size > 0) {
+				type_id base_type = get_type(f->return_type.type)->base;
+
 				*offset += sprintf(&code[*offset], "struct _kong_colors_out {\n");
 				for (uint32_t j = 0; j < get_type(f->return_type.type)->array_size; ++j) {
-					*offset += sprintf(&code[*offset], "\t%s _%i : SV_Target%i;\n", type_string(f->return_type.type), j, j);
+					*offset += sprintf(&code[*offset], "\t@location(%u) _%i: %s,\n", j, j, type_string(base_type));
 				}
-				*offset += sprintf(&code[*offset], "};\n\n");
+				*offset += sprintf(&code[*offset], "}\n\n");
 
-				*offset += sprintf(&code[*offset], "_kong_colors_out main(");
+				*offset += sprintf(&code[*offset], "@fragment fn %s(", get_name(f->name));
 				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 					if (parameter_index == 0) {
 						*offset +=
-						    sprintf(&code[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+						    sprintf(&code[*offset], "_%" PRIu64 ": %s", parameter_ids[parameter_index], type_string(f->parameter_types[parameter_index].type));
 					}
 					else {
-						*offset +=
-						    sprintf(&code[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
+						*offset += sprintf(&code[*offset], ", _%" PRIu64 ": %s", parameter_ids[parameter_index],
+						                   type_string(f->parameter_types[parameter_index].type));
 					}
 				}
-				*offset += sprintf(&code[*offset], ") {\n");
+				*offset += sprintf(&code[*offset], ") -> _kong_colors_out {\n");
 			}
 			else {
 				*offset += sprintf(&code[*offset], "@fragment fn %s(", get_name(f->name));
@@ -402,7 +458,9 @@ static void write_functions(char *code, size_t *offset) {
 			case OPCODE_VAR:
 				indent(code, offset, indentation);
 				if (get_type(o->op_var.var.type.type)->array_size > 0) {
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 "[%i];\n", type_string(o->op_var.var.type.type), o->op_var.var.index,
+					type_id base_type = get_type(o->op_var.var.type.type)->base;
+
+					*offset += sprintf(&code[*offset], "var _%" PRIu64 ": array<%s, %i>;\n", o->op_var.var.index, type_string(base_type),
 					                   get_type(o->op_var.var.type.type)->array_size);
 				}
 				else {
@@ -507,7 +565,7 @@ static void write_functions(char *code, size_t *offset) {
 						indent(code, offset, indentation);
 						*offset += sprintf(&code[*offset], "{\n");
 						indent(code, offset, indentation + 1);
-						*offset += sprintf(&code[*offset], "_kong_colors_out _kong_colors;\n");
+						*offset += sprintf(&code[*offset], "var _kong_colors: _kong_colors_out;\n");
 						for (uint32_t j = 0; j < get_type(f->return_type.type)->array_size; ++j) {
 							indent(code, offset, indentation + 1);
 							*offset += sprintf(&code[*offset], "_kong_colors._%i = _%" PRIu64 "[%i];\n", j, o->op_return.var.index, j);
@@ -556,6 +614,11 @@ static void write_functions(char *code, size_t *offset) {
 				indent(code, offset, indentation);
 				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = %f;\n", o->op_load_float_constant.to.index,
 				                   type_string(o->op_load_float_constant.to.type.type), o->op_load_float_constant.number);
+				break;
+			case OPCODE_LOAD_INT_CONSTANT:
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = %i;\n", o->op_load_int_constant.to.index,
+				                   type_string(o->op_load_int_constant.to.type.type), o->op_load_int_constant.number);
 				break;
 			case OPCODE_LOAD_BOOL_CONSTANT:
 				indent(code, offset, indentation);
