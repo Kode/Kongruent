@@ -2929,7 +2929,7 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 					if (writable) {
 						if (has_attribute(&g->attributes, add_name("indexed"))) {
-							fprintf(output, "\t\t\t\t.buffer = {.type = WGPUBufferBindingType_Storage, .hasDynamicOffset: true},\n");
+							fprintf(output, "\t\t\t\t.buffer = {.type = WGPUBufferBindingType_Storage, .hasDynamicOffset = true},\n");
 						}
 						else {
 							fprintf(output, "\t\t\t\t.buffer = {.type = WGPUBufferBindingType_Storage},\n");
@@ -2937,7 +2937,7 @@ void kore3_export(char *directory, api_kind api) {
 					}
 					else {
 						if (has_attribute(&g->attributes, add_name("indexed"))) {
-							fprintf(output, "\t\t\t\t.buffer = {.type = WGPUBufferBindingType_Uniform, .hasDynamicOffset: true},\n");
+							fprintf(output, "\t\t\t\t.buffer = {.type = WGPUBufferBindingType_Uniform, .hasDynamicOffset = true},\n");
 						}
 						else {
 							fprintf(output, "\t\t\t\t.buffer = {.type = WGPUBufferBindingType_Uniform},\n");
