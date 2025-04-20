@@ -1207,7 +1207,7 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "}\n\n");
 
 					fprintf(output, "void %s_buffer_unlock(kore_gpu_buffer *buffer) {\n", type_name);
-					if (api != API_OPENGL && api != API_WEBGPU) {
+					if (api != API_OPENGL) {
 						bool has_matrices = false;
 						for (size_t j = 0; j < t->members.size; ++j) {
 							if (t->members.m[j].type.type == float4x4_id || t->members.m[j].type.type == float3x3_id) {
@@ -1220,7 +1220,7 @@ void kore3_export(char *directory, api_kind api) {
 							fprintf(output, "\t%s *data = (%s *)buffer->%s.locked_data;\n", type_name, type_name, api_short);
 							// adjust matrices
 							for (size_t j = 0; j < t->members.size; ++j) {
-								if (t->members.m[j].type.type == float4x4_id && (api != API_METAL && api != API_VULKAN)) {
+								if (t->members.m[j].type.type == float4x4_id && (api != API_METAL && api != API_VULKAN && api != API_WEBGPU)) {
 									fprintf(output, "\tkore_matrix4x4_transpose(&data->%s);\n", get_name(t->members.m[j].name));
 								}
 								else if (t->members.m[j].type.type == float3x3_id && (api == API_METAL || api == API_VULKAN)) {
