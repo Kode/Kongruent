@@ -1675,7 +1675,7 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\t\t\t.binding = %zu,\n", index);
 						fprintf(output, "\t\t\t.buffer = parameters->%s->webgpu.buffer,\n", get_name(g->name));
 						fprintf(output, "\t\t\t.offset = 0,\n");
-						fprintf(output, "\t\t\t.size = parameters->%s->webgpu.size,\n", get_name(g->name));
+						fprintf(output, "\t\t\t.size = align_pow2(%u, 256),\n", struct_size(g->type));
 						fprintf(output, "\t\t},\n");
 
 						index += 1;
@@ -2126,10 +2126,10 @@ void kore3_export(char *directory, api_kind api) {
 				else if (api == API_WEBGPU) {
 					fprintf(output, "\n\tkore_%s_command_list_set_bind_group(list, %s_table_index, &set->set", api_short, get_name(set->name));
 					if (dynamic_count > 0) {
-						fprintf(output, ", dynamic_buffers, dynamic_offsets, dynamic_sizes");
+						fprintf(output, ", %u, dynamic_offsets", dynamic_count);
 					}
 					else {
-						fprintf(output, ", NULL, NULL, NULL");
+						fprintf(output, ", 0, NULL");
 					}
 					fprintf(output, ");\n");
 				}
