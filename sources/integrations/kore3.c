@@ -274,29 +274,29 @@ static const char *convert_texture_format(int format) {
 static const char *convert_blend_mode(int mode) {
 	switch (mode) {
 	case 0:
-		return "KINC_G4_BLEND_ONE";
+		return "KORE_GPU_BLEND_ONE";
 	case 1:
-		return "KINC_G4_BLEND_ZERO";
+		return "KORE_GPU_BLEND_ZERO";
 	case 2:
-		return "KINC_G4_BLEND_SOURCE_ALPHA";
+		return "KORE_GPU_BLEND_SOURCE_ALPHA";
 	case 3:
-		return "KINC_G4_BLEND_DEST_ALPHA";
+		return "KORE_GPU_BLEND_DEST_ALPHA";
 	case 4:
-		return "KINC_G4_BLEND_INV_SOURCE_ALPHA";
+		return "KORE_GPU_BLEND_INV_SOURCE_ALPHA";
 	case 5:
-		return "KINC_G4_BLEND_INV_DEST_ALPHA";
+		return "KORE_GPU_BLEND_INV_DEST_ALPHA";
 	case 6:
-		return "KINC_G4_BLEND_SOURCE_COLOR";
+		return "KORE_GPU_BLEND_SOURCE_COLOR";
 	case 7:
-		return "KINC_G4_BLEND_DEST_COLOR";
+		return "KORE_GPU_BLEND_DEST_COLOR";
 	case 8:
-		return "KINC_G4_BLEND_INV_SOURCE_COLOR";
+		return "KORE_GPU_BLEND_INV_SOURCE_COLOR";
 	case 9:
-		return "KINC_G4_BLEND_INV_DEST_COLOR";
+		return "KORE_GPU_BLEND_INV_DEST_COLOR";
 	case 10:
-		return "KINC_G4_BLEND_CONSTANT";
+		return "KORE_GPU_BLEND_CONSTANT";
 	case 11:
-		return "KINC_G4_BLEND_INV_CONSTANT";
+		return "KORE_GPU_BLEND_INV_CONSTANT";
 	default: {
 		debug_context context = {0};
 		error(context, "Unknown blend mode");
@@ -313,15 +313,15 @@ static const char *convert_blend_mode(int mode) {
 static const char *convert_blend_op(int op) {
 	switch (op) {
 	case 0:
-		return "KINC_G4_BLENDOP_ADD";
+		return "KORE_GPU_BLENDOP_ADD";
 	case 1:
-		return "KINC_G4_BLENDOP_SUBTRACT";
+		return "KORE_GPU_BLENDOP_SUBTRACT";
 	case 2:
-		return "KINC_G4_BLENDOP_REVERSE_SUBTRACT";
+		return "KORE_GPU_BLENDOP_REVERSE_SUBTRACT";
 	case 3:
-		return "KINC_G4_BLENDOP_MIN";
+		return "KORE_GPU_BLENDOP_MIN";
 	case 4:
-		return "KINC_G4_BLENDOP_MAX";
+		return "KORE_GPU_BLENDOP_MAX";
 	default: {
 		debug_context context = {0};
 		error(context, "Unknown blend op");
@@ -2196,7 +2196,7 @@ void kore3_export(char *directory, api_kind api) {
 		}
 
 		if (api == API_OPENGL) {
-			fprintf(output, "\nvoid kinc_g4_internal_opengl_setup_uniform_block(unsigned program, const char *name, unsigned binding);\n");
+			fprintf(output, "\nvoid kore_opengl_setup_uniform_block(unsigned program, const char *name, unsigned binding);\n");
 		}
 
 		if (api == API_DIRECT3D12) {
@@ -2622,7 +2622,7 @@ void kore3_export(char *directory, api_kind api) {
 						else if (g->type == float_id) {
 						}
 						else {
-							fprintf(output, "\tkinc_g4_internal_opengl_setup_uniform_block(%s.impl.programId, \"_%" PRIu64 "\", %i);\n\n", get_name(t->name),
+							fprintf(output, "\tkore_opengl_setup_uniform_block(%s.impl.programId, \"_%" PRIu64 "\", %i);\n\n", get_name(t->name),
 							        g->var_index, global_register_indices[i]);
 						}
 					}
