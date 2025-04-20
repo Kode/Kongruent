@@ -681,24 +681,25 @@ static void write_functions(char *code, size_t *offset) {
 				else if (o->op_call.func == add_name("group_id")) {
 					check(o->op_call.parameters_size == 0, context, "group_id can not have a parameter");
 					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "_%" PRIu64 ": %s = _kong_group_id;\n", o->op_call.var.index, type_string(o->op_call.var.type.type));
+					*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _kong_group_id;\n", o->op_call.var.index, type_string(o->op_call.var.type.type));
 				}
 				else if (o->op_call.func == add_name("group_thread_id")) {
 					check(o->op_call.parameters_size == 0, context, "group_thread_id can not have a parameter");
 					indent(code, offset, indentation);
 					*offset +=
-					    sprintf(&code[*offset], "_%" PRIu64 ": %s = _kong_group_thread_id;\n", o->op_call.var.index, type_string(o->op_call.var.type.type));
+					    sprintf(&code[*offset], "var _%" PRIu64 ": %s = _kong_group_thread_id;\n", o->op_call.var.index, type_string(o->op_call.var.type.type));
 				}
 				else if (o->op_call.func == add_name("dispatch_thread_id")) {
 					check(o->op_call.parameters_size == 0, context, "dispatch_thread_id can not have a parameter");
 					indent(code, offset, indentation);
-					*offset +=
-					    sprintf(&code[*offset], "_%" PRIu64 ": %s = _kong_dispatch_thread_id;\n", o->op_call.var.index, type_string(o->op_call.var.type.type));
+					*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _kong_dispatch_thread_id;\n", o->op_call.var.index,
+					                   type_string(o->op_call.var.type.type));
 				}
 				else if (o->op_call.func == add_name("group_index")) {
 					check(o->op_call.parameters_size == 0, context, "group_index can not have a parameter");
 					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "_%" PRIu64 ": %s = _kong_group_index;\n", o->op_call.var.index, type_string(o->op_call.var.type.type));
+					*offset +=
+					    sprintf(&code[*offset], "var _%" PRIu64 ": %s = _kong_group_index;\n", o->op_call.var.index, type_string(o->op_call.var.type.type));
 				}
 				else {
 					const char *function_name = get_name(o->op_call.func);
