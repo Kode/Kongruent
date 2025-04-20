@@ -341,6 +341,8 @@ static function_id vertex_functions[256];
 static size_t      vertex_functions_size = 0;
 static function_id fragment_functions[256];
 static size_t      fragment_functions_size = 0;
+static function_id compute_functions[256];
+static size_t      compute_functions_size = 0;
 
 static bool is_vertex_function(function_id f) {
 	for (size_t i = 0; i < vertex_functions_size; ++i) {
@@ -354,6 +356,15 @@ static bool is_vertex_function(function_id f) {
 static bool is_fragment_function(function_id f) {
 	for (size_t i = 0; i < fragment_functions_size; ++i) {
 		if (f == fragment_functions[i]) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool is_compute_function(function_id f) {
+	for (size_t i = 0; i < compute_functions_size; ++i) {
+		if (f == compute_functions[i]) {
 			return true;
 		}
 	}
@@ -438,7 +449,19 @@ static void write_functions(char *code, size_t *offset) {
 				*offset += sprintf(&code[*offset], ") -> @location(0) %s {\n", type_string(f->return_type.type));
 			}
 		}
+		else if (is_compute_function(i)) {
+			assert(f->parameters_size == 0);
 
+			attribute *threads = find_attribute(&f->attributes, add_name("threads"));
+			assert(threads != NULL && threads->paramters_count == 3);
+
+			*offset += sprintf(&code[*offset],
+			                   "@compute @workgroup_size(%u, %u, %u) %s %s(@builtin(local_invocation_id) _kore_group_thread_id: vec3<u32>, "
+			                   "@builtin(workgroup_id) _kore_group_id: vec3<u32>, @builtin(global_invocation_id) _kore_dispatch_thread_id: vec3<u32>, "
+			                   "@builtin(num_workgroups) _kong_threads_count: vec3<u32>, @builtin(local_invocation_index) _kong_group_index: u32) {\n",
+			                   (uint32_t)threads->parameters[0], (uint32_t)threads->parameters[1], (uint32_t)threads->parameters[2],
+			                   type_string(f->return_type.type), get_name(f->name));
+		}
 		else {
 			*offset += sprintf(&code[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
@@ -655,6 +678,28 @@ static void write_functions(char *code, size_t *offset) {
 					                   o->op_call.var.index, type_string(o->op_call.var.type.type), o->op_call.parameters[0].index,
 					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index, o->op_call.parameters[3].index);
 				}
+				else if (o->op_call.func == add_name("group_id")) {
+					check(o->op_call.parameters_size == 0, context, "group_id can not have a parameter");
+					indent(code, offset, indentation);
+					*offset += sprintf(&code[*offset], "_%" PRIu64 ": %s = _kong_group_id;\n", o->op_call.var.index, type_string(o->op_call.var.type.type));
+				}
+				else if (o->op_call.func == add_name("group_thread_id")) {
+					check(o->op_call.parameters_size == 0, context, "group_thread_id can not have a parameter");
+					indent(code, offset, indentation);
+					*offset +=
+					    sprintf(&code[*offset], "_%" PRIu64 ": %s = _kong_group_thread_id;\n", o->op_call.var.index, type_string(o->op_call.var.type.type));
+				}
+				else if (o->op_call.func == add_name("dispatch_thread_id")) {
+					check(o->op_call.parameters_size == 0, context, "dispatch_thread_id can not have a parameter");
+					indent(code, offset, indentation);
+					*offset +=
+					    sprintf(&code[*offset], "_%" PRIu64 ": %s = _kong_dispatch_thread_id;\n", o->op_call.var.index, type_string(o->op_call.var.type.type));
+				}
+				else if (o->op_call.func == add_name("group_index")) {
+					check(o->op_call.parameters_size == 0, context, "group_index can not have a parameter");
+					indent(code, offset, indentation);
+					*offset += sprintf(&code[*offset], "_%" PRIu64 ": %s = _kong_group_index;\n", o->op_call.var.index, type_string(o->op_call.var.type.type));
+				}
 				else {
 					const char *function_name = get_name(o->op_call.func);
 					if (o->op_call.func == add_name("float2")) {
@@ -746,6 +791,14 @@ void wgsl_export(char *directory) {
 					fragment_inputs_size += 1;
 				}
 			}
+		}
+	}
+
+	for (function_id function_index = 0; get_function(function_index) != NULL; ++function_index) {
+		function *f = get_function(function_index);
+		if (find_attribute(&f->attributes, add_name("compute")) != NULL) {
+			compute_functions[compute_functions_size] = function_index;
+			compute_functions_size += 1;
 		}
 	}
 
