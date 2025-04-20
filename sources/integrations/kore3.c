@@ -1662,9 +1662,9 @@ void kore3_export(char *directory, api_kind api) {
 						else {
 							fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2D,\n");
 						}
-						fprintf(output, "\t\t.baseArrayLayer = parameters->%s.base_array_layer,\n", get_name(g->name));
+						fprintf(output, "\t\t.baseArrayLayer  = parameters->%s.base_array_layer,\n", get_name(g->name));
 						fprintf(output, "\t\t.arrayLayerCount = parameters->%s.array_layer_count,\n", get_name(g->name));
-						fprintf(output, "\t\t.baseMipLevel   = parameters->%s.base_mip_level,\n", get_name(g->name));
+						fprintf(output, "\t\t.baseMipLevel    = parameters->%s.base_mip_level,\n", get_name(g->name));
 						fprintf(output, "\t\t.mipLevelCount   = parameters->%s.mip_level_count,\n", get_name(g->name));
 						fprintf(output, "\t};\n\n");
 					}
@@ -1680,16 +1680,16 @@ void kore3_export(char *directory, api_kind api) {
 					if (!get_type(g->type)->built_in) {
 						fprintf(output, "\t\t{\n");
 						fprintf(output, "\t\t\t.binding = %zu,\n", index);
-						fprintf(output, "\t\t\t.buffer = parameters->%s->webgpu.buffer,\n", get_name(g->name));
-						fprintf(output, "\t\t\t.offset = 0,\n");
-						fprintf(output, "\t\t\t.size = align_pow2(%u, 256),\n", struct_size(g->type));
+						fprintf(output, "\t\t\t.buffer  = parameters->%s->webgpu.buffer,\n", get_name(g->name));
+						fprintf(output, "\t\t\t.offset  = 0,\n");
+						fprintf(output, "\t\t\t.size    = align_pow2(%u, 256),\n", struct_size(g->type));
 						fprintf(output, "\t\t},\n");
 
 						index += 1;
 					}
 					else if (is_texture(g->type)) {
 						fprintf(output, "\t\t{\n");
-						fprintf(output, "\t\t\t.binding = %zu,\n", index);
+						fprintf(output, "\t\t\t.binding     = %zu,\n", index);
 						fprintf(output, "\t\t\t.textureView = wgpuTextureCreateView(parameters->%s.texture->webgpu.texture, &texture_view_descriptor%zu),\n",
 						        get_name(g->name), global_index);
 						fprintf(output, "\t\t},\n");
@@ -1714,8 +1714,8 @@ void kore3_export(char *directory, api_kind api) {
 				}
 
 				fprintf(output, "\tWGPUBindGroupDescriptor bind_group_descriptor = {\n");
-				fprintf(output, "\t\t.layout = %s_set_layout,\n", get_name(set->name));
-				fprintf(output, "\t\t.entries = entries,\n");
+				fprintf(output, "\t\t.layout     = %s_set_layout,\n", get_name(set->name));
+				fprintf(output, "\t\t.entries    = entries,\n");
 				fprintf(output, "\t\t.entryCount = %zu,\n", set->globals.size);
 				fprintf(output, "\t};\n");
 
