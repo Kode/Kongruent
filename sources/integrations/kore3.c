@@ -1656,7 +1656,12 @@ void kore3_export(char *directory, api_kind api) {
 					if (is_texture(g->type)) {
 						fprintf(output, "\tWGPUTextureViewDescriptor texture_view_descriptor%zu = {\n", global_index);
 						fprintf(output, "\t\t.format = kore_webgpu_convert_texture_format(parameters->%s.texture->webgpu.format),\n", get_name(g->name));
-						fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2D,\n");
+						if (g->type == tex2darray_type_id) {
+							fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2DArray,\n");
+						}
+						else {
+							fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2D,\n");
+						}
 						fprintf(output, "\t\t.arrayLayerCount = 1,\n");
 						fprintf(output, "\t\t.mipLevelCount   = 1,\n");
 						fprintf(output, "\t};\n\n");
@@ -2907,10 +2912,10 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 					if (writable) {
-						fprintf(output, "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2D},\n");
+						fprintf(output, "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2DArray},\n");
 					}
 					else {
-						fprintf(output, "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_2D},\n");
+						fprintf(output, "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_2DArray},\n");
 					}
 					fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
 					fprintf(output, "\t\t\t},\n");

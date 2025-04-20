@@ -313,6 +313,9 @@ static void write_globals(char *wgsl, size_t *offset) {
 		else if (g->type == tex2d_type_id) {
 			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%u) var _%" PRIu64 ": texture_2d<f32>;\n\n", binding, g->var_index);
 		}
+		else if (g->type == tex2darray_type_id) {
+			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%u) var _%" PRIu64 ": texture_2d_array<f32>;\n\n", binding, g->var_index);
+		}
 		else if (g->type == texcube_type_id) {
 			*offset += sprintf(&wgsl[*offset], "@group(0) @binding(%u) var _%" PRIu64 ": texture_cube<f32>;\n\n", binding, g->var_index);
 		}
@@ -630,9 +633,20 @@ static void write_functions(char *code, size_t *offset) {
 				if (o->op_call.func == add_name("sample")) {
 					check(o->op_call.parameters_size == 3, context, "sample requires three arguments");
 					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = textureSample(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
-					                   o->op_call.var.index, type_string(o->op_call.var.type.type), o->op_call.parameters[0].index,
-					                   o->op_call.parameters[1].index, o->op_call.parameters[2].index);
+
+					variable tex     = o->op_call.parameters[0];
+					variable sampler = o->op_call.parameters[1];
+					variable coord   = o->op_call.parameters[2];
+
+					if (tex.type.type == tex2darray_type_id) {
+						*offset +=
+						    sprintf(&code[*offset], "var _%" PRIu64 ": %s = textureSample(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ".xy, u32(_%" PRIu64 ".z));\n",
+						            o->op_call.var.index, type_string(o->op_call.var.type.type), tex.index, sampler.index, coord.index, coord.index);
+					}
+					else {
+						*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = textureSample(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
+						                   o->op_call.var.index, type_string(o->op_call.var.type.type), tex.index, sampler.index, coord.index);
+					}
 				}
 				else if (o->op_call.func == add_name("sample_lod")) {
 					check(o->op_call.parameters_size == 4, context, "sample_lod requires four arguments");
