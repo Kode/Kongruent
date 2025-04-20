@@ -1223,7 +1223,7 @@ void kore3_export(char *directory, api_kind api) {
 								if (t->members.m[j].type.type == float4x4_id && (api != API_METAL && api != API_VULKAN && api != API_WEBGPU)) {
 									fprintf(output, "\tkore_matrix4x4_transpose(&data->%s);\n", get_name(t->members.m[j].name));
 								}
-								else if (t->members.m[j].type.type == float3x3_id && (api == API_METAL || api == API_VULKAN)) {
+								else if (t->members.m[j].type.type == float3x3_id && (api == API_METAL || api == API_VULKAN || api == API_WEBGPU)) {
 									fprintf(output, "\t{\n");
 									fprintf(output, "\t\tkore_matrix3x3 m = data->%s;\n", get_name(t->members.m[j].name));
 									fprintf(output, "\t\tfloat *m_data = (float *)&data->%s;\n", get_name(t->members.m[j].name));
