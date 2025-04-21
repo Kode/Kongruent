@@ -451,19 +451,19 @@ static void write_functions(char *code, size_t *offset) {
 		}
 		else if (is_compute_function(i)) {
 			assert(f->parameters_size == 0);
+			assert(f->return_type.type == void_id);
 
 			attribute *threads = find_attribute(&f->attributes, add_name("threads"));
 			assert(threads != NULL && threads->paramters_count == 3);
 
 			*offset += sprintf(&code[*offset],
-			                   "@compute @workgroup_size(%u, %u, %u) %s %s(@builtin(local_invocation_id) _kore_group_thread_id: vec3<u32>, "
+			                   "@compute @workgroup_size(%u, %u, %u) fn %s(@builtin(local_invocation_id) _kore_group_thread_id: vec3<u32>, "
 			                   "@builtin(workgroup_id) _kore_group_id: vec3<u32>, @builtin(global_invocation_id) _kore_dispatch_thread_id: vec3<u32>, "
 			                   "@builtin(num_workgroups) _kong_threads_count: vec3<u32>, @builtin(local_invocation_index) _kong_group_index: u32) {\n",
-			                   (uint32_t)threads->parameters[0], (uint32_t)threads->parameters[1], (uint32_t)threads->parameters[2],
-			                   type_string(f->return_type.type), get_name(f->name));
+			                   (uint32_t)threads->parameters[0], (uint32_t)threads->parameters[1], (uint32_t)threads->parameters[2], get_name(f->name));
 		}
 		else {
-			*offset += sprintf(&code[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
+			*offset += sprintf(&code[*offset], "fn %s(", get_name(f->name));
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 				if (parameter_index == 0) {
 					*offset += sprintf(&code[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
@@ -472,7 +472,7 @@ static void write_functions(char *code, size_t *offset) {
 					*offset += sprintf(&code[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 				}
 			}
-			*offset += sprintf(&code[*offset], ") {\n");
+			*offset += sprintf(&code[*offset], ") -> %s {\n", type_string(f->return_type.type));
 		}
 
 		int indentation = 1;
