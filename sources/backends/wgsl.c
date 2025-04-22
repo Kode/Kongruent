@@ -357,10 +357,12 @@ static void write_globals(char *wgsl, size_t *offset) {
 			else if (g->type == tex2darray_type_id) {
 				*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_2d_array<f32>;\n\n", set_index, binding,
 				                   set_index, g->var_index);
+				binding += 1;
 			}
 			else if (g->type == texcube_type_id) {
 				*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_cube<f32>;\n\n", set_index, binding, set_index,
 				                   g->var_index);
+				binding += 1;
 			}
 			else if (base_type == bvh_type_id) {
 				assert(false);
