@@ -2587,8 +2587,8 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t{\n");
 
 					if (group->size == 0) {
-						fprintf(output, "\t\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters, NULL, 0);\n", api_short, api_short,
-						        get_name(t->name), get_name(t->name));
+						fprintf(output, "\t\tkore_webgpu_render_pipeline_init(&device->webgpu, &%s, &%s_parameters, NULL, 0);\n", get_name(t->name),
+						        get_name(t->name));
 					}
 					else {
 
@@ -2598,8 +2598,8 @@ void kore3_export(char *directory, api_kind api) {
 							fprintf(output, "\t\tlayouts[%zu] = %s_set_layout;\n", layout_index, get_name(group->values[layout_index]->name));
 						}
 
-						fprintf(output, "\t\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters, layouts, %zu);\n", api_short, api_short,
-						        get_name(t->name), get_name(t->name), group->size);
+						fprintf(output, "\t\tkore_webgpu_render_pipeline_init(&device->webgpu, &%s, &%s_parameters, layouts, %zu);\n", get_name(t->name),
+						        get_name(t->name), group->size);
 					}
 
 					fprintf(output, "\t}\n");
@@ -2662,6 +2662,29 @@ void kore3_export(char *directory, api_kind api) {
 
 						fprintf(output, "\t\tkore_%s_compute_pipeline_init(&device->%s, &%s, &%s_parameters, layouts, %zu);\n", api_short, api_short,
 						        get_name(f->name), get_name(f->name), group->size);
+					}
+
+					fprintf(output, "\t}\n");
+				}
+				else if (api == API_WEBGPU) {
+					descriptor_set_group *group = find_descriptor_set_group_for_function(f);
+
+					fprintf(output, "\t{\n");
+
+					if (group->size == 0) {
+						fprintf(output, "\t\tkore_webgpu_render_pipeline_init(&device->webgpu, &%s, &%s_parameters, NULL, 0);\n", get_name(f->name),
+						        get_name(f->name));
+					}
+					else {
+
+						fprintf(output, "\t\tWGPUBindGroupLayout layouts[%zu];\n", group->size);
+
+						for (size_t layout_index = 0; layout_index < group->size; ++layout_index) {
+							fprintf(output, "\t\tlayouts[%zu] = %s_set_layout;\n", layout_index, get_name(group->values[layout_index]->name));
+						}
+
+						fprintf(output, "\t\tkore_webgpu_compute_pipeline_init(&device->webgpu, &%s, &%s_parameters, layouts, %zu);\n", get_name(f->name),
+						        get_name(f->name), group->size);
 					}
 
 					fprintf(output, "\t}\n");
@@ -2914,7 +2937,8 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 					if (writable) {
-						fprintf(output, "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2DArray},\n");
+						fprintf(output, "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2DArray, .format = WGPUTextureFormat_RGBA8Unorm, "
+						                ".access = WGPUStorageTextureAccess_WriteOnly},\n");
 					}
 					else {
 						fprintf(output, "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_2DArray},\n");
