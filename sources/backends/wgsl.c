@@ -345,7 +345,7 @@ static void write_globals(char *wgsl, size_t *offset) {
 					assert(false);
 				}
 				else if (writable) {
-					*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_storage_2d<rgba8unorm, write>;\n\n",
+					*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_storage_2d<rgba32float, write>;\n\n",
 					                   set_index, binding, set_index, g->var_index);
 				}
 				else {

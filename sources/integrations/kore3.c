@@ -1063,9 +1063,11 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "}\n\n");
 		}
 
-		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
-			descriptor_set *set = sets[set_index];
-			fprintf(output, "static uint32_t %s_table_index = UINT32_MAX;\n\n", get_name(set->name));
+		if (api != API_WEBGPU) {
+			for (size_t set_index = 0; set_index < sets_count; ++set_index) {
+				descriptor_set *set = sets[set_index];
+				fprintf(output, "static uint32_t %s_table_index = UINT32_MAX;\n\n", get_name(set->name));
+			}
 		}
 
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
@@ -1075,9 +1077,11 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, "void kong_set_render_pipeline_%s(kore_gpu_command_list *list) {\n", get_name(t->name));
 				fprintf(output, "\tkore_%s_command_list_set_render_pipeline(list, &%s);\n", api_short, get_name(t->name));
 
-				descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
-				for (size_t group_index = 0; group_index < group->size; ++group_index) {
-					fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+				if (api != API_WEBGPU) {
+					descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
+					for (size_t group_index = 0; group_index < group->size; ++group_index) {
+						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+					}
 				}
 
 				fprintf(output, "}\n\n");
@@ -2131,7 +2135,19 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, ");\n");
 				}
 				else if (api == API_WEBGPU) {
-					fprintf(output, "\n\tkore_%s_command_list_set_bind_group(list, %s_table_index, &set->set", api_short, get_name(set->name));
+					bool   found            = false;
+					size_t global_set_index = 0;
+
+					for (; global_set_index < get_sets_count(); ++global_set_index) {
+						if (get_set(global_set_index) == set) {
+							found = true;
+							break;
+						}
+					}
+
+					assert(found);
+
+					fprintf(output, "\n\tkore_webgpu_command_list_set_bind_group(list, %zu, &set->set", global_set_index);
 					if (dynamic_count > 0) {
 						fprintf(output, ", %u, dynamic_offsets", dynamic_count);
 					}
@@ -2188,9 +2204,11 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\tkore_%s_command_list_set_compute_pipeline(list, &%s);\n", api_short, get_name(f->name));
 				}
 
-				descriptor_set_group *group = find_descriptor_set_group_for_function(f);
-				for (size_t group_index = 0; group_index < group->size; ++group_index) {
-					fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+				if (api != API_WEBGPU) {
+					descriptor_set_group *group = find_descriptor_set_group_for_function(f);
+					for (size_t group_index = 0; group_index < group->size; ++group_index) {
+						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+					}
 				}
 
 				fprintf(output, "}\n\n");
@@ -2582,6 +2600,7 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t}\n");
 				}
 				else if (api == API_WEBGPU) {
+
 					descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
 
 					fprintf(output, "\t{\n");
@@ -2592,14 +2611,27 @@ void kore3_export(char *directory, api_kind api) {
 					}
 					else {
 
-						fprintf(output, "\t\tWGPUBindGroupLayout layouts[%zu];\n", group->size);
+						fprintf(output, "\t\tWGPUBindGroupLayout layouts[%zu];\n", get_sets_count());
 
-						for (size_t layout_index = 0; layout_index < group->size; ++layout_index) {
-							fprintf(output, "\t\tlayouts[%zu] = %s_set_layout;\n", layout_index, get_name(group->values[layout_index]->name));
+						for (size_t layout_index = 0; layout_index < get_sets_count(); ++layout_index) {
+							bool found = false;
+							for (size_t layout_in_group_index = 0; layout_in_group_index < group->size; ++layout_in_group_index) {
+								if (get_set(layout_index) == group->values[layout_in_group_index]) {
+									found = true;
+									break;
+								}
+							}
+
+							if (found) {
+								fprintf(output, "\t\tlayouts[%zu] = %s_set_layout;\n", layout_index, get_name(get_set(layout_index)->name));
+							}
+							else {
+								fprintf(output, "\t\tlayouts[%zu] = NULL;\n", layout_index);
+							}
 						}
 
 						fprintf(output, "\t\tkore_webgpu_render_pipeline_init(&device->webgpu, &%s, &%s_parameters, layouts, %zu);\n", get_name(t->name),
-						        get_name(t->name), group->size);
+						        get_name(t->name), get_sets_count());
 					}
 
 					fprintf(output, "\t}\n");
@@ -2676,15 +2708,27 @@ void kore3_export(char *directory, api_kind api) {
 						        get_name(f->name));
 					}
 					else {
+						fprintf(output, "\t\tWGPUBindGroupLayout layouts[%zu];\n", get_sets_count());
 
-						fprintf(output, "\t\tWGPUBindGroupLayout layouts[%zu];\n", group->size);
+						for (size_t layout_index = 0; layout_index < get_sets_count(); ++layout_index) {
+							bool found = false;
+							for (size_t layout_in_group_index = 0; layout_in_group_index < group->size; ++layout_in_group_index) {
+								if (get_set(layout_index) == group->values[layout_in_group_index]) {
+									found = true;
+									break;
+								}
+							}
 
-						for (size_t layout_index = 0; layout_index < group->size; ++layout_index) {
-							fprintf(output, "\t\tlayouts[%zu] = %s_set_layout;\n", layout_index, get_name(group->values[layout_index]->name));
+							if (found) {
+								fprintf(output, "\t\tlayouts[%zu] = %s_set_layout;\n", layout_index, get_name(get_set(layout_index)->name));
+							}
+							else {
+								fprintf(output, "\t\tlayouts[%zu] = NULL;\n", layout_index);
+							}
 						}
 
 						fprintf(output, "\t\tkore_webgpu_compute_pipeline_init(&device->webgpu, &%s, &%s_parameters, layouts, %zu);\n", get_name(f->name),
-						        get_name(f->name), group->size);
+						        get_name(f->name), get_sets_count());
 					}
 
 					fprintf(output, "\t}\n");
@@ -2925,25 +2969,37 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 					if (writable) {
-						fprintf(output, "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2D},\n");
+						fprintf(output, "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2D, .format = WGPUTextureFormat_RGBA32Float, "
+						                ".access = WGPUStorageTextureAccess_WriteOnly},\n");
 					}
 					else {
 						fprintf(output, "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_2D},\n");
 					}
-					fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+					if (writable) {
+						fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+					}
+					else {
+						fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+					}
 					fprintf(output, "\t\t\t},\n");
 				}
 				else if (g->type == tex2darray_type_id) {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 					if (writable) {
-						fprintf(output, "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2DArray, .format = WGPUTextureFormat_RGBA8Unorm, "
-						                ".access = WGPUStorageTextureAccess_WriteOnly},\n");
+						fprintf(output,
+						        "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2DArray, .format = WGPUTextureFormat_RGBA32Float, "
+						        ".access = WGPUStorageTextureAccess_WriteOnly},\n");
 					}
 					else {
 						fprintf(output, "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_2DArray},\n");
 					}
-					fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+					if (writable) {
+						fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+					}
+					else {
+						fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+					}
 					fprintf(output, "\t\t\t},\n");
 				}
 				else if (g->type == texcube_type_id) {
