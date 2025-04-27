@@ -137,8 +137,6 @@ static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id 
 	}
 }
 
-static int global_register_indices[512];
-
 static void write_globals(char *glsl, size_t *offset, function *main) {
 	global_array globals = {0};
 
@@ -146,7 +144,6 @@ static void write_globals(char *glsl, size_t *offset, function *main) {
 
 	for (size_t i = 0; i < globals.size; ++i) {
 		global *g = get_global(globals.globals[i]);
-		// int register_index = global_register_indices[globals[i]];
 
 		if (g->type == sampler_type_id) {
 		}
@@ -553,26 +550,6 @@ void glsl_export(char *directory) {
 	int cbuffer_index = 0;
 	int texture_index = 0;
 	int sampler_index = 0;
-
-	memset(global_register_indices, 0, sizeof(global_register_indices));
-
-	for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
-		global *g = get_global(i);
-		if (g->type == sampler_type_id) {
-			global_register_indices[i] = sampler_index;
-			sampler_index += 1;
-		}
-		else if (g->type == tex2d_type_id || g->type == texcube_type_id) {
-			global_register_indices[i] = texture_index;
-			texture_index += 1;
-		}
-		else if (g->type == float_id) {
-		}
-		else {
-			global_register_indices[i] = cbuffer_index;
-			cbuffer_index += 1;
-		}
-	}
 
 	function *vertex_shaders[256];
 	size_t    vertex_shaders_size = 0;

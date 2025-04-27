@@ -1070,18 +1070,113 @@ void kore3_export(char *directory, api_kind api) {
 			}
 		}
 
+		if (api == API_OPENGL) {
+			fprintf(output, "static uint32_t current_program;\n\n");
+		}
+
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 				fprintf(output, "static kore_%s_render_pipeline %s;\n\n", api_short, get_name(t->name));
+
+				name_id vertex_shader_name   = NO_NAME;
+				name_id fragment_shader_name = NO_NAME;
+
+				function *vertex_function   = NULL;
+				function *fragment_function = NULL;
+
+				global_array globals = {0};
+
+				if (api == API_OPENGL) {
+					for (global_id i = 0; get_global(i) != NULL; ++i) {
+						global *g = get_global(i);
+						if (g->type == sampler_type_id) {
+						}
+						else if (is_texture(g->type)) {
+						}
+						else if (g->type == float_id) {
+						}
+						else if (!get_type(g->type)->built_in) {
+							fprintf(output, "static uint32_t _%" PRIu64 "_uniform_block_index;\n", g->var_index);
+						}
+					}
+
+					for (size_t j = 0; j < t->members.size; ++j) {
+						if (t->members.m[j].name == add_name("vertex")) {
+							vertex_shader_name = t->members.m[j].value.identifier;
+						}
+						if (t->members.m[j].name == add_name("fragment")) {
+							fragment_shader_name = t->members.m[j].value.identifier;
+						}
+					}
+
+					assert(vertex_shader_name != NO_NAME);
+					assert(fragment_shader_name != NO_NAME);
+
+					for (function_id i = 0; get_function(i) != NULL; ++i) {
+						function *f = get_function(i);
+
+						if (f->name == vertex_shader_name) {
+							vertex_function = f;
+						}
+
+						if (f->name == fragment_shader_name) {
+							fragment_function = f;
+						}
+
+						if (vertex_function != NULL && fragment_function != NULL) {
+							break;
+						}
+					}
+
+					assert(vertex_function != NULL);
+					assert(fragment_function != NULL);
+
+					find_referenced_globals(vertex_function, &globals);
+					find_referenced_globals(fragment_function, &globals);
+
+					for (uint32_t i = 0; i < globals.size; ++i) {
+						global *g = get_global(globals.globals[i]);
+						if (g->type == sampler_type_id) {
+						}
+						else if (is_texture(g->type)) {
+						}
+						else if (g->type == float_id) {
+						}
+						else {
+							fprintf(output, "static uint32_t %s_%" PRIu64 "_uniform_block_index;\n", get_name(t->name), g->var_index);
+						}
+					}
+				}
+
 				fprintf(output, "void kong_set_render_pipeline_%s(kore_gpu_command_list *list) {\n", get_name(t->name));
 				fprintf(output, "\tkore_%s_command_list_set_render_pipeline(list, &%s);\n", api_short, get_name(t->name));
+
+				if (api == API_OPENGL) {
+					for (uint32_t i = 0; i < globals.size; ++i) {
+						global *g = get_global(globals.globals[i]);
+						if (g->type == sampler_type_id) {
+						}
+						else if (is_texture(g->type)) {
+						}
+						else if (g->type == float_id) {
+						}
+						else {
+							fprintf(output, "\t_%" PRIu64 "_uniform_block_index = %s_%" PRIu64 "_uniform_block_index;\n\n", g->var_index, get_name(t->name),
+							        g->var_index);
+						}
+					}
+				}
 
 				if (api != API_WEBGPU) {
 					descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
 					for (size_t group_index = 0; group_index < group->size; ++group_index) {
 						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
 					}
+				}
+
+				if (api == API_OPENGL) {
+					fprintf(output, "\tcurrent_program = %s.program;\n", get_name(t->name));
 				}
 
 				fprintf(output, "}\n\n");
@@ -1176,6 +1271,11 @@ void kore3_export(char *directory, api_kind api) {
 					else if (api == API_DIRECT3D12) {
 						fprintf(output, "uint32_t %s_buffer_usage_flags(void) {\n", type_name);
 						fprintf(output, "\treturn KORE_D3D12_BUFFER_USAGE_CBV;\n");
+						fprintf(output, "}\n\n");
+					}
+					else if (api == API_OPENGL) {
+						fprintf(output, "uint32_t %s_buffer_usage_flags(void) {\n", type_name);
+						fprintf(output, "\treturn KORE_OPENGL_BUFFER_USAGE_UNIFORM;\n");
 						fprintf(output, "}\n\n");
 					}
 					else {
@@ -1729,140 +1829,12 @@ void kore3_export(char *directory, api_kind api) {
 
 				fprintf(output, "}\n\n");
 			}
-			else {
-				size_t other_count    = 0;
-				size_t sampler_count  = 0;
-				size_t dynamic_count  = 0;
-				size_t bindless_count = 0;
-
+			else if (api == API_OPENGL) {
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					global *g = get_global(set->globals.globals[global_index]);
-
-					if (!get_type(g->type)->built_in) {
-						if (has_attribute(&g->attributes, add_name("indexed"))) {
-							dynamic_count += 1;
-						}
-						else {
-							other_count += 1;
-						}
-					}
-					else if (is_texture(g->type)) {
-						type *t = get_type(g->type);
-						if (t->array_size == UINT32_MAX) {
-							bindless_count += 1;
-						}
-						else {
-							other_count += 1;
-						}
-					}
-					else if (is_sampler(g->type)) {
-						sampler_count += 1;
-					}
-					else {
-						if (has_attribute(&g->attributes, add_name("indexed"))) {
-							dynamic_count += 1;
-						}
-						else {
-							other_count += 1;
-						}
-					}
+					fprintf(output, "\tset->%s = parameters->%s;\n\n", get_name(g->name), get_name(g->name));
 				}
 
-				fprintf(output, "\tkore_%s_device_create_descriptor_set(device, %zu, %zu, %zu, %zu, &set->set);\n", api_short, other_count, dynamic_count,
-				        bindless_count, sampler_count);
-
-				size_t other_index   = 0;
-				size_t sampler_index = 0;
-
-				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
-					global *g            = get_global(set->globals.globals[global_index]);
-					bool    writable     = set->globals.writable[global_index];
-					type_id base_type_id = get_type(g->type)->base != NO_TYPE ? get_type(g->type)->base : g->type;
-
-					if (!get_type(g->type)->built_in) {
-						if (!has_attribute(&g->attributes, add_name("indexed"))) {
-							fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_cbv(device, &set->set, parameters->%s, %zu);\n", api_short,
-							        get_name(g->name), other_index);
-							other_index += 1;
-						}
-						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
-					}
-					else if (base_type_id == bvh_type_id) {
-						fprintf(output, "\tkore_%s_descriptor_set_set_bvh_view_srv(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
-						        other_index);
-						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
-						other_index += 1;
-					}
-					else if (base_type_id == tex2d_type_id) {
-						type *t = get_type(g->type);
-						if (t->array_size == UINT32_MAX) {
-							fprintf(output, "\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) * parameters->textures_count);\n",
-							        get_name(g->name));
-							fprintf(output, "\tassert(set->%s != NULL);\n", get_name(g->name));
-							fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
-							fprintf(output,
-							        "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
-							        "&parameters->%s[index]);\n",
-							        api_short, get_name(g->name));
-							fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(g->name), get_name(g->name));
-							fprintf(output, "\t}\n");
-
-							fprintf(output, "\tset->%s_count = parameters->%s_count;\n", get_name(g->name), get_name(g->name));
-						}
-						else {
-							if (writable) {
-								fprintf(output, "\tkore_%s_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %zu);\n", api_short,
-								        get_name(g->name), other_index);
-							}
-							else {
-								fprintf(output,
-								        "\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %zu, "
-								        "&parameters->%s);\n",
-								        api_short, other_index, get_name(g->name));
-							}
-
-							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
-
-							other_index += 1;
-						}
-					}
-					else if (base_type_id == tex2darray_type_id) {
-						if (writable) {
-							debug_context context = {0};
-							error(context, "Texture arrays can not be writable");
-						}
-
-						fprintf(output, "\tkore_%s_descriptor_set_set_texture_array_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
-						        get_name(g->name), other_index);
-
-						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
-						other_index += 1;
-					}
-					else if (base_type_id == texcube_type_id) {
-						if (writable) {
-							debug_context context = {0};
-							error(context, "Cube maps can not be writable");
-						}
-						fprintf(output, "\tkore_%s_descriptor_set_set_texture_cube_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
-						        get_name(g->name), other_index);
-
-						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
-						other_index += 1;
-					}
-					else if (is_sampler(g->type)) {
-						fprintf(output, "\tkore_%s_descriptor_set_set_sampler(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
-						        sampler_index);
-						sampler_index += 1;
-					}
-					else {
-						if (!has_attribute(&g->attributes, add_name("indexed"))) {
-							fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_uav(device, &set->set, parameters->%s, %zu);\n", api_short,
-							        get_name(g->name), other_index);
-							other_index += 1;
-						}
-						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
-					}
-				}
 				fprintf(output, "}\n\n");
 			}
 
@@ -2024,7 +1996,7 @@ void kore3_export(char *directory, api_kind api) {
 					}
 				}
 			}
-			else {
+			else if (api == API_OPENGL) {
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					global *g        = get_global(set->globals.globals[global_index]);
 					bool    writable = set->globals.writable[global_index];
@@ -2037,7 +2009,9 @@ void kore3_export(char *directory, api_kind api) {
 							        api_short, get_name(g->name), get_name(g->name), struct_size(g->type), struct_size(g->type));
 						}
 						else {
-							fprintf(output, "\tkore_%s_descriptor_set_prepare_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short, get_name(g->name));
+							fprintf(output,
+							        "\tkore_opengl_command_list_set_uniform_buffer(list, current_program, set->%s, _%" PRIu64 "_uniform_block_index);\n",
+							        get_name(g->name), g->var_index);
 						}
 					}
 					else if (is_texture(g->type)) {
@@ -2156,8 +2130,8 @@ void kore3_export(char *directory, api_kind api) {
 					}
 					fprintf(output, ");\n");
 				}
-				else {
-					fprintf(output, "\n\tkore_%s_command_list_set_descriptor_table(list, %s_table_index, &set->set", api_short, get_name(set->name));
+				else if (api == API_OPENGL) {
+					fprintf(output, "\tkore_%s_command_list_set_descriptor_table(list, %s_table_index, &set->set", api_short, get_name(set->name));
 					if (dynamic_count > 0) {
 						fprintf(output, ", dynamic_buffers, dynamic_offsets, dynamic_sizes");
 					}
@@ -2216,7 +2190,7 @@ void kore3_export(char *directory, api_kind api) {
 		}
 
 		if (api == API_OPENGL) {
-			fprintf(output, "\nvoid kore_opengl_setup_uniform_block(unsigned program, const char *name, unsigned binding);\n");
+			fprintf(output, "\nuint32_t kore_opengl_find_uniform_block_index(unsigned program, const char *name);\n");
 		}
 
 		if (api == API_DIRECT3D12) {
@@ -2656,8 +2630,8 @@ void kore3_export(char *directory, api_kind api) {
 						else if (g->type == float_id) {
 						}
 						else {
-							fprintf(output, "\tkore_opengl_setup_uniform_block(%s.impl.programId, \"_%" PRIu64 "\", %i);\n\n", get_name(t->name), g->var_index,
-							        global_register_indices[i]);
+							fprintf(output, "\t%s_%" PRIu64 "_uniform_block_index = kore_opengl_find_uniform_block_index(%s.program, \"_%" PRIu64 "\");\n\n",
+							        get_name(t->name), g->var_index, get_name(t->name), g->var_index);
 						}
 					}
 				}
