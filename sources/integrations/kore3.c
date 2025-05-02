@@ -2014,10 +2014,10 @@ void kore3_export(char *directory, api_kind api) {
 						}
 						else {
 							if (writable) {
-								fprintf(output, "\tkore_%s_descriptor_set_prepare_texture(list, &set->%s, true);\n", api_short, get_name(g->name));
+								fprintf(output, "\tkore_%s_command_list_set_texture(list, &set->%s, true);\n", api_short, get_name(g->name));
 							}
 							else {
-								fprintf(output, "\tkore_%s_descriptor_set_prepare_texture(list, &set->%s, false);\n", api_short, get_name(g->name));
+								fprintf(output, "\tkore_%s_command_list_set_texture(list, &set->%s, false);\n", api_short, get_name(g->name));
 							}
 						}
 					}
