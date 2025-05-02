@@ -1070,10 +1070,6 @@ void kore3_export(char *directory, api_kind api) {
 			}
 		}
 
-		if (api == API_OPENGL) {
-			fprintf(output, "static uint32_t current_program;\n\n");
-		}
-
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
@@ -1173,10 +1169,6 @@ void kore3_export(char *directory, api_kind api) {
 					for (size_t group_index = 0; group_index < group->size; ++group_index) {
 						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
 					}
-				}
-
-				if (api == API_OPENGL) {
-					fprintf(output, "\tcurrent_program = %s.program;\n", get_name(t->name));
 				}
 
 				fprintf(output, "}\n\n");
@@ -2009,8 +2001,7 @@ void kore3_export(char *directory, api_kind api) {
 							        api_short, get_name(g->name), get_name(g->name), struct_size(g->type), struct_size(g->type));
 						}
 						else {
-							fprintf(output,
-							        "\tkore_opengl_command_list_set_uniform_buffer(list, current_program, set->%s, _%" PRIu64 "_uniform_block_index);\n",
+							fprintf(output, "\tkore_opengl_command_list_set_uniform_buffer(list, set->%s, _%" PRIu64 "_uniform_block_index);\n",
 							        get_name(g->name), g->var_index);
 						}
 					}
