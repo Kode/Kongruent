@@ -30,6 +30,9 @@ static char *type_string(type_id type) {
 	if (type == float4_id) {
 		return "vec4";
 	}
+	if (type == float3x3_id) {
+		return "mat3";
+	}
 	if (type == float4x4_id) {
 		return "mat4";
 	}

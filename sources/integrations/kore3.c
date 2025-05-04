@@ -1303,61 +1303,62 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "}\n\n");
 
 					fprintf(output, "void %s_buffer_unlock(kore_gpu_buffer *buffer) {\n", type_name);
-					if (api != API_OPENGL) {
-						bool has_matrices = false;
-						for (size_t j = 0; j < t->members.size; ++j) {
-							if (t->members.m[j].type.type == float4x4_id || t->members.m[j].type.type == float3x3_id) {
-								has_matrices = true;
-								break;
-							}
-						}
 
-						if (has_matrices) {
-							fprintf(output, "\t%s *data = (%s *)buffer->%s.locked_data;\n", type_name, type_name, api_short);
-							// adjust matrices
-							for (size_t j = 0; j < t->members.size; ++j) {
-								if (t->members.m[j].type.type == float4x4_id && (api != API_METAL && api != API_VULKAN && api != API_WEBGPU)) {
-									fprintf(output, "\tkore_matrix4x4_transpose(&data->%s);\n", get_name(t->members.m[j].name));
-								}
-								else if (t->members.m[j].type.type == float3x3_id && (api == API_METAL || api == API_VULKAN || api == API_WEBGPU)) {
-									fprintf(output, "\t{\n");
-									fprintf(output, "\t\tkore_matrix3x3 m = data->%s;\n", get_name(t->members.m[j].name));
-									fprintf(output, "\t\tfloat *m_data = (float *)&data->%s;\n", get_name(t->members.m[j].name));
-									fprintf(output, "\t\tm_data[0] = m.m[0];\n");
-									fprintf(output, "\t\tm_data[1] = m.m[3];\n");
-									fprintf(output, "\t\tm_data[2] = m.m[6];\n");
-									fprintf(output, "\t\tm_data[3] = 0.0f;\n");
-									fprintf(output, "\t\tm_data[4] = m.m[1];\n");
-									fprintf(output, "\t\tm_data[5] = m.m[4];\n");
-									fprintf(output, "\t\tm_data[6] = m.m[7];\n");
-									fprintf(output, "\t\tm_data[7] = 0.0f;\n");
-									fprintf(output, "\t\tm_data[8] = m.m[2];\n");
-									fprintf(output, "\t\tm_data[9] = m.m[5];\n");
-									fprintf(output, "\t\tm_data[10] = m.m[8];\n");
-									fprintf(output, "\t\tm_data[11] = 0.0f;\n");
-									fprintf(output, "\t}\n");
-								}
-								else if (t->members.m[j].type.type == float3x3_id) {
-									fprintf(output, "\t{\n");
-									fprintf(output, "\t\tkore_matrix3x3 m = data->%s;\n", get_name(t->members.m[j].name));
-									fprintf(output, "\t\tfloat *m_data = (float *)&data->%s;\n", get_name(t->members.m[j].name));
-									fprintf(output, "\t\tm_data[0] = m.m[0];\n");
-									fprintf(output, "\t\tm_data[1] = m.m[1];\n");
-									fprintf(output, "\t\tm_data[2] = m.m[2];\n");
-									fprintf(output, "\t\tm_data[3] = 0.0f;\n");
-									fprintf(output, "\t\tm_data[4] = m.m[3];\n");
-									fprintf(output, "\t\tm_data[5] = m.m[4];\n");
-									fprintf(output, "\t\tm_data[6] = m.m[5];\n");
-									fprintf(output, "\t\tm_data[7] = 0.0f;\n");
-									fprintf(output, "\t\tm_data[8] = m.m[6];\n");
-									fprintf(output, "\t\tm_data[9] = m.m[7];\n");
-									fprintf(output, "\t\tm_data[10] = m.m[8];\n");
-									fprintf(output, "\t\tm_data[11] = 0.0f;\n");
-									fprintf(output, "\t}\n");
-								}
+					bool has_matrices = false;
+					for (size_t j = 0; j < t->members.size; ++j) {
+						if (t->members.m[j].type.type == float4x4_id || t->members.m[j].type.type == float3x3_id) {
+							has_matrices = true;
+							break;
+						}
+					}
+
+					if (has_matrices) {
+						fprintf(output, "\t%s *data = (%s *)buffer->%s.locked_data;\n", type_name, type_name, api_short);
+						// adjust matrices
+						for (size_t j = 0; j < t->members.size; ++j) {
+							if (t->members.m[j].type.type == float4x4_id && (api != API_METAL && api != API_VULKAN && api != API_WEBGPU && api != API_OPENGL)) {
+								fprintf(output, "\tkore_matrix4x4_transpose(&data->%s);\n", get_name(t->members.m[j].name));
+							}
+							else if (t->members.m[j].type.type == float3x3_id &&
+							         (api == API_METAL || api == API_VULKAN || api == API_WEBGPU || api == API_OPENGL)) {
+								fprintf(output, "\t{\n");
+								fprintf(output, "\t\tkore_matrix3x3 m = data->%s;\n", get_name(t->members.m[j].name));
+								fprintf(output, "\t\tfloat *m_data = (float *)&data->%s;\n", get_name(t->members.m[j].name));
+								fprintf(output, "\t\tm_data[0] = m.m[0];\n");
+								fprintf(output, "\t\tm_data[1] = m.m[3];\n");
+								fprintf(output, "\t\tm_data[2] = m.m[6];\n");
+								fprintf(output, "\t\tm_data[3] = 0.0f;\n");
+								fprintf(output, "\t\tm_data[4] = m.m[1];\n");
+								fprintf(output, "\t\tm_data[5] = m.m[4];\n");
+								fprintf(output, "\t\tm_data[6] = m.m[7];\n");
+								fprintf(output, "\t\tm_data[7] = 0.0f;\n");
+								fprintf(output, "\t\tm_data[8] = m.m[2];\n");
+								fprintf(output, "\t\tm_data[9] = m.m[5];\n");
+								fprintf(output, "\t\tm_data[10] = m.m[8];\n");
+								fprintf(output, "\t\tm_data[11] = 0.0f;\n");
+								fprintf(output, "\t}\n");
+							}
+							else if (t->members.m[j].type.type == float3x3_id) {
+								fprintf(output, "\t{\n");
+								fprintf(output, "\t\tkore_matrix3x3 m = data->%s;\n", get_name(t->members.m[j].name));
+								fprintf(output, "\t\tfloat *m_data = (float *)&data->%s;\n", get_name(t->members.m[j].name));
+								fprintf(output, "\t\tm_data[0] = m.m[0];\n");
+								fprintf(output, "\t\tm_data[1] = m.m[1];\n");
+								fprintf(output, "\t\tm_data[2] = m.m[2];\n");
+								fprintf(output, "\t\tm_data[3] = 0.0f;\n");
+								fprintf(output, "\t\tm_data[4] = m.m[3];\n");
+								fprintf(output, "\t\tm_data[5] = m.m[4];\n");
+								fprintf(output, "\t\tm_data[6] = m.m[5];\n");
+								fprintf(output, "\t\tm_data[7] = 0.0f;\n");
+								fprintf(output, "\t\tm_data[8] = m.m[6];\n");
+								fprintf(output, "\t\tm_data[9] = m.m[7];\n");
+								fprintf(output, "\t\tm_data[10] = m.m[8];\n");
+								fprintf(output, "\t\tm_data[11] = 0.0f;\n");
+								fprintf(output, "\t}\n");
 							}
 						}
 					}
+
 					fprintf(output, "\tkore_gpu_buffer_unlock(buffer);\n");
 					fprintf(output, "}\n\n");
 				}
@@ -1996,12 +1997,13 @@ void kore3_export(char *directory, api_kind api) {
 					if (!get_type(g->type)->built_in) {
 						if (has_attribute(&g->attributes, add_name("indexed"))) {
 							fprintf(output,
-							        "\tkore_%s_descriptor_set_prepare_buffer(list, set->%s, %s_index * align_pow2((int)%i, 256), "
+							        "\tkore_opengl_command_list_set_uniform_buffer(list, set->%s, _%" PRIu64
+							        "_uniform_block_index, %s_index * align_pow2((int)%i, 256), "
 							        "align_pow2((int)%i, 256));\n",
-							        api_short, get_name(g->name), get_name(g->name), struct_size(g->type), struct_size(g->type));
+							        get_name(g->name), g->var_index, get_name(g->name), struct_size(g->type), struct_size(g->type));
 						}
 						else {
-							fprintf(output, "\tkore_opengl_command_list_set_uniform_buffer(list, set->%s, _%" PRIu64 "_uniform_block_index);\n",
+							fprintf(output, "\tkore_opengl_command_list_set_uniform_buffer(list, set->%s, _%" PRIu64 "_uniform_block_index, 0);\n",
 							        get_name(g->name), g->var_index);
 						}
 					}
