@@ -2003,8 +2003,10 @@ void kore3_export(char *directory, api_kind api) {
 							        get_name(g->name), g->var_index, get_name(g->name), struct_size(g->type), struct_size(g->type));
 						}
 						else {
-							fprintf(output, "\tkore_opengl_command_list_set_uniform_buffer(list, set->%s, _%" PRIu64 "_uniform_block_index, 0);\n",
-							        get_name(g->name), g->var_index);
+							fprintf(output,
+							        "\tkore_opengl_command_list_set_uniform_buffer(list, set->%s, _%" PRIu64
+							        "_uniform_block_index, 0, align_pow2((int)%i, 256));\n",
+							        get_name(g->name), g->var_index, struct_size(g->type));
 						}
 					}
 					else if (is_texture(g->type)) {
