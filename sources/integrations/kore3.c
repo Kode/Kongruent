@@ -2345,15 +2345,15 @@ void kore3_export(char *directory, api_kind api) {
 					// }
 				}
 
-				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.src_factor = %s;\n\n", get_name(t->name),
+				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.src_factor = %s;\n", get_name(t->name),
 				        convert_blend_mode(blend_source, api_caps));
-				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.dst_factor = %s;\n\n", get_name(t->name),
+				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.dst_factor = %s;\n", get_name(t->name),
 				        convert_blend_mode(blend_destination, api_caps));
-				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.operation = %s;\n\n", get_name(t->name),
+				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.operation = %s;\n", get_name(t->name),
 				        convert_blend_op(blend_operation, api_caps));
-				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.src_factor = %s;\n\n", get_name(t->name),
+				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.src_factor = %s;\n", get_name(t->name),
 				        convert_blend_mode(alpha_blend_source, api_caps));
-				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.dst_factor = %s;\n\n", get_name(t->name),
+				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.dst_factor = %s;\n", get_name(t->name),
 				        convert_blend_mode(alpha_blend_destination, api_caps));
 				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.operation = %s;\n\n", get_name(t->name),
 				        convert_blend_op(alpha_blend_operation, api_caps));
@@ -2531,20 +2531,6 @@ void kore3_export(char *directory, api_kind api) {
 							fprintf(output, "\t%s_parameters.fragment.targets[%i].format = KORE_GPU_TEXTURE_FORMAT_RGBA8_UNORM;\n", get_name(t->name), i);
 						}
 
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.operation = KORE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), i,
-						        api_caps);
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.src_factor = KORE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), i,
-						        api_caps);
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.color.dst_factor = KORE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), i,
-						        api_caps);
-
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.operation = KORE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), i,
-						        api_caps);
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.src_factor = KORE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), i,
-						        api_caps);
-						fprintf(output, "\t%s_parameters.fragment.targets[%i].blend.alpha.dst_factor = KORE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), i,
-						        api_caps);
-
 						fprintf(output, "\t%s_parameters.fragment.targets[%i].write_mask = 0xf;\n\n", get_name(t->name), i);
 					}
 					fprintf(output, "\n");
@@ -2572,14 +2558,6 @@ void kore3_export(char *directory, api_kind api) {
 					else {
 						fprintf(output, "\t%s_parameters.fragment.targets[0].format = KORE_GPU_TEXTURE_FORMAT_RGBA8_UNORM;\n", get_name(t->name));
 					}
-
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.operation = KORE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), api_caps);
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.src_factor = KORE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), api_caps);
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.dst_factor = KORE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), api_caps);
-
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.operation = KORE_%s_BLEND_OPERATION_ADD;\n", get_name(t->name), api_caps);
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.src_factor = KORE_%s_BLEND_FACTOR_ONE;\n", get_name(t->name), api_caps);
-					fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.dst_factor = KORE_%s_BLEND_FACTOR_ZERO;\n", get_name(t->name), api_caps);
 
 					fprintf(output, "\t%s_parameters.fragment.targets[0].write_mask = 0xf;\n\n", get_name(t->name));
 				}
