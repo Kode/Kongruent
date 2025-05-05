@@ -271,32 +271,49 @@ static const char *convert_texture_format(int format) {
 	}
 }
 
-static const char *convert_blend_mode(int mode) {
+static char blend_mode[64];
+
+static const char *convert_blend_mode(int mode, const char *api) {
 	switch (mode) {
 	case 0:
-		return "KORE_GPU_BLEND_ONE";
+		sprintf(blend_mode, "KORE_%s_BLEND_FACTOR_ZERO", api);
+		return blend_mode;
 	case 1:
-		return "KORE_GPU_BLEND_ZERO";
+		sprintf(blend_mode, "KORE_%s_BLEND_FACTOR_ONE", api);
+		return blend_mode;
 	case 2:
-		return "KORE_GPU_BLEND_SOURCE_ALPHA";
+		sprintf(blend_mode, "KORE_%s_BLEND_FACTOR_SRC", api);
+		return blend_mode;
 	case 3:
-		return "KORE_GPU_BLEND_DEST_ALPHA";
+		sprintf(blend_mode, "KORE_%s_BLEND_FACTOR_ONE_MINUS_SRC", api);
+		return blend_mode;
 	case 4:
-		return "KORE_GPU_BLEND_INV_SOURCE_ALPHA";
+		sprintf(blend_mode, "KORE_%s_BLEND_FACTOR_SRC_ALPHA", api);
+		return blend_mode;
 	case 5:
-		return "KORE_GPU_BLEND_INV_DEST_ALPHA";
+		sprintf(blend_mode, "KORE_%s_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA", api);
+		return blend_mode;
 	case 6:
-		return "KORE_GPU_BLEND_SOURCE_COLOR";
+		sprintf(blend_mode, "KORE_%s_BLEND_FACTOR_DST", api);
+		return blend_mode;
 	case 7:
-		return "KORE_GPU_BLEND_DEST_COLOR";
+		sprintf(blend_mode, "KORE_%s_BLEND_FACTOR_ONE_MINUS_DST", api);
+		return blend_mode;
 	case 8:
-		return "KORE_GPU_BLEND_INV_SOURCE_COLOR";
+		sprintf(blend_mode, "KORE_%s_BLEND_FACTOR_DST_ALPHA", api);
+		return blend_mode;
 	case 9:
-		return "KORE_GPU_BLEND_INV_DEST_COLOR";
+		sprintf(blend_mode, "KORE_%s_BLEND_FACTOR_ONE_MINUS_DST_ALPHA", api);
+		return blend_mode;
 	case 10:
-		return "KORE_GPU_BLEND_CONSTANT";
+		sprintf(blend_mode, "KORE_%s_BLEND_FACTOR_SRC_ALPHA_SATURATED", api);
+		return blend_mode;
 	case 11:
-		return "KORE_GPU_BLEND_INV_CONSTANT";
+		sprintf(blend_mode, "KORE_%s_BLEND_FACTOR_CONSTANT", api);
+		return blend_mode;
+	case 12:
+		sprintf(blend_mode, "KORE_%s_BLEND_FACTOR_ONE_MINUS_CONSTANT", api);
+		return blend_mode;
 	default: {
 		debug_context context = {0};
 		error(context, "Unknown blend mode");
@@ -305,23 +322,25 @@ static const char *convert_blend_mode(int mode) {
 	}
 }
 
-#define CASE_TEXTURE            \
-	case DEFINITION_TEX2D:      \
-	case DEFINITION_TEX2DARRAY: \
-	case DEFINITION_TEXCUBE
+static char blend_op[64];
 
-static const char *convert_blend_op(int op) {
+static const char *convert_blend_op(int op, const char *api) {
 	switch (op) {
 	case 0:
-		return "KORE_GPU_BLENDOP_ADD";
+		sprintf(blend_op, "KORE_%s_BLEND_OPERATION_ADD", api);
+		return blend_op;
 	case 1:
-		return "KORE_GPU_BLENDOP_SUBTRACT";
+		sprintf(blend_op, "KORE_%s_BLEND_OPERATION_SUBTRACT", api);
+		return blend_op;
 	case 2:
-		return "KORE_GPU_BLENDOP_REVERSE_SUBTRACT";
+		sprintf(blend_op, "KORE_%s_BLEND_OPERATION_REVERSE_SUBTRACT", api);
+		return blend_op;
 	case 3:
-		return "KORE_GPU_BLENDOP_MIN";
+		sprintf(blend_op, "KORE_%s_BLEND_OPERATION_MIN", api);
+		return blend_op;
 	case 4:
-		return "KORE_GPU_BLENDOP_MAX";
+		sprintf(blend_op, "KORE_%s_BLEND_OPERATION_MAX", api);
+		return blend_op;
 	default: {
 		debug_context context = {0};
 		error(context, "Unknown blend op");
@@ -2225,6 +2244,13 @@ void kore3_export(char *directory, api_kind api) {
 				name_id mesh_shader_name          = NO_NAME;
 				name_id fragment_shader_name      = NO_NAME;
 
+				int blend_source            = 1;
+				int blend_destination       = 0;
+				int blend_operation         = 0;
+				int alpha_blend_source      = 1;
+				int alpha_blend_destination = 0;
+				int alpha_blend_operation   = 0;
+
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("vertex")) {
 						if (api == API_METAL || api == API_WEBGPU) {
@@ -2280,44 +2306,57 @@ void kore3_export(char *directory, api_kind api) {
 					else if (t->members.m[j].name == add_name("blend_source")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_source expects an identifier");
-						global *g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.blend_source = %s;\n\n", get_name(t->name), convert_blend_mode(g->value.value.ints[0]));
+						global *g    = find_global(t->members.m[j].value.identifier);
+						blend_source = g->value.value.ints[0];
 					}
 					else if (t->members.m[j].name == add_name("blend_destination")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_destination expects an identifier");
-						global *g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.blend_destination = %s;\n\n", get_name(t->name), convert_blend_mode(g->value.value.ints[0]));
+						global *g         = find_global(t->members.m[j].value.identifier);
+						blend_destination = g->value.value.ints[0];
 					}
 					else if (t->members.m[j].name == add_name("blend_operation")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_operation expects an identifier");
-						global *g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.blend_operation = %s;\n\n", get_name(t->name), convert_blend_op(g->value.value.ints[0]));
+						global *g       = find_global(t->members.m[j].value.identifier);
+						blend_operation = g->value.value.ints[0];
 					}
 					else if (t->members.m[j].name == add_name("alpha_blend_source")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "alpha_blend_source expects an identifier");
-						global *g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.alpha_blend_source = %s;\n\n", get_name(t->name), convert_blend_mode(g->value.value.ints[0]));
+						global *g          = find_global(t->members.m[j].value.identifier);
+						alpha_blend_source = g->value.value.ints[0];
 					}
 					else if (t->members.m[j].name == add_name("alpha_blend_destination")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "alpha_blend_destination expects an identifier");
-						global *g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.alpha_blend_destination = %s;\n\n", get_name(t->name), convert_blend_mode(g->value.value.ints[0]));
+						global *g               = find_global(t->members.m[j].value.identifier);
+						alpha_blend_destination = g->value.value.ints[0];
 					}
 					else if (t->members.m[j].name == add_name("alpha_blend_operation")) {
 						debug_context context = {0};
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "alpha_blend_operation expects an identifier");
-						global *g = find_global(t->members.m[j].value.identifier);
-						fprintf(output, "\t%s.alpha_blend_operation = %s;\n\n", get_name(t->name), convert_blend_op(g->value.value.ints[0]));
+						global *g             = find_global(t->members.m[j].value.identifier);
+						alpha_blend_operation = g->value.value.ints[0];
 					}
 					// else {
 					//	debug_context context = {0};
 					//	error(context, "Unsupported pipe member %s", get_name(t->members.m[j].name));
 					// }
 				}
+
+				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.src_factor = %s;\n\n", get_name(t->name),
+				        convert_blend_mode(blend_source, api_caps));
+				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.dst_factor = %s;\n\n", get_name(t->name),
+				        convert_blend_mode(blend_destination, api_caps));
+				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.operation = %s;\n\n", get_name(t->name),
+				        convert_blend_op(blend_operation, api_caps));
+				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.src_factor = %s;\n\n", get_name(t->name),
+				        convert_blend_mode(alpha_blend_source, api_caps));
+				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.dst_factor = %s;\n\n", get_name(t->name),
+				        convert_blend_mode(alpha_blend_destination, api_caps));
+				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.operation = %s;\n\n", get_name(t->name),
+				        convert_blend_op(alpha_blend_operation, api_caps));
 
 				{
 					debug_context context = {0};
