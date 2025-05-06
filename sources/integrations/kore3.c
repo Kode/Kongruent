@@ -2345,19 +2345,6 @@ void kore3_export(char *directory, api_kind api) {
 					// }
 				}
 
-				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.src_factor = %s;\n", get_name(t->name),
-				        convert_blend_mode(blend_source, api_caps));
-				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.dst_factor = %s;\n", get_name(t->name),
-				        convert_blend_mode(blend_destination, api_caps));
-				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.color.operation = %s;\n", get_name(t->name),
-				        convert_blend_op(blend_operation, api_caps));
-				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.src_factor = %s;\n", get_name(t->name),
-				        convert_blend_mode(alpha_blend_source, api_caps));
-				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.dst_factor = %s;\n", get_name(t->name),
-				        convert_blend_mode(alpha_blend_destination, api_caps));
-				fprintf(output, "\t%s_parameters.fragment.targets[0].blend.alpha.operation = %s;\n\n", get_name(t->name),
-				        convert_blend_op(alpha_blend_operation, api_caps));
-
 				{
 					debug_context context = {0};
 					check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "No vertex or mesh shader name found");
@@ -2560,6 +2547,23 @@ void kore3_export(char *directory, api_kind api) {
 					}
 
 					fprintf(output, "\t%s_parameters.fragment.targets[0].write_mask = 0xf;\n\n", get_name(t->name));
+				}
+
+				uint32_t target_count = get_type(fragment_function->return_type.type)->array_size;
+
+				for (uint32_t target_index = 0; target_index < target_count; ++target_index) {
+					fprintf(output, "\t%s_parameters.fragment.targets[%u].blend.color.src_factor = %s;\n", get_name(t->name), target_index,
+					        convert_blend_mode(blend_source, api_caps));
+					fprintf(output, "\t%s_parameters.fragment.targets[%u].blend.color.dst_factor = %s;\n", get_name(t->name), target_index,
+					        convert_blend_mode(blend_destination, api_caps));
+					fprintf(output, "\t%s_parameters.fragment.targets[%u].blend.color.operation = %s;\n", get_name(t->name), target_index,
+					        convert_blend_op(blend_operation, api_caps));
+					fprintf(output, "\t%s_parameters.fragment.targets[%u].blend.alpha.src_factor = %s;\n", get_name(t->name), target_index,
+					        convert_blend_mode(alpha_blend_source, api_caps));
+					fprintf(output, "\t%s_parameters.fragment.targets[%u].blend.alpha.dst_factor = %s;\n", get_name(t->name), target_index,
+					        convert_blend_mode(alpha_blend_destination, api_caps));
+					fprintf(output, "\t%s_parameters.fragment.targets[%u].blend.alpha.operation = %s;\n\n", get_name(t->name), target_index,
+					        convert_blend_op(alpha_blend_operation, api_caps));
 				}
 
 				if (api == API_VULKAN) {
