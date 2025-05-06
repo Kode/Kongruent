@@ -290,6 +290,7 @@ typedef enum decoration {
 
 typedef enum builtin {
 	BUILTIN_POSITION             = 0,
+	BUILTIN_VERTEX_ID            = 5,
 	BUILTIN_WORKGROUP_SIZE       = 25,
 	BUILTIN_WORKGROUP_ID         = 26,
 	BUILTIN_LOCAL_INVOCATION_ID  = 27,
@@ -596,6 +597,7 @@ static spirv_id dispatch_thread_id_variable;
 static spirv_id group_thread_id_variable;
 static spirv_id group_id_variable;
 static spirv_id work_group_size_variable;
+static spirv_id vertex_id_variable;
 
 typedef struct complex_type {
 	type_id  type;
@@ -1642,6 +1644,10 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id id = write_op_load(instructions, convert_type_to_spirv_id(uint3_id), group_id_variable);
 				hmput(index_map, o->op_call.var.index, id);
 			}
+			else if (func == add_name("vertex_id")) {
+				spirv_id id = write_op_load(instructions, convert_type_to_spirv_id(uint_id), vertex_id_variable);
+				hmput(index_map, o->op_call.var.index, id);
+			}
 			else if (func == add_name("length")) {
 				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_LENGTH,
 				                                convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
@@ -2325,6 +2331,12 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 		write_op_decorate_value(decorations, group_id_variable, DECORATION_BUILTIN, BUILTIN_WORKGROUP_ID);
 	}
 
+	if (main->used_builtins.vertex_id) {
+		write_op_variable_preallocated(global_vars_block, convert_pointer_type_to_spirv_id(uint_id, STORAGE_CLASS_INPUT), vertex_id_variable,
+		                               STORAGE_CLASS_INPUT);
+		write_op_decorate_value(decorations, vertex_id_variable, DECORATION_BUILTIN, BUILTIN_VERTEX_ID);
+	}
+
 	if (stage == SHADER_STAGE_COMPUTE) {
 		write_op_decorate_value(decorations, work_group_size_variable, DECORATION_BUILTIN, BUILTIN_WORKGROUP_SIZE);
 	}
@@ -2442,6 +2454,12 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 
 	for (size_t output_var_index = 0; output_var_index < output_vars_count; ++output_var_index) {
 		interfaces[interfaces_count] = output_vars[output_var_index];
+		interfaces_count += 1;
+	}
+
+	if (main->used_builtins.vertex_id) {
+		vertex_id_variable = allocate_index();
+		interfaces[interfaces_count] = vertex_id_variable;
 		interfaces_count += 1;
 	}
 
