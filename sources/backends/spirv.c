@@ -197,6 +197,8 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_CONVERT_S_TO_F            = 111,
 	SPIRV_OPCODE_CONVERT_U_TO_F            = 112,
 	SPIRV_OPCODE_BITCAST                   = 124,
+	SPIRV_OPCODE_S_NEGATE                  = 126,
+	SPIRV_OPCODE_F_NEGATE                  = 127,
 	SPIRV_OPCODE_I_ADD                     = 128,
 	SPIRV_OPCODE_F_ADD                     = 129,
 	SPIRV_OPCODE_I_SUB                     = 130,
@@ -1262,6 +1264,22 @@ static spirv_id write_op_i_equal(instructions_buffer *instructions, spirv_id typ
 	return result;
 }
 
+static spirv_id write_op_f_negate(instructions_buffer *instructions, spirv_id type, spirv_id operand) {
+    spirv_id result = allocate_index();
+
+    uint32_t operands[] = {type.id, result.id, operand.id};
+    write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_F_NEGATE, operands);
+    return result;
+}
+
+static spirv_id write_op_s_negate(instructions_buffer *instructions, spirv_id type, spirv_id operand) {
+    spirv_id result = allocate_index();
+
+    uint32_t operands[] = {type.id, result.id, operand.id};
+    write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_S_NEGATE, operands);
+    return result;
+}
+
 static struct {
 	uint64_t key;
 	spirv_id value;
@@ -1784,6 +1802,27 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				    write_op_access_chain(instructions, access_type, convert_kong_index_to_spirv_id(o->op_store_access_list.to.index), indices, indices_size);
 				write_op_store(instructions, pointer, convert_kong_index_to_spirv_id(o->op_store_access_list.from.index));
 			}
+			break;
+		}
+		case OPCODE_NEGATE: {
+			spirv_id from;
+			if (o->op_negate.from.kind != VARIABLE_INTERNAL) {
+				from = write_op_load(instructions, convert_type_to_spirv_id(o->op_negate.from.type.type),
+									 convert_kong_index_to_spirv_id(o->op_negate.from.index));
+			}
+			else {
+				from = convert_kong_index_to_spirv_id(o->op_negate.from.index);
+			}
+
+			if (vector_base_type(o->op_binary.result.type.type) == float_id) {
+				spirv_id result = write_op_f_negate(instructions, convert_type_to_spirv_id(o->op_negate.to.type.type), from);
+				hmput(index_map, o->op_negate.to.index, result);
+			}
+			else if (vector_base_type(o->op_binary.result.type.type) == int_id || vector_base_type(o->op_binary.result.type.type) == uint_id) {
+				spirv_id result = write_op_s_negate(instructions, convert_type_to_spirv_id(o->op_negate.to.type.type), from);
+				hmput(index_map, o->op_negate.to.index, result);
+			}
+
 			break;
 		}
 		case OPCODE_STORE_VARIABLE: {
