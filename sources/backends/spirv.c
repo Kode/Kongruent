@@ -1742,7 +1742,11 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			}
 			break;
 		}
-		case OPCODE_STORE_ACCESS_LIST: {
+		case OPCODE_STORE_ACCESS_LIST:
+		case OPCODE_ADD_AND_STORE_ACCESS_LIST:
+		case OPCODE_SUB_AND_STORE_ACCESS_LIST:
+		case OPCODE_MULTIPLY_AND_STORE_ACCESS_LIST:
+		case OPCODE_DIVIDE_AND_STORE_ACCESS_LIST: {
 			spirv_id    indices[256];
 			int         plain_indices[256];
 			access_kind access_kinds[256];
@@ -1834,7 +1838,41 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id pointer =
 				    write_op_access_chain(instructions, access_type, convert_kong_index_to_spirv_id(o->op_store_access_list.to.index), indices, indices_size);
-				write_op_store(instructions, pointer, convert_kong_index_to_spirv_id(o->op_store_access_list.from.index));
+
+				spirv_id stored;
+
+				if (o->type == OPCODE_STORE_ACCESS_LIST) {
+					stored = convert_kong_index_to_spirv_id(o->op_store_access_list.from.index);
+				}
+				else {
+					spirv_id loaded_pointer = write_op_load(instructions, convert_type_to_spirv_id(access_kong_type), pointer);
+					spirv_id from = convert_kong_index_to_spirv_id(o->op_store_access_list.from.index);
+
+					if (o->type == OPCODE_ADD_AND_STORE_ACCESS_LIST) {
+						if (vector_base_type(access_kong_type) == float_id) {
+							stored = write_op_f_add(instructions, convert_type_to_spirv_id(access_kong_type), loaded_pointer, from);
+						}
+						else if (vector_base_type(access_kong_type) == int_id || vector_base_type(access_kong_type) == uint_id) {
+							stored = write_op_i_add(instructions, convert_type_to_spirv_id(access_kong_type), loaded_pointer, from);
+						}
+					}
+					else if (o->type == OPCODE_SUB_AND_STORE_ACCESS_LIST) {
+						if (vector_base_type(access_kong_type) == float_id) {
+							stored = write_op_f_sub(instructions, convert_type_to_spirv_id(access_kong_type), loaded_pointer, from);
+						}
+						else if (vector_base_type(access_kong_type) == int_id || vector_base_type(access_kong_type) == uint_id) {
+							stored = write_op_i_sub(instructions, convert_type_to_spirv_id(access_kong_type), loaded_pointer, from);
+						}
+					}
+					else if (o->type == OPCODE_MULTIPLY_AND_STORE_ACCESS_LIST) {
+						stored = write_op_f_mul(instructions, convert_type_to_spirv_id(access_kong_type), loaded_pointer, from);
+					}
+					else if (o->type == OPCODE_DIVIDE_AND_STORE_ACCESS_LIST) {
+						stored = write_op_f_div(instructions, convert_type_to_spirv_id(access_kong_type), loaded_pointer, from);
+					}
+				}
+
+				write_op_store(instructions, pointer, stored);
 			}
 			break;
 		}
