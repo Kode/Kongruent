@@ -191,6 +191,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_COMPOSITE_EXTRACT         = 81,
 	SPIRV_OPCODE_SAMPLED_IMAGE             = 86,
 	SPIRV_OPCODE_IMAGE_SAMPLE_IMPLICIT_LOD = 87,
+	SPIRV_OPCODE_IMAGE_SAMPLE_EXPLICIT_LOD = 88,
 	SPIRV_OPCODE_IMAGE_WRITE               = 99,
 	SPIRV_OPCODE_CONVERT_F_TO_U            = 109,
 	SPIRV_OPCODE_CONVERT_F_TO_S            = 110,
@@ -1207,6 +1208,17 @@ static spirv_id write_op_image_sample_implicit_lod(instructions_buffer *instruct
 	return result;
 }
 
+static spirv_id write_op_image_sample_explicit_lod(instructions_buffer *instructions, spirv_id result_type, spirv_id sampled_image, spirv_id coordinate, spirv_id lod) {
+	spirv_id result = allocate_index();
+
+	int lod_operands = 0x2;
+	uint32_t operands[] = {result_type.id, result.id, sampled_image.id, coordinate.id, lod_operands, lod.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_IMAGE_SAMPLE_EXPLICIT_LOD, operands);
+
+	return result;
+}
+
 static spirv_id write_op_ext_inst(instructions_buffer *instructions, spirv_id result_type, spirv_id set, uint32_t instruction, spirv_id operand) {
 	spirv_id result = allocate_index();
 
@@ -1549,7 +1561,29 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("sample_lod")) {
-				assert(false);
+				variable image_var = o->op_call.parameters[0];
+
+				spirv_id image_type;
+				spirv_id sampled_image_type;
+
+				if (image_var.type.type == tex2d_type_id) {
+					image_type         = spirv_image_type;
+					sampled_image_type = spirv_sampled_image_type;
+				}
+				else if (image_var.type.type == tex2darray_type_id) {
+					image_type         = spirv_image2darray_type;
+					sampled_image_type = spirv_sampled_image2darray_type;
+				}
+
+				spirv_id image = write_op_load(instructions, image_type, convert_kong_index_to_spirv_id(image_var.index));
+
+				spirv_id sampler = write_op_load(instructions, spirv_sampler_type, convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+
+				spirv_id sampled_image = write_op_sampled_image(instructions, sampled_image_type, image, sampler);
+				spirv_id id            = write_op_image_sample_explicit_lod(instructions, spirv_float4_type, sampled_image,
+				                                                            convert_kong_index_to_spirv_id(o->op_call.parameters[2].index),
+																		    convert_kong_index_to_spirv_id(o->op_call.parameters[3].index));
+				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("float")) {
 				if (o->op_call.parameters[0].type.type == int_id) {
