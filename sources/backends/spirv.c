@@ -1829,6 +1829,24 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			write_op_store(instructions, convert_kong_index_to_spirv_id(o->op_store_var.to.index), convert_kong_index_to_spirv_id(o->op_store_var.from.index));
 			break;
 		}
+		case OPCODE_ADD_AND_STORE_VARIABLE: {
+			spirv_id to = convert_kong_index_to_spirv_id(o->op_store_var.to.index);
+			spirv_id from = convert_kong_index_to_spirv_id(o->op_store_var.from.index);
+
+			spirv_id to_loaded = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to);
+			spirv_id from_loaded = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_var.from.type.type), from);
+
+			if (vector_base_type(o->op_store_var.to.type.type) == float_id) {
+				spirv_id result = write_op_f_add(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to_loaded, from_loaded);
+				write_op_store(instructions, to, result);
+			}
+			else if (vector_base_type(o->op_store_var.to.type.type) == int_id || vector_base_type(o->op_store_var.to.type.type) == uint_id) {
+				spirv_id result = write_op_i_add(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to_loaded, from_loaded);
+				write_op_store(instructions, to, result);
+			}
+
+			break;
+		}
 		case OPCODE_RETURN: {
 			if (stage == SHADER_STAGE_VERTEX && main) {
 				type *output_type = get_type(output);
