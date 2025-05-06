@@ -2171,7 +2171,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		}
 		default: {
 			debug_context context = {0};
-			error(context, "Opcode not implemented for SPIR-V");
+			error(context, "Opcode %d not implemented for SPIR-V", o->type);
 			break;
 		}
 		}
