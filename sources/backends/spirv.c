@@ -206,6 +206,8 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_VECTOR_TIMES_MATRIX       = 144,
 	SPIRV_OPCODE_MATRIX_TIMES_VECTOR       = 145,
 	SPIRV_OPCODE_MATRIX_TIMES_MATRIX       = 146,
+	SPIRV_OPCODE_I_EQUAL                   = 170,
+	SPIRV_OPCODE_F_ORD_EQUAL               = 180,
 	SPIRV_OPCODE_F_ORD_LESS_THAN           = 184,
 	SPIRV_OPCODE_LOOP_MERGE                = 246,
 	SPIRV_OPCODE_SELECTION_MERGE           = 247,
@@ -1240,6 +1242,26 @@ static void write_op_variable_preallocated(instructions_buffer *instructions, sp
 //	return result;
 // }
 
+static spirv_id write_op_f_ord_equal(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_F_ORD_EQUAL, operands);
+
+	return result;
+}
+
+static spirv_id write_op_i_equal(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_I_EQUAL, operands);
+
+	return result;
+}
+
 static struct {
 	uint64_t key;
 	spirv_id value;
@@ -1971,6 +1993,38 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			spirv_id result = write_op_f_div(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
 
 			hmput(index_map, o->op_binary.result.index, result);
+
+			break;
+		}
+		case OPCODE_EQUALS: {
+			spirv_id left;
+			if (o->op_binary.left.kind != VARIABLE_INTERNAL) {
+				left = write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.left.type.type),
+									 convert_kong_index_to_spirv_id(o->op_binary.left.index));
+			}
+			else {
+				left = convert_kong_index_to_spirv_id(o->op_binary.left.index);
+			}
+
+			spirv_id right;
+			if (o->op_binary.right.kind != VARIABLE_INTERNAL) {
+				right = write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.right.type.type),
+									  convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			}
+			else {
+				right = convert_kong_index_to_spirv_id(o->op_binary.right.index);
+			}
+
+			type_id result_type = o->op_binary.result.type.type;
+
+			if (result_type == float_id) {
+				spirv_id result = write_op_f_ord_equal(instructions, convert_type_to_spirv_id(result_type), left, right);
+				hmput(index_map, o->op_binary.result.index, result);
+			}
+			else if (result_type == int_id) {
+				spirv_id result = write_op_i_equal(instructions, convert_type_to_spirv_id(result_type), left, right);
+				hmput(index_map, o->op_binary.result.index, result);
+			}
 
 			break;
 		}
