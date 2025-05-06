@@ -2550,6 +2550,7 @@ void kore3_export(char *directory, api_kind api) {
 				}
 
 				uint32_t target_count = get_type(fragment_function->return_type.type)->array_size;
+				target_count          = target_count < 1 ? 1 : target_count;
 
 				for (uint32_t target_index = 0; target_index < target_count; ++target_index) {
 					fprintf(output, "\t%s_parameters.fragment.targets[%u].blend.color.src_factor = %s;\n", get_name(t->name), target_index,
