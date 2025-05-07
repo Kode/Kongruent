@@ -222,6 +222,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_LABEL                     = 248,
 	SPIRV_OPCODE_BRANCH                    = 249,
 	SPIRV_OPCODE_BRANCH_CONDITIONAL        = 250,
+	SPIRV_OPCODE_KILL                      = 252,
 	SPIRV_OPCODE_RETURN                    = 253,
 } spirv_opcode;
 
@@ -912,6 +913,10 @@ static void write_op_loop_merge(instructions_buffer *instructions, spirv_id merg
 
 static void write_op_return(instructions_buffer *instructions) {
 	write_simple_instruction(instructions, SPIRV_OPCODE_RETURN);
+}
+
+static void write_op_discard(instructions_buffer *instructions) {
+	write_simple_instruction(instructions, SPIRV_OPCODE_KILL);
 }
 
 static void write_op_function_end(instructions_buffer *instructions) {
@@ -2080,6 +2085,10 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				write_op_return(instructions);
 			}
 			ends_with_return = true;
+			break;
+		}
+		case OPCODE_DISCARD: {
+			write_op_discard(instructions);
 			break;
 		}
 		case OPCODE_LESS: {
