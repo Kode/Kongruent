@@ -209,6 +209,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_VECTOR_TIMES_MATRIX       = 144,
 	SPIRV_OPCODE_MATRIX_TIMES_VECTOR       = 145,
 	SPIRV_OPCODE_MATRIX_TIMES_MATRIX       = 146,
+	SPIRV_OPCODE_LOGICAL_NOT               = 168,
 	SPIRV_OPCODE_I_EQUAL                   = 170,
 	SPIRV_OPCODE_F_ORD_EQUAL               = 180,
 	SPIRV_OPCODE_F_ORD_LESS_THAN           = 184,
@@ -1325,6 +1326,14 @@ static spirv_id write_op_s_negate(instructions_buffer *instructions, spirv_id ty
     return result;
 }
 
+static spirv_id write_op_not(instructions_buffer *instructions, spirv_id type, spirv_id operand) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_LOGICAL_NOT, operands);
+	return result;
+}
+
 static struct {
 	uint64_t key;
 	spirv_id value;
@@ -1907,6 +1916,20 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				write_op_store(instructions, pointer, stored);
 			}
+			break;
+		}
+		case OPCODE_NOT: {
+			spirv_id operand;
+			if (o->op_not.from.kind != VARIABLE_INTERNAL) {
+				operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_not.from.type.type),
+										convert_kong_index_to_spirv_id(o->op_not.from.index));
+			}
+			else {
+				operand = convert_kong_index_to_spirv_id(o->op_not.from.index);
+			}
+
+			spirv_id result = write_op_not(instructions, spirv_bool_type, operand);
+			hmput(index_map, o->op_not.to.index, result);
 			break;
 		}
 		case OPCODE_NEGATE: {
