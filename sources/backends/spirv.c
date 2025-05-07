@@ -210,6 +210,8 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_MATRIX_TIMES_VECTOR       = 145,
 	SPIRV_OPCODE_MATRIX_TIMES_MATRIX       = 146,
 	SPIRV_OPCODE_F_MOD                     = 161,
+	SPIRV_OPCODE_LOGICAL_OR                = 166,
+	SPIRV_OPCODE_LOGICAL_AND               = 167,
 	SPIRV_OPCODE_LOGICAL_NOT               = 168,
 	SPIRV_OPCODE_I_EQUAL                   = 170,
 	SPIRV_OPCODE_I_NOT_EQUAL               = 171,
@@ -1364,6 +1366,26 @@ static spirv_id write_op_s_negate(instructions_buffer *instructions, spirv_id ty
     return result;
 }
 
+static spirv_id write_op_logical_and(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_LOGICAL_AND, operands);
+
+	return result;
+}
+
+static spirv_id write_op_logical_or(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_LOGICAL_OR, operands);
+
+	return result;
+}
+
 static spirv_id write_op_not(instructions_buffer *instructions, spirv_id type, spirv_id operand) {
 	spirv_id result = allocate_index();
 
@@ -1954,6 +1976,18 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				write_op_store(instructions, pointer, stored);
 			}
+			break;
+		}
+		case OPCODE_AND: {
+			spirv_id result = write_op_logical_and(instructions, spirv_bool_type, convert_kong_index_to_spirv_id(o->op_binary.left.index),
+			                                       convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			hmput(index_map, o->op_binary.result.index, result);
+			break;
+		}
+		case OPCODE_OR: {
+			spirv_id result = write_op_logical_or(instructions, spirv_bool_type, convert_kong_index_to_spirv_id(o->op_binary.left.index),
+			                                      convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
 		case OPCODE_NOT: {
