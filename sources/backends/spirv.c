@@ -209,6 +209,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_VECTOR_TIMES_MATRIX       = 144,
 	SPIRV_OPCODE_MATRIX_TIMES_VECTOR       = 145,
 	SPIRV_OPCODE_MATRIX_TIMES_MATRIX       = 146,
+	SPIRV_OPCODE_F_MOD                     = 161,
 	SPIRV_OPCODE_LOGICAL_NOT               = 168,
 	SPIRV_OPCODE_I_EQUAL                   = 170,
 	SPIRV_OPCODE_F_ORD_EQUAL               = 180,
@@ -1128,6 +1129,16 @@ static spirv_id write_op_f_div(instructions_buffer *instructions, spirv_id type,
 	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
 
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_F_DIV, operands);
+
+	return result;
+}
+
+static spirv_id write_op_f_mod(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_F_MOD, operands);
 
 	return result;
 }
@@ -2222,6 +2233,31 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			}
 
 			spirv_id result = write_op_f_div(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
+
+			hmput(index_map, o->op_binary.result.index, result);
+
+			break;
+		}
+		case OPCODE_MOD: {
+			spirv_id left;
+			if (o->op_binary.left.kind != VARIABLE_INTERNAL) {
+				left =
+				    write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.left.type.type), convert_kong_index_to_spirv_id(o->op_binary.left.index));
+			}
+			else {
+				left = convert_kong_index_to_spirv_id(o->op_binary.left.index);
+			}
+
+			spirv_id right;
+			if (o->op_binary.right.kind != VARIABLE_INTERNAL) {
+				right = write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.right.type.type),
+				                      convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			}
+			else {
+				right = convert_kong_index_to_spirv_id(o->op_binary.right.index);
+			}
+
+			spirv_id result = write_op_f_mod(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
 
 			hmput(index_map, o->op_binary.result.index, result);
 
