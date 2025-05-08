@@ -206,10 +206,10 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_F_SUB                     = 131,
 	SPIRV_OPCODE_F_MUL                     = 133,
 	SPIRV_OPCODE_F_DIV                     = 136,
+	SPIRV_OPCODE_F_MOD                     = 141,
 	SPIRV_OPCODE_VECTOR_TIMES_MATRIX       = 144,
 	SPIRV_OPCODE_MATRIX_TIMES_VECTOR       = 145,
 	SPIRV_OPCODE_MATRIX_TIMES_MATRIX       = 146,
-	SPIRV_OPCODE_F_MOD                     = 161,
 	SPIRV_OPCODE_LOGICAL_OR                = 166,
 	SPIRV_OPCODE_LOGICAL_AND               = 167,
 	SPIRV_OPCODE_LOGICAL_NOT               = 168,
@@ -1418,6 +1418,8 @@ static spirv_id input_vars[256]  = {0};
 static type_id  input_types[256] = {0};
 static size_t   input_vars_count = 0;
 
+static uint64_t if_end_id = 0;
+
 static void write_function(instructions_buffer *instructions, function *f, spirv_id function_id, shader_stage stage, bool main, type_id input, type_id output) {
 	write_op_function_preallocated(instructions, void_type, FUNCTION_CONTROL_NONE, void_function_type, function_id);
 	write_op_label(instructions);
@@ -1942,40 +1944,45 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id pointer =
 				    write_op_access_chain(instructions, access_type, convert_kong_index_to_spirv_id(o->op_store_access_list.to.index), indices, indices_size);
 
-				spirv_id stored;
+				spirv_id result;
 
 				if (o->type == OPCODE_STORE_ACCESS_LIST) {
-					stored = convert_kong_index_to_spirv_id(o->op_store_access_list.from.index);
+					result = convert_kong_index_to_spirv_id(o->op_store_access_list.from.index);
 				}
 				else {
-					spirv_id loaded_pointer = write_op_load(instructions, convert_type_to_spirv_id(access_kong_type), pointer);
-					spirv_id from           = convert_kong_index_to_spirv_id(o->op_store_access_list.from.index);
+					spirv_id from;
+					if (o->op_store_access_list.from.kind == VARIABLE_INTERNAL) {
+						from = convert_kong_index_to_spirv_id(o->op_store_access_list.from.index);
+					}
+					else {
+						from = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_access_list.from.type.type), convert_kong_index_to_spirv_id(o->op_store_access_list.from.index));
+					}
 
 					if (o->type == OPCODE_ADD_AND_STORE_ACCESS_LIST) {
 						if (vector_base_type(access_kong_type) == float_id) {
-							stored = write_op_f_add(instructions, convert_type_to_spirv_id(access_kong_type), loaded_pointer, from);
+							result = write_op_f_add(instructions, convert_type_to_spirv_id(access_kong_type), pointer, from);
 						}
 						else if (vector_base_type(access_kong_type) == int_id || vector_base_type(access_kong_type) == uint_id) {
-							stored = write_op_i_add(instructions, convert_type_to_spirv_id(access_kong_type), loaded_pointer, from);
+							result = write_op_i_add(instructions, convert_type_to_spirv_id(access_kong_type), pointer, from);
 						}
 					}
 					else if (o->type == OPCODE_SUB_AND_STORE_ACCESS_LIST) {
 						if (vector_base_type(access_kong_type) == float_id) {
-							stored = write_op_f_sub(instructions, convert_type_to_spirv_id(access_kong_type), loaded_pointer, from);
+							result = write_op_f_sub(instructions, convert_type_to_spirv_id(access_kong_type), pointer, from);
 						}
 						else if (vector_base_type(access_kong_type) == int_id || vector_base_type(access_kong_type) == uint_id) {
-							stored = write_op_i_sub(instructions, convert_type_to_spirv_id(access_kong_type), loaded_pointer, from);
+							result = write_op_i_sub(instructions, convert_type_to_spirv_id(access_kong_type), pointer, from);
 						}
 					}
 					else if (o->type == OPCODE_MULTIPLY_AND_STORE_ACCESS_LIST) {
-						stored = write_op_f_mul(instructions, convert_type_to_spirv_id(access_kong_type), loaded_pointer, from);
+						result = write_op_f_mul(instructions, convert_type_to_spirv_id(access_kong_type), pointer, from);
 					}
 					else if (o->type == OPCODE_DIVIDE_AND_STORE_ACCESS_LIST) {
-						stored = write_op_f_div(instructions, convert_type_to_spirv_id(access_kong_type), loaded_pointer, from);
+						result = write_op_f_div(instructions, convert_type_to_spirv_id(access_kong_type), pointer, from);
 					}
 				}
 
-				write_op_store(instructions, pointer, stored);
+				write_op_store(instructions, pointer, result);
 			}
 			break;
 		}
@@ -2014,11 +2021,11 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				from = convert_kong_index_to_spirv_id(o->op_negate.from.index);
 			}
 
-			if (vector_base_type(o->op_binary.result.type.type) == float_id) {
+			if (vector_base_type(o->op_negate.from.type.type) == float_id) {
 				spirv_id result = write_op_f_negate(instructions, convert_type_to_spirv_id(o->op_negate.to.type.type), from);
 				hmput(index_map, o->op_negate.to.index, result);
 			}
-			else if (vector_base_type(o->op_binary.result.type.type) == int_id || vector_base_type(o->op_binary.result.type.type) == uint_id) {
+			else if (vector_base_type(o->op_negate.from.type.type) == int_id || vector_base_type(o->op_negate.from.type.type) == uint_id) {
 				spirv_id result = write_op_s_negate(instructions, convert_type_to_spirv_id(o->op_negate.to.type.type), from);
 				hmput(index_map, o->op_negate.to.index, result);
 			}
@@ -2033,37 +2040,49 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		case OPCODE_SUB_AND_STORE_VARIABLE:
 		case OPCODE_MULTIPLY_AND_STORE_VARIABLE:
 		case OPCODE_DIVIDE_AND_STORE_VARIABLE: {
-			spirv_id to          = convert_kong_index_to_spirv_id(o->op_store_var.to.index);
-			spirv_id from        = convert_kong_index_to_spirv_id(o->op_store_var.from.index);
-			spirv_id to_loaded   = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to);
-			spirv_id from_loaded = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_var.from.type.type), from);
+			spirv_id from;
+			if (o->op_store_var.from.kind == VARIABLE_INTERNAL) {
+				from = convert_kong_index_to_spirv_id(o->op_store_var.from.index);
+			}
+			else {
+				from = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_var.from.type.type), convert_kong_index_to_spirv_id(o->op_store_var.from.index));
+			}
+
+			spirv_id to;
+			if (o->op_store_var.to.kind == VARIABLE_INTERNAL) {
+				to = convert_kong_index_to_spirv_id(o->op_store_var.to.index);
+			}
+			else {
+				to = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), convert_kong_index_to_spirv_id(o->op_store_var.to.index));
+			}
+
 			spirv_id result;
 
 			switch (o->type) {
 			case OPCODE_ADD_AND_STORE_VARIABLE: {
 				if (vector_base_type(o->op_store_var.to.type.type) == float_id) {
-					result = write_op_f_add(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to_loaded, from_loaded);
+					result = write_op_f_add(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to, from);
 				}
 				else if (vector_base_type(o->op_store_var.to.type.type) == int_id || vector_base_type(o->op_store_var.to.type.type) == uint_id) {
-					result = write_op_i_add(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to_loaded, from_loaded);
+					result = write_op_i_add(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to, from);
 				}
 				break;
 			}
 			case OPCODE_SUB_AND_STORE_VARIABLE: {
 				if (vector_base_type(o->op_store_var.to.type.type) == float_id) {
-					result = write_op_f_sub(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to_loaded, from_loaded);
+					result = write_op_f_sub(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to, from);
 				}
 				else if (vector_base_type(o->op_store_var.to.type.type) == int_id || vector_base_type(o->op_store_var.to.type.type) == uint_id) {
-					result = write_op_i_sub(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to_loaded, from_loaded);
+					result = write_op_i_sub(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to, from);
 				}
 				break;
 			}
 			case OPCODE_MULTIPLY_AND_STORE_VARIABLE: {
-				result = write_op_f_mul(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to_loaded, from_loaded);
+				result = write_op_f_mul(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to, from);
 				break;
 			}
 			case OPCODE_DIVIDE_AND_STORE_VARIABLE: {
-				result = write_op_f_div(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to_loaded, from_loaded);
+				result = write_op_f_div(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to, from);
 				break;
 			}
 			default:
@@ -2071,7 +2090,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				break;
 			}
 
-			write_op_store(instructions, to, result);
+			write_op_store(instructions, convert_kong_index_to_spirv_id(o->op_store_var.to.index), result);
 
 			break;
 		}
@@ -2148,26 +2167,94 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_LESS: {
-			spirv_id result = write_op_f_ord_less_than(instructions, spirv_bool_type, convert_kong_index_to_spirv_id(o->op_binary.left.index),
-			                                           convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			spirv_id left;
+			if (o->op_binary.left.kind != VARIABLE_INTERNAL) {
+				left =
+				    write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.left.type.type), convert_kong_index_to_spirv_id(o->op_binary.left.index));
+			}
+			else {
+				left = convert_kong_index_to_spirv_id(o->op_binary.left.index);
+			}
+
+			spirv_id right;
+			if (o->op_binary.right.kind != VARIABLE_INTERNAL) {
+				right = write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.right.type.type),
+				                      convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			}
+			else {
+				right = convert_kong_index_to_spirv_id(o->op_binary.right.index);
+			}
+
+			spirv_id result = write_op_f_ord_less_than(instructions, spirv_bool_type, left, right);
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
 		case OPCODE_LESS_EQUAL: {
-			spirv_id result = write_op_f_ord_less_than_equal(instructions, spirv_bool_type, convert_kong_index_to_spirv_id(o->op_binary.left.index),
-			                                                 convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			spirv_id left;
+			if (o->op_binary.left.kind != VARIABLE_INTERNAL) {
+				left =
+				    write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.left.type.type), convert_kong_index_to_spirv_id(o->op_binary.left.index));
+			}
+			else {
+				left = convert_kong_index_to_spirv_id(o->op_binary.left.index);
+			}
+
+			spirv_id right;
+			if (o->op_binary.right.kind != VARIABLE_INTERNAL) {
+				right = write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.right.type.type),
+				                      convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			}
+			else {
+				right = convert_kong_index_to_spirv_id(o->op_binary.right.index);
+			}
+
+			spirv_id result = write_op_f_ord_less_than_equal(instructions, spirv_bool_type, left, right);
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
 		case OPCODE_GREATER: {
-			spirv_id result = write_op_f_ord_greater_than(instructions, spirv_bool_type, convert_kong_index_to_spirv_id(o->op_binary.left.index),
-			                                              convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			spirv_id left;
+			if (o->op_binary.left.kind != VARIABLE_INTERNAL) {
+				left =
+				    write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.left.type.type), convert_kong_index_to_spirv_id(o->op_binary.left.index));
+			}
+			else {
+				left = convert_kong_index_to_spirv_id(o->op_binary.left.index);
+			}
+
+			spirv_id right;
+			if (o->op_binary.right.kind != VARIABLE_INTERNAL) {
+				right = write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.right.type.type),
+				                      convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			}
+			else {
+				right = convert_kong_index_to_spirv_id(o->op_binary.right.index);
+			}
+
+			spirv_id result = write_op_f_ord_greater_than(instructions, spirv_bool_type, left, right);
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
 		case OPCODE_GREATER_EQUAL: {
-			spirv_id result = write_op_f_ord_greater_than_equal(instructions, spirv_bool_type, convert_kong_index_to_spirv_id(o->op_binary.left.index),
-			                                                    convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			spirv_id left;
+			if (o->op_binary.left.kind != VARIABLE_INTERNAL) {
+				left =
+				    write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.left.type.type), convert_kong_index_to_spirv_id(o->op_binary.left.index));
+			}
+			else {
+				left = convert_kong_index_to_spirv_id(o->op_binary.left.index);
+			}
+
+			spirv_id right;
+			if (o->op_binary.right.kind != VARIABLE_INTERNAL) {
+				right = write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.right.type.type),
+				                      convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			}
+			else {
+				right = convert_kong_index_to_spirv_id(o->op_binary.right.index);
+			}
+
+			spirv_id result = write_op_f_ord_greater_than_equal(instructions, spirv_bool_type, left, right);
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
@@ -2347,14 +2434,12 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				right = convert_kong_index_to_spirv_id(o->op_binary.right.index);
 			}
 
-			type_id result_type = o->op_binary.result.type.type;
-
-			if (result_type == float_id) {
-				spirv_id result = write_op_f_ord_equal(instructions, convert_type_to_spirv_id(result_type), left, right);
+			if (vector_base_type(o->op_binary.left.type.type) == float_id) {
+				spirv_id result = write_op_f_ord_equal(instructions, spirv_bool_type, left, right);
 				hmput(index_map, o->op_binary.result.index, result);
 			}
-			else if (result_type == int_id) {
-				spirv_id result = write_op_i_equal(instructions, convert_type_to_spirv_id(result_type), left, right);
+			else if (vector_base_type(o->op_binary.left.type.type) == int_id) {
+				spirv_id result = write_op_i_equal(instructions, spirv_bool_type, left, right);
 				hmput(index_map, o->op_binary.result.index, result);
 			}
 
@@ -2379,20 +2464,19 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				right = convert_kong_index_to_spirv_id(o->op_binary.right.index);
 			}
 
-			type_id result_type = o->op_binary.result.type.type;
-
-			if (result_type == float_id) {
-				spirv_id result = write_op_f_ord_not_equal(instructions, convert_type_to_spirv_id(result_type), left, right);
+			if (vector_base_type(o->op_binary.left.type.type) == float_id) {
+				spirv_id result = write_op_f_ord_not_equal(instructions, spirv_bool_type, left, right);
 				hmput(index_map, o->op_binary.result.index, result);
 			}
-			else if (result_type == int_id) {
-				spirv_id result = write_op_i_not_equal(instructions, convert_type_to_spirv_id(result_type), left, right);
+			else if (vector_base_type(o->op_binary.left.type.type) == int_id) {
+				spirv_id result = write_op_i_not_equal(instructions, spirv_bool_type, left, right);
 				hmput(index_map, o->op_binary.result.index, result);
 			}
 
 			break;
 		}
 		case OPCODE_IF: {
+			if_end_id = o->op_if.end_id;
 			write_op_selection_merge(instructions, convert_kong_index_to_spirv_id(o->op_if.end_id), SELECTION_CONTROL_NONE);
 
 			write_op_branch_conditional(instructions, convert_kong_index_to_spirv_id(o->op_if.condition.index),
@@ -2437,8 +2521,14 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			write_op_label_preallocated(instructions, while_end_label);
 			break;
 		}
-		case OPCODE_BLOCK_START:
+		case OPCODE_BLOCK_START: {
+			write_op_label_preallocated(instructions, convert_kong_index_to_spirv_id(o->op_block.id));
+			break;
+		}
 		case OPCODE_BLOCK_END: {
+			if (o->op_block.id == if_end_id) {
+				write_op_branch(instructions, convert_kong_index_to_spirv_id(if_end_id));
+			}
 			write_op_label_preallocated(instructions, convert_kong_index_to_spirv_id(o->op_block.id));
 			break;
 		}
