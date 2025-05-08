@@ -1262,11 +1262,12 @@ static spirv_id write_op_image_sample_implicit_lod(instructions_buffer *instruct
 	return result;
 }
 
-static spirv_id write_op_image_sample_explicit_lod(instructions_buffer *instructions, spirv_id result_type, spirv_id sampled_image, spirv_id coordinate, spirv_id lod) {
+static spirv_id write_op_image_sample_explicit_lod(instructions_buffer *instructions, spirv_id result_type, spirv_id sampled_image, spirv_id coordinate,
+                                                   spirv_id lod) {
 	spirv_id result = allocate_index();
 
-	int lod_operands = 0x2;
-	uint32_t operands[] = {result_type.id, result.id, sampled_image.id, coordinate.id, lod_operands, lod.id};
+	int      lod_operands = 0x2;
+	uint32_t operands[]   = {result_type.id, result.id, sampled_image.id, coordinate.id, lod_operands, lod.id};
 
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_IMAGE_SAMPLE_EXPLICIT_LOD, operands);
 
@@ -1351,19 +1352,19 @@ static spirv_id write_op_i_not_equal(instructions_buffer *instructions, spirv_id
 }
 
 static spirv_id write_op_f_negate(instructions_buffer *instructions, spirv_id type, spirv_id operand) {
-    spirv_id result = allocate_index();
+	spirv_id result = allocate_index();
 
-    uint32_t operands[] = {type.id, result.id, operand.id};
-    write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_F_NEGATE, operands);
-    return result;
+	uint32_t operands[] = {type.id, result.id, operand.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_F_NEGATE, operands);
+	return result;
 }
 
 static spirv_id write_op_s_negate(instructions_buffer *instructions, spirv_id type, spirv_id operand) {
-    spirv_id result = allocate_index();
+	spirv_id result = allocate_index();
 
-    uint32_t operands[] = {type.id, result.id, operand.id};
-    write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_S_NEGATE, operands);
-    return result;
+	uint32_t operands[] = {type.id, result.id, operand.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_S_NEGATE, operands);
+	return result;
 }
 
 static spirv_id write_op_logical_and(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
@@ -1684,7 +1685,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id sampled_image = write_op_sampled_image(instructions, sampled_image_type, image, sampler);
 				spirv_id id            = write_op_image_sample_explicit_lod(instructions, spirv_float4_type, sampled_image,
 				                                                            convert_kong_index_to_spirv_id(o->op_call.parameters[2].index),
-																		    convert_kong_index_to_spirv_id(o->op_call.parameters[3].index));
+				                                                            convert_kong_index_to_spirv_id(o->op_call.parameters[3].index));
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("float")) {
@@ -1948,7 +1949,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				}
 				else {
 					spirv_id loaded_pointer = write_op_load(instructions, convert_type_to_spirv_id(access_kong_type), pointer);
-					spirv_id from = convert_kong_index_to_spirv_id(o->op_store_access_list.from.index);
+					spirv_id from           = convert_kong_index_to_spirv_id(o->op_store_access_list.from.index);
 
 					if (o->type == OPCODE_ADD_AND_STORE_ACCESS_LIST) {
 						if (vector_base_type(access_kong_type) == float_id) {
@@ -1993,8 +1994,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		case OPCODE_NOT: {
 			spirv_id operand;
 			if (o->op_not.from.kind != VARIABLE_INTERNAL) {
-				operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_not.from.type.type),
-										convert_kong_index_to_spirv_id(o->op_not.from.index));
+				operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_not.from.type.type), convert_kong_index_to_spirv_id(o->op_not.from.index));
 			}
 			else {
 				operand = convert_kong_index_to_spirv_id(o->op_not.from.index);
@@ -2007,8 +2007,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		case OPCODE_NEGATE: {
 			spirv_id from;
 			if (o->op_negate.from.kind != VARIABLE_INTERNAL) {
-				from = write_op_load(instructions, convert_type_to_spirv_id(o->op_negate.from.type.type),
-									 convert_kong_index_to_spirv_id(o->op_negate.from.index));
+				from =
+				    write_op_load(instructions, convert_type_to_spirv_id(o->op_negate.from.type.type), convert_kong_index_to_spirv_id(o->op_negate.from.index));
 			}
 			else {
 				from = convert_kong_index_to_spirv_id(o->op_negate.from.index);
@@ -2033,9 +2033,9 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		case OPCODE_SUB_AND_STORE_VARIABLE:
 		case OPCODE_MULTIPLY_AND_STORE_VARIABLE:
 		case OPCODE_DIVIDE_AND_STORE_VARIABLE: {
-			spirv_id to = convert_kong_index_to_spirv_id(o->op_store_var.to.index);
-			spirv_id from = convert_kong_index_to_spirv_id(o->op_store_var.from.index);
-			spirv_id to_loaded = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to);
+			spirv_id to          = convert_kong_index_to_spirv_id(o->op_store_var.to.index);
+			spirv_id from        = convert_kong_index_to_spirv_id(o->op_store_var.from.index);
+			spirv_id to_loaded   = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), to);
 			spirv_id from_loaded = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_var.from.type.type), from);
 			spirv_id result;
 
@@ -2331,8 +2331,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		case OPCODE_EQUALS: {
 			spirv_id left;
 			if (o->op_binary.left.kind != VARIABLE_INTERNAL) {
-				left = write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.left.type.type),
-									 convert_kong_index_to_spirv_id(o->op_binary.left.index));
+				left =
+				    write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.left.type.type), convert_kong_index_to_spirv_id(o->op_binary.left.index));
 			}
 			else {
 				left = convert_kong_index_to_spirv_id(o->op_binary.left.index);
@@ -2341,7 +2341,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			spirv_id right;
 			if (o->op_binary.right.kind != VARIABLE_INTERNAL) {
 				right = write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.right.type.type),
-									  convert_kong_index_to_spirv_id(o->op_binary.right.index));
+				                      convert_kong_index_to_spirv_id(o->op_binary.right.index));
 			}
 			else {
 				right = convert_kong_index_to_spirv_id(o->op_binary.right.index);
@@ -2363,8 +2363,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		case OPCODE_NOT_EQUALS: {
 			spirv_id left;
 			if (o->op_binary.left.kind != VARIABLE_INTERNAL) {
-				left = write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.left.type.type),
-									 convert_kong_index_to_spirv_id(o->op_binary.left.index));
+				left =
+				    write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.left.type.type), convert_kong_index_to_spirv_id(o->op_binary.left.index));
 			}
 			else {
 				left = convert_kong_index_to_spirv_id(o->op_binary.left.index);
@@ -2373,7 +2373,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			spirv_id right;
 			if (o->op_binary.right.kind != VARIABLE_INTERNAL) {
 				right = write_op_load(instructions, convert_type_to_spirv_id(o->op_binary.right.type.type),
-									  convert_kong_index_to_spirv_id(o->op_binary.right.index));
+				                      convert_kong_index_to_spirv_id(o->op_binary.right.index));
 			}
 			else {
 				right = convert_kong_index_to_spirv_id(o->op_binary.right.index);
@@ -2876,7 +2876,7 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 	}
 
 	if (main->used_builtins.vertex_id) {
-		vertex_id_variable = allocate_index();
+		vertex_id_variable           = allocate_index();
 		interfaces[interfaces_count] = vertex_id_variable;
 		interfaces_count += 1;
 	}
