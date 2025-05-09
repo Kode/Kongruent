@@ -1955,7 +1955,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 						from = convert_kong_index_to_spirv_id(o->op_store_access_list.from.index);
 					}
 					else {
-						from = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_access_list.from.type.type), convert_kong_index_to_spirv_id(o->op_store_access_list.from.index));
+						from = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_access_list.from.type.type),
+						                     convert_kong_index_to_spirv_id(o->op_store_access_list.from.index));
 					}
 
 					if (o->type == OPCODE_ADD_AND_STORE_ACCESS_LIST) {
@@ -2045,7 +2046,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				from = convert_kong_index_to_spirv_id(o->op_store_var.from.index);
 			}
 			else {
-				from = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_var.from.type.type), convert_kong_index_to_spirv_id(o->op_store_var.from.index));
+				from = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_var.from.type.type),
+				                     convert_kong_index_to_spirv_id(o->op_store_var.from.index));
 			}
 
 			spirv_id to;
@@ -2053,7 +2055,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				to = convert_kong_index_to_spirv_id(o->op_store_var.to.index);
 			}
 			else {
-				to = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type), convert_kong_index_to_spirv_id(o->op_store_var.to.index));
+				to = write_op_load(instructions, convert_type_to_spirv_id(o->op_store_var.to.type.type),
+				                   convert_kong_index_to_spirv_id(o->op_store_var.to.index));
 			}
 
 			spirv_id result;
