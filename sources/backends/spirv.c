@@ -212,6 +212,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_VECTOR_TIMES_MATRIX       = 144,
 	SPIRV_OPCODE_MATRIX_TIMES_VECTOR       = 145,
 	SPIRV_OPCODE_MATRIX_TIMES_MATRIX       = 146,
+	SPIRV_OPCODE_DOT                       = 148,
 	SPIRV_OPCODE_LOGICAL_OR                = 166,
 	SPIRV_OPCODE_LOGICAL_AND               = 167,
 	SPIRV_OPCODE_LOGICAL_NOT               = 168,
@@ -223,6 +224,8 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_F_ORD_GREATER_THAN        = 186,
 	SPIRV_OPCODE_F_ORD_LESS_THAN_EQUAL     = 188,
 	SPIRV_OPCODE_F_ORD_GREATER_THAN_EQUAL  = 190,
+	SPIRV_OPCODE_DPDX                      = 207,
+	SPIRV_OPCODE_DPDY                      = 208,
 	SPIRV_OPCODE_LOOP_MERGE                = 246,
 	SPIRV_OPCODE_SELECTION_MERGE           = 247,
 	SPIRV_OPCODE_LABEL                     = 248,
@@ -234,9 +237,31 @@ typedef enum spirv_opcode {
 } spirv_opcode;
 
 typedef enum spirv_glsl_std {
-	SPIRV_GLSL_STD_FLOOR  = 8,
-	SPIRV_GLSL_STD_SIN    = 13,
-	SPIRV_GLSL_STD_LENGTH = 66,
+	SPIRV_GLSL_STD_ROUND        = 1,
+	SPIRV_GLSL_STD_FABS         = 4,
+	SPIRV_GLSL_STD_FLOOR        = 8,
+	SPIRV_GLSL_STD_CEIL         = 9,
+	SPIRV_GLSL_STD_FRACT        = 10,
+	SPIRV_GLSL_STD_SIN          = 13,
+	SPIRV_GLSL_STD_COS          = 14,
+	SPIRV_GLSL_STD_ASIN         = 16,
+	SPIRV_GLSL_STD_ACOS         = 17,
+	SPIRV_GLSL_STD_ATAN         = 18,
+	SPIRV_GLSL_STD_ATAN2        = 25,
+	SPIRV_GLSL_STD_POW          = 26,
+	SPIRV_GLSL_STD_SQRT         = 31,
+	SPIRV_GLSL_STD_INVERSE_SQRT = 32,
+	SPIRV_GLSL_STD_FMIN         = 37,
+	SPIRV_GLSL_STD_FMAX         = 40,
+	SPIRV_GLSL_STD_FCLAMP       = 43,
+	SPIRV_GLSL_STD_FMIX         = 46,
+	SPIRV_GLSL_STD_STEP         = 48,
+	SPIRV_GLSL_STD_SMOOTHSTEP   = 49,
+	SPIRV_GLSL_STD_LENGTH       = 66,
+	SPIRV_GLSL_STD_DISTANCE     = 67,
+	SPIRV_GLSL_STD_CROSS        = 68,
+	SPIRV_GLSL_STD_NORMALIZE    = 69,
+	SPIRV_GLSL_STD_REFLECT      = 71,
 } spirv_glsl_std;
 
 static type_id find_access_type(int *indices, access_kind *access_kinds, int indices_size, type_id base_type) {
@@ -1306,6 +1331,26 @@ static spirv_id write_op_ext_inst(instructions_buffer *instructions, spirv_id re
 	return result;
 }
 
+static spirv_id write_op_ext_inst2(instructions_buffer *instructions, spirv_id result_type, spirv_id set, uint32_t instruction, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {result_type.id, result.id, set.id, instruction, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_EXT_INST, operands);
+
+	return result;
+}
+
+static spirv_id write_op_ext_inst3(instructions_buffer *instructions, spirv_id result_type, spirv_id set, uint32_t instruction, spirv_id operand1, spirv_id operand2, spirv_id operand3) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {result_type.id, result.id, set.id, instruction, operand1.id, operand2.id, operand3.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_EXT_INST, operands);
+
+	return result;
+}
+
 static void write_op_image_write(instructions_buffer *instructions, spirv_id image, spirv_id coordinate, spirv_id texel) {
 	uint32_t operands[] = {image.id, coordinate.id, texel.id};
 
@@ -1414,6 +1459,30 @@ static spirv_id write_op_not(instructions_buffer *instructions, spirv_id type, s
 
 	uint32_t operands[] = {type.id, result.id, operand.id};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_LOGICAL_NOT, operands);
+	return result;
+}
+
+static spirv_id write_op_dot(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_DOT, operands);
+	return result;
+}
+
+static spirv_id write_op_dpdx(instructions_buffer *instructions, spirv_id type, spirv_id operand) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_DPDX, operands);
+	return result;
+}
+
+static spirv_id write_op_dpdy(instructions_buffer *instructions, spirv_id type, spirv_id operand) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_DPDY, operands);
 	return result;
 }
 
@@ -1888,19 +1957,452 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id id = write_op_load(instructions, convert_type_to_spirv_id(uint_id), vertex_id_variable);
 				hmput(index_map, o->op_call.var.index, id);
 			}
-			else if (func == add_name("length")) {
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_LENGTH,
-				                                convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+			else if (func == add_name("dot")) {
+				spirv_id operand1;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id operand2;
+				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+				}
+				else {
+					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
+				}
+
+				spirv_id id = write_op_dot(instructions, spirv_float_type, operand1, operand2);
 				hmput(index_map, o->op_call.var.index, id);
 			}
-			else if (func == add_name("sin")) {
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_SIN,
-				                                convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+			else if (func == add_name("ddx")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_dpdx(instructions, spirv_float_type, operand);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("ddy")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_dpdy(instructions, spirv_float_type, operand);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("round")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_ROUND, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("floor")) {
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FLOOR,
-				                                convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FLOOR, operand);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("sin")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_SIN, operand);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("cos")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_COS, operand);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("length")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_LENGTH, operand);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("abs")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FABS, operand);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("ceil")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_CEIL, operand);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("frac")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FRACT, operand);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("asin")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_ASIN, operand);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("acos")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_ACOS, operand);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("atan")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_ATAN, operand);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("atan2")) {
+				spirv_id operand1;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id operand2;
+				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+				}
+				else {
+					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
+				}
+
+				spirv_id id = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_ATAN2, operand1, operand2);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("pow")) {
+				spirv_id operand1;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id operand2;
+				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+				}
+				else {
+					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
+				}
+
+				spirv_id id = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_POW, operand1, operand2);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("sqrt")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_SQRT, operand);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("rsqrt")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_INVERSE_SQRT, operand);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("min")) {
+				spirv_id operand1;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id operand2;
+				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+				}
+				else {
+					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
+				}
+
+				spirv_id id = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FMIN, operand1, operand2);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("max")) {
+				spirv_id operand1;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id operand2;
+				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+				}
+				else {
+					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
+				}
+
+				spirv_id id = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FMAX, operand1, operand2);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("clamp")) {
+				spirv_id operand1;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id operand2;
+				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+				}
+				else {
+					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
+				}
+
+				spirv_id operand3;
+				if (o->op_call.parameters[2].kind != VARIABLE_INTERNAL) {
+					operand3 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[2].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[2].index));
+				}
+				else {
+					operand3 = convert_kong_index_to_spirv_id(o->op_call.parameters[2].index);
+				}
+
+				spirv_id id = write_op_ext_inst3(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FCLAMP, operand1, operand2, operand3);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("lerp")) {
+				spirv_id operand1;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id operand2;
+				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+				}
+				else {
+					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
+				}
+
+				spirv_id operand3;
+				if (o->op_call.parameters[2].kind != VARIABLE_INTERNAL) {
+					operand3 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[2].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[2].index));
+				}
+				else {
+					operand3 = convert_kong_index_to_spirv_id(o->op_call.parameters[2].index);
+				}
+
+				spirv_id id = write_op_ext_inst3(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FMIX, operand1, operand2, operand3);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("step")) {
+				spirv_id operand1;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id operand2;
+				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+				}
+				else {
+					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
+				}
+
+				spirv_id id = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_STEP, operand1, operand2);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("smoothstep")) {
+				spirv_id operand1;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id operand2;
+				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+				}
+				else {
+					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
+				}
+
+				spirv_id operand3;
+				if (o->op_call.parameters[2].kind != VARIABLE_INTERNAL) {
+					operand3 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[2].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[2].index));
+				}
+				else {
+					operand3 = convert_kong_index_to_spirv_id(o->op_call.parameters[2].index);
+				}
+
+				spirv_id id = write_op_ext_inst3(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_SMOOTHSTEP, operand1, operand2, operand3);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("distance")) {
+				spirv_id operand1;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id operand2;
+				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+				}
+				else {
+					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
+				}
+
+				spirv_id id = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_DISTANCE, operand1, operand2);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("cross")) {
+				spirv_id operand1;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id operand2;
+				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+				}
+				else {
+					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
+				}
+
+				spirv_id id = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_DISTANCE, operand1, operand2);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("normalize")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_NORMALIZE, operand);
+				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("reflect")) {
+				spirv_id operand;
+				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+				}
+				else {
+					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+				}
+
+				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_REFLECT, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else {
