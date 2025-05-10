@@ -2378,7 +2378,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
 				}
 
-				spirv_id id = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_DISTANCE, operand1, operand2);
+				spirv_id id = write_op_ext_inst2(instructions, spirv_float3_type, glsl_import, SPIRV_GLSL_STD_CROSS, operand1, operand2);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("normalize")) {
@@ -2390,19 +2390,27 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
 				}
 
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_NORMALIZE, operand);
+				spirv_id id = write_op_ext_inst(instructions, spirv_float3_type, glsl_import, SPIRV_GLSL_STD_NORMALIZE, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("reflect")) {
-				spirv_id operand;
+				spirv_id operand1;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
-					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
+					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
 				}
 
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_REFLECT, operand);
+				spirv_id operand2;
+				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+				}
+				else {
+					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
+				}
+
+				spirv_id id = write_op_ext_inst2(instructions, spirv_float3_type, glsl_import, SPIRV_GLSL_STD_REFLECT, operand1, operand2);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else {
