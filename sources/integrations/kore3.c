@@ -396,7 +396,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 		}
 	}
 
-	fprintf(output, "\tD3D12_ROOT_PARAMETER params[%i] = {};\n", table_count);
+	fprintf(output, "\tD3D12_ROOT_PARAMETER params[%i] = {0};\n", table_count);
 
 	uint32_t table_index = 0;
 
@@ -432,7 +432,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 				}
 			}
 
-			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%zu] = {};\n", table_index, count);
+			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%zu] = {0};\n", table_index, count);
 
 			size_t range_index = 0;
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
@@ -500,7 +500,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 				}
 			}
 
-			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%zu] = {};\n", table_index, count);
+			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%zu] = {0};\n", table_index, count);
 
 			size_t range_index = 0;
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
@@ -529,9 +529,12 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 
 	fprintf(output, "\n\tID3D12RootSignature* root_signature;\n");
 	fprintf(output, "\tID3DBlob *blob;\n");
-	fprintf(output, "\tD3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1_0, &blob, nullptr);\n");
-	fprintf(output, "\tdevice->d3d12.device->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&root_signature));\n");
-	fprintf(output, "\tblob->Release();\n");
+	fprintf(output, "\tD3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1_0, &blob, NULL);\n");
+	fprintf(
+	    output,
+	    "\tdevice->d3d12.device->lpVtbl->CreateRootSignature(device->d3d12.device, 0, blob->lpVtbl->GetBufferPointer(blob), blob->lpVtbl->GetBufferSize(blob), "
+	    "&IID_ID3D12RootSignature, &root_signature);\n");
+	fprintf(output, "\tblob->lpVtbl->Release(blob);\n");
 
 	fprintf(output, "\n\treturn root_signature;\n");
 }
@@ -2789,7 +2792,7 @@ void kore3_export(char *directory, api_kind api) {
 
 	if (api == API_DIRECT3D12) {
 		char filename[512];
-		sprintf(filename, "%s/%s", directory, "kong_ray_root_signatures.cpp");
+		sprintf(filename, "%s/%s", directory, "kong_ray_root_signatures.c");
 
 		FILE *output = fopen(filename, "wb");
 
@@ -2799,7 +2802,7 @@ void kore3_export(char *directory, api_kind api) {
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-				fprintf(output, "extern \"C\" ID3D12RootSignature *kong_create_%s_root_signature(kore_gpu_device *device) {\n", get_name(t->name));
+				fprintf(output, "ID3D12RootSignature *kong_create_%s_root_signature(kore_gpu_device *device) {\n", get_name(t->name));
 				write_root_signature(output, sets, sets_count);
 				fprintf(output, "}\n");
 			}
