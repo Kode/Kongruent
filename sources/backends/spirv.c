@@ -1331,7 +1331,8 @@ static spirv_id write_op_ext_inst(instructions_buffer *instructions, spirv_id re
 	return result;
 }
 
-static spirv_id write_op_ext_inst2(instructions_buffer *instructions, spirv_id result_type, spirv_id set, uint32_t instruction, spirv_id operand1, spirv_id operand2) {
+static spirv_id write_op_ext_inst2(instructions_buffer *instructions, spirv_id result_type, spirv_id set, uint32_t instruction, spirv_id operand1,
+                                   spirv_id operand2) {
 	spirv_id result = allocate_index();
 
 	uint32_t operands[] = {result_type.id, result.id, set.id, instruction, operand1.id, operand2.id};
@@ -1341,7 +1342,8 @@ static spirv_id write_op_ext_inst2(instructions_buffer *instructions, spirv_id r
 	return result;
 }
 
-static spirv_id write_op_ext_inst3(instructions_buffer *instructions, spirv_id result_type, spirv_id set, uint32_t instruction, spirv_id operand1, spirv_id operand2, spirv_id operand3) {
+static spirv_id write_op_ext_inst3(instructions_buffer *instructions, spirv_id result_type, spirv_id set, uint32_t instruction, spirv_id operand1,
+                                   spirv_id operand2, spirv_id operand3) {
 	spirv_id result = allocate_index();
 
 	uint32_t operands[] = {result_type.id, result.id, set.id, instruction, operand1.id, operand2.id, operand3.id};
@@ -1516,15 +1518,16 @@ static size_t   input_vars_count = 0;
 
 static uint64_t if_end_id = 0;
 
-static void write_function(instructions_buffer *instructions, function *f, spirv_id result_type, spirv_id fun_type, spirv_id fun_id, shader_stage stage, bool main, type_id input, type_id output) {
+static void write_function(instructions_buffer *instructions, function *f, spirv_id result_type, spirv_id fun_type, spirv_id fun_id, shader_stage stage,
+                           bool main, type_id input, type_id output) {
 	write_op_function_preallocated(instructions, result_type, FUNCTION_CONTROL_NONE, fun_type, fun_id);
 
 	spirv_id parameter_value_ids[256] = {0};
 	if (!main) {
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
-			spirv_id param_type = convert_type_to_spirv_id(f->parameter_types[parameter_index].type);
+			spirv_id param_type                  = convert_type_to_spirv_id(f->parameter_types[parameter_index].type);
 			parameter_value_ids[parameter_index] = allocate_index();
-			uint32_t operands[] = {param_type.id, parameter_value_ids[parameter_index].id};
+			uint32_t operands[]                  = {param_type.id, parameter_value_ids[parameter_index].id};
 			write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_FUNCTION_PARAMETER, operands);
 		}
 	}
@@ -1566,7 +1569,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		if (stage == SHADER_STAGE_VERTEX || stage == SHADER_STAGE_FRAGMENT) {
 			spirv_parameter_id = convert_kong_index_to_spirv_id(parameter_ids[0]);
 			write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_types[0], STORAGE_CLASS_FUNCTION), spirv_parameter_id,
-										STORAGE_CLASS_FUNCTION);
+			                               STORAGE_CLASS_FUNCTION);
 		}
 	}
 
@@ -1592,19 +1595,19 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 	if (main) {
 		if (stage == SHADER_STAGE_FRAGMENT) {
 			for (size_t i = 0; i < input_vars_count; ++i) {
-				spirv_id index  = get_int_constant((int)(i + 1)); // jump over the pos member
-				spirv_id loaded = write_op_load(instructions, convert_type_to_spirv_id(input_types[i]), input_vars[i]);
-				spirv_id pointer =
-					write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(input_types[i], STORAGE_CLASS_FUNCTION), spirv_parameter_id, &index, 1);
+				spirv_id index   = get_int_constant((int)(i + 1)); // jump over the pos member
+				spirv_id loaded  = write_op_load(instructions, convert_type_to_spirv_id(input_types[i]), input_vars[i]);
+				spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(input_types[i], STORAGE_CLASS_FUNCTION),
+				                                         spirv_parameter_id, &index, 1);
 				write_op_store(instructions, pointer, loaded);
 			}
 		}
 		else if (stage == SHADER_STAGE_VERTEX) {
 			for (size_t i = 0; i < input_vars_count; ++i) {
-				spirv_id index  = get_int_constant((int)i);
-				spirv_id loaded = write_op_load(instructions, convert_type_to_spirv_id(input_types[i]), input_vars[i]);
-				spirv_id pointer =
-					write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(input_types[i], STORAGE_CLASS_FUNCTION), spirv_parameter_id, &index, 1);
+				spirv_id index   = get_int_constant((int)i);
+				spirv_id loaded  = write_op_load(instructions, convert_type_to_spirv_id(input_types[i]), input_vars[i]);
+				spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(input_types[i], STORAGE_CLASS_FUNCTION),
+				                                         spirv_parameter_id, &index, 1);
 				write_op_store(instructions, pointer, loaded);
 			}
 		}
@@ -1839,7 +1842,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				else if (o->op_call.parameters_size == 2) {
 					spirv_id constituents[2];
 					for (int i = 0; i < o->op_call.parameters_size; ++i) {
-						variable param = o->op_call.parameters[i];
+						variable param  = o->op_call.parameters[i];
 						constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
 						if (param.kind != VARIABLE_INTERNAL) {
 							constituents[i] = write_op_load(instructions, convert_type_to_spirv_id(param.type.type), constituents[i]);
@@ -1855,7 +1858,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("float3")) {
 				spirv_id constituents[3];
 				for (int i = 0; i < o->op_call.parameters_size; ++i) {
-					variable param = o->op_call.parameters[i];
+					variable param  = o->op_call.parameters[i];
 					constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
 					if (param.kind != VARIABLE_INTERNAL) {
 						constituents[i] = write_op_load(instructions, convert_type_to_spirv_id(param.type.type), constituents[i]);
@@ -1867,7 +1870,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("float4")) {
 				spirv_id constituents[4];
 				for (int i = 0; i < o->op_call.parameters_size; ++i) {
-					variable param = o->op_call.parameters[i];
+					variable param  = o->op_call.parameters[i];
 					constituents[i] = convert_kong_index_to_spirv_id(o->op_call.parameters[i].index);
 					if (param.kind != VARIABLE_INTERNAL) {
 						constituents[i] = write_op_load(instructions, convert_type_to_spirv_id(param.type.type), constituents[i]);
@@ -1960,7 +1963,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("dot")) {
 				spirv_id operand1;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -1968,7 +1972,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id operand2;
 				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
-					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				}
 				else {
 					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
@@ -1980,7 +1985,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("ddx")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -1992,7 +1998,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("ddy")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2004,7 +2011,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("round")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2016,7 +2024,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("floor")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2028,7 +2037,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("sin")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2040,7 +2050,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("cos")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2052,7 +2063,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("length")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2064,7 +2076,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("abs")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2076,7 +2089,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("ceil")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2088,7 +2102,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("frac")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2100,7 +2115,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("asin")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2112,7 +2128,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("acos")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2124,7 +2141,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("atan")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2136,7 +2154,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("atan2")) {
 				spirv_id operand1;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2144,7 +2163,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id operand2;
 				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
-					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				}
 				else {
 					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
@@ -2156,7 +2176,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("pow")) {
 				spirv_id operand1;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2164,7 +2185,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id operand2;
 				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
-					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				}
 				else {
 					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
@@ -2176,7 +2198,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("sqrt")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2188,7 +2211,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("rsqrt")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2200,7 +2224,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("min")) {
 				spirv_id operand1;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2208,7 +2233,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id operand2;
 				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
-					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				}
 				else {
 					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
@@ -2220,7 +2246,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("max")) {
 				spirv_id operand1;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2228,7 +2255,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id operand2;
 				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
-					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				}
 				else {
 					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
@@ -2240,7 +2268,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("clamp")) {
 				spirv_id operand1;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2248,7 +2277,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id operand2;
 				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
-					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				}
 				else {
 					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
@@ -2256,7 +2286,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id operand3;
 				if (o->op_call.parameters[2].kind != VARIABLE_INTERNAL) {
-					operand3 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[2].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[2].index));
+					operand3 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[2].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[2].index));
 				}
 				else {
 					operand3 = convert_kong_index_to_spirv_id(o->op_call.parameters[2].index);
@@ -2268,7 +2299,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("lerp")) {
 				spirv_id operand1;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2276,7 +2308,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id operand2;
 				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
-					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				}
 				else {
 					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
@@ -2284,7 +2317,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id operand3;
 				if (o->op_call.parameters[2].kind != VARIABLE_INTERNAL) {
-					operand3 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[2].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[2].index));
+					operand3 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[2].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[2].index));
 				}
 				else {
 					operand3 = convert_kong_index_to_spirv_id(o->op_call.parameters[2].index);
@@ -2296,7 +2330,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("step")) {
 				spirv_id operand1;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2304,7 +2339,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id operand2;
 				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
-					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				}
 				else {
 					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
@@ -2316,7 +2352,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("smoothstep")) {
 				spirv_id operand1;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2324,7 +2361,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id operand2;
 				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
-					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				}
 				else {
 					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
@@ -2332,7 +2370,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id operand3;
 				if (o->op_call.parameters[2].kind != VARIABLE_INTERNAL) {
-					operand3 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[2].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[2].index));
+					operand3 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[2].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[2].index));
 				}
 				else {
 					operand3 = convert_kong_index_to_spirv_id(o->op_call.parameters[2].index);
@@ -2344,7 +2383,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("distance")) {
 				spirv_id operand1;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2352,7 +2392,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id operand2;
 				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
-					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				}
 				else {
 					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
@@ -2364,7 +2405,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("cross")) {
 				spirv_id operand1;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2372,7 +2414,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id operand2;
 				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
-					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				}
 				else {
 					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
@@ -2384,7 +2427,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("normalize")) {
 				spirv_id operand;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                        convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2396,7 +2440,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("reflect")) {
 				spirv_id operand1;
 				if (o->op_call.parameters[0].kind != VARIABLE_INTERNAL) {
-					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					operand1 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[0].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
 				}
 				else {
 					operand1 = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2404,7 +2449,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				spirv_id operand2;
 				if (o->op_call.parameters[1].kind != VARIABLE_INTERNAL) {
-					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type), convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
+					operand2 = write_op_load(instructions, convert_type_to_spirv_id(o->op_call.parameters[1].type.type),
+					                         convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				}
 				else {
 					operand2 = convert_kong_index_to_spirv_id(o->op_call.parameters[1].index);
@@ -2425,19 +2471,20 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				}
 
 				spirv_id arguments[256];
-				uint8_t arguments_size = o->op_call.parameters_size;
+				uint8_t  arguments_size = o->op_call.parameters_size;
 				for (uint8_t i = 0; i < arguments_size; ++i) {
 					variable parameter = o->op_call.parameters[i];
 					if (parameter.kind == VARIABLE_INTERNAL) {
 						arguments[i] = convert_kong_index_to_spirv_id(parameter.index);
 					}
 					else {
-						arguments[i] = write_op_load(instructions, convert_type_to_spirv_id(parameter.type.type), convert_kong_index_to_spirv_id(parameter.index));
+						arguments[i] =
+						    write_op_load(instructions, convert_type_to_spirv_id(parameter.type.type), convert_kong_index_to_spirv_id(parameter.index));
 					}
 				}
 
 				spirv_id fun_id = hmget(function_map, func);
-				spirv_id id = write_op_function_call(instructions, return_type, fun_id, arguments, arguments_size);
+				spirv_id id     = write_op_function_call(instructions, return_type, fun_id, arguments, arguments_size);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			break;
@@ -2764,7 +2811,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				}
 				else {
 					return_value = write_op_load(instructions, convert_type_to_spirv_id(o->op_return.var.type.type),
-												 convert_kong_index_to_spirv_id(o->op_return.var.index));
+					                             convert_kong_index_to_spirv_id(o->op_return.var.index));
 				}
 				write_op_return_value(instructions, return_value);
 			}
@@ -3189,7 +3236,7 @@ static void write_functions(instructions_buffer *instructions, function *main, s
 			spirv_id return_type = convert_type_to_spirv_id(f->return_type.type);
 
 			spirv_id parameter_types[256];
-			uint8_t parameter_types_size = 0;
+			uint8_t  parameter_types_size = 0;
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 				parameter_types[parameter_index] = convert_type_to_spirv_id(f->parameter_types[parameter_index].type);
 				parameter_types_size++;
@@ -3197,14 +3244,14 @@ static void write_functions(instructions_buffer *instructions, function *main, s
 
 			function_types[i] = write_type_function(instructions, return_type, parameter_types, parameter_types_size);
 		}
-    }
+	}
 
 	for (size_t i = 0; i < functions_size; ++i) {
 		function *f = functions[i];
 
 		spirv_id return_type = f == main ? void_type : convert_type_to_spirv_id(f->return_type.type);
-		spirv_id fun_type = function_types[i];
-		spirv_id fun_id = hmget(function_map, f->name);
+		spirv_id fun_type    = function_types[i];
+		spirv_id fun_id      = hmget(function_map, f->name);
 		write_function(instructions, f, return_type, fun_type, fun_id, stage, f == main, input, output);
 	}
 }
