@@ -523,7 +523,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 		}
 	}
 
-	fprintf(output, "\n\tD3D12_ROOT_SIGNATURE_DESC desc = {};\n");
+	fprintf(output, "\n\tD3D12_ROOT_SIGNATURE_DESC desc = {0};\n");
 	fprintf(output, "\tdesc.NumParameters = %i;\n", table_count);
 	fprintf(output, "\tdesc.pParameters = params;\n");
 
