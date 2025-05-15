@@ -3360,6 +3360,35 @@ static void assign_bindings(uint32_t *bindings, function *shader) {
 	}
 }
 
+static uint32_t member_size(type_id member_type) {
+	if (member_type == float_id || member_type == int_id || member_type == uint_id) {
+		return 4;
+	}
+	if (member_type == float2_id || member_type == int2_id || member_type == uint2_id) {
+		return 8;
+	}
+	if (member_type == float3_id || member_type == int3_id || member_type == uint3_id) {
+		return 16;
+	}
+	if (member_type == float4_id || member_type == int4_id || member_type == uint4_id) {
+		return 16;
+	}
+	if (member_type == float3x3_id) {
+		return 48;
+	}
+	if (member_type == float4x4_id) {
+		return 64;
+	}
+	return 0;
+}
+
+static uint32_t member_padding(uint32_t offset, uint32_t size) {
+	if (size > 16) {
+		size = 16;
+	}
+	return (size - (offset % size)) % size;
+}
+
 static void write_globals(instructions_buffer *decorations, instructions_buffer *instructions_block, instructions_buffer *global_vars_block, function *main,
                           shader_stage stage) {
 	uint32_t bindings[512] = {0};
@@ -3493,17 +3522,18 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 			for (uint32_t j = 0; j < (uint32_t)t->members.size; ++j) {
 				type_id member_type = t->members.m[j].type.type;
 
-				if (member_type == float3x3_id || member_type == float4x4_id) {
-					write_op_member_decorate(decorations, struct_type, j, DECORATION_COL_MAJOR);
-				}
+				uint32_t size = member_size(member_type);
+				offset += member_padding(offset, size);
 				write_op_member_decorate_value(decorations, struct_type, j, DECORATION_OFFSET, offset);
+				offset += size;
+
 				if (member_type == float3x3_id) {
+					write_op_member_decorate(decorations, struct_type, j, DECORATION_COL_MAJOR);
 					write_op_member_decorate_value(decorations, struct_type, j, DECORATION_MATRIX_STRIDE, 16);
-					offset += 12;
 				}
-				if (member_type == float4x4_id) {
+				else if (member_type == float4x4_id) {
+					write_op_member_decorate(decorations, struct_type, j, DECORATION_COL_MAJOR);
 					write_op_member_decorate_value(decorations, struct_type, j, DECORATION_MATRIX_STRIDE, 16);
-					offset += 16;
 				}
 			}
 
