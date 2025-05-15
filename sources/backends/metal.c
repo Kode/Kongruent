@@ -449,7 +449,7 @@ static void write_functions(char *code, size_t *offset) {
 						}
 						break;
 					case ACCESS_MEMBER:
-						if (i == 0 && g != NULL) {
+						if (i == 0 && g != NULL && !root_constant) {
 							*offset += sprintf(&code[*offset], "->%s", get_name(o->op_load_access_list.access_list[i].access_member.name));
 						}
 						else {
