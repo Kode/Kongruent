@@ -1189,7 +1189,13 @@ void kore3_export(char *directory, api_kind api) {
 				if (api != API_WEBGPU) {
 					descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
 					for (size_t group_index = 0; group_index < group->size; ++group_index) {
-						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+						size_t buffer_index = group_index;
+						
+						if (api == API_METAL) {
+							buffer_index += 1;
+						}
+						
+						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), buffer_index);
 					}
 				}
 
@@ -2106,7 +2112,7 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, ");\n");
 				}
 				else if (api == API_METAL) {
-					fprintf(output, "\n\tkore_metal_command_list_set_descriptor_set(list, &set->set");
+					fprintf(output, "\n\tkore_metal_command_list_set_descriptor_set(list, %s_table_index, &set->set", get_name(set->name));
 					if (dynamic_count > 0) {
 						fprintf(output, ", dynamic_buffers, dynamic_offsets, dynamic_sizes, %u", dynamic_count);
 					}
@@ -2198,7 +2204,12 @@ void kore3_export(char *directory, api_kind api) {
 				if (api != API_WEBGPU) {
 					descriptor_set_group *group = find_descriptor_set_group_for_function(f);
 					for (size_t group_index = 0; group_index < group->size; ++group_index) {
-						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+						size_t buffer_index = group_index;
+						if (api == API_METAL) {
+							buffer_index += 1;
+						}
+						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), buffer_index);
+						
 					}
 				}
 
