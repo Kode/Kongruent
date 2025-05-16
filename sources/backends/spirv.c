@@ -502,7 +502,7 @@ static spirv_id write_type_function(instructions_buffer *instructions, spirv_id 
 	operands_buffer[0] = function_type.id;
 	operands_buffer[1] = return_type.id;
 	for (uint16_t i = 0; i < parameter_types_size; ++i) {
-		operands_buffer[i + 2] = parameter_types[0].id;
+		operands_buffer[i + 2] = parameter_types[i].id;
 	}
 	write_instruction(instructions, 3 + parameter_types_size, SPIRV_OPCODE_TYPE_FUNCTION, operands_buffer);
 	return function_type;
@@ -1572,22 +1572,25 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 	for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 		check(parameter_ids[parameter_index] != 0, context, "Parameter not found");
-
-		if (!main) {
-			spirv_id spirv_parameter_id = convert_kong_index_to_spirv_id(parameter_ids[parameter_index]);
-			write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_types[parameter_index], STORAGE_CLASS_FUNCTION),
-			                               spirv_parameter_id, STORAGE_CLASS_FUNCTION);
-			write_op_store(instructions, spirv_parameter_id, parameter_value_ids[parameter_index]);
-		}
 	}
 
 	// create variable for the input parameter
-	spirv_id spirv_parameter_id = {0};
+	spirv_id spirv_parameter_ids[256] = {0};
+	uint32_t spirv_parameter_ids_size = 0;
 	if (main) {
 		if (stage == SHADER_STAGE_VERTEX || stage == SHADER_STAGE_FRAGMENT) {
-			spirv_parameter_id = convert_kong_index_to_spirv_id(parameter_ids[0]);
-			write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_types[0], STORAGE_CLASS_FUNCTION), spirv_parameter_id,
+			spirv_parameter_ids[0] = convert_kong_index_to_spirv_id(parameter_ids[0]);
+			write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_types[0], STORAGE_CLASS_FUNCTION), spirv_parameter_ids[0],
 			                               STORAGE_CLASS_FUNCTION);
+			spirv_parameter_ids_size++;
+		}
+	}
+	else {
+		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+			spirv_parameter_ids[spirv_parameter_ids_size] = convert_kong_index_to_spirv_id(parameter_ids[parameter_index]);
+			write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_types[parameter_index], STORAGE_CLASS_FUNCTION),
+			                               spirv_parameter_ids[spirv_parameter_ids_size], STORAGE_CLASS_FUNCTION);
+			spirv_parameter_ids_size++;
 		}
 	}
 
@@ -1616,7 +1619,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id index   = get_int_constant((int)(i + 1)); // jump over the pos member
 				spirv_id loaded  = write_op_load(instructions, convert_type_to_spirv_id(input_types[i]), input_vars[i]);
 				spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(input_types[i], STORAGE_CLASS_FUNCTION),
-				                                         spirv_parameter_id, &index, 1);
+				                                         spirv_parameter_ids[0], &index, 1);
 				write_op_store(instructions, pointer, loaded);
 			}
 		}
@@ -1625,9 +1628,14 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id index   = get_int_constant((int)i);
 				spirv_id loaded  = write_op_load(instructions, convert_type_to_spirv_id(input_types[i]), input_vars[i]);
 				spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(input_types[i], STORAGE_CLASS_FUNCTION),
-				                                         spirv_parameter_id, &index, 1);
+				                                         spirv_parameter_ids[0], &index, 1);
 				write_op_store(instructions, pointer, loaded);
 			}
+		}
+	}
+	else {
+		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+			write_op_store(instructions, spirv_parameter_ids[parameter_index], parameter_value_ids[parameter_index]);
 		}
 	}
 
@@ -1735,12 +1743,12 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					s = get_type(o->op_load_access_list.access_list[i].type);
 				}
 
-				type_id access_kong_type = find_access_type(plain_indices, access_kinds, indices_size, o->op_store_access_list.from.type.type);
+				type_id access_kong_type = find_access_type(plain_indices, access_kinds, indices_size, o->op_load_access_list.from.type.type);
 				assert(access_kong_type != NO_TYPE);
 
 				spirv_id access_type = {0};
 
-				switch (o->op_store_access_list.from.kind) {
+				switch (o->op_load_access_list.from.kind) {
 				case VARIABLE_LOCAL:
 					access_type = convert_pointer_type_to_spirv_id(access_kong_type, STORAGE_CLASS_FUNCTION);
 					break;
@@ -1795,13 +1803,12 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					sampled_image_type = spirv_sampled_image2darray_type;
 				}
 
-				spirv_id image = write_op_load(instructions, image_type, convert_kong_index_to_spirv_id(image_var.index));
-
-				spirv_id sampler = write_op_load(instructions, spirv_sampler_type, convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
-
+				spirv_id image         = write_op_load(instructions, image_type, convert_kong_index_to_spirv_id(image_var.index));
+				spirv_id sampler       = write_op_load(instructions, spirv_sampler_type, convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				spirv_id sampled_image = write_op_sampled_image(instructions, sampled_image_type, image, sampler);
-				spirv_id id            = write_op_image_sample_implicit_lod(instructions, spirv_float4_type, sampled_image,
-				                                                            convert_kong_index_to_spirv_id(o->op_call.parameters[2].index));
+				spirv_id coordinate    = kong_index_to_spirv_id(instructions, o->op_call.parameters[2]);
+
+				spirv_id id            = write_op_image_sample_implicit_lod(instructions, spirv_float4_type, sampled_image, coordinate);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("sample_lod")) {
@@ -1819,14 +1826,13 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					sampled_image_type = spirv_sampled_image2darray_type;
 				}
 
-				spirv_id image = write_op_load(instructions, image_type, convert_kong_index_to_spirv_id(image_var.index));
-
-				spirv_id sampler = write_op_load(instructions, spirv_sampler_type, convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
-
+				spirv_id image         = write_op_load(instructions, image_type, convert_kong_index_to_spirv_id(image_var.index));
+				spirv_id sampler       = write_op_load(instructions, spirv_sampler_type, convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				spirv_id sampled_image = write_op_sampled_image(instructions, sampled_image_type, image, sampler);
-				spirv_id id            = write_op_image_sample_explicit_lod(instructions, spirv_float4_type, sampled_image,
-				                                                            convert_kong_index_to_spirv_id(o->op_call.parameters[2].index),
-				                                                            convert_kong_index_to_spirv_id(o->op_call.parameters[3].index));
+				spirv_id coordinate    = kong_index_to_spirv_id(instructions, o->op_call.parameters[2]);
+				spirv_id lod           = kong_index_to_spirv_id(instructions, o->op_call.parameters[3]);
+
+				spirv_id id            = write_op_image_sample_explicit_lod(instructions, spirv_float4_type, sampled_image, coordinate, lod);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("float")) {
@@ -2236,32 +2242,33 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id result;
 
 				if (o->type == OPCODE_STORE_ACCESS_LIST) {
-					result = convert_kong_index_to_spirv_id(o->op_store_access_list.from.index);
+					result = kong_index_to_spirv_id(instructions, o->op_store_access_list.from);
 				}
 				else {
+					spirv_id loaded = write_op_load(instructions, convert_type_to_spirv_id(access_kong_type), pointer);
 					spirv_id from = kong_index_to_spirv_id(instructions, o->op_store_access_list.from);
 
 					if (o->type == OPCODE_ADD_AND_STORE_ACCESS_LIST) {
 						if (vector_base_type(access_kong_type) == float_id) {
-							result = write_op_f_add(instructions, convert_type_to_spirv_id(access_kong_type), pointer, from);
+							result = write_op_f_add(instructions, convert_type_to_spirv_id(access_kong_type), loaded, from);
 						}
 						else if (vector_base_type(access_kong_type) == int_id || vector_base_type(access_kong_type) == uint_id) {
-							result = write_op_i_add(instructions, convert_type_to_spirv_id(access_kong_type), pointer, from);
+							result = write_op_i_add(instructions, convert_type_to_spirv_id(access_kong_type), loaded, from);
 						}
 					}
 					else if (o->type == OPCODE_SUB_AND_STORE_ACCESS_LIST) {
 						if (vector_base_type(access_kong_type) == float_id) {
-							result = write_op_f_sub(instructions, convert_type_to_spirv_id(access_kong_type), pointer, from);
+							result = write_op_f_sub(instructions, convert_type_to_spirv_id(access_kong_type), loaded, from);
 						}
 						else if (vector_base_type(access_kong_type) == int_id || vector_base_type(access_kong_type) == uint_id) {
-							result = write_op_i_sub(instructions, convert_type_to_spirv_id(access_kong_type), pointer, from);
+							result = write_op_i_sub(instructions, convert_type_to_spirv_id(access_kong_type), loaded, from);
 						}
 					}
 					else if (o->type == OPCODE_MULTIPLY_AND_STORE_ACCESS_LIST) {
-						result = write_op_f_mul(instructions, convert_type_to_spirv_id(access_kong_type), pointer, from);
+						result = write_op_f_mul(instructions, convert_type_to_spirv_id(access_kong_type), loaded, from);
 					}
 					else if (o->type == OPCODE_DIVIDE_AND_STORE_ACCESS_LIST) {
-						result = write_op_f_div(instructions, convert_type_to_spirv_id(access_kong_type), pointer, from);
+						result = write_op_f_div(instructions, convert_type_to_spirv_id(access_kong_type), loaded, from);
 					}
 				}
 
@@ -2302,7 +2309,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_STORE_VARIABLE: {
-			write_op_store(instructions, convert_kong_index_to_spirv_id(o->op_store_var.to.index), convert_kong_index_to_spirv_id(o->op_store_var.from.index));
+			spirv_id from = kong_index_to_spirv_id(instructions, o->op_store_var.from);
+			write_op_store(instructions, convert_kong_index_to_spirv_id(o->op_store_var.to.index), from);
 			break;
 		}
 		case OPCODE_ADD_AND_STORE_VARIABLE:
