@@ -1190,11 +1190,11 @@ void kore3_export(char *directory, api_kind api) {
 					descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
 					for (size_t group_index = 0; group_index < group->size; ++group_index) {
 						size_t buffer_index = group_index;
-						
+
 						if (api == API_METAL) {
 							buffer_index += 1;
 						}
-						
+
 						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), buffer_index);
 					}
 				}
@@ -2209,7 +2209,6 @@ void kore3_export(char *directory, api_kind api) {
 							buffer_index += 1;
 						}
 						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), buffer_index);
-						
 					}
 				}
 

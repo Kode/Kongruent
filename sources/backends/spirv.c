@@ -1927,7 +1927,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("uint3")) {
 				spirv_id constituents[3];
 				for (int i = 0; i < o->op_call.parameters_size; ++i) {
-					constituents[i] = kong_index_to_spirv_id(instructions,  o->op_call.parameters[i]);
+					constituents[i] = kong_index_to_spirv_id(instructions, o->op_call.parameters[i]);
 				}
 				spirv_id id = write_op_composite_construct(instructions, spirv_uint3_type, constituents, o->op_call.parameters_size);
 				hmput(index_map, o->op_call.var.index, id);
@@ -1959,156 +1959,156 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			else if (func == add_name("dot")) {
 				spirv_id operand1 = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
 				spirv_id operand2 = kong_index_to_spirv_id(instructions, o->op_call.parameters[1]);
-				spirv_id id = write_op_dot(instructions, spirv_float_type, operand1, operand2);
+				spirv_id id       = write_op_dot(instructions, spirv_float_type, operand1, operand2);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("ddx")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_dpdx(instructions, spirv_float_type, operand);
+				spirv_id id      = write_op_dpdx(instructions, spirv_float_type, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("ddy")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_dpdy(instructions, spirv_float_type, operand);
+				spirv_id id      = write_op_dpdy(instructions, spirv_float_type, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("round")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_ROUND, operand);
+				spirv_id id      = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_ROUND, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("floor")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FLOOR, operand);
+				spirv_id id      = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FLOOR, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("sin")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_SIN, operand);
+				spirv_id id      = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_SIN, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("cos")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_COS, operand);
+				spirv_id id      = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_COS, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("length")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_LENGTH, operand);
+				spirv_id id      = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_LENGTH, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("abs")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FABS, operand);
+				spirv_id id      = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FABS, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("ceil")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_CEIL, operand);
+				spirv_id id      = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_CEIL, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("frac")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FRACT, operand);
+				spirv_id id      = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FRACT, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("asin")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_ASIN, operand);
+				spirv_id id      = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_ASIN, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("acos")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_ACOS, operand);
+				spirv_id id      = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_ACOS, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("atan")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_ATAN, operand);
+				spirv_id id      = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_ATAN, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("atan2")) {
 				spirv_id operand1 = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
 				spirv_id operand2 = kong_index_to_spirv_id(instructions, o->op_call.parameters[1]);
-				spirv_id id = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_ATAN2, operand1, operand2);
+				spirv_id id       = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_ATAN2, operand1, operand2);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("pow")) {
 				spirv_id operand1 = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
 				spirv_id operand2 = kong_index_to_spirv_id(instructions, o->op_call.parameters[1]);
-				spirv_id id = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_POW, operand1, operand2);
+				spirv_id id       = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_POW, operand1, operand2);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("sqrt")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_SQRT, operand);
+				spirv_id id      = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_SQRT, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("rsqrt")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_INVERSE_SQRT, operand);
+				spirv_id id      = write_op_ext_inst(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_INVERSE_SQRT, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("min")) {
 				spirv_id operand1 = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
 				spirv_id operand2 = kong_index_to_spirv_id(instructions, o->op_call.parameters[1]);
-				spirv_id id = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FMIN, operand1, operand2);
+				spirv_id id       = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FMIN, operand1, operand2);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("max")) {
 				spirv_id operand1 = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
 				spirv_id operand2 = kong_index_to_spirv_id(instructions, o->op_call.parameters[1]);
-				spirv_id id = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FMAX, operand1, operand2);
+				spirv_id id       = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FMAX, operand1, operand2);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("clamp")) {
 				spirv_id operand1 = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
 				spirv_id operand2 = kong_index_to_spirv_id(instructions, o->op_call.parameters[1]);
 				spirv_id operand3 = kong_index_to_spirv_id(instructions, o->op_call.parameters[2]);
-				spirv_id id = write_op_ext_inst3(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FCLAMP, operand1, operand2, operand3);
+				spirv_id id       = write_op_ext_inst3(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FCLAMP, operand1, operand2, operand3);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("lerp")) {
 				spirv_id operand1 = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
 				spirv_id operand2 = kong_index_to_spirv_id(instructions, o->op_call.parameters[1]);
 				spirv_id operand3 = kong_index_to_spirv_id(instructions, o->op_call.parameters[2]);
-				spirv_id id = write_op_ext_inst3(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FMIX, operand1, operand2, operand3);
+				spirv_id id       = write_op_ext_inst3(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_FMIX, operand1, operand2, operand3);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("step")) {
 				spirv_id operand1 = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
 				spirv_id operand2 = kong_index_to_spirv_id(instructions, o->op_call.parameters[1]);
-				spirv_id id = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_STEP, operand1, operand2);
+				spirv_id id       = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_STEP, operand1, operand2);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("smoothstep")) {
 				spirv_id operand1 = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
 				spirv_id operand2 = kong_index_to_spirv_id(instructions, o->op_call.parameters[1]);
 				spirv_id operand3 = kong_index_to_spirv_id(instructions, o->op_call.parameters[2]);
-				spirv_id id = write_op_ext_inst3(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_SMOOTHSTEP, operand1, operand2, operand3);
+				spirv_id id       = write_op_ext_inst3(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_SMOOTHSTEP, operand1, operand2, operand3);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("distance")) {
 				spirv_id operand1 = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
 				spirv_id operand2 = kong_index_to_spirv_id(instructions, o->op_call.parameters[1]);
-				spirv_id id = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_DISTANCE, operand1, operand2);
+				spirv_id id       = write_op_ext_inst2(instructions, spirv_float_type, glsl_import, SPIRV_GLSL_STD_DISTANCE, operand1, operand2);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("cross")) {
 				spirv_id operand1 = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
 				spirv_id operand2 = kong_index_to_spirv_id(instructions, o->op_call.parameters[1]);
-				spirv_id id = write_op_ext_inst2(instructions, spirv_float3_type, glsl_import, SPIRV_GLSL_STD_CROSS, operand1, operand2);
+				spirv_id id       = write_op_ext_inst2(instructions, spirv_float3_type, glsl_import, SPIRV_GLSL_STD_CROSS, operand1, operand2);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("normalize")) {
 				spirv_id operand = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
-				spirv_id id = write_op_ext_inst(instructions, spirv_float3_type, glsl_import, SPIRV_GLSL_STD_NORMALIZE, operand);
+				spirv_id id      = write_op_ext_inst(instructions, spirv_float3_type, glsl_import, SPIRV_GLSL_STD_NORMALIZE, operand);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("reflect")) {
 				spirv_id operand1 = kong_index_to_spirv_id(instructions, o->op_call.parameters[0]);
 				spirv_id operand2 = kong_index_to_spirv_id(instructions, o->op_call.parameters[1]);
-				spirv_id id = write_op_ext_inst2(instructions, spirv_float3_type, glsl_import, SPIRV_GLSL_STD_REFLECT, operand1, operand2);
+				spirv_id id       = write_op_ext_inst2(instructions, spirv_float3_type, glsl_import, SPIRV_GLSL_STD_REFLECT, operand1, operand2);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else {
@@ -2154,7 +2154,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id image = write_op_load(instructions, spirv_writable_image_type, convert_kong_index_to_spirv_id(o->op_store_access_list.to.index));
 
 				variable coordinate_var = o->op_store_access_list.access_list[0].access_element.index;
-				spirv_id coordinate = kong_index_to_spirv_id(instructions, coordinate_var);
+				spirv_id coordinate     = kong_index_to_spirv_id(instructions, coordinate_var);
 
 				write_op_image_write(instructions, image, coordinate, convert_kong_index_to_spirv_id(o->op_store_access_list.from.index));
 			}
@@ -2273,7 +2273,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		}
 		case OPCODE_NOT: {
 			spirv_id operand = kong_index_to_spirv_id(instructions, o->op_not.from);
-			spirv_id result = write_op_not(instructions, spirv_bool_type, operand);
+			spirv_id result  = write_op_not(instructions, spirv_bool_type, operand);
 			hmput(index_map, o->op_not.to.index, result);
 			break;
 		}
@@ -2300,7 +2300,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		case OPCODE_MULTIPLY_AND_STORE_VARIABLE:
 		case OPCODE_DIVIDE_AND_STORE_VARIABLE: {
 			spirv_id from = kong_index_to_spirv_id(instructions, o->op_store_var.from);
-			spirv_id to = kong_index_to_spirv_id(instructions, o->op_store_var.to);
+			spirv_id to   = kong_index_to_spirv_id(instructions, o->op_store_var.to);
 			spirv_id result;
 
 			switch (o->type) {
@@ -2410,35 +2410,35 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_LESS: {
-			spirv_id left = kong_index_to_spirv_id(instructions, o->op_binary.left);
-			spirv_id right = kong_index_to_spirv_id(instructions, o->op_binary.right);
+			spirv_id left   = kong_index_to_spirv_id(instructions, o->op_binary.left);
+			spirv_id right  = kong_index_to_spirv_id(instructions, o->op_binary.right);
 			spirv_id result = write_op_f_ord_less_than(instructions, spirv_bool_type, left, right);
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
 		case OPCODE_LESS_EQUAL: {
-			spirv_id left = kong_index_to_spirv_id(instructions, o->op_binary.left);
-			spirv_id right = kong_index_to_spirv_id(instructions, o->op_binary.right);
+			spirv_id left   = kong_index_to_spirv_id(instructions, o->op_binary.left);
+			spirv_id right  = kong_index_to_spirv_id(instructions, o->op_binary.right);
 			spirv_id result = write_op_f_ord_less_than_equal(instructions, spirv_bool_type, left, right);
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
 		case OPCODE_GREATER: {
-			spirv_id left = kong_index_to_spirv_id(instructions, o->op_binary.left);
-			spirv_id right = kong_index_to_spirv_id(instructions, o->op_binary.right);
+			spirv_id left   = kong_index_to_spirv_id(instructions, o->op_binary.left);
+			spirv_id right  = kong_index_to_spirv_id(instructions, o->op_binary.right);
 			spirv_id result = write_op_f_ord_greater_than(instructions, spirv_bool_type, left, right);
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
 		case OPCODE_GREATER_EQUAL: {
-			spirv_id left = kong_index_to_spirv_id(instructions, o->op_binary.left);
-			spirv_id right = kong_index_to_spirv_id(instructions, o->op_binary.right);
+			spirv_id left   = kong_index_to_spirv_id(instructions, o->op_binary.left);
+			spirv_id right  = kong_index_to_spirv_id(instructions, o->op_binary.right);
 			spirv_id result = write_op_f_ord_greater_than_equal(instructions, spirv_bool_type, left, right);
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
 		case OPCODE_ADD: {
-			spirv_id left = kong_index_to_spirv_id(instructions, o->op_binary.left);
+			spirv_id left  = kong_index_to_spirv_id(instructions, o->op_binary.left);
 			spirv_id right = kong_index_to_spirv_id(instructions, o->op_binary.right);
 
 			if (vector_base_type(o->op_binary.result.type.type) == float_id) {
@@ -2456,9 +2456,9 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_SUB: {
-			spirv_id left = kong_index_to_spirv_id(instructions, o->op_binary.left);
-			spirv_id right = kong_index_to_spirv_id(instructions, o->op_binary.right);
-			type_id result_type = o->op_binary.result.type.type;
+			spirv_id left        = kong_index_to_spirv_id(instructions, o->op_binary.left);
+			spirv_id right       = kong_index_to_spirv_id(instructions, o->op_binary.right);
+			type_id  result_type = o->op_binary.result.type.type;
 
 			if (result_type == int_id || result_type == int2_id || result_type == int3_id || result_type == int4_id || result_type == uint_id ||
 			    result_type == uint2_id || result_type == uint3_id || result_type == uint4_id) {
@@ -2473,10 +2473,10 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_MULTIPLY: {
-			spirv_id left = kong_index_to_spirv_id(instructions, o->op_binary.left);
-			spirv_id right = kong_index_to_spirv_id(instructions, o->op_binary.right);
-			bool left_is_matrix  = is_matrix(o->op_binary.left.type.type);
-			bool right_is_matrix = is_matrix(o->op_binary.right.type.type);
+			spirv_id left            = kong_index_to_spirv_id(instructions, o->op_binary.left);
+			spirv_id right           = kong_index_to_spirv_id(instructions, o->op_binary.right);
+			bool     left_is_matrix  = is_matrix(o->op_binary.left.type.type);
+			bool     right_is_matrix = is_matrix(o->op_binary.right.type.type);
 			spirv_id result;
 
 			if (left_is_matrix && right_is_matrix) {
@@ -2497,8 +2497,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_DIVIDE: {
-			spirv_id left = kong_index_to_spirv_id(instructions, o->op_binary.left);
-			spirv_id right = kong_index_to_spirv_id(instructions, o->op_binary.right);
+			spirv_id left   = kong_index_to_spirv_id(instructions, o->op_binary.left);
+			spirv_id right  = kong_index_to_spirv_id(instructions, o->op_binary.right);
 			spirv_id result = write_op_f_div(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
 
 			hmput(index_map, o->op_binary.result.index, result);
@@ -2506,8 +2506,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_MOD: {
-			spirv_id left = kong_index_to_spirv_id(instructions, o->op_binary.left);
-			spirv_id right = kong_index_to_spirv_id(instructions, o->op_binary.right);
+			spirv_id left   = kong_index_to_spirv_id(instructions, o->op_binary.left);
+			spirv_id right  = kong_index_to_spirv_id(instructions, o->op_binary.right);
 			spirv_id result = write_op_f_mod(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
 
 			hmput(index_map, o->op_binary.result.index, result);
@@ -2515,7 +2515,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_EQUALS: {
-			spirv_id left = kong_index_to_spirv_id(instructions, o->op_binary.left);
+			spirv_id left  = kong_index_to_spirv_id(instructions, o->op_binary.left);
 			spirv_id right = kong_index_to_spirv_id(instructions, o->op_binary.right);
 
 			if (vector_base_type(o->op_binary.left.type.type) == float_id) {
@@ -2530,7 +2530,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_NOT_EQUALS: {
-			spirv_id left = kong_index_to_spirv_id(instructions, o->op_binary.left);
+			spirv_id left  = kong_index_to_spirv_id(instructions, o->op_binary.left);
 			spirv_id right = kong_index_to_spirv_id(instructions, o->op_binary.right);
 
 			if (vector_base_type(o->op_binary.left.type.type) == float_id) {
