@@ -1572,22 +1572,25 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 	for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 		check(parameter_ids[parameter_index] != 0, context, "Parameter not found");
-
-		if (!main) {
-			spirv_id spirv_parameter_id = convert_kong_index_to_spirv_id(parameter_ids[parameter_index]);
-			write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_types[parameter_index], STORAGE_CLASS_FUNCTION),
-			                               spirv_parameter_id, STORAGE_CLASS_FUNCTION);
-			write_op_store(instructions, spirv_parameter_id, parameter_value_ids[parameter_index]);
-		}
 	}
 
 	// create variable for the input parameter
-	spirv_id spirv_parameter_id = {0};
+	spirv_id spirv_parameter_ids[256] = {0};
+	uint32_t spirv_parameter_ids_size = 0;
 	if (main) {
 		if (stage == SHADER_STAGE_VERTEX || stage == SHADER_STAGE_FRAGMENT) {
-			spirv_parameter_id = convert_kong_index_to_spirv_id(parameter_ids[0]);
-			write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_types[0], STORAGE_CLASS_FUNCTION), spirv_parameter_id,
+			spirv_parameter_ids[0] = convert_kong_index_to_spirv_id(parameter_ids[0]);
+			write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_types[0], STORAGE_CLASS_FUNCTION), spirv_parameter_ids[0],
 			                               STORAGE_CLASS_FUNCTION);
+			spirv_parameter_ids_size++;
+		}
+	}
+	else {
+		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+			spirv_parameter_ids[spirv_parameter_ids_size] = convert_kong_index_to_spirv_id(parameter_ids[parameter_index]);
+			write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_types[parameter_index], STORAGE_CLASS_FUNCTION),
+			                               spirv_parameter_ids[spirv_parameter_ids_size], STORAGE_CLASS_FUNCTION);
+			spirv_parameter_ids_size++;
 		}
 	}
 
@@ -1616,7 +1619,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id index   = get_int_constant((int)(i + 1)); // jump over the pos member
 				spirv_id loaded  = write_op_load(instructions, convert_type_to_spirv_id(input_types[i]), input_vars[i]);
 				spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(input_types[i], STORAGE_CLASS_FUNCTION),
-				                                         spirv_parameter_id, &index, 1);
+				                                         spirv_parameter_ids[0], &index, 1);
 				write_op_store(instructions, pointer, loaded);
 			}
 		}
@@ -1625,9 +1628,14 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id index   = get_int_constant((int)i);
 				spirv_id loaded  = write_op_load(instructions, convert_type_to_spirv_id(input_types[i]), input_vars[i]);
 				spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(input_types[i], STORAGE_CLASS_FUNCTION),
-				                                         spirv_parameter_id, &index, 1);
+				                                         spirv_parameter_ids[0], &index, 1);
 				write_op_store(instructions, pointer, loaded);
 			}
+		}
+	}
+	else {
+		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+			write_op_store(instructions, spirv_parameter_ids[parameter_index], parameter_value_ids[parameter_index]);
 		}
 	}
 
