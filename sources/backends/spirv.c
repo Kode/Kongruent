@@ -1502,9 +1502,19 @@ static spirv_id convert_kong_index_to_spirv_id(uint64_t index) {
 	return id;
 }
 
+static bool is_global_const(uint64_t index) {
+	for (global_id i = 0; get_global(i) != NULL; ++i) {
+		global *g = get_global(i);
+		if (g->var_index == index && g->type == float_id) {
+			return true;
+		}
+	}
+	return false;
+}
+
 static spirv_id kong_index_to_spirv_id(instructions_buffer *instructions, variable param) {
 	spirv_id id = convert_kong_index_to_spirv_id(param.index);
-	if (param.kind != VARIABLE_INTERNAL) {
+	if (param.kind != VARIABLE_INTERNAL && !is_global_const(param.index)) {
 		id = write_op_load(instructions, convert_type_to_spirv_id(param.type.type), id);
 	}
 	return id;
@@ -2900,7 +2910,8 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 			assert(false);
 		}
 		else if (base_type == float_id) {
-			assert(false);
+			spirv_id id = get_float_constant(g->value.value.floats[0]);
+			hmput(index_map, g->var_index, id);
 		}
 		else if (base_type == float2_id) {
 			assert(false);
