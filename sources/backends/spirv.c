@@ -502,7 +502,7 @@ static spirv_id write_type_function(instructions_buffer *instructions, spirv_id 
 	operands_buffer[0] = function_type.id;
 	operands_buffer[1] = return_type.id;
 	for (uint16_t i = 0; i < parameter_types_size; ++i) {
-		operands_buffer[i + 2] = parameter_types[0].id;
+		operands_buffer[i + 2] = parameter_types[i].id;
 	}
 	write_instruction(instructions, 3 + parameter_types_size, SPIRV_OPCODE_TYPE_FUNCTION, operands_buffer);
 	return function_type;
@@ -1795,13 +1795,12 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					sampled_image_type = spirv_sampled_image2darray_type;
 				}
 
-				spirv_id image = write_op_load(instructions, image_type, convert_kong_index_to_spirv_id(image_var.index));
-
-				spirv_id sampler = write_op_load(instructions, spirv_sampler_type, convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
-
+				spirv_id image         = write_op_load(instructions, image_type, convert_kong_index_to_spirv_id(image_var.index));
+				spirv_id sampler       = write_op_load(instructions, spirv_sampler_type, convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				spirv_id sampled_image = write_op_sampled_image(instructions, sampled_image_type, image, sampler);
-				spirv_id id            = write_op_image_sample_implicit_lod(instructions, spirv_float4_type, sampled_image,
-				                                                            convert_kong_index_to_spirv_id(o->op_call.parameters[2].index));
+				spirv_id coordinate    = kong_index_to_spirv_id(instructions, o->op_call.parameters[2]);
+
+				spirv_id id            = write_op_image_sample_implicit_lod(instructions, spirv_float4_type, sampled_image, coordinate);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("sample_lod")) {
@@ -1819,14 +1818,13 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					sampled_image_type = spirv_sampled_image2darray_type;
 				}
 
-				spirv_id image = write_op_load(instructions, image_type, convert_kong_index_to_spirv_id(image_var.index));
-
-				spirv_id sampler = write_op_load(instructions, spirv_sampler_type, convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
-
+				spirv_id image         = write_op_load(instructions, image_type, convert_kong_index_to_spirv_id(image_var.index));
+				spirv_id sampler       = write_op_load(instructions, spirv_sampler_type, convert_kong_index_to_spirv_id(o->op_call.parameters[1].index));
 				spirv_id sampled_image = write_op_sampled_image(instructions, sampled_image_type, image, sampler);
-				spirv_id id            = write_op_image_sample_explicit_lod(instructions, spirv_float4_type, sampled_image,
-				                                                            convert_kong_index_to_spirv_id(o->op_call.parameters[2].index),
-				                                                            convert_kong_index_to_spirv_id(o->op_call.parameters[3].index));
+				spirv_id coordinate    = kong_index_to_spirv_id(instructions, o->op_call.parameters[2]);
+				spirv_id lod           = kong_index_to_spirv_id(instructions, o->op_call.parameters[3]);
+
+				spirv_id id            = write_op_image_sample_explicit_lod(instructions, spirv_float4_type, sampled_image, coordinate, lod);
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("float")) {
