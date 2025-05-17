@@ -2537,13 +2537,17 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\n");
 				}
 				else {
-					fprintf(output, "\t%s_parameters.fragment.targets_count = 1;\n", get_name(t->name));
-
 					member *format = find_member(t, "format");
 					if (format == NULL) {
 						format = find_member(t, "format0");
 					}
-					if (format != NULL) {
+					
+					if (format == NULL) {
+						fprintf(output, "\t%s_parameters.fragment.targets_count = 0;\n", get_name(t->name));
+					}
+					else {
+						fprintf(output, "\t%s_parameters.fragment.targets_count = 1;\n", get_name(t->name));
+
 						debug_context context = {0};
 						check(format->value.kind == TOKEN_IDENTIFIER, context, "format expects an identifier");
 
@@ -2555,17 +2559,24 @@ void kore3_export(char *directory, api_kind api) {
 							fprintf(output, "\t%s_parameters.fragment.targets[0].format = %s;\n", get_name(t->name),
 							        convert_texture_format(g->value.value.ints[0]));
 						}
-					}
-					else {
-						fprintf(output, "\t%s_parameters.fragment.targets[0].format = KORE_GPU_TEXTURE_FORMAT_RGBA8_UNORM;\n", get_name(t->name));
-					}
 
-					fprintf(output, "\t%s_parameters.fragment.targets[0].write_mask = 0xf;\n\n", get_name(t->name));
+						fprintf(output, "\t%s_parameters.fragment.targets[0].write_mask = 0xf;\n\n", get_name(t->name));
+					}
 				}
 
 				uint32_t target_count = get_type(fragment_function->return_type.type)->array_size;
-				target_count          = target_count < 1 ? 1 : target_count;
-
+				
+				if (target_count == 0) {
+					member *format = find_member(t, "format");
+					if (format == NULL) {
+						format = find_member(t, "format0");
+					}
+					
+					if (format != NULL) {
+						target_count = 1;
+					}
+				}
+				
 				for (uint32_t target_index = 0; target_index < target_count; ++target_index) {
 					fprintf(output, "\t%s_parameters.fragment.targets[%u].blend.color.src_factor = %s;\n", get_name(t->name), target_index,
 					        convert_blend_mode(blend_source, api_caps));
