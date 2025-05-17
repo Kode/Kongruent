@@ -648,6 +648,7 @@ void kore3_export(char *directory, api_kind api) {
 
 	type_id vertex_inputs[256]      = {0};
 	size_t  vertex_input_slots[256] = {0};
+	bool    vertex_inputs_per_instance [256] = {0};
 	size_t  vertex_inputs_size      = 0;
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
@@ -681,6 +682,7 @@ void kore3_export(char *directory, api_kind api) {
 						for (size_t input_index = 0; input_index < f->parameters_size; ++input_index) {
 							vertex_inputs[vertex_inputs_size]      = f->parameter_types[input_index].type;
 							vertex_input_slots[vertex_inputs_size] = input_index;
+							vertex_inputs_per_instance[vertex_inputs_size] = f->parameter_attributes[input_index] == add_name("per_instance");
 							vertex_inputs_size += 1;
 						}
 
@@ -939,6 +941,11 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "typedef struct %s {\n", get_name(t->name));
 			for (size_t j = 0; j < t->members.size; ++j) {
 				fprintf(output, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
+				
+				if (api == API_METAL && vertex_inputs_per_instance[i] && t->members.m[j].type.type == float3_id) {
+					fprintf(output, "\tfloat pad%zu;\n", j);
+				}
+				
 			}
 			fprintf(output, "} %s;\n\n", get_name(t->name));
 
