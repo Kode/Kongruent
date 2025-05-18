@@ -310,8 +310,8 @@ static void write_functions(char *code, size_t *offset) {
 		char buffers[1024];
 		memset(buffers, 0, sizeof(buffers));
 
-		size_t buffer_index          = 1;
-		
+		size_t buffer_index = 1;
+
 		if (is_vertex_function(i) || is_fragment_function(i) || is_compute_function(i)) {
 			global_array globals = {0};
 			find_referenced_globals(f, &globals);
@@ -362,21 +362,23 @@ static void write_functions(char *code, size_t *offset) {
 		if (is_vertex_function(i)) {
 			*offset += sprintf(&code[*offset], "vertex %s %s(%s _%" PRIu64 " [[stage_in]]", type_string(f->return_type.type), get_name(f->name),
 			                   type_string(f->parameter_types[0].type), parameter_ids[0]);
-			
+
 			for (uint8_t parameter_index = 1; parameter_index < f->parameters_size; ++parameter_index) {
 				if (f->parameter_attributes[parameter_index] == add_name("per_instance")) {
-					*offset += sprintf(&code[*offset], ", constant %s *_kong_%" PRIu64 " [[buffer(%zu)]]", type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index], buffer_index);
+					*offset += sprintf(&code[*offset], ", constant %s *_kong_%" PRIu64 " [[buffer(%zu)]]",
+					                   type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index], buffer_index);
 				}
 				else {
 					*offset += sprintf(&code[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 				}
 			}
-			
+
 			*offset += sprintf(&code[*offset], "%s, uint _kong_vertex_id [[vertex_id]], uint _kong_instance_id [[instance_id]]) {\n", buffers);
-			
+
 			for (uint8_t parameter_index = 1; parameter_index < f->parameters_size; ++parameter_index) {
 				if (f->parameter_attributes[parameter_index] == add_name("per_instance")) {
-					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _kong_%" PRIu64 "[_kong_instance_id];\n", type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index], parameter_ids[parameter_index]);
+					*offset += sprintf(&code[*offset], "\t%s _%" PRIu64 " = _kong_%" PRIu64 "[_kong_instance_id];\n",
+					                   type_string(f->parameter_types[parameter_index].type), parameter_ids[parameter_index], parameter_ids[parameter_index]);
 				}
 			}
 		}
