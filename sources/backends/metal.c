@@ -99,7 +99,7 @@ static void write_types(char *metal, size_t *offset) {
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-			name_id vertex_shader_name   = NO_NAME;
+			name_id vertex_shader_name = NO_NAME;
 
 			for (size_t j = 0; j < t->members.size; ++j) {
 				if (t->members.m[j].name == add_name("vertex")) {
@@ -119,22 +119,22 @@ static void write_types(char *metal, size_t *offset) {
 							}
 						}
 					}
-					
+
 					*offset += sprintf(&metal[*offset], "struct _kong_%s_attributes {\n", get_name(f->name));
-					
+
 					uint32_t a = 0;
-					
+
 					for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 						type *t = get_type(f->parameter_types[parameter_index].type);
-						
+
 						for (size_t j = 0; j < t->members.size; ++j) {
-							*offset +=
-							sprintf(&metal[*offset], "\t%s _%" PRIu64 "_%s [[attribute(%u)]];\n", type_string(t->members.m[j].type.type), parameter_ids[parameter_index], get_name(t->members.m[j].name), a);
-							
+							*offset += sprintf(&metal[*offset], "\t%s _%" PRIu64 "_%s [[attribute(%u)]];\n", type_string(t->members.m[j].type.type),
+							                   parameter_ids[parameter_index], get_name(t->members.m[j].name), a);
+
 							a += 1;
 						}
 					}
-					
+
 					*offset += sprintf(&metal[*offset], "};\n\n");
 				}
 			}
@@ -145,7 +145,7 @@ static void write_types(char *metal, size_t *offset) {
 		if (is_vertex_input(i)) {
 			continue;
 		}
-		
+
 		type *t = get_type(i);
 
 		if (!t->built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
@@ -353,7 +353,7 @@ static void write_functions(char *code, size_t *offset) {
 		char buffers[1024];
 		memset(buffers, 0, sizeof(buffers));
 
-		size_t buffer_index          = f->parameters_size;
+		size_t buffer_index = f->parameters_size;
 
 		if (is_vertex_function(i) || is_fragment_function(i) || is_compute_function(i)) {
 			global_array globals = {0};
@@ -403,8 +403,9 @@ static void write_functions(char *code, size_t *offset) {
 		}
 
 		if (is_vertex_function(i)) {
-			*offset += sprintf(&code[*offset], "vertex %s %s(_kong_%s_attributes _kong_stage_in [[stage_in]]", type_string(f->return_type.type), get_name(f->name), get_name(f->name));
-			
+			*offset += sprintf(&code[*offset], "vertex %s %s(_kong_%s_attributes _kong_stage_in [[stage_in]]", type_string(f->return_type.type),
+			                   get_name(f->name), get_name(f->name));
+
 			*offset += sprintf(&code[*offset], "%s, uint _kong_vertex_id [[vertex_id]], uint _kong_instance_id [[instance_id]]) {\n", buffers);
 		}
 		else if (is_fragment_function(i)) {
@@ -495,11 +496,12 @@ static void write_functions(char *code, size_t *offset) {
 					case ACCESS_MEMBER:
 						if (i == 0 && g != NULL && !root_constant) {
 							*offset += sprintf(&code[*offset], "%s", from_name);
-							
+
 							*offset += sprintf(&code[*offset], "->%s", get_name(o->op_load_access_list.access_list[i].access_member.name));
 						}
 						else if (i == 0 && is_vertex_input(s)) {
-							*offset += sprintf(&code[*offset], "_kong_stage_in.%s_%s", from_name, get_name(o->op_load_access_list.access_list[i].access_member.name));
+							*offset +=
+							    sprintf(&code[*offset], "_kong_stage_in.%s_%s", from_name, get_name(o->op_load_access_list.access_list[i].access_member.name));
 						}
 						else {
 							if (i == 0) {
