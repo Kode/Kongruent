@@ -1114,51 +1114,51 @@ void kore3_export(char *directory, api_kind api) {
 
 				global_array globals = {0};
 
+				for (global_id i = 0; get_global(i) != NULL; ++i) {
+					global *g = get_global(i);
+					if (g->type == sampler_type_id) {
+					}
+					else if (is_texture(g->type)) {
+					}
+					else if (g->type == float_id) {
+					}
+					else if (!get_type(g->type)->built_in) {
+						fprintf(output, "static uint32_t _%" PRIu64 "_uniform_block_index;\n", g->var_index);
+					}
+				}
+
+				for (size_t j = 0; j < t->members.size; ++j) {
+					if (t->members.m[j].name == add_name("vertex")) {
+						vertex_shader_name = t->members.m[j].value.identifier;
+					}
+					if (t->members.m[j].name == add_name("fragment")) {
+						fragment_shader_name = t->members.m[j].value.identifier;
+					}
+				}
+
+				assert(vertex_shader_name != NO_NAME);
+				assert(fragment_shader_name != NO_NAME);
+
+				for (function_id i = 0; get_function(i) != NULL; ++i) {
+					function *f = get_function(i);
+
+					if (f->name == vertex_shader_name) {
+						vertex_function = f;
+					}
+
+					if (f->name == fragment_shader_name) {
+						fragment_function = f;
+					}
+
+					if (vertex_function != NULL && fragment_function != NULL) {
+						break;
+					}
+				}
+
+				assert(vertex_function != NULL);
+				assert(fragment_function != NULL);
+
 				if (api == API_OPENGL) {
-					for (global_id i = 0; get_global(i) != NULL; ++i) {
-						global *g = get_global(i);
-						if (g->type == sampler_type_id) {
-						}
-						else if (is_texture(g->type)) {
-						}
-						else if (g->type == float_id) {
-						}
-						else if (!get_type(g->type)->built_in) {
-							fprintf(output, "static uint32_t _%" PRIu64 "_uniform_block_index;\n", g->var_index);
-						}
-					}
-
-					for (size_t j = 0; j < t->members.size; ++j) {
-						if (t->members.m[j].name == add_name("vertex")) {
-							vertex_shader_name = t->members.m[j].value.identifier;
-						}
-						if (t->members.m[j].name == add_name("fragment")) {
-							fragment_shader_name = t->members.m[j].value.identifier;
-						}
-					}
-
-					assert(vertex_shader_name != NO_NAME);
-					assert(fragment_shader_name != NO_NAME);
-
-					for (function_id i = 0; get_function(i) != NULL; ++i) {
-						function *f = get_function(i);
-
-						if (f->name == vertex_shader_name) {
-							vertex_function = f;
-						}
-
-						if (f->name == fragment_shader_name) {
-							fragment_function = f;
-						}
-
-						if (vertex_function != NULL && fragment_function != NULL) {
-							break;
-						}
-					}
-
-					assert(vertex_function != NULL);
-					assert(fragment_function != NULL);
-
 					find_referenced_globals(vertex_function, &globals);
 					find_referenced_globals(fragment_function, &globals);
 
