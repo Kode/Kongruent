@@ -646,10 +646,10 @@ void kore3_export(char *directory, api_kind api) {
 		}
 	}
 
-	type_id vertex_inputs[256]      = {0};
-	size_t  vertex_input_slots[256] = {0};
-	bool    vertex_inputs_per_instance [256] = {0};
-	size_t  vertex_inputs_size      = 0;
+	type_id vertex_inputs[256]              = {0};
+	size_t  vertex_input_slots[256]         = {0};
+	bool    vertex_inputs_per_instance[256] = {0};
+	size_t  vertex_inputs_size              = 0;
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
@@ -680,8 +680,8 @@ void kore3_export(char *directory, api_kind api) {
 						check(f->parameters_size > 0, context, "Vertex function requires at least one parameter");
 
 						for (size_t input_index = 0; input_index < f->parameters_size; ++input_index) {
-							vertex_inputs[vertex_inputs_size]      = f->parameter_types[input_index].type;
-							vertex_input_slots[vertex_inputs_size] = input_index;
+							vertex_inputs[vertex_inputs_size]              = f->parameter_types[input_index].type;
+							vertex_input_slots[vertex_inputs_size]         = input_index;
 							vertex_inputs_per_instance[vertex_inputs_size] = f->parameter_attributes[input_index] == add_name("per_instance");
 							vertex_inputs_size += 1;
 						}
@@ -1199,7 +1199,8 @@ void kore3_export(char *directory, api_kind api) {
 					descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
 					for (size_t group_index = 0; group_index < group->size; ++group_index) {
 						if (api == API_METAL) {
-							fprintf(output, "\t%s_vertex_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index + vertex_function->parameters_size);
+							fprintf(output, "\t%s_vertex_table_index = %zu;\n", get_name(group->values[group_index]->name),
+							        group_index + vertex_function->parameters_size);
 							fprintf(output, "\t%s_fragment_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index + 1);
 						}
 						else {
@@ -1416,12 +1417,14 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, "void kong_set_root_constants_%s(kore_gpu_command_list *list, %s *constants) {\n", get_name(root_constants_global->name),
 				        root_constants_type_name);
 				if (api == API_METAL) {
-					fprintf(output, "\tkore_%s_command_list_set_root_constants(list, %s_vertex_table_index, %s_fragment_table_index, %s_compute_table_index, constants, %i);\n", api_short, get_name(set->name), get_name(set->name), get_name(set->name),
-							struct_size(root_constants_global->type));
+					fprintf(output,
+					        "\tkore_%s_command_list_set_root_constants(list, %s_vertex_table_index, %s_fragment_table_index, %s_compute_table_index, "
+					        "constants, %i);\n",
+					        api_short, get_name(set->name), get_name(set->name), get_name(set->name), struct_size(root_constants_global->type));
 				}
 				else {
 					fprintf(output, "\tkore_%s_command_list_set_root_constants(list, %s_table_index, constants, %i);\n", api_short, get_name(set->name),
-							struct_size(root_constants_global->type));
+					        struct_size(root_constants_global->type));
 				}
 				fprintf(output, "}\n\n");
 
@@ -2132,7 +2135,10 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, ");\n");
 				}
 				else if (api == API_METAL) {
-					fprintf(output, "\n\tkore_metal_command_list_set_descriptor_set(list, %s_vertex_table_index, %s_fragment_table_index, %s_compute_table_index, &set->set", get_name(set->name), get_name(set->name), get_name(set->name));
+					fprintf(output,
+					        "\n\tkore_metal_command_list_set_descriptor_set(list, %s_vertex_table_index, %s_fragment_table_index, %s_compute_table_index, "
+					        "&set->set",
+					        get_name(set->name), get_name(set->name), get_name(set->name));
 					if (dynamic_count > 0) {
 						fprintf(output, ", dynamic_buffers, dynamic_offsets, dynamic_sizes, %u", dynamic_count);
 					}
@@ -2561,7 +2567,7 @@ void kore3_export(char *directory, api_kind api) {
 					if (format == NULL) {
 						format = find_member(t, "format0");
 					}
-					
+
 					if (format == NULL) {
 						fprintf(output, "\t%s_parameters.fragment.targets_count = 0;\n", get_name(t->name));
 					}
@@ -2585,18 +2591,18 @@ void kore3_export(char *directory, api_kind api) {
 				}
 
 				uint32_t target_count = get_type(fragment_function->return_type.type)->array_size;
-				
+
 				if (target_count == 0) {
 					member *format = find_member(t, "format");
 					if (format == NULL) {
 						format = find_member(t, "format0");
 					}
-					
+
 					if (format != NULL) {
 						target_count = 1;
 					}
 				}
-				
+
 				for (uint32_t target_index = 0; target_index < target_count; ++target_index) {
 					fprintf(output, "\t%s_parameters.fragment.targets[%u].blend.color.src_factor = %s;\n", get_name(t->name), target_index,
 					        convert_blend_mode(blend_source, api_caps));
