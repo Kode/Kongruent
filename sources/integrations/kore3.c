@@ -852,6 +852,9 @@ void kore3_export(char *directory, api_kind api) {
 					}
 					else {
 						fprintf(output, "\tkore_gpu_texture_view %s;\n", get_name(g->name));
+						if (api == API_METAL) {
+							fprintf(output, "\tvoid *%s_view;\n", get_name(g->name));
+						}
 					}
 				}
 				else if (is_sampler(g->type)) {
@@ -1639,7 +1642,9 @@ void kore3_export(char *directory, api_kind api) {
 					}
 					else if (is_texture(g->type)) {
 						fprintf(output, "\t\tid<MTLTexture> texture = (__bridge id<MTLTexture>)parameters->%s.texture->metal.texture;\n", get_name(g->name));
-						fprintf(output, "\t\t[argument_encoder setTexture: texture atIndex: %zu];\n", index);
+						fprintf(output, "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureType2D levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n", get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
+						fprintf(output, "\t\t[argument_encoder setTexture: view atIndex: %zu];\n", index);
+						fprintf(output, "\t\tset->%s_view = (__bridge_retained void*)view;\n", get_name(g->name));
 						index += 1;
 					}
 					else if (is_sampler(g->type)) {
@@ -1965,10 +1970,10 @@ void kore3_export(char *directory, api_kind api) {
 						}
 						else {
 							if (writable) {
-								fprintf(output, "\tkore_%s_descriptor_set_prepare_texture(list, &set->%s, true);\n", api_short, get_name(g->name));
+								fprintf(output, "\tkore_%s_descriptor_set_prepare_texture(list, set->%s_view, true);\n", api_short, get_name(g->name));
 							}
 							else {
-								fprintf(output, "\tkore_%s_descriptor_set_prepare_texture(list, &set->%s, false);\n", api_short, get_name(g->name));
+								fprintf(output, "\tkore_%s_descriptor_set_prepare_texture(list, set->%s_view, false);\n", api_short, get_name(g->name));
 							}
 						}
 					}
