@@ -1090,7 +1090,14 @@ void kore3_export(char *directory, api_kind api) {
 		if (api != API_WEBGPU) {
 			for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 				descriptor_set *set = sets[set_index];
-				fprintf(output, "static uint32_t %s_table_index = UINT32_MAX;\n\n", get_name(set->name));
+				if (api == API_METAL) {
+					fprintf(output, "static uint32_t %s_vertex_table_index = UINT32_MAX;\n\n", get_name(set->name));
+					fprintf(output, "static uint32_t %s_fragment_table_index = UINT32_MAX;\n\n", get_name(set->name));
+					fprintf(output, "static uint32_t %s_compute_table_index = UINT32_MAX;\n\n", get_name(set->name));
+				}
+				else {
+					fprintf(output, "static uint32_t %s_table_index = UINT32_MAX;\n\n", get_name(set->name));
+				}
 			}
 		}
 
@@ -1191,13 +1198,13 @@ void kore3_export(char *directory, api_kind api) {
 				if (api != API_WEBGPU) {
 					descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
 					for (size_t group_index = 0; group_index < group->size; ++group_index) {
-						size_t buffer_index = group_index;
-
 						if (api == API_METAL) {
-							buffer_index += 1;
+							fprintf(output, "\t%s_vertex_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index + vertex_function->parameters_size);
+							fprintf(output, "\t%s_fragment_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index + 1);
 						}
-
-						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), buffer_index);
+						else {
+							fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+						}
 					}
 				}
 
@@ -1214,7 +1221,12 @@ void kore3_export(char *directory, api_kind api) {
 
 				descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
 				for (size_t group_index = 0; group_index < group->size; ++group_index) {
-					fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+					if (api == API_METAL) {
+						fprintf(output, "\t%s_compute_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+					}
+					else {
+						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+					}
 				}
 
 				fprintf(output, "}\n\n");
@@ -1403,8 +1415,14 @@ void kore3_export(char *directory, api_kind api) {
 
 				fprintf(output, "void kong_set_root_constants_%s(kore_gpu_command_list *list, %s *constants) {\n", get_name(root_constants_global->name),
 				        root_constants_type_name);
-				fprintf(output, "\tkore_%s_command_list_set_root_constants(list, %s_table_index, constants, %i);\n", api_short, get_name(set->name),
-				        struct_size(root_constants_global->type));
+				if (api == API_METAL) {
+					fprintf(output, "\tkore_%s_command_list_set_root_constants(list, %s_vertex_table_index, %s_fragment_table_index, %s_compute_table_index, constants, %i);\n", api_short, get_name(set->name), get_name(set->name), get_name(set->name),
+							struct_size(root_constants_global->type));
+				}
+				else {
+					fprintf(output, "\tkore_%s_command_list_set_root_constants(list, %s_table_index, constants, %i);\n", api_short, get_name(set->name),
+							struct_size(root_constants_global->type));
+				}
 				fprintf(output, "}\n\n");
 
 				continue;
@@ -2114,7 +2132,7 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, ");\n");
 				}
 				else if (api == API_METAL) {
-					fprintf(output, "\n\tkore_metal_command_list_set_descriptor_set(list, %s_table_index, &set->set", get_name(set->name));
+					fprintf(output, "\n\tkore_metal_command_list_set_descriptor_set(list, %s_vertex_table_index, %s_fragment_table_index, %s_compute_table_index, &set->set", get_name(set->name), get_name(set->name), get_name(set->name));
 					if (dynamic_count > 0) {
 						fprintf(output, ", dynamic_buffers, dynamic_offsets, dynamic_sizes, %u", dynamic_count);
 					}
@@ -2206,11 +2224,12 @@ void kore3_export(char *directory, api_kind api) {
 				if (api != API_WEBGPU) {
 					descriptor_set_group *group = find_descriptor_set_group_for_function(f);
 					for (size_t group_index = 0; group_index < group->size; ++group_index) {
-						size_t buffer_index = group_index;
 						if (api == API_METAL) {
-							buffer_index += 1;
+							fprintf(output, "\t%s_compute_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
 						}
-						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), buffer_index);
+						else {
+							fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+						}
 					}
 				}
 
