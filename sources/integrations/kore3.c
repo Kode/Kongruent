@@ -941,11 +941,6 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "typedef struct %s {\n", get_name(t->name));
 			for (size_t j = 0; j < t->members.size; ++j) {
 				fprintf(output, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
-				
-				if (api == API_METAL && vertex_inputs_per_instance[i] && t->members.m[j].type.type == float3_id) {
-					fprintf(output, "\tfloat pad%zu;\n", j);
-				}
-				
 			}
 			fprintf(output, "} %s;\n\n", get_name(t->name));
 
