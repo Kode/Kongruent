@@ -1647,15 +1647,27 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\t\tid<MTLTexture> texture = (__bridge id<MTLTexture>)parameters->%s.texture->metal.texture;\n", get_name(g->name));
 
 						if (g->type == tex2d_type_id) {
-							fprintf(output, "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureType2D levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n", get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
+							fprintf(output,
+							        "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureType2D "
+							        "levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) "
+							        "slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n",
+							        get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
 						}
 						else if (g->type == tex2darray_type_id) {
-							fprintf(output, "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureType2DArray levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n", get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
+							fprintf(output,
+							        "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureType2DArray "
+							        "levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) "
+							        "slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n",
+							        get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
 						}
 						else if (g->type == texcube_type_id) {
-							fprintf(output, "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureTypeCube levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n", get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
+							fprintf(output,
+							        "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureTypeCube "
+							        "levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) "
+							        "slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n",
+							        get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
 						}
-						
+
 						fprintf(output, "\t\t[argument_encoder setTexture: view atIndex: %zu];\n", index);
 						fprintf(output, "\t\tset->%s_view = (__bridge_retained void*)view;\n", get_name(g->name));
 						index += 1;
