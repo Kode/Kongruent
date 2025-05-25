@@ -630,9 +630,11 @@ static spirv_id spirv_bool_type;
 static spirv_id spirv_sampler_type;
 static spirv_id spirv_image_type;
 static spirv_id spirv_image2darray_type;
+static spirv_id spirv_imagecube_type;
 static spirv_id spirv_writable_image_type;
 static spirv_id spirv_sampled_image_type;
 static spirv_id spirv_sampled_image2darray_type;
+static spirv_id spirv_sampled_imagecube_type;
 
 static spirv_id glsl_import;
 
@@ -761,11 +763,15 @@ static void write_base_types(instructions_buffer *buffer) {
 
 	spirv_image2darray_type = write_type_image(buffer, spirv_float_type, DIM_2D, 0, 1, 0, 1, IMAGE_FORMAT_UNKNOWN);
 
+	spirv_imagecube_type = write_type_image(buffer, spirv_float_type, DIM_CUBE, 0, 0, 0, 1, IMAGE_FORMAT_UNKNOWN);
+
 	spirv_writable_image_type = write_type_image(buffer, spirv_float_type, DIM_2D, 0, 0, 0, 2, IMAGE_FORMAT_UNKNOWN);
 
 	spirv_sampled_image_type = write_type_sampled_image(buffer, spirv_image_type);
 
 	spirv_sampled_image2darray_type = write_type_sampled_image(buffer, spirv_image2darray_type);
+
+	spirv_sampled_imagecube_type = write_type_sampled_image(buffer, spirv_imagecube_type);
 
 	store_base_type_mapping(float2x2_id, write_type_matrix(buffer, spirv_float2_type, 2));
 	store_base_type_mapping(float2x3_id, write_type_matrix(buffer, spirv_float3_type, 2));
@@ -1776,6 +1782,10 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					image_type         = spirv_image2darray_type;
 					sampled_image_type = spirv_sampled_image2darray_type;
 				}
+				else if (image_var.type.type == texcube_type_id){
+					image_type = spirv_imagecube_type;
+					sampled_image_type = spirv_sampled_imagecube_type;
+				}
 
 				spirv_id image = write_op_load(instructions, image_type, convert_kong_index_to_spirv_id(image_var.index));
 
@@ -1799,6 +1809,10 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				else if (image_var.type.type == tex2darray_type_id) {
 					image_type         = spirv_image2darray_type;
 					sampled_image_type = spirv_sampled_image2darray_type;
+				}
+				else if(image_var.type.type == texcube_type_id) {
+					image_type = spirv_imagecube_type;
+					sampled_image_type = spirv_sampled_imagecube_type;
 				}
 
 				spirv_id image = write_op_load(instructions, image_type, convert_kong_index_to_spirv_id(image_var.index));
@@ -3452,7 +3466,26 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 			}
 		}
 		else if (base_type == texcube_type_id) {
-			assert(false);
+			if (t->array_size == UINT32_MAX) {
+				assert(false);
+			}
+			else {
+				spirv_id image_pointer_type;
+
+				if (writable) {
+					assert(false);
+				}
+				else {
+					image_pointer_type = write_type_pointer(instructions_block, STORAGE_CLASS_UNIFORM_CONSTANT, spirv_imagecube_type);
+					add_to_type_map(g->type, true, STORAGE_CLASS_UNIFORM_CONSTANT, spirv_imagecube_type);
+				}
+
+				spirv_id spirv_var_id = convert_kong_index_to_spirv_id(g->var_index);
+				write_op_variable_preallocated(instructions_block, image_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM_CONSTANT);
+
+				write_op_decorate_value(decorations, spirv_var_id, DECORATION_DESCRIPTOR_SET, 0);
+				write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, binding);
+			}
 		}
 		else if (base_type == bvh_type_id) {
 			assert(false);
