@@ -646,9 +646,10 @@ void kore3_export(char *directory, api_kind api) {
 		}
 	}
 
-	type_id vertex_inputs[256]      = {0};
-	size_t  vertex_input_slots[256] = {0};
-	size_t  vertex_inputs_size      = 0;
+	type_id vertex_inputs[256]              = {0};
+	size_t  vertex_input_slots[256]         = {0};
+	bool    vertex_inputs_per_instance[256] = {0};
+	size_t  vertex_inputs_size              = 0;
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
@@ -679,8 +680,9 @@ void kore3_export(char *directory, api_kind api) {
 						check(f->parameters_size > 0, context, "Vertex function requires at least one parameter");
 
 						for (size_t input_index = 0; input_index < f->parameters_size; ++input_index) {
-							vertex_inputs[vertex_inputs_size]      = f->parameter_types[input_index].type;
-							vertex_input_slots[vertex_inputs_size] = input_index;
+							vertex_inputs[vertex_inputs_size]              = f->parameter_types[input_index].type;
+							vertex_input_slots[vertex_inputs_size]         = input_index;
+							vertex_inputs_per_instance[vertex_inputs_size] = f->parameter_attributes[input_index] == add_name("per_instance");
 							vertex_inputs_size += 1;
 						}
 
@@ -850,6 +852,9 @@ void kore3_export(char *directory, api_kind api) {
 					}
 					else {
 						fprintf(output, "\tkore_gpu_texture_view %s;\n", get_name(g->name));
+						if (api == API_METAL) {
+							fprintf(output, "\tvoid *%s_view;\n", get_name(g->name));
+						}
 					}
 				}
 				else if (is_sampler(g->type)) {
@@ -1088,7 +1093,14 @@ void kore3_export(char *directory, api_kind api) {
 		if (api != API_WEBGPU) {
 			for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 				descriptor_set *set = sets[set_index];
-				fprintf(output, "static uint32_t %s_table_index = UINT32_MAX;\n\n", get_name(set->name));
+				if (api == API_METAL) {
+					fprintf(output, "static uint32_t %s_vertex_table_index = UINT32_MAX;\n\n", get_name(set->name));
+					fprintf(output, "static uint32_t %s_fragment_table_index = UINT32_MAX;\n\n", get_name(set->name));
+					fprintf(output, "static uint32_t %s_compute_table_index = UINT32_MAX;\n\n", get_name(set->name));
+				}
+				else {
+					fprintf(output, "static uint32_t %s_table_index = UINT32_MAX;\n\n", get_name(set->name));
+				}
 			}
 		}
 
@@ -1105,51 +1117,51 @@ void kore3_export(char *directory, api_kind api) {
 
 				global_array globals = {0};
 
+				for (global_id i = 0; get_global(i) != NULL; ++i) {
+					global *g = get_global(i);
+					if (g->type == sampler_type_id) {
+					}
+					else if (is_texture(g->type)) {
+					}
+					else if (g->type == float_id) {
+					}
+					else if (!get_type(g->type)->built_in) {
+						fprintf(output, "static uint32_t _%" PRIu64 "_uniform_block_index;\n", g->var_index);
+					}
+				}
+
+				for (size_t j = 0; j < t->members.size; ++j) {
+					if (t->members.m[j].name == add_name("vertex")) {
+						vertex_shader_name = t->members.m[j].value.identifier;
+					}
+					if (t->members.m[j].name == add_name("fragment")) {
+						fragment_shader_name = t->members.m[j].value.identifier;
+					}
+				}
+
+				assert(vertex_shader_name != NO_NAME);
+				assert(fragment_shader_name != NO_NAME);
+
+				for (function_id i = 0; get_function(i) != NULL; ++i) {
+					function *f = get_function(i);
+
+					if (f->name == vertex_shader_name) {
+						vertex_function = f;
+					}
+
+					if (f->name == fragment_shader_name) {
+						fragment_function = f;
+					}
+
+					if (vertex_function != NULL && fragment_function != NULL) {
+						break;
+					}
+				}
+
+				assert(vertex_function != NULL);
+				assert(fragment_function != NULL);
+
 				if (api == API_OPENGL) {
-					for (global_id i = 0; get_global(i) != NULL; ++i) {
-						global *g = get_global(i);
-						if (g->type == sampler_type_id) {
-						}
-						else if (is_texture(g->type)) {
-						}
-						else if (g->type == float_id) {
-						}
-						else if (!get_type(g->type)->built_in) {
-							fprintf(output, "static uint32_t _%" PRIu64 "_uniform_block_index;\n", g->var_index);
-						}
-					}
-
-					for (size_t j = 0; j < t->members.size; ++j) {
-						if (t->members.m[j].name == add_name("vertex")) {
-							vertex_shader_name = t->members.m[j].value.identifier;
-						}
-						if (t->members.m[j].name == add_name("fragment")) {
-							fragment_shader_name = t->members.m[j].value.identifier;
-						}
-					}
-
-					assert(vertex_shader_name != NO_NAME);
-					assert(fragment_shader_name != NO_NAME);
-
-					for (function_id i = 0; get_function(i) != NULL; ++i) {
-						function *f = get_function(i);
-
-						if (f->name == vertex_shader_name) {
-							vertex_function = f;
-						}
-
-						if (f->name == fragment_shader_name) {
-							fragment_function = f;
-						}
-
-						if (vertex_function != NULL && fragment_function != NULL) {
-							break;
-						}
-					}
-
-					assert(vertex_function != NULL);
-					assert(fragment_function != NULL);
-
 					find_referenced_globals(vertex_function, &globals);
 					find_referenced_globals(fragment_function, &globals);
 
@@ -1189,7 +1201,14 @@ void kore3_export(char *directory, api_kind api) {
 				if (api != API_WEBGPU) {
 					descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
 					for (size_t group_index = 0; group_index < group->size; ++group_index) {
-						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+						if (api == API_METAL) {
+							fprintf(output, "\t%s_vertex_table_index = %zu;\n", get_name(group->values[group_index]->name),
+							        group_index + vertex_function->parameters_size);
+							fprintf(output, "\t%s_fragment_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index + 1);
+						}
+						else {
+							fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+						}
 					}
 				}
 
@@ -1206,7 +1225,12 @@ void kore3_export(char *directory, api_kind api) {
 
 				descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
 				for (size_t group_index = 0; group_index < group->size; ++group_index) {
-					fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+					if (api == API_METAL) {
+						fprintf(output, "\t%s_compute_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+					}
+					else {
+						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+					}
 				}
 
 				fprintf(output, "}\n\n");
@@ -1395,8 +1419,16 @@ void kore3_export(char *directory, api_kind api) {
 
 				fprintf(output, "void kong_set_root_constants_%s(kore_gpu_command_list *list, %s *constants) {\n", get_name(root_constants_global->name),
 				        root_constants_type_name);
-				fprintf(output, "\tkore_%s_command_list_set_root_constants(list, %s_table_index, constants, %i);\n", api_short, get_name(set->name),
-				        struct_size(root_constants_global->type));
+				if (api == API_METAL) {
+					fprintf(output,
+					        "\tkore_%s_command_list_set_root_constants(list, %s_vertex_table_index, %s_fragment_table_index, %s_compute_table_index, "
+					        "constants, %i);\n",
+					        api_short, get_name(set->name), get_name(set->name), get_name(set->name), struct_size(root_constants_global->type));
+				}
+				else {
+					fprintf(output, "\tkore_%s_command_list_set_root_constants(list, %s_table_index, constants, %i);\n", api_short, get_name(set->name),
+					        struct_size(root_constants_global->type));
+				}
 				fprintf(output, "}\n\n");
 
 				continue;
@@ -1613,7 +1645,31 @@ void kore3_export(char *directory, api_kind api) {
 					}
 					else if (is_texture(g->type)) {
 						fprintf(output, "\t\tid<MTLTexture> texture = (__bridge id<MTLTexture>)parameters->%s.texture->metal.texture;\n", get_name(g->name));
-						fprintf(output, "\t\t[argument_encoder setTexture: texture atIndex: %zu];\n", index);
+
+						if (g->type == tex2d_type_id) {
+							fprintf(output,
+							        "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureType2D "
+							        "levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) "
+							        "slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n",
+							        get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
+						}
+						else if (g->type == tex2darray_type_id) {
+							fprintf(output,
+							        "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureType2DArray "
+							        "levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) "
+							        "slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n",
+							        get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
+						}
+						else if (g->type == texcube_type_id) {
+							fprintf(output,
+							        "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureTypeCube "
+							        "levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) "
+							        "slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n",
+							        get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
+						}
+
+						fprintf(output, "\t\t[argument_encoder setTexture: view atIndex: %zu];\n", index);
+						fprintf(output, "\t\tset->%s_view = (__bridge_retained void*)view;\n", get_name(g->name));
 						index += 1;
 					}
 					else if (is_sampler(g->type)) {
@@ -1939,10 +1995,10 @@ void kore3_export(char *directory, api_kind api) {
 						}
 						else {
 							if (writable) {
-								fprintf(output, "\tkore_%s_descriptor_set_prepare_texture(list, &set->%s, true);\n", api_short, get_name(g->name));
+								fprintf(output, "\tkore_%s_descriptor_set_prepare_texture(list, set->%s_view, true);\n", api_short, get_name(g->name));
 							}
 							else {
-								fprintf(output, "\tkore_%s_descriptor_set_prepare_texture(list, &set->%s, false);\n", api_short, get_name(g->name));
+								fprintf(output, "\tkore_%s_descriptor_set_prepare_texture(list, set->%s_view, false);\n", api_short, get_name(g->name));
 							}
 						}
 					}
@@ -2106,7 +2162,10 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, ");\n");
 				}
 				else if (api == API_METAL) {
-					fprintf(output, "\n\tkore_metal_command_list_set_descriptor_set(list, &set->set");
+					fprintf(output,
+					        "\n\tkore_metal_command_list_set_descriptor_set(list, %s_vertex_table_index, %s_fragment_table_index, %s_compute_table_index, "
+					        "&set->set",
+					        get_name(set->name), get_name(set->name), get_name(set->name));
 					if (dynamic_count > 0) {
 						fprintf(output, ", dynamic_buffers, dynamic_offsets, dynamic_sizes, %u", dynamic_count);
 					}
@@ -2198,7 +2257,12 @@ void kore3_export(char *directory, api_kind api) {
 				if (api != API_WEBGPU) {
 					descriptor_set_group *group = find_descriptor_set_group_for_function(f);
 					for (size_t group_index = 0; group_index < group->size; ++group_index) {
-						fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+						if (api == API_METAL) {
+							fprintf(output, "\t%s_compute_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+						}
+						else {
+							fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+						}
 					}
 				}
 
@@ -2526,13 +2590,17 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\n");
 				}
 				else {
-					fprintf(output, "\t%s_parameters.fragment.targets_count = 1;\n", get_name(t->name));
-
 					member *format = find_member(t, "format");
 					if (format == NULL) {
 						format = find_member(t, "format0");
 					}
-					if (format != NULL) {
+
+					if (format == NULL) {
+						fprintf(output, "\t%s_parameters.fragment.targets_count = 0;\n", get_name(t->name));
+					}
+					else {
+						fprintf(output, "\t%s_parameters.fragment.targets_count = 1;\n", get_name(t->name));
+
 						debug_context context = {0};
 						check(format->value.kind == TOKEN_IDENTIFIER, context, "format expects an identifier");
 
@@ -2544,16 +2612,23 @@ void kore3_export(char *directory, api_kind api) {
 							fprintf(output, "\t%s_parameters.fragment.targets[0].format = %s;\n", get_name(t->name),
 							        convert_texture_format(g->value.value.ints[0]));
 						}
-					}
-					else {
-						fprintf(output, "\t%s_parameters.fragment.targets[0].format = KORE_GPU_TEXTURE_FORMAT_RGBA8_UNORM;\n", get_name(t->name));
-					}
 
-					fprintf(output, "\t%s_parameters.fragment.targets[0].write_mask = 0xf;\n\n", get_name(t->name));
+						fprintf(output, "\t%s_parameters.fragment.targets[0].write_mask = 0xf;\n\n", get_name(t->name));
+					}
 				}
 
 				uint32_t target_count = get_type(fragment_function->return_type.type)->array_size;
-				target_count          = target_count < 1 ? 1 : target_count;
+
+				if (target_count == 0) {
+					member *format = find_member(t, "format");
+					if (format == NULL) {
+						format = find_member(t, "format0");
+					}
+
+					if (format != NULL) {
+						target_count = 1;
+					}
+				}
 
 				for (uint32_t target_index = 0; target_index < target_count; ++target_index) {
 					fprintf(output, "\t%s_parameters.fragment.targets[%u].blend.color.src_factor = %s;\n", get_name(t->name), target_index,

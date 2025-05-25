@@ -172,8 +172,6 @@ void find_used_builtins(function *f) {
 		opcode *o = (opcode *)&data[index];
 		switch (o->type) {
 		case OPCODE_CALL: {
-			char *func_name = get_name(o->op_call.func);
-
 			name_id func = o->op_call.func;
 
 			if (func == add_name("dispatch_thread_id")) {
