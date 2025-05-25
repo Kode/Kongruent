@@ -2945,6 +2945,18 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t},\n");
 				}
 				else if (g->type == texcube_type_id) {
+					fprintf(output, "\t\t\t{\n");
+					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
+					if (writable) {
+						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
+					}
+					else {
+						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
+					}
+					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
+					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
+					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+					fprintf(output, "\t\t\t},\n");
 				}
 				else if (is_sampler(g->type)) {
 					fprintf(output, "\t\t\t{\n");
