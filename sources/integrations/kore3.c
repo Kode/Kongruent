@@ -1798,7 +1798,7 @@ void kore3_export(char *directory, api_kind api) {
 							debug_context context = {0};
 							error(context, "Cube maps can not be writable");
 						}
-						fprintf(output, "\tkore_vulkan_descriptor_set_set_sampled_cube_image_descriptor(device, &set->set, &parameters->%s, %zu);\n", 
+						fprintf(output, "\tkore_vulkan_descriptor_set_set_sampled_cube_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
 						        get_name(g->name), other_index);
 
 						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));

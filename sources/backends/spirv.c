@@ -1808,8 +1808,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					image_type         = spirv_image2darray_type;
 					sampled_image_type = spirv_sampled_image2darray_type;
 				}
-				else if (image_var.type.type == texcube_type_id){
-					image_type = spirv_imagecube_type;
+				else if (image_var.type.type == texcube_type_id) {
+					image_type         = spirv_imagecube_type;
 					sampled_image_type = spirv_sampled_imagecube_type;
 				}
 
@@ -1835,8 +1835,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					image_type         = spirv_image2darray_type;
 					sampled_image_type = spirv_sampled_image2darray_type;
 				}
-				else if(image_var.type.type == texcube_type_id) {
-					image_type = spirv_imagecube_type;
+				else if (image_var.type.type == texcube_type_id) {
+					image_type         = spirv_imagecube_type;
 					sampled_image_type = spirv_sampled_imagecube_type;
 				}
 
