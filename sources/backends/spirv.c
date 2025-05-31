@@ -655,8 +655,8 @@ static spirv_id spirv_image2darray_type;
 static spirv_id spirv_image2darray_pointer_type;
 static spirv_id spirv_imagecube_type;
 static spirv_id spirv_imagecube_pointer_type;
-static spirv_id spirv_writable_image_type;
-static spirv_id spirv_writable_image_pointer_type;
+static spirv_id spirv_readwrite_image_type;
+static spirv_id spirv_readwrite_image_pointer_type;
 static spirv_id spirv_sampled_image_type;
 static spirv_id spirv_sampled_image2darray_type;
 static spirv_id spirv_sampled_imagecube_type;
@@ -671,7 +671,7 @@ static spirv_id vertex_id_variable;
 
 typedef struct complex_type {
 	type_id  type;
-	uint16_t writable;
+	uint16_t readwrite;
 	uint16_t storage;
 } complex_type;
 
@@ -680,22 +680,31 @@ static struct {
 	spirv_id     value;
 } *type_map = NULL;
 
-static void add_to_type_map(type_id kong_type, spirv_id spirv_type, bool writable, storage_class storage) {
+static void add_to_type_map(type_id kong_type, spirv_id spirv_type, bool readwrite, storage_class storage) {
 	assert(kong_type != NO_TYPE);
 
 	complex_type ct = {
-	    .type     = kong_type,
-	    .writable = writable,
-	    .storage  = (uint16_t)storage,
+	    .type      = kong_type,
+	    .readwrite = readwrite,
+	    .storage   = (uint16_t)storage,
 	};
 	hmput(type_map, ct, spirv_type);
 }
 
+static spirv_id convert_complex_type_to_spirv_id(complex_type ct) {
+	spirv_id spirv_index = hmget(type_map, ct);
+	if (spirv_index.id == 0) {
+		spirv_index = allocate_index();
+		add_to_type_map(ct.type, spirv_index, ct.readwrite, ct.storage);
+	}
+	return spirv_index;
+}
+
 static spirv_id convert_type_to_spirv_id(type_id type) {
 	complex_type ct;
-	ct.type     = type;
-	ct.writable = false;
-	ct.storage  = (uint16_t)STORAGE_CLASS_NONE;
+	ct.type      = type;
+	ct.readwrite = false;
+	ct.storage   = (uint16_t)STORAGE_CLASS_NONE;
 
 	spirv_id spirv_index = hmget(type_map, ct);
 	if (spirv_index.id == 0) {
@@ -707,9 +716,9 @@ static spirv_id convert_type_to_spirv_id(type_id type) {
 
 static spirv_id convert_pointer_type_to_spirv_id(type_id type, storage_class storage) {
 	complex_type ct;
-	ct.type     = type;
-	ct.writable = false;
-	ct.storage  = (uint16_t)storage;
+	ct.type      = type;
+	ct.readwrite = false;
+	ct.storage   = (uint16_t)storage;
 
 	spirv_id spirv_index = hmget(type_map, ct);
 	if (spirv_index.id == 0) {
@@ -790,9 +799,9 @@ static void write_base_types(instructions_buffer *buffer) {
 
 	spirv_imagecube_pointer_type = allocate_index();
 
-	spirv_writable_image_type = write_type_image(buffer, spirv_float_type, DIM_2D, 0, 0, 0, 2, IMAGE_FORMAT_UNKNOWN);
+	spirv_readwrite_image_type = write_type_image(buffer, spirv_float_type, DIM_2D, 0, 0, 0, 2, IMAGE_FORMAT_UNKNOWN);
 
-	spirv_writable_image_pointer_type = allocate_index();
+	spirv_readwrite_image_pointer_type = allocate_index();
 
 	spirv_sampled_image_type = write_type_sampled_image(buffer, spirv_image_type);
 
@@ -846,7 +855,11 @@ static void write_types(instructions_buffer *buffer, function *main) {
 	for (size_t i = 0; i < size; ++i) {
 		complex_type type = type_map[i].key;
 		if (type.storage != STORAGE_CLASS_NONE) {
-			write_type_pointer_preallocated(buffer, type.storage, convert_type_to_spirv_id(type.type), type_map[i].value);
+			complex_type non_pointer_type = type;
+			non_pointer_type.storage      = STORAGE_CLASS_NONE;
+			spirv_id non_pointer_type_id  = convert_complex_type_to_spirv_id(non_pointer_type);
+
+			write_type_pointer_preallocated(buffer, type.storage, non_pointer_type_id, type_map[i].value);
 		}
 	}
 }
@@ -2288,7 +2301,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				assert(indices_size == 1);
 				assert(o->op_store_access_list.access_list[0].kind == ACCESS_ELEMENT);
 
-				spirv_id image = write_op_load(instructions, spirv_writable_image_type, convert_kong_index_to_spirv_id(o->op_store_access_list.to.index));
+				spirv_id image = write_op_load(instructions, spirv_readwrite_image_type, convert_kong_index_to_spirv_id(o->op_store_access_list.to.index));
 
 				variable coordinate_var = o->op_store_access_list.access_list[0].access_element.index;
 				spirv_id coordinate     = kong_index_to_spirv_id(instructions, coordinate_var);
@@ -3046,6 +3059,7 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 
 		type   *t         = get_type(g->type);
 		type_id base_type = t->array_size > 0 ? t->base : g->type;
+		bool    readable  = globals.readable[i];
 		bool    writable  = globals.writable[i];
 
 		if (base_type == sampler_type_id) {
@@ -3065,16 +3079,16 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 			else {
 				spirv_id image_pointer_type;
 
-				if (writable) {
-					add_to_type_map(g->type, spirv_writable_image_type, writable, STORAGE_CLASS_NONE);
-					image_pointer_type = spirv_writable_image_pointer_type;
+				if (readable || writable) {
+					add_to_type_map(g->type, spirv_readwrite_image_type, true, STORAGE_CLASS_NONE);
+					image_pointer_type = spirv_readwrite_image_pointer_type;
 				}
 				else {
-					add_to_type_map(g->type, spirv_image_type, writable, STORAGE_CLASS_NONE);
+					add_to_type_map(g->type, spirv_image_type, false, STORAGE_CLASS_NONE);
 					image_pointer_type = spirv_image_pointer_type;
 				}
 
-				add_to_type_map(g->type, image_pointer_type, writable, STORAGE_CLASS_UNIFORM_CONSTANT);
+				add_to_type_map(g->type, image_pointer_type, readable || writable, STORAGE_CLASS_UNIFORM_CONSTANT);
 
 				spirv_id spirv_var_id = convert_kong_index_to_spirv_id(g->var_index);
 				write_op_variable_preallocated(global_vars_block, image_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM_CONSTANT);
