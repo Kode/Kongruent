@@ -150,16 +150,18 @@ jobs:
           git
           ninja
 
+    - name: Download and extract musl
+      working-directory: /home/runner/work
+      run: |
+        wget http://kode.tech/armv7l-linux-musleabihf-cross.tgz
+        tar --extract --preserve-permissions --file armv7l-linux-musleabihf-cross.tgz
+
     - name: Build in Alpine chroot
       run: |
-        cd /home/runner/work
-        mkdir armv7l
-        wget -qO - https://musl.cc/armv7l-linux-musleabihf-cross.tgz | gunzip | tar xfp - -C ./armv7l
-        export PATH=$PATH:/home/runner/work/armv7l/armv7l-linux-musleabihf-cross/bin:/home/runner/work/armv7l/armv7l-linux-musleabihf-cross/include:/home/runner/work/armv7l/armv7l-linux-musleabihf-cross/lib
+        export PATH=$PATH:/home/runner/work/armv7l-linux-musleabihf-cross/bin
         cd /home/runner/work/Kongruent/Kongruent
         git clone --depth 1 https://github.com/Kode/KoreTools_linux_x64.git KoreTools
         ./KoreTools/kmake --compile --cc armv7l-linux-musleabihf-gcc --cxx armv7l-linux-musleabihf-g++
-
       shell: alpine.sh --root {0}
 
     - name: Get KoreTools_linux_arm
