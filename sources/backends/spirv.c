@@ -28,6 +28,18 @@ typedef struct instructions_buffer {
 	size_t    offset;
 } instructions_buffer;
 
+static bool is_float(type_id t) {
+	return t == float_id || t == float2_id || t == float3_id || t == float4_id;
+}
+
+static bool is_int(type_id t) {
+	return t == int_id || t == int2_id || t == int3_id || t == int4_id;
+}
+
+static bool is_uint(type_id t) {
+	return t == uint_id || t == uint2_id || t == uint3_id || t == uint4_id;
+}
+
 static void write_buffer(FILE *file, uint8_t *output, size_t output_size) {
 	for (size_t i = 0; i < output_size; ++i) {
 		// based on the encoding described in https://github.com/adobe/bin2c
@@ -218,6 +230,14 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_LOGICAL_NOT               = 168,
 	SPIRV_OPCODE_I_EQUAL                   = 170,
 	SPIRV_OPCODE_I_NOT_EQUAL               = 171,
+	SPIRV_OPCODE_U_GREATER_THAN            = 172,
+	SPIRV_OPCODE_S_GREATER_THAN            = 173,
+	SPIRV_OPCODE_U_GREATER_THAN_EQUAL      = 174,
+	SPIRV_OPCODE_S_GREATER_THAN_EQUAL      = 175,
+	SPIRV_OPCODE_U_LESS_THAN               = 176,
+	SPIRV_OPCODE_S_LESS_THAN               = 177,
+	SPIRV_OPCODE_U_LESS_THAN_EQUAL         = 178,
+	SPIRV_OPCODE_S_LESS_THAN_EQUAL         = 179,
 	SPIRV_OPCODE_F_ORD_EQUAL               = 180,
 	SPIRV_OPCODE_F_ORD_NOT_EQUAL           = 182,
 	SPIRV_OPCODE_F_ORD_LESS_THAN           = 184,
@@ -1112,12 +1132,52 @@ static spirv_id write_op_f_ord_less_than(instructions_buffer *instructions, spir
 	return result;
 }
 
+static spirv_id write_op_u_less_than(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_U_LESS_THAN, operands);
+
+	return result;
+}
+
+static spirv_id write_op_s_less_than(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_S_LESS_THAN, operands);
+
+	return result;
+}
+
 static spirv_id write_op_f_ord_less_than_equal(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
 	spirv_id result = allocate_index();
 
 	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
 
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_F_ORD_LESS_THAN_EQUAL, operands);
+
+	return result;
+}
+
+static spirv_id write_op_u_less_than_equal(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_U_LESS_THAN_EQUAL, operands);
+
+	return result;
+}
+
+static spirv_id write_op_s_less_than_equal(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_S_LESS_THAN_EQUAL, operands);
 
 	return result;
 }
@@ -1132,12 +1192,52 @@ static spirv_id write_op_f_ord_greater_than(instructions_buffer *instructions, s
 	return result;
 }
 
+static spirv_id write_op_u_greater_than(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_U_GREATER_THAN, operands);
+
+	return result;
+}
+
+static spirv_id write_op_s_greater_than(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_S_GREATER_THAN, operands);
+
+	return result;
+}
+
 static spirv_id write_op_f_ord_greater_than_equal(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
 	spirv_id result = allocate_index();
 
 	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
 
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_F_ORD_GREATER_THAN_EQUAL, operands);
+
+	return result;
+}
+
+static spirv_id write_op_u_greater_than_equal(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_U_GREATER_THAN_EQUAL, operands);
+
+	return result;
+}
+
+static spirv_id write_op_s_greater_than_equal(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_S_GREATER_THAN_EQUAL, operands);
 
 	return result;
 }
@@ -2449,31 +2549,103 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_LESS: {
-			spirv_id left   = kong_index_to_spirv_id(instructions, o->op_binary.left);
-			spirv_id right  = kong_index_to_spirv_id(instructions, o->op_binary.right);
-			spirv_id result = write_op_f_ord_less_than(instructions, spirv_bool_type, left, right);
+			assert(o->op_binary.left.type.type == o->op_binary.right.type.type);
+
+			spirv_id left  = kong_index_to_spirv_id(instructions, o->op_binary.left);
+			spirv_id right = kong_index_to_spirv_id(instructions, o->op_binary.right);
+
+			spirv_id result;
+
+			if (is_float(o->op_binary.left.type.type)) {
+				result = write_op_f_ord_less_than(instructions, spirv_bool_type, left, right);
+			}
+			else if (is_int(o->op_binary.left.type.type)) {
+				result = write_op_s_less_than(instructions, spirv_bool_type, left, right);
+			}
+			else if (is_uint(o->op_binary.left.type.type)) {
+				result = write_op_u_less_than(instructions, spirv_bool_type, left, right);
+			}
+			else {
+				assert(false);
+			}
+
 			hmput(index_map, o->op_binary.result.index, result);
+
 			break;
 		}
 		case OPCODE_LESS_EQUAL: {
-			spirv_id left   = kong_index_to_spirv_id(instructions, o->op_binary.left);
-			spirv_id right  = kong_index_to_spirv_id(instructions, o->op_binary.right);
-			spirv_id result = write_op_f_ord_less_than_equal(instructions, spirv_bool_type, left, right);
+			assert(o->op_binary.left.type.type == o->op_binary.right.type.type);
+
+			spirv_id left  = kong_index_to_spirv_id(instructions, o->op_binary.left);
+			spirv_id right = kong_index_to_spirv_id(instructions, o->op_binary.right);
+
+			spirv_id result;
+
+			if (is_float(o->op_binary.left.type.type)) {
+				result = write_op_f_ord_less_than_equal(instructions, spirv_bool_type, left, right);
+			}
+			else if (is_int(o->op_binary.left.type.type)) {
+				result = write_op_s_less_than_equal(instructions, spirv_bool_type, left, right);
+			}
+			else if (is_uint(o->op_binary.left.type.type)) {
+				result = write_op_u_less_than_equal(instructions, spirv_bool_type, left, right);
+			}
+			else {
+				assert(false);
+			}
+
 			hmput(index_map, o->op_binary.result.index, result);
+
 			break;
 		}
 		case OPCODE_GREATER: {
-			spirv_id left   = kong_index_to_spirv_id(instructions, o->op_binary.left);
-			spirv_id right  = kong_index_to_spirv_id(instructions, o->op_binary.right);
-			spirv_id result = write_op_f_ord_greater_than(instructions, spirv_bool_type, left, right);
+			assert(o->op_binary.left.type.type == o->op_binary.right.type.type);
+
+			spirv_id left  = kong_index_to_spirv_id(instructions, o->op_binary.left);
+			spirv_id right = kong_index_to_spirv_id(instructions, o->op_binary.right);
+
+			spirv_id result;
+
+			if (is_float(o->op_binary.left.type.type)) {
+				result = write_op_f_ord_greater_than(instructions, spirv_bool_type, left, right);
+			}
+			else if (is_int(o->op_binary.left.type.type)) {
+				result = write_op_s_greater_than(instructions, spirv_bool_type, left, right);
+			}
+			else if (is_uint(o->op_binary.left.type.type)) {
+				result = write_op_u_greater_than(instructions, spirv_bool_type, left, right);
+			}
+			else {
+				assert(false);
+			}
+
 			hmput(index_map, o->op_binary.result.index, result);
+
 			break;
 		}
 		case OPCODE_GREATER_EQUAL: {
-			spirv_id left   = kong_index_to_spirv_id(instructions, o->op_binary.left);
-			spirv_id right  = kong_index_to_spirv_id(instructions, o->op_binary.right);
-			spirv_id result = write_op_f_ord_greater_than_equal(instructions, spirv_bool_type, left, right);
+			assert(o->op_binary.left.type.type == o->op_binary.right.type.type);
+
+			spirv_id left  = kong_index_to_spirv_id(instructions, o->op_binary.left);
+			spirv_id right = kong_index_to_spirv_id(instructions, o->op_binary.right);
+
+			spirv_id result;
+
+			if (is_float(o->op_binary.left.type.type)) {
+				result = write_op_f_ord_greater_than_equal(instructions, spirv_bool_type, left, right);
+			}
+			else if (is_int(o->op_binary.left.type.type)) {
+				result = write_op_s_greater_than_equal(instructions, spirv_bool_type, left, right);
+			}
+			else if (is_uint(o->op_binary.left.type.type)) {
+				result = write_op_u_greater_than_equal(instructions, spirv_bool_type, left, right);
+			}
+			else {
+				assert(false);
+			}
+
 			hmput(index_map, o->op_binary.result.index, result);
+
 			break;
 		}
 		case OPCODE_ADD: {
