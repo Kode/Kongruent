@@ -69,7 +69,6 @@ jobs:
       env:
         ROBBOT_PASS: ${{ secrets.ROBBOT_PASS }}
 
-
   build-aarch64:
     runs-on: ubuntu-latest
     steps:
@@ -89,12 +88,51 @@ jobs:
 
     - name: Download musl
       working-directory: /home/runner/work
-      run: wget https://more.musl.cc/11.2.1/x86_64-linux-musl/aarch64-linux-musl-cross.tgz
+      run: wget http://kode.tech/aarch64-linux-musl-cross.tgz
 
     - name: Build in Alpine chroot
       run: |
         cd /home/runner/work
+        gunzip aarch64-linux-musl-cross.tgz
+        tar --extract --preserve-permissions --file aarch64-linux-musl-cross.tar
+        export PATH=$PATH:/home/runner/work/aarch64-linux-musl-cross/bin:/home/runner/work/aarch64-linux-musl-cross/include:/home/runner/work/aarch64-linux-musl-cross/lib
+        cd /home/runner/work/Kongruent/Kongruent
+        git clone --depth 1 https://github.com/Kode/KoreTools_linux_x64.git KoreTools
+        ./KoreTools/kmake --compile --cc aarch64-linux-musl-gcc --cxx aarch64-linux-musl-g++
       shell: alpine.sh --root {0}
+
+    - name: Get KoreTools_linux_arm64
+      run: git clone https://github.com/Kode/KoreTools_linux_arm64.git --depth 1
+    - name: Copy binary
+      run: cp /home/runner/work/Kongruent/Kongruent/build/release/kongruent KoreTools_linux_arm64/kongruent
+    - name: Set name
+      run: git config --global user.name "Robbot"
+    - name: Set email
+      run: git config --global user.email "robbot2019@robdangero.us"
+    - name: Commit binary
+      id: commit
+      continue-on-error: true
+      run: |
+        git -C KoreTools_linux_arm64 commit -a -m "Update kong_arm64 binary to $GITHUB_SHA."
+    - name: Tag binary
+      if: steps.commit.outcome == 'success'
+      run: git -C KoreTools_linux_arm64 tag linux_arm64_kong_$GITHUB_SHA
+    - name: Push binary
+      id: push1
+      if: steps.commit.outcome == 'success'
+      continue-on-error: true
+      run: git -C KoreTools_linux_arm64 push https://Kode-Robbot:$ROBBOT_PASS@github.com/Kode/KoreTools_linux_arm64.git main --tags
+      env:
+        ROBBOT_PASS: ${{ secrets.ROBBOT_PASS }}
+    - name: Pull
+      if: steps.commit.outcome == 'success' && steps.push1.outcome != 'success'
+      run: git -C KoreTools_linux_arm64 pull --no-rebase
+    - name: Push binary again
+      if: steps.commit.outcome == 'success' && steps.push1.outcome != 'success'
+      continue-on-error: true
+      run: git -C KoreTools_linux_arm64 push https://Kode-Robbot:$ROBBOT_PASS@github.com/Kode/KoreTools_linux_arm64.git main --tags
+      env:
+        ROBBOT_PASS: ${{ secrets.ROBBOT_PASS }}
 
   build-armv7l:
     runs-on: ubuntu-latest
