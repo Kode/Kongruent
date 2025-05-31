@@ -367,6 +367,7 @@ typedef enum storage_class {
 	STORAGE_CLASS_UNIFORM          = 2,
 	STORAGE_CLASS_OUTPUT           = 3,
 	STORAGE_CLASS_FUNCTION         = 7,
+	STORAGE_CLASS_PUSH_CONSTANT    = 9,
 	STORAGE_CLASS_NONE             = 9999
 } storage_class;
 
@@ -1902,9 +1903,22 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				case VARIABLE_LOCAL:
 					access_type = convert_pointer_type_to_spirv_id(access_kong_type, STORAGE_CLASS_FUNCTION);
 					break;
-				case VARIABLE_GLOBAL:
-					access_type = convert_pointer_type_to_spirv_id(access_kong_type, STORAGE_CLASS_UNIFORM);
+				case VARIABLE_GLOBAL: {
+					bool root_constant = false;
+
+					for (global_id global_index = 0; get_global(global_index) != NULL && get_global(global_index)->type != NO_TYPE; ++global_index) {
+						global *g = get_global(global_index);
+
+						if (o->op_load_access_list.from.index == g->var_index) {
+							root_constant = find_attribute(&g->attributes, add_name("root_constants")) != NULL;
+							break;
+						}
+					}
+
+					access_type = convert_pointer_type_to_spirv_id(access_kong_type, root_constant ? STORAGE_CLASS_PUSH_CONSTANT : STORAGE_CLASS_UNIFORM);
+
 					break;
+				}
 				case VARIABLE_INTERNAL:
 					access_type = convert_pointer_type_to_spirv_id(access_kong_type, STORAGE_CLASS_INPUT);
 					break;
@@ -2965,15 +2979,13 @@ static void assign_bindings(uint32_t *bindings, function *shader) {
 				error(context, "Unsupported type for a root constant");
 			}
 
-			bindings[g_id] = binding;
-			binding += 1;
+			bindings[g_id] = 0xffffffff;
 
 			continue;
 		}
 
 		for (size_t g_index = 0; g_index < set->globals.size; ++g_index) {
 			global_id global_index = set->globals.globals[g_index];
-			bool      writable     = set->globals.writable[g_index];
 
 			global *g = get_global(global_index);
 
@@ -2987,10 +2999,6 @@ static void assign_bindings(uint32_t *bindings, function *shader) {
 			else if (base_type == tex2d_type_id) {
 				if (t->array_size == UINT32_MAX) {
 					bindings[global_index] = 0;
-				}
-				else if (writable) {
-					bindings[global_index] = binding;
-					binding += 1;
 				}
 				else {
 					bindings[global_index] = binding;
@@ -3184,6 +3192,10 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 			assert(false);
 		}
 		else {
+			bool root_constant = binding == 0xffffffff;
+
+			storage_class storage = root_constant ? STORAGE_CLASS_PUSH_CONSTANT : STORAGE_CLASS_UNIFORM;
+
 			type *t = get_type(g->type);
 
 			spirv_id member_types[256];
@@ -3195,7 +3207,7 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 
 				spirv_id member_pointer_type = allocate_index();
 
-				add_to_type_map(member_type, member_pointer_type, false, STORAGE_CLASS_UNIFORM);
+				add_to_type_map(member_type, member_pointer_type, false, storage);
 
 				member_types_size += 1;
 				assert(member_types_size < 256);
@@ -3226,14 +3238,17 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 
 			spirv_id struct_pointer_type = allocate_index();
 
-			add_to_type_map(g->type, struct_pointer_type, false, STORAGE_CLASS_UNIFORM);
+			add_to_type_map(g->type, struct_pointer_type, false, storage);
 
 			spirv_id spirv_var_id = convert_kong_index_to_spirv_id(g->var_index);
-			write_op_variable_preallocated(global_vars_block, struct_pointer_type, spirv_var_id, STORAGE_CLASS_UNIFORM);
+			write_op_variable_preallocated(global_vars_block, struct_pointer_type, spirv_var_id, storage);
 
 			write_op_decorate(decorations, struct_type, DECORATION_BLOCK);
-			write_op_decorate_value(decorations, spirv_var_id, DECORATION_DESCRIPTOR_SET, 0);
-			write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, binding);
+
+			if (!root_constant) {
+				write_op_decorate_value(decorations, spirv_var_id, DECORATION_DESCRIPTOR_SET, 0);
+				write_op_decorate_value(decorations, spirv_var_id, DECORATION_BINDING, binding);
+			}
 		}
 	}
 
