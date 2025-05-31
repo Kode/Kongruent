@@ -90,7 +90,7 @@ jobs:
     - name: Build in Alpine chroot
       run: |
         cd /home/runner/work
-        wget --quiet https://more.musl.cc/11.2.1/x86_64-linux-musl/aarch64-linux-musl-cross.tgz
+        wget https://more.musl.cc/11.2.1/x86_64-linux-musl/aarch64-linux-musl-cross.tgz
       shell: alpine.sh --root {0}
 
   build-armv7l:
