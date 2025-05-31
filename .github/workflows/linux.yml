@@ -86,15 +86,15 @@ jobs:
           git
           ninja
 
-    - name: Download musl
+    - name: Download and extract musl
       working-directory: /home/runner/work
-      run: wget http://kode.tech/aarch64-linux-musl-cross.tgz
+      run: |
+        wget http://kode.tech/aarch64-linux-musl-cross.tgz
+        gunzip aarch64-linux-musl-cross.tgz
+        tar --extract --preserve-permissions --file aarch64-linux-musl-cross.tar
 
     - name: Build in Alpine chroot
       run: |
-        cd /home/runner/work
-        gunzip aarch64-linux-musl-cross.tgz
-        tar --extract --preserve-permissions --file aarch64-linux-musl-cross.tar
         export PATH=$PATH:/home/runner/work/aarch64-linux-musl-cross/bin:/home/runner/work/aarch64-linux-musl-cross/include:/home/runner/work/aarch64-linux-musl-cross/lib
         cd /home/runner/work/Kongruent/Kongruent
         git clone --depth 1 https://github.com/Kode/KoreTools_linux_x64.git KoreTools
