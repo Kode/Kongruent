@@ -206,6 +206,7 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_SAMPLED_IMAGE             = 86,
 	SPIRV_OPCODE_IMAGE_SAMPLE_IMPLICIT_LOD = 87,
 	SPIRV_OPCODE_IMAGE_SAMPLE_EXPLICIT_LOD = 88,
+	SPIRV_OPCODE_IMAGE_READ                = 98,
 	SPIRV_OPCODE_IMAGE_WRITE               = 99,
 	SPIRV_OPCODE_CONVERT_F_TO_U            = 109,
 	SPIRV_OPCODE_CONVERT_F_TO_S            = 110,
@@ -1479,6 +1480,16 @@ static spirv_id write_op_ext_inst3(instructions_buffer *instructions, spirv_id r
 	return result;
 }
 
+static spirv_id write_op_image_read(instructions_buffer *instructions, spirv_id result_type, spirv_id image, spirv_id coordinate) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {result_type.id, result.id, image.id, coordinate.id};
+
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_IMAGE_READ, operands);
+
+	return result;
+}
+
 static void write_op_image_write(instructions_buffer *instructions, spirv_id image, spirv_id coordinate, spirv_id texel) {
 	uint32_t operands[] = {image.id, coordinate.id, texel.id};
 
@@ -1778,7 +1789,20 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		case OPCODE_LOAD_ACCESS_LIST: {
 			uint16_t indices_size = o->op_load_access_list.access_list_size;
 
-			if (o->op_load_access_list.from.kind == VARIABLE_INTERNAL) {
+			if (o->op_load_access_list.from.type.type == tex2d_type_id) {
+				assert(indices_size == 1);
+				assert(o->op_load_access_list.access_list[0].kind == ACCESS_ELEMENT);
+
+				spirv_id image = write_op_load(instructions, spirv_readwrite_image_type, convert_kong_index_to_spirv_id(o->op_load_access_list.from.index));
+
+				variable coordinate_var = o->op_load_access_list.access_list[0].access_element.index;
+				spirv_id coordinate     = kong_index_to_spirv_id(instructions, coordinate_var);
+
+				spirv_id value = write_op_image_read(instructions, spirv_float4_type, image, coordinate);
+
+				hmput(index_map, o->op_load_access_list.to.index, value);
+			}
+			else if (o->op_load_access_list.from.kind == VARIABLE_INTERNAL) {
 				uint32_t indices[256];
 
 				type *s = get_type(o->op_load_access_list.from.type.type);
