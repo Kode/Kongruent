@@ -1729,6 +1729,7 @@ void kore3_export(char *directory, api_kind api) {
 
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					global *g            = get_global(set->globals.globals[global_index]);
+					bool    readable     = set->globals.readable[global_index];
 					bool    writable     = set->globals.writable[global_index];
 					type_id base_type_id = get_type(g->type)->base != NO_TYPE ? get_type(g->type)->base : g->type;
 
@@ -1767,7 +1768,7 @@ void kore3_export(char *directory, api_kind api) {
 							fprintf(output, "\tset->%s_count = parameters->%s_count;\n", get_name(g->name), get_name(g->name));
 						}
 						else {
-							if (writable) {
+							if (readable | writable) {
 								fprintf(output, "\tkore_vulkan_descriptor_set_set_storage_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
 								        get_name(g->name), other_index);
 							}
@@ -2952,12 +2953,13 @@ void kore3_export(char *directory, api_kind api) {
 
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 				global *g        = get_global(set->globals.globals[global_index]);
+				bool    readable = set->globals.readable[global_index];
 				bool    writable = set->globals.writable[global_index];
 
 				if (g->type == tex2d_type_id) {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
-					if (writable) {
+					if (readable | writable) {
 						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
 					}
 					else {
@@ -2971,7 +2973,7 @@ void kore3_export(char *directory, api_kind api) {
 				else if (g->type == tex2darray_type_id) {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
-					if (writable) {
+					if (readable | writable) {
 						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
 					}
 					else {
@@ -2985,7 +2987,7 @@ void kore3_export(char *directory, api_kind api) {
 				else if (g->type == texcube_type_id) {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
-					if (writable) {
+					if (readable | writable) {
 						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
 					}
 					else {
