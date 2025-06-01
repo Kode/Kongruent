@@ -2347,8 +2347,9 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 				variable coordinate_var = o->op_store_access_list.access_list[0].access_element.index;
 				spirv_id coordinate     = kong_index_to_spirv_id(instructions, coordinate_var);
+				spirv_id texel          = kong_index_to_spirv_id(instructions, o->op_store_access_list.from);
 
-				write_op_image_write(instructions, image, coordinate, convert_kong_index_to_spirv_id(o->op_store_access_list.from.index));
+				write_op_image_write(instructions, image, coordinate, texel);
 			}
 			else {
 				for (uint16_t i = 0; i < indices_size; ++i) {
