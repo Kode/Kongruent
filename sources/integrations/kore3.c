@@ -2288,7 +2288,12 @@ void kore3_export(char *directory, api_kind api) {
 					}
 					else {
 						for (size_t group_index = 0; group_index < group->size; ++group_index) {
-							fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+							if (api == API_METAL) {
+								fprintf(output, "\t%s_compute_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+							}
+							else {
+								fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+							}
 						}
 					}
 				}
