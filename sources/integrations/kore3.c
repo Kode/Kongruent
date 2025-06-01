@@ -2651,19 +2651,38 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t{\n");
 
 					if (group->size == 0) {
-						fprintf(output, "\t\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters, NULL, 0);\n", api_short, api_short,
+						fprintf(output, "\t\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters, NULL, 0, 0);\n", api_short, api_short,
 						        get_name(t->name), get_name(t->name));
 					}
 					else {
-
-						fprintf(output, "\t\tVkDescriptorSetLayout layouts[%zu];\n", group->size);
+						size_t root_constants_size = 0;
+						size_t group_size          = group->size;
 
 						for (size_t layout_index = 0; layout_index < group->size; ++layout_index) {
-							fprintf(output, "\t\tlayouts[%zu] = %s_set_layout;\n", layout_index, get_name(group->values[layout_index]->name));
+							if (group->values[layout_index]->name == add_name("root_constants")) {
+								--group_size;
+							}
 						}
 
-						fprintf(output, "\t\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters, layouts, %zu);\n", api_short, api_short,
-						        get_name(t->name), get_name(t->name), group->size);
+						fprintf(output, "\t\tVkDescriptorSetLayout layouts[%zu];\n", group_size);
+
+						size_t layout_index = 0;
+						for (size_t i = 0; i < group->size; ++i) {
+							if (group->values[i]->name == add_name("root_constants")) {
+								for (size_t global_index = 0; global_index < group->values[i]->globals.size; ++global_index) {
+									global *g = get_global(group->values[i]->globals.globals[global_index]);
+									root_constants_size += struct_size(g->type);
+								}
+
+								continue;
+							}
+
+							fprintf(output, "\t\tlayouts[%zu] = %s_set_layout;\n", layout_index, get_name(group->values[i]->name));
+							++layout_index;
+						}
+
+						fprintf(output, "\t\tkore_%s_render_pipeline_init(&device->%s, &%s, &%s_parameters, layouts, %zu, %zu);\n", api_short, api_short,
+						        get_name(t->name), get_name(t->name), group_size, root_constants_size);
 					}
 
 					fprintf(output, "\t}\n");
@@ -2750,19 +2769,38 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t{\n");
 
 					if (group->size == 0) {
-						fprintf(output, "\t\tkore_%s_compute_pipeline_init(&device->%s, &%s, &%s_parameters, NULL, 0);\n", api_short, api_short,
+						fprintf(output, "\t\tkore_%s_compute_pipeline_init(&device->%s, &%s, &%s_parameters, NULL, 0, 0);\n", api_short, api_short,
 						        get_name(f->name), get_name(f->name));
 					}
 					else {
-
-						fprintf(output, "\t\tVkDescriptorSetLayout layouts[%zu];\n", group->size);
+						size_t root_constants_size = 0;
+						size_t group_size          = group->size;
 
 						for (size_t layout_index = 0; layout_index < group->size; ++layout_index) {
-							fprintf(output, "\t\tlayouts[%zu] = %s_set_layout;\n", layout_index, get_name(group->values[layout_index]->name));
+							if (group->values[layout_index]->name == add_name("root_constants")) {
+								--group_size;
+							}
 						}
 
-						fprintf(output, "\t\tkore_%s_compute_pipeline_init(&device->%s, &%s, &%s_parameters, layouts, %zu);\n", api_short, api_short,
-						        get_name(f->name), get_name(f->name), group->size);
+						fprintf(output, "\t\tVkDescriptorSetLayout layouts[%zu];\n", group_size);
+
+						size_t layout_index = 0;
+						for (size_t i = 0; i < group->size; ++i) {
+							if (group->values[i]->name == add_name("root_constants")) {
+								for (size_t global_index = 0; global_index < group->values[i]->globals.size; ++global_index) {
+									global *g = get_global(group->values[i]->globals.globals[global_index]);
+									root_constants_size += struct_size(g->type);
+								}
+
+								continue;
+							}
+
+							fprintf(output, "\t\tlayouts[%zu] = %s_set_layout;\n", layout_index, get_name(group->values[i]->name));
+							++layout_index;
+						}
+
+						fprintf(output, "\t\tkore_%s_compute_pipeline_init(&device->%s, &%s, &%s_parameters, layouts, %zu, %zu);\n", api_short, api_short,
+						        get_name(f->name), get_name(f->name), group_size, root_constants_size);
 					}
 
 					fprintf(output, "\t}\n");
