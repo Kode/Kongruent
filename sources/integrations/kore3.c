@@ -1098,6 +1098,11 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "static uint32_t %s_fragment_table_index = UINT32_MAX;\n\n", get_name(set->name));
 					fprintf(output, "static uint32_t %s_compute_table_index = UINT32_MAX;\n\n", get_name(set->name));
 				}
+				else if (api == API_VULKAN) {
+					if (set->name != add_name("root_constants")) {
+						fprintf(output, "static uint32_t %s_table_index = UINT32_MAX;\n\n", get_name(set->name));
+					}
+				}
 				else {
 					fprintf(output, "static uint32_t %s_table_index = UINT32_MAX;\n\n", get_name(set->name));
 				}
@@ -1200,14 +1205,26 @@ void kore3_export(char *directory, api_kind api) {
 
 				if (api != API_WEBGPU) {
 					descriptor_set_group *group = find_descriptor_set_group_for_pipe_type(t);
-					for (size_t group_index = 0; group_index < group->size; ++group_index) {
-						if (api == API_METAL) {
-							fprintf(output, "\t%s_vertex_table_index = %zu;\n", get_name(group->values[group_index]->name),
-							        group_index + vertex_function->parameters_size);
-							fprintf(output, "\t%s_fragment_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index + 1);
+
+					if (api == API_VULKAN) {
+						size_t index = 0;
+						for (size_t group_index = 0; group_index < group->size; ++group_index) {
+							if (group->values[group_index]->name != add_name("root_constants")) {
+								fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), index);
+								index += 1;
+							}
 						}
-						else {
-							fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+					}
+					else {
+						for (size_t group_index = 0; group_index < group->size; ++group_index) {
+							if (api == API_METAL) {
+								fprintf(output, "\t%s_vertex_table_index = %zu;\n", get_name(group->values[group_index]->name),
+								        group_index + vertex_function->parameters_size);
+								fprintf(output, "\t%s_fragment_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index + 1);
+							}
+							else {
+								fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+							}
 						}
 					}
 				}
@@ -1424,6 +1441,9 @@ void kore3_export(char *directory, api_kind api) {
 					        "\tkore_%s_command_list_set_root_constants(list, %s_vertex_table_index, %s_fragment_table_index, %s_compute_table_index, "
 					        "constants, %i);\n",
 					        api_short, get_name(set->name), get_name(set->name), get_name(set->name), struct_size(root_constants_global->type));
+				}
+				else if (api == API_VULKAN) {
+					fprintf(output, "\tkore_%s_command_list_set_root_constants(list, constants, %i);\n", api_short, struct_size(root_constants_global->type));
 				}
 				else {
 					fprintf(output, "\tkore_%s_command_list_set_root_constants(list, %s_table_index, constants, %i);\n", api_short, get_name(set->name),
@@ -2257,11 +2277,17 @@ void kore3_export(char *directory, api_kind api) {
 
 				if (api != API_WEBGPU) {
 					descriptor_set_group *group = find_descriptor_set_group_for_function(f);
-					for (size_t group_index = 0; group_index < group->size; ++group_index) {
-						if (api == API_METAL) {
-							fprintf(output, "\t%s_compute_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
+					if (api == API_VULKAN) {
+						size_t index = 0;
+						for (size_t group_index = 0; group_index < group->size; ++group_index) {
+							if (group->values[group_index]->name != add_name("root_constants")) {
+								fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), index);
+								++index;
+							}
 						}
-						else {
+					}
+					else {
+						for (size_t group_index = 0; group_index < group->size; ++group_index) {
 							fprintf(output, "\t%s_table_index = %zu;\n", get_name(group->values[group_index]->name), group_index);
 						}
 					}
