@@ -28,18 +28,6 @@ typedef struct instructions_buffer {
 	size_t    offset;
 } instructions_buffer;
 
-static bool is_float(type_id t) {
-	return t == float_id || t == float2_id || t == float3_id || t == float4_id;
-}
-
-static bool is_int(type_id t) {
-	return t == int_id || t == int2_id || t == int3_id || t == int4_id;
-}
-
-static bool is_uint(type_id t) {
-	return t == uint_id || t == uint2_id || t == uint3_id || t == uint4_id;
-}
-
 static void write_buffer(FILE *file, uint8_t *output, size_t output_size) {
 	for (size_t i = 0; i < output_size; ++i) {
 		// based on the encoding described in https://github.com/adobe/bin2c
@@ -2612,13 +2600,13 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 			spirv_id result;
 
-			if (is_float(o->op_binary.left.type.type)) {
+			if (vector_base_type(o->op_binary.left.type.type) == float_id) {
 				result = write_op_f_ord_less_than(instructions, spirv_bool_type, left, right);
 			}
-			else if (is_int(o->op_binary.left.type.type)) {
+			else if (vector_base_type(o->op_binary.left.type.type) == int_id) {
 				result = write_op_s_less_than(instructions, spirv_bool_type, left, right);
 			}
-			else if (is_uint(o->op_binary.left.type.type)) {
+			else if (vector_base_type(o->op_binary.left.type.type) == uint_id) {
 				result = write_op_u_less_than(instructions, spirv_bool_type, left, right);
 			}
 			else {
@@ -2637,13 +2625,13 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 			spirv_id result;
 
-			if (is_float(o->op_binary.left.type.type)) {
+			if (vector_base_type(o->op_binary.left.type.type) == float_id) {
 				result = write_op_f_ord_less_than_equal(instructions, spirv_bool_type, left, right);
 			}
-			else if (is_int(o->op_binary.left.type.type)) {
+			else if (vector_base_type(o->op_binary.left.type.type) == int_id) {
 				result = write_op_s_less_than_equal(instructions, spirv_bool_type, left, right);
 			}
-			else if (is_uint(o->op_binary.left.type.type)) {
+			else if (vector_base_type(o->op_binary.left.type.type) == uint_id) {
 				result = write_op_u_less_than_equal(instructions, spirv_bool_type, left, right);
 			}
 			else {
@@ -2662,13 +2650,13 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 			spirv_id result;
 
-			if (is_float(o->op_binary.left.type.type)) {
+			if (vector_base_type(o->op_binary.left.type.type) == float_id) {
 				result = write_op_f_ord_greater_than(instructions, spirv_bool_type, left, right);
 			}
-			else if (is_int(o->op_binary.left.type.type)) {
+			else if (vector_base_type(o->op_binary.left.type.type) == int_id) {
 				result = write_op_s_greater_than(instructions, spirv_bool_type, left, right);
 			}
-			else if (is_uint(o->op_binary.left.type.type)) {
+			else if (vector_base_type(o->op_binary.left.type.type) == uint_id) {
 				result = write_op_u_greater_than(instructions, spirv_bool_type, left, right);
 			}
 			else {
@@ -2687,13 +2675,13 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 			spirv_id result;
 
-			if (is_float(o->op_binary.left.type.type)) {
+			if (vector_base_type(o->op_binary.left.type.type) == float_id) {
 				result = write_op_f_ord_greater_than_equal(instructions, spirv_bool_type, left, right);
 			}
-			else if (is_int(o->op_binary.left.type.type)) {
+			else if (vector_base_type(o->op_binary.left.type.type) == int_id) {
 				result = write_op_s_greater_than_equal(instructions, spirv_bool_type, left, right);
 			}
-			else if (is_uint(o->op_binary.left.type.type)) {
+			else if (vector_base_type(o->op_binary.left.type.type) == uint_id) {
 				result = write_op_u_greater_than_equal(instructions, spirv_bool_type, left, right);
 			}
 			else {
