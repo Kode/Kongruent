@@ -1664,10 +1664,13 @@ static spirv_id input_vars[256]  = {0};
 static type_id  input_types[256] = {0};
 static size_t   input_vars_count = 0;
 
+static uint32_t vertex_parameter_indices[256];
+static uint32_t vertex_parameter_member_indices[256];
+
 static uint64_t if_end_id = 0;
 
 static void write_function(instructions_buffer *instructions, function *f, spirv_id result_type, spirv_id fun_type, spirv_id fun_id, shader_stage stage,
-                           bool main, type_id input, type_id output) {
+                           bool main, type_id output) {
 	write_op_function_preallocated(instructions, result_type, FUNCTION_CONTROL_NONE, fun_type, fun_id);
 
 	spirv_id parameter_value_ids[256] = {0};
@@ -1708,11 +1711,19 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 	spirv_id spirv_parameter_ids[256] = {0};
 	uint32_t spirv_parameter_ids_size = 0;
 	if (main) {
-		if (stage == SHADER_STAGE_VERTEX || stage == SHADER_STAGE_FRAGMENT) {
+		if (stage == SHADER_STAGE_FRAGMENT) {
 			spirv_parameter_ids[0] = convert_kong_index_to_spirv_id(parameter_ids[0]);
 			write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_types[0], STORAGE_CLASS_FUNCTION), spirv_parameter_ids[0],
 			                               STORAGE_CLASS_FUNCTION);
 			spirv_parameter_ids_size++;
+		}
+		else if (stage == SHADER_STAGE_VERTEX) {
+			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+				spirv_parameter_ids[spirv_parameter_ids_size] = convert_kong_index_to_spirv_id(parameter_ids[parameter_index]);
+				write_op_variable_preallocated(instructions, convert_pointer_type_to_spirv_id(parameter_types[parameter_index], STORAGE_CLASS_FUNCTION),
+				                               spirv_parameter_ids[spirv_parameter_ids_size], STORAGE_CLASS_FUNCTION);
+				spirv_parameter_ids_size++;
+			}
 		}
 	}
 	else {
@@ -1755,10 +1766,10 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		}
 		else if (stage == SHADER_STAGE_VERTEX) {
 			for (size_t i = 0; i < input_vars_count; ++i) {
-				spirv_id index   = get_int_constant((int)i);
+				spirv_id index   = get_int_constant((int)vertex_parameter_member_indices[i]);
 				spirv_id loaded  = write_op_load(instructions, convert_type_to_spirv_id(input_types[i]), input_vars[i]);
 				spirv_id pointer = write_op_access_chain(instructions, convert_pointer_type_to_spirv_id(input_types[i], STORAGE_CLASS_FUNCTION),
-				                                         spirv_parameter_ids[0], &index, 1);
+				                                         spirv_parameter_ids[vertex_parameter_indices[i]], &index, 1);
 				write_op_store(instructions, pointer, loaded);
 			}
 		}
@@ -2875,7 +2886,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 	write_op_function_end(instructions);
 }
 
-static void write_functions(instructions_buffer *instructions, function *main, spirv_id entry_point, shader_stage stage, type_id input, type_id output) {
+static void write_functions(instructions_buffer *instructions, function *main, spirv_id entry_point, shader_stage stage, type_id output) {
 	function *functions[256];
 	size_t    functions_size = 0;
 
@@ -2920,7 +2931,7 @@ static void write_functions(instructions_buffer *instructions, function *main, s
 		spirv_id return_type = f == main ? void_type : convert_type_to_spirv_id(f->return_type.type);
 		spirv_id fun_type    = function_types[i];
 		spirv_id fun_id      = hmget(function_map, f->name);
-		write_function(instructions, f, return_type, fun_type, fun_id, stage, f == main, input, output);
+		write_function(instructions, f, return_type, fun_type, fun_id, stage, f == main, output);
 	}
 }
 
@@ -3359,23 +3370,36 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 	};
 
 	assert(main->parameters_size > 0);
-	type_id vertex_input  = main->parameter_types[0].type;
 	type_id vertex_output = main->return_type.type;
 
 	debug_context context = {0};
-	check(vertex_input != NO_TYPE, context, "vertex input missing");
 	check(vertex_output != NO_TYPE, context, "vertex output missing");
 
 	write_capabilities(&decorations, &main->used_capabilities);
 	glsl_import = write_op_ext_inst_import(&decorations, "GLSL.std.450");
 	write_op_memory_model(&decorations, ADDRESSING_MODEL_LOGICAL, MEMORY_MODEL_GLSL450);
 
-	type *input  = get_type(vertex_input);
 	type *output = get_type(vertex_output);
 
 	spirv_id entry_point = allocate_index();
 
-	input_vars_count = input->members.size;
+	size_t input_type_index = 0;
+
+	for (uint32_t input_index = 0; input_index < main->parameters_size; ++input_index) {
+		type *input = get_type(main->parameter_types[input_index].type);
+
+		input_vars_count += input->members.size;
+
+		for (size_t member_index = 0; member_index < input->members.size; ++member_index) {
+			input_types[input_type_index] = input->members.m[member_index].type.type;
+
+			vertex_parameter_indices[input_type_index]        = input_index;
+			vertex_parameter_member_indices[input_type_index] = member_index;
+
+			++input_type_index;
+		}
+	}
+
 	for (size_t input_var_index = 0; input_var_index < input_vars_count; ++input_var_index) {
 		input_vars[input_var_index] = allocate_index();
 	}
@@ -3414,16 +3438,13 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 	write_globals(&decorations, &aggregate_types, &global_vars, main, SHADER_STAGE_VERTEX);
 
 	for (size_t i = 0; i < input_vars_count; ++i) {
-		member m       = input->members.m[i];
-		input_types[i] = m.type.type;
-
-		if (m.type.type == float2_id) {
+		if (input_types[i] == float2_id) {
 			write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float2_id, STORAGE_CLASS_INPUT), input_vars[i], STORAGE_CLASS_INPUT);
 		}
-		else if (m.type.type == float3_id) {
+		else if (input_types[i] == float3_id) {
 			write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float3_id, STORAGE_CLASS_INPUT), input_vars[i], STORAGE_CLASS_INPUT);
 		}
-		else if (m.type.type == float4_id) {
+		else if (input_types[i] == float4_id) {
 			write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_INPUT), input_vars[i], STORAGE_CLASS_INPUT);
 		}
 		else {
@@ -3462,7 +3483,7 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 		}
 	}
 
-	write_functions(&instructions, main, entry_point, SHADER_STAGE_VERTEX, vertex_input, vertex_output);
+	write_functions(&instructions, main, entry_point, SHADER_STAGE_VERTEX, vertex_output);
 
 	write_types(&aggregate_types, main);
 
@@ -3604,7 +3625,7 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 		write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_OUTPUT), output_vars[i], STORAGE_CLASS_OUTPUT);
 	}
 
-	write_functions(&instructions, main, entry_point, SHADER_STAGE_FRAGMENT, pixel_input, NO_TYPE);
+	write_functions(&instructions, main, entry_point, SHADER_STAGE_FRAGMENT, NO_TYPE);
 
 	write_types(&aggregate_types, main);
 
@@ -3716,7 +3737,7 @@ static void spirv_export_compute(char *directory, function *main, bool debug) {
 
 	write_globals(&decorations, &aggregate_types, &global_vars, main, SHADER_STAGE_COMPUTE);
 
-	write_functions(&instructions, main, entry_point, SHADER_STAGE_COMPUTE, NO_TYPE, NO_TYPE);
+	write_functions(&instructions, main, entry_point, SHADER_STAGE_COMPUTE, NO_TYPE);
 
 	write_types(&aggregate_types, main);
 
