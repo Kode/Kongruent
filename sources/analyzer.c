@@ -270,6 +270,8 @@ void find_used_capabilities(function *f) {
 			type_id  from_type = from.type.type;
 
 			if (is_texture(from_type)) {
+				f->used_capabilities.image_read = true;
+
 				if (get_type(from_type)->array_size > 0) {
 					last_base_texture_from = from;
 					last_base_texture_to   = o->op_load_access_list.to;
@@ -309,6 +311,7 @@ void find_used_capabilities(function *f) {
 				if (called->name == func_name) {
 					find_used_capabilities(f);
 
+					f->used_capabilities.image_read |= called->used_capabilities.image_read;
 					f->used_capabilities.image_write |= called->used_capabilities.image_write;
 
 					break;

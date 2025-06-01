@@ -336,6 +336,7 @@ typedef enum memory_model { MEMORY_MODEL_SIMPLE = 0, MEMORY_MODEL_GLSL450 = 1 } 
 
 typedef enum capability {
 	CAPABILITY_SHADER                             = 1,
+	CAPABILITY_STORAGE_IMAGE_READ_WITHOUT_FORMAT  = 55,
 	CAPABILITY_STORAGE_IMAGE_WRITE_WITHOUT_FORMAT = 56,
 } capability;
 
@@ -507,6 +508,9 @@ static void write_op_execution_mode3(instructions_buffer *instructions, spirv_id
 
 static void write_capabilities(instructions_buffer *instructions, const capabilities *caps) {
 	write_capability(instructions, CAPABILITY_SHADER);
+	if (caps->image_read) {
+		write_capability(instructions, CAPABILITY_STORAGE_IMAGE_READ_WITHOUT_FORMAT);
+	}
 	if (caps->image_write) {
 		write_capability(instructions, CAPABILITY_STORAGE_IMAGE_WRITE_WITHOUT_FORMAT);
 	}
