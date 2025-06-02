@@ -169,6 +169,8 @@ static bool is_fragment_input(type_id t) {
 }
 
 static void write_types(char *wgsl, size_t *offset) {
+	size_t location = 0;
+
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 
@@ -198,7 +200,9 @@ static void write_types(char *wgsl, size_t *offset) {
 
 			if (is_vertex_input(i)) {
 				for (size_t j = 0; j < t->members.size; ++j) {
-					*offset += sprintf(&wgsl[*offset], "\t@location(%zu) %s: %s,\n", j, get_name(t->members.m[j].name), type_string(t->members.m[j].type.type));
+					*offset +=
+					    sprintf(&wgsl[*offset], "\t@location(%zu) %s: %s,\n", location, get_name(t->members.m[j].name), type_string(t->members.m[j].type.type));
+					++location;
 				}
 			}
 			else if (is_fragment_input(i)) {
@@ -936,9 +940,10 @@ void wgsl_export(char *directory) {
 					vertex_functions[vertex_functions_size] = i;
 					vertex_functions_size += 1;
 
-					assert(f->parameters_size > 0);
-					vertex_inputs[vertex_inputs_size] = f->parameter_types[0].type;
-					vertex_inputs_size += 1;
+					for (uint32_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+						vertex_inputs[vertex_inputs_size] = f->parameter_types[parameter_index].type;
+						vertex_inputs_size += 1;
+					}
 				}
 				else if (f->name == fragment_shader_name) {
 					fragment_functions[fragment_functions_size] = i;
