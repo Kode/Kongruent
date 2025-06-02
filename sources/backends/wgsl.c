@@ -147,6 +147,7 @@ static void write_code(char *wgsl, char *directory, const char *filename) {
 
 static type_id vertex_inputs[256];
 static size_t  vertex_inputs_size = 0;
+static size_t  vertex_location_offsets[256];
 static type_id fragment_inputs[256];
 static size_t  fragment_inputs_size = 0;
 
@@ -159,6 +160,15 @@ static bool is_vertex_input(type_id t) {
 	return false;
 }
 
+static size_t find_vertex_location_offset(type_id t) {
+	for (size_t i = 0; i < vertex_inputs_size; ++i) {
+		if (t == vertex_inputs[i]) {
+			return vertex_location_offsets[i];
+		}
+	}
+	return 0;
+}
+
 static bool is_fragment_input(type_id t) {
 	for (size_t i = 0; i < fragment_inputs_size; ++i) {
 		if (t == fragment_inputs[i]) {
@@ -169,8 +179,6 @@ static bool is_fragment_input(type_id t) {
 }
 
 static void write_types(char *wgsl, size_t *offset) {
-	size_t location = 0;
-
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
 		type *t = get_type(i);
 
@@ -199,6 +207,8 @@ static void write_types(char *wgsl, size_t *offset) {
 			}
 
 			if (is_vertex_input(i)) {
+				size_t location = find_vertex_location_offset(i);
+
 				for (size_t j = 0; j < t->members.size; ++j) {
 					*offset +=
 					    sprintf(&wgsl[*offset], "\t@location(%zu) %s: %s,\n", location, get_name(t->members.m[j].name), type_string(t->members.m[j].type.type));
@@ -940,9 +950,14 @@ void wgsl_export(char *directory) {
 					vertex_functions[vertex_functions_size] = i;
 					vertex_functions_size += 1;
 
+					size_t vertex_location_offset = 0;
+
 					for (uint32_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
-						vertex_inputs[vertex_inputs_size] = f->parameter_types[parameter_index].type;
+						vertex_inputs[vertex_inputs_size]           = f->parameter_types[parameter_index].type;
+						vertex_location_offsets[vertex_inputs_size] = vertex_location_offset;
+
 						vertex_inputs_size += 1;
+						vertex_location_offset += get_type(f->parameter_types[parameter_index].type)->members.size;
 					}
 				}
 				else if (f->name == fragment_shader_name) {
