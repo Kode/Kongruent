@@ -3155,6 +3155,22 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t},\n");
 				}
 				else if (g->type == texcube_type_id) {
+					fprintf(output, "\t\t\t{\n");
+					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
+					if (writable) {
+						fprintf(output, "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_Cube, .format = WGPUTextureFormat_RGBA32Float, "
+						                ".access = WGPUStorageTextureAccess_WriteOnly},\n");
+					}
+					else {
+						fprintf(output, "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_Cube},\n");
+					}
+					if (writable) {
+						fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+					}
+					else {
+						fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+					}
+					fprintf(output, "\t\t\t},\n");
 				}
 				else if (is_sampler(g->type)) {
 					fprintf(output, "\t\t\t{\n");
