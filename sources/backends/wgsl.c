@@ -804,7 +804,7 @@ static void write_functions(char *code, size_t *offset) {
 					check(o->op_call.parameters_size == 4, context, "sample_lod requires four arguments");
 					indent(code, offset, indentation);
 					*offset +=
-					    sprintf(&code[*offset], "var _%s: %s = textureSample(%s, %s, %s, %s);\n", get_var(o->op_call.var, f).str,
+					    sprintf(&code[*offset], "var %s: %s = textureSampleLevel(%s, %s, %s, %s);\n", get_var(o->op_call.var, f).str,
 					            type_string(o->op_call.var.type.type), get_var(o->op_call.parameters[0], f).str, get_var(o->op_call.parameters[1], f).str,
 					            get_var(o->op_call.parameters[2], f).str, get_var(o->op_call.parameters[3], f).str);
 				}
