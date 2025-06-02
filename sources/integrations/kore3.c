@@ -1855,6 +1855,9 @@ void kore3_export(char *directory, api_kind api) {
 						if (g->type == tex2darray_type_id) {
 							fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2DArray,\n");
 						}
+						else if (g->type == texcube_type_id) {
+							fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_Cube,\n");
+						}
 						else {
 							fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2D,\n");
 						}
