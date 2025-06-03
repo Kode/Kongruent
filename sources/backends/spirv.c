@@ -3412,7 +3412,7 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 			input_types[input_type_index] = input->members.m[member_index].type.type;
 
 			vertex_parameter_indices[input_type_index]        = input_index;
-			vertex_parameter_member_indices[input_type_index] = member_index;
+			vertex_parameter_member_indices[input_type_index] = (uint32_t)member_index;
 
 			++input_type_index;
 		}

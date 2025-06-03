@@ -443,20 +443,8 @@ static small_string get_var(variable var, function *f) {
 		descriptor_set *set = group->values[set_index];
 		for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 			if (var.index == get_global(set->globals.globals[global_index])->var_index) {
-				bool found = false;
-
-				size_t global_set_index = 0;
-				for (; global_set_index < get_sets_count(); ++global_set_index) {
-					if (set == get_set(global_set_index)) {
-						found = true;
-						break;
-					}
-				}
-
-				assert(found);
-
 				small_string name;
-				sprintf(name.str, "_set%zu_%" PRIu64, global_set_index, var.index);
+				sprintf(name.str, "_set%zu_%" PRIu64, set_index, var.index);
 				return name;
 			}
 		}
