@@ -274,83 +274,11 @@ static void write_types(char *wgsl, size_t *offset, shader_stage stage, type_id 
 	}
 }
 
-static void assign_bindings(uint32_t *bindings) {
-	for (size_t set_index = 0; set_index < get_sets_count(); ++set_index) {
-		uint32_t binding = 0;
-
-		descriptor_set *set = get_set(set_index);
-
-		if (set->name == add_name("root_constants")) {
-			if (set->globals.size != 1) {
-				debug_context context = {0};
-				error(context, "More than one root constants struct found");
-			}
-
-			global_id g_id = set->globals.globals[0];
-			global   *g    = get_global(g_id);
-
-			if (get_type(g->type)->built_in) {
-				debug_context context = {0};
-				error(context, "Unsupported type for a root constant");
-			}
-
-			bindings[g_id] = binding;
-			binding += 1;
-
-			continue;
-		}
-
-		for (size_t g_index = 0; g_index < set->globals.size; ++g_index) {
-			global_id global_index = set->globals.globals[g_index];
-			bool      writable     = set->globals.writable[g_index];
-
-			global *g = get_global(global_index);
-
-			type   *t         = get_type(g->type);
-			type_id base_type = t->array_size > 0 ? t->base : g->type;
-
-			if (base_type == sampler_type_id) {
-				bindings[global_index] = binding;
-				binding += 1;
-			}
-			else if (base_type == tex2d_type_id) {
-				if (t->array_size == UINT32_MAX) {
-					bindings[global_index] = 0;
-				}
-				else if (writable) {
-					bindings[global_index] = binding;
-					binding += 1;
-				}
-				else {
-					bindings[global_index] = binding;
-					binding += 1;
-				}
-			}
-			else if (base_type == texcube_type_id || base_type == tex2darray_type_id || base_type == bvh_type_id) {
-				bindings[global_index] = binding;
-				binding += 1;
-			}
-			else if (get_type(g->type)->built_in) {
-				if (get_type(g->type)->array_size > 0) {
-					bindings[global_index] = binding;
-					binding += 1;
-				}
-			}
-			else {
-				if (get_type(g->type)->array_size > 0) {
-					bindings[global_index] = binding;
-					binding += 1;
-				}
-				else {
-					bindings[global_index] = binding;
-					binding += 1;
-				}
-			}
-		}
-	}
-}
-
 static void write_globals(char *wgsl, size_t *offset, function *main) {
+	global_array referenced_globals = {0};
+
+	find_referenced_globals(main, &referenced_globals);
+
 	descriptor_set_group *group = find_descriptor_set_group_for_function(main);
 
 	for (size_t set_index = 0; set_index < group->size; ++set_index) {
@@ -383,38 +311,55 @@ static void write_globals(char *wgsl, size_t *offset, function *main) {
 			global_id global_index = set->globals.globals[g_index];
 			bool      writable     = set->globals.writable[g_index];
 
+			bool referenced = false;
+
+			for (size_t i = 0; i < referenced_globals.size; ++i) {
+				if (global_index == referenced_globals.globals[i]) {
+					referenced = true;
+					break;
+				}
+			}
+
 			global *g = get_global(global_index);
 
 			type   *t         = get_type(g->type);
 			type_id base_type = t->array_size > 0 ? t->base : g->type;
 
 			if (base_type == sampler_type_id) {
-				*offset +=
-				    sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": sampler;\n\n", set_index, binding, set_index, g->var_index);
+				if (referenced) {
+					*offset +=
+					    sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": sampler;\n\n", set_index, binding, set_index, g->var_index);
+				}
 				binding += 1;
 			}
 			else if (base_type == tex2d_type_id) {
-				if (t->array_size == UINT32_MAX) {
-					assert(false);
-				}
-				else if (writable) {
-					*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_storage_2d<rgba32float, write>;\n\n",
-					                   set_index, binding, set_index, g->var_index);
-				}
-				else {
-					*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_2d<f32>;\n\n", set_index, binding, set_index,
-					                   g->var_index);
+				if (referenced) {
+					if (t->array_size == UINT32_MAX) {
+						assert(false);
+					}
+					else if (writable) {
+						*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_storage_2d<rgba32float, write>;\n\n",
+						                   set_index, binding, set_index, g->var_index);
+					}
+					else {
+						*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_2d<f32>;\n\n", set_index, binding,
+						                   set_index, g->var_index);
+					}
 				}
 				binding += 1;
 			}
 			else if (g->type == tex2darray_type_id) {
-				*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_2d_array<f32>;\n\n", set_index, binding,
-				                   set_index, g->var_index);
+				if (referenced) {
+					*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_2d_array<f32>;\n\n", set_index, binding,
+					                   set_index, g->var_index);
+				}
 				binding += 1;
 			}
 			else if (g->type == texcube_type_id) {
-				*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_cube<f32>;\n\n", set_index, binding, set_index,
-				                   g->var_index);
+				if (referenced) {
+					*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_cube<f32>;\n\n", set_index, binding,
+					                   set_index, g->var_index);
+				}
 				binding += 1;
 			}
 			else if (base_type == bvh_type_id) {
@@ -433,16 +378,18 @@ static void write_globals(char *wgsl, size_t *offset, function *main) {
 					binding += 1;
 				}
 				else {
-					type *t = get_type(g->type);
-					char  type_name[256];
-					if (t->name != NO_NAME) {
-						strcpy(type_name, get_name(t->name));
+					if (referenced) {
+						type *t = get_type(g->type);
+						char  type_name[256];
+						if (t->name != NO_NAME) {
+							strcpy(type_name, get_name(t->name));
+						}
+						else {
+							sprintf(type_name, "_%" PRIu64 "_type", g->var_index);
+						}
+						*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var<uniform> _set%zu_%" PRIu64 ": %s;\n\n", set_index, binding, set_index,
+						                   g->var_index, type_name);
 					}
-					else {
-						sprintf(type_name, "_%" PRIu64 "_type", g->var_index);
-					}
-					*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var<uniform> _set%zu_%" PRIu64 ": %s;\n\n", set_index, binding, set_index,
-					                   g->var_index, type_name);
 
 					binding += 1;
 				}
