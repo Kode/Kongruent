@@ -2806,7 +2806,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id result = write_op_f_ord_equal(instructions, spirv_bool_type, left, right);
 				hmput(index_map, o->op_binary.result.index, result);
 			}
-			else if (vector_base_type(o->op_binary.left.type.type) == int_id) {
+			else if (vector_base_type(o->op_binary.left.type.type) == int_id || vector_base_type(o->op_binary.left.type.type) == uint_id) {
 				spirv_id result = write_op_i_equal(instructions, spirv_bool_type, left, right);
 				hmput(index_map, o->op_binary.result.index, result);
 			}
@@ -2821,7 +2821,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id result = write_op_f_ord_not_equal(instructions, spirv_bool_type, left, right);
 				hmput(index_map, o->op_binary.result.index, result);
 			}
-			else if (vector_base_type(o->op_binary.left.type.type) == int_id) {
+			else if (vector_base_type(o->op_binary.left.type.type) == int_id || vector_base_type(o->op_binary.left.type.type) == uint_id) {
 				spirv_id result = write_op_i_not_equal(instructions, spirv_bool_type, left, right);
 				hmput(index_map, o->op_binary.result.index, result);
 			}
