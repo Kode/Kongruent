@@ -95,25 +95,25 @@ static char *type_string(type_id type) {
 //	return get_name(func);
 // }
 
-static void write_code(char *wgsl, char *directory, const char *filename) {
+static void write_code(char *wgsl, char *directory, const char *filename, const char *name) {
 	char full_filename[512];
 
 	{
 		sprintf(full_filename, "%s/%s.h", directory, filename);
 		FILE *file = fopen(full_filename, "wb");
 		fprintf(file, "#include <stddef.h>\n\n");
-		fprintf(file, "extern const char *wgsl;\n");
-		fprintf(file, "extern size_t wgsl_size;\n");
+		fprintf(file, "extern const char *%s;\n", name);
+		fprintf(file, "extern size_t %s_size;\n", name);
 		fclose(file);
 	}
 
 	{
 		sprintf(full_filename, "%s/%s.c", directory, filename);
-		FILE *file = fopen(full_filename, "wb");
 
+		FILE *file = fopen(full_filename, "wb");
 		fprintf(file, "#include \"%s.h\"\n\n", filename);
 
-		fprintf(file, "const char *wgsl = \"");
+		fprintf(file, "const char *%s = \"", name);
 
 		size_t length = strlen(wgsl);
 
@@ -137,7 +137,7 @@ static void write_code(char *wgsl, char *directory, const char *filename) {
 
 		fprintf(file, "\";\n\n");
 
-		fprintf(file, "size_t wgsl_size = %zu;\n\n", length);
+		fprintf(file, "size_t %s_size = %zu;\n\n", name, length);
 
 		fprintf(file, "/*\n%s*/\n", wgsl);
 
@@ -178,9 +178,13 @@ static bool is_fragment_input(type_id t) {
 	return false;
 }
 
-static void write_types(char *wgsl, size_t *offset) {
-	for (type_id i = 0; get_type(i) != NULL; ++i) {
-		type *t = get_type(i);
+static void write_types(char *wgsl, size_t *offset, shader_stage stage, type_id inputs[64], size_t inputs_count, type_id output, function *main) {
+	type_id types[256];
+	size_t  types_size = 0;
+	find_referenced_types(main, types, &types_size);
+
+	for (size_t i = 0; i < types_size; ++i) {
+		type *t = get_type(types[i]);
 
 		if (!t->built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
 			if (t->name == NO_NAME) {
@@ -206,8 +210,8 @@ static void write_types(char *wgsl, size_t *offset) {
 				*offset += sprintf(&wgsl[*offset], "struct %s {\n", get_name(t->name));
 			}
 
-			if (is_vertex_input(i)) {
-				size_t location = find_vertex_location_offset(i);
+			if (stage == SHADER_STAGE_VERTEX) {
+				size_t location = find_vertex_location_offset(types[i]);
 
 				for (size_t j = 0; j < t->members.size; ++j) {
 					*offset +=
@@ -215,7 +219,7 @@ static void write_types(char *wgsl, size_t *offset) {
 					++location;
 				}
 			}
-			else if (is_fragment_input(i)) {
+			else if (stage == SHADER_STAGE_FRAGMENT) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (j == 0) {
 						*offset +=
@@ -313,11 +317,13 @@ static void assign_bindings(uint32_t *bindings) {
 	}
 }
 
-static void write_globals(char *wgsl, size_t *offset) {
-	for (size_t set_index = 0; set_index < get_sets_count(); ++set_index) {
+static void write_globals(char *wgsl, size_t *offset, function *main) {
+	descriptor_set_group *group = find_descriptor_set_group_for_function(main);
+
+	for (size_t set_index = 0; set_index < group->size; ++set_index) {
 		uint32_t binding = 0;
 
-		descriptor_set *set = get_set(set_index);
+		descriptor_set *set = group->values[set_index];
 
 		if (set->name == add_name("root_constants")) {
 			if (set->globals.size != 1) {
@@ -481,13 +487,21 @@ static small_string get_var(variable var, function *f) {
 	return name;
 }
 
-static void write_functions(char *code, size_t *offset) {
-	for (function_id i = 0; get_function(i) != NULL; ++i) {
-		function *f = get_function(i);
+static void write_functions(char *code, size_t *offset, shader_stage stage, function *main) {
+	function *functions[256];
+	size_t    functions_size = 0;
 
-		if (f->block == NULL) {
-			continue;
-		}
+	functions[functions_size] = main;
+	functions_size += 1;
+
+	find_referenced_functions(main, functions, &functions_size);
+
+	for (size_t i = 0; i < functions_size; ++i) {
+		function *f = functions[i];
+		assert(f != NULL);
+
+		debug_context context = {0};
+		check(f->block != NULL, context, "Function block missing");
 
 		uint8_t *data = f->code.o;
 		size_t   size = f->code.size;
@@ -502,75 +516,76 @@ static void write_functions(char *code, size_t *offset) {
 			}
 		}
 
-		debug_context context = {0};
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 			check(parameter_ids[parameter_index] != 0, context, "Parameter not found");
 		}
 
-		if (is_vertex_function(i)) {
-			*offset += sprintf(&code[*offset], "@vertex fn %s(", get_name(f->name));
-			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
-				if (parameter_index == 0) {
-					*offset +=
-					    sprintf(&code[*offset], "_%" PRIu64 ": %s", parameter_ids[parameter_index], type_string(f->parameter_types[parameter_index].type));
+		if (f == main) {
+			if (stage == SHADER_STAGE_VERTEX) {
+				*offset += sprintf(&code[*offset], "@vertex fn %s(", get_name(f->name));
+				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+					if (parameter_index == 0) {
+						*offset +=
+						    sprintf(&code[*offset], "_%" PRIu64 ": %s", parameter_ids[parameter_index], type_string(f->parameter_types[parameter_index].type));
+					}
+					else {
+						*offset += sprintf(&code[*offset], ", _%" PRIu64 ": %s", parameter_ids[parameter_index],
+						                   type_string(f->parameter_types[parameter_index].type));
+					}
+				}
+				*offset += sprintf(&code[*offset], ") -> %s {\n", type_string(f->return_type.type));
+			}
+			else if (stage == SHADER_STAGE_FRAGMENT) {
+				if (get_type(f->return_type.type)->array_size > 0) {
+					type_id base_type = get_type(f->return_type.type)->base;
+
+					*offset += sprintf(&code[*offset], "struct _kong_colors_out {\n");
+					for (uint32_t j = 0; j < get_type(f->return_type.type)->array_size; ++j) {
+						*offset += sprintf(&code[*offset], "\t@location(%u) _%i: %s,\n", j, j, type_string(base_type));
+					}
+					*offset += sprintf(&code[*offset], "}\n\n");
+
+					*offset += sprintf(&code[*offset], "@fragment fn %s(", get_name(f->name));
+					for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+						if (parameter_index == 0) {
+							*offset += sprintf(&code[*offset], "_%" PRIu64 ": %s", parameter_ids[parameter_index],
+							                   type_string(f->parameter_types[parameter_index].type));
+						}
+						else {
+							*offset += sprintf(&code[*offset], ", _%" PRIu64 ": %s", parameter_ids[parameter_index],
+							                   type_string(f->parameter_types[parameter_index].type));
+						}
+					}
+					*offset += sprintf(&code[*offset], ") -> _kong_colors_out {\n");
 				}
 				else {
-					*offset +=
-					    sprintf(&code[*offset], ", _%" PRIu64 ": %s", parameter_ids[parameter_index], type_string(f->parameter_types[parameter_index].type));
+					*offset += sprintf(&code[*offset], "@fragment fn %s(", get_name(f->name));
+					for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+						if (parameter_index == 0) {
+							*offset += sprintf(&code[*offset], "_%" PRIu64 ": %s", parameter_ids[parameter_index],
+							                   type_string(f->parameter_types[parameter_index].type));
+						}
+						else {
+							*offset += sprintf(&code[*offset], ", _%" PRIu64 ": %s", parameter_ids[parameter_index],
+							                   type_string(f->parameter_types[parameter_index].type));
+						}
+					}
+					*offset += sprintf(&code[*offset], ") -> @location(0) %s {\n", type_string(f->return_type.type));
 				}
 			}
-			*offset += sprintf(&code[*offset], ") -> %s {\n", type_string(f->return_type.type));
-		}
-		else if (is_fragment_function(i)) {
-			if (get_type(f->return_type.type)->array_size > 0) {
-				type_id base_type = get_type(f->return_type.type)->base;
+			else if (stage == SHADER_STAGE_COMPUTE) {
+				assert(f->parameters_size == 0);
+				assert(f->return_type.type == void_id);
 
-				*offset += sprintf(&code[*offset], "struct _kong_colors_out {\n");
-				for (uint32_t j = 0; j < get_type(f->return_type.type)->array_size; ++j) {
-					*offset += sprintf(&code[*offset], "\t@location(%u) _%i: %s,\n", j, j, type_string(base_type));
-				}
-				*offset += sprintf(&code[*offset], "}\n\n");
+				attribute *threads = find_attribute(&f->attributes, add_name("threads"));
+				assert(threads != NULL && threads->paramters_count == 3);
 
-				*offset += sprintf(&code[*offset], "@fragment fn %s(", get_name(f->name));
-				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
-					if (parameter_index == 0) {
-						*offset +=
-						    sprintf(&code[*offset], "_%" PRIu64 ": %s", parameter_ids[parameter_index], type_string(f->parameter_types[parameter_index].type));
-					}
-					else {
-						*offset += sprintf(&code[*offset], ", _%" PRIu64 ": %s", parameter_ids[parameter_index],
-						                   type_string(f->parameter_types[parameter_index].type));
-					}
-				}
-				*offset += sprintf(&code[*offset], ") -> _kong_colors_out {\n");
+				*offset += sprintf(&code[*offset],
+				                   "@compute @workgroup_size(%u, %u, %u) fn %s(@builtin(local_invocation_id) _kong_group_thread_id: vec3<u32>, "
+				                   "@builtin(workgroup_id) _kong_group_id: vec3<u32>, @builtin(global_invocation_id) _kong_dispatch_thread_id: vec3<u32>, "
+				                   "@builtin(num_workgroups) _kong_threads_count: vec3<u32>, @builtin(local_invocation_index) _kong_group_index: u32) {\n",
+				                   (uint32_t)threads->parameters[0], (uint32_t)threads->parameters[1], (uint32_t)threads->parameters[2], get_name(f->name));
 			}
-			else {
-				*offset += sprintf(&code[*offset], "@fragment fn %s(", get_name(f->name));
-				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
-					if (parameter_index == 0) {
-						*offset +=
-						    sprintf(&code[*offset], "_%" PRIu64 ": %s", parameter_ids[parameter_index], type_string(f->parameter_types[parameter_index].type));
-					}
-					else {
-						*offset += sprintf(&code[*offset], ", _%" PRIu64 ": %s", parameter_ids[parameter_index],
-						                   type_string(f->parameter_types[parameter_index].type));
-					}
-				}
-				*offset += sprintf(&code[*offset], ") -> @location(0) %s {\n", type_string(f->return_type.type));
-			}
-		}
-		else if (is_compute_function(i)) {
-			assert(f->parameters_size == 0);
-			assert(f->return_type.type == void_id);
-
-			attribute *threads = find_attribute(&f->attributes, add_name("threads"));
-			assert(threads != NULL && threads->paramters_count == 3);
-
-			*offset += sprintf(&code[*offset],
-			                   "@compute @workgroup_size(%u, %u, %u) fn %s(@builtin(local_invocation_id) _kong_group_thread_id: vec3<u32>, "
-			                   "@builtin(workgroup_id) _kong_group_id: vec3<u32>, @builtin(global_invocation_id) _kong_dispatch_thread_id: vec3<u32>, "
-			                   "@builtin(num_workgroups) _kong_threads_count: vec3<u32>, @builtin(local_invocation_index) _kong_group_index: u32) {\n",
-			                   (uint32_t)threads->parameters[0], (uint32_t)threads->parameters[1], (uint32_t)threads->parameters[2], get_name(f->name));
 		}
 		else {
 			*offset += sprintf(&code[*offset], "fn %s(", get_name(f->name));
@@ -730,7 +745,7 @@ static void write_functions(char *code, size_t *offset) {
 			}
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
-					if (is_fragment_function(i) && get_type(f->return_type.type)->array_size > 0) {
+					if (f == main && stage == SHADER_STAGE_FRAGMENT && get_type(f->return_type.type)->array_size > 0) {
 						indent(code, offset, indentation);
 						*offset += sprintf(&code[*offset], "{\n");
 						indent(code, offset, indentation + 1);
@@ -909,19 +924,89 @@ static void write_functions(char *code, size_t *offset) {
 	}
 }
 
-static void wgsl_export_everything(char *directory) {
+static void wgsl_export_vertex(char *directory, function *main) {
 	char         *wgsl    = (char *)calloc(1024 * 1024, 1);
 	debug_context context = {0};
 	check(wgsl != NULL, context, "Could not allocate the wgsl string");
+
 	size_t offset = 0;
 
-	write_types(wgsl, &offset);
+	type_id vertex_inputs[64];
+	for (size_t input_index = 0; input_index < main->parameters_size; ++input_index) {
+		vertex_inputs[input_index] = main->parameter_types[input_index].type;
+	}
+	type_id vertex_output = main->return_type.type;
 
-	write_globals(wgsl, &offset);
+	check(vertex_output != NO_TYPE, context, "vertex output missing");
 
-	write_functions(wgsl, &offset);
+	write_types(wgsl, &offset, SHADER_STAGE_VERTEX, vertex_inputs, main->parameters_size, vertex_output, main);
 
-	write_code(wgsl, directory, "wgsl");
+	write_globals(wgsl, &offset, main);
+
+	write_functions(wgsl, &offset, SHADER_STAGE_VERTEX, main);
+
+	char *name = get_name(main->name);
+
+	char filename[512];
+	sprintf(filename, "kong_%s", name);
+
+	char var_name[256];
+	sprintf(var_name, "%s_code", name);
+
+	write_code(wgsl, directory, filename, var_name);
+}
+
+static void wgsl_export_fragment(char *directory, function *main) {
+	char         *wgsl    = (char *)calloc(1024 * 1024, 1);
+	debug_context context = {0};
+	check(wgsl != NULL, context, "Could not allocate the wgsl string");
+
+	size_t offset = 0;
+
+	assert(main->parameters_size > 0);
+	type_id pixel_input = main->parameter_types[0].type;
+
+	check(pixel_input != NO_TYPE, context, "fragment input missing");
+
+	write_types(wgsl, &offset, SHADER_STAGE_FRAGMENT, &pixel_input, 1, NO_TYPE, main);
+
+	write_globals(wgsl, &offset, main);
+
+	write_functions(wgsl, &offset, SHADER_STAGE_FRAGMENT, main);
+
+	char *name = get_name(main->name);
+
+	char filename[512];
+	sprintf(filename, "kong_%s", name);
+
+	char var_name[256];
+	sprintf(var_name, "%s_code", name);
+
+	write_code(wgsl, directory, filename, var_name);
+}
+
+static void wgsl_export_compute(char *directory, function *main) {
+	char         *wgsl    = (char *)calloc(1024 * 1024, 1);
+	debug_context context = {0};
+	check(wgsl != NULL, context, "Could not allocate the wgsl string");
+
+	size_t offset = 0;
+
+	write_types(wgsl, &offset, SHADER_STAGE_COMPUTE, NULL, 0, NO_TYPE, main);
+
+	write_globals(wgsl, &offset, main);
+
+	write_functions(wgsl, &offset, SHADER_STAGE_COMPUTE, main);
+
+	char *name = get_name(main->name);
+
+	char filename[512];
+	sprintf(filename, "kong_%s", name);
+
+	char var_name[256];
+	sprintf(var_name, "%s_code", name);
+
+	write_code(wgsl, directory, filename, var_name);
 }
 
 void wgsl_export(char *directory) {
@@ -980,5 +1065,15 @@ void wgsl_export(char *directory) {
 		}
 	}
 
-	wgsl_export_everything(directory);
+	for (size_t i = 0; i < vertex_functions_size; ++i) {
+		wgsl_export_vertex(directory, get_function(vertex_functions[i]));
+	}
+
+	for (size_t i = 0; i < fragment_functions_size; ++i) {
+		wgsl_export_fragment(directory, get_function(fragment_functions[i]));
+	}
+
+	for (size_t i = 0; i < compute_functions_size; ++i) {
+		wgsl_export_compute(directory, get_function(compute_functions[i]));
+	}
 }

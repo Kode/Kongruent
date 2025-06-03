@@ -1007,9 +1007,6 @@ void kore3_export(char *directory, api_kind api) {
 		if (api == API_METAL) {
 			// Code is added directly to the Xcode project instead
 		}
-		else if (api == API_WEBGPU) {
-			fprintf(output, "#include \"wgsl.h\"\n");
-		}
 		else {
 			for (type_id i = 0; get_type(i) != NULL; ++i) {
 				type *t = get_type(i);
