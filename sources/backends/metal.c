@@ -356,9 +356,6 @@ static void write_functions(char *code, size_t *offset) {
 		size_t buffer_index = f->parameters_size;
 
 		if (is_vertex_function(i) || is_fragment_function(i) || is_compute_function(i)) {
-			global_array globals = {0};
-			find_referenced_globals(f, &globals);
-
 			size_t buffers_offset = 0;
 
 			descriptor_set_group *set_group = get_descriptor_set_group(f->descriptor_set_group_index);
