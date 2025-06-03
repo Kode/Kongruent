@@ -178,10 +178,43 @@ static bool is_fragment_input(type_id t) {
 	return false;
 }
 
+static void add_found_type(type_id t, type_id *types, size_t *types_size) {
+	for (size_t i = 0; i < *types_size; ++i) {
+		if (types[i] == t) {
+			return;
+		}
+	}
+
+	types[*types_size] = t;
+	*types_size += 1;
+}
+
 static void write_types(char *wgsl, size_t *offset, shader_stage stage, type_id inputs[64], size_t inputs_count, type_id output, function *main) {
 	type_id types[256];
 	size_t  types_size = 0;
 	find_referenced_types(main, types, &types_size);
+
+	global_array globals = {0};
+
+	find_referenced_globals(main, &globals);
+
+	for (size_t i = 0; i < globals.size; ++i) {
+		global *g = get_global(globals.globals[i]);
+
+		if (g->type == sampler_type_id) {
+		}
+		else if (g->type == tex2d_type_id) {
+		}
+		else if (g->type == tex2darray_type_id) {
+		}
+		else if (g->type == texcube_type_id) {
+		}
+		else if (g->type == float_id) {
+		}
+		else {
+			add_found_type(g->type, types, &types_size);
+		}
+	}
 
 	for (size_t i = 0; i < types_size; ++i) {
 		type *t = get_type(types[i]);
@@ -191,9 +224,9 @@ static void write_types(char *wgsl, size_t *offset, shader_stage stage, type_id 
 				char name[256];
 
 				bool found = false;
-				for (global_id j = 0; get_global(j)->type != NO_TYPE; ++j) {
+				for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
 					global *g = get_global(j);
-					if (g->type == i) {
+					if (g->type == types[i]) {
 						sprintf(name, "_%" PRIu64, g->var_index);
 						found = true;
 						break;
