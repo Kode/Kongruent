@@ -2066,6 +2066,15 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id id = write_op_composite_construct(instructions, spirv_float4_type, constituents, o->op_call.parameters_size);
 				hmput(index_map, o->op_call.var.index, id);
 			}
+			else if (func == add_name("int")) {
+				if (o->op_call.parameters[0].type.type == float_id) {
+					spirv_id id = write_op_convert_f_to_s(instructions, spirv_int_type, get_var(instructions, o->op_call.parameters[0]));
+					hmput(index_map, o->op_call.var.index, id);
+				}
+				else {
+					assert(false);
+				}
+			}
 			else if (func == add_name("int2")) {
 				if (o->op_call.parameters_size == 1) {
 					spirv_id constituent = convert_kong_index_to_spirv_id(o->op_call.parameters[0].index);
@@ -2106,6 +2115,15 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				}
 				spirv_id id = write_op_composite_construct(instructions, spirv_int4_type, constituents, o->op_call.parameters_size);
 				hmput(index_map, o->op_call.var.index, id);
+			}
+			else if (func == add_name("uint")) {
+				if (o->op_call.parameters[0].type.type == float_id) {
+					spirv_id id = write_op_convert_f_to_u(instructions, spirv_uint_type, get_var(instructions, o->op_call.parameters[0]));
+					hmput(index_map, o->op_call.var.index, id);
+				}
+				else {
+					assert(false);
+				}
 			}
 			else if (func == add_name("uint2")) {
 				spirv_id constituents[2];
