@@ -2352,7 +2352,7 @@ void kore3_export(char *directory, api_kind api) {
 
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("vertex")) {
-						if (api == API_METAL || api == API_WEBGPU) {
+						if (api == API_METAL) {
 							fprintf(output, "\t%s_parameters.vertex.shader.function_name = \"%s\";\n", get_name(t->name),
 							        get_name(t->members.m[j].value.identifier));
 						}
@@ -2376,7 +2376,7 @@ void kore3_export(char *directory, api_kind api) {
 						mesh_shader_name = t->members.m[j].value.identifier;
 					}
 					else if (t->members.m[j].name == add_name("fragment")) {
-						if (api == API_METAL || api == API_WEBGPU) {
+						if (api == API_METAL) {
 							fprintf(output, "\t%s_parameters.fragment.shader.function_name = \"%s\";\n", get_name(t->name),
 							        get_name(t->members.m[j].value.identifier));
 						}
@@ -2788,7 +2788,7 @@ void kore3_export(char *directory, api_kind api) {
 			function *f = get_function(i);
 			if (has_attribute(&f->attributes, add_name("compute"))) {
 				fprintf(output, "\tkore_%s_compute_pipeline_parameters %s_parameters;\n", api_short, get_name(f->name));
-				if (api == API_METAL || api == API_WEBGPU) {
+				if (api == API_METAL) {
 					fprintf(output, "\t%s_parameters.shader.function_name = \"%s\";\n", get_name(f->name), get_name(f->name));
 				}
 				else {

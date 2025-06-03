@@ -210,7 +210,7 @@ static void write_types(char *wgsl, size_t *offset, shader_stage stage, type_id 
 				*offset += sprintf(&wgsl[*offset], "struct %s {\n", get_name(t->name));
 			}
 
-			if (stage == SHADER_STAGE_VERTEX) {
+			if (is_vertex_input(types[i])) {
 				size_t location = find_vertex_location_offset(types[i]);
 
 				for (size_t j = 0; j < t->members.size; ++j) {
@@ -219,7 +219,7 @@ static void write_types(char *wgsl, size_t *offset, shader_stage stage, type_id 
 					++location;
 				}
 			}
-			else if (stage == SHADER_STAGE_FRAGMENT) {
+			else if (is_fragment_input(types[i])) {
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (j == 0) {
 						*offset +=
@@ -522,7 +522,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, func
 
 		if (f == main) {
 			if (stage == SHADER_STAGE_VERTEX) {
-				*offset += sprintf(&code[*offset], "@vertex fn %s(", get_name(f->name));
+				*offset += sprintf(&code[*offset], "@vertex fn main(");
 				for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 					if (parameter_index == 0) {
 						*offset +=
@@ -545,7 +545,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, func
 					}
 					*offset += sprintf(&code[*offset], "}\n\n");
 
-					*offset += sprintf(&code[*offset], "@fragment fn %s(", get_name(f->name));
+					*offset += sprintf(&code[*offset], "@fragment fn main(");
 					for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 						if (parameter_index == 0) {
 							*offset += sprintf(&code[*offset], "_%" PRIu64 ": %s", parameter_ids[parameter_index],
@@ -559,7 +559,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, func
 					*offset += sprintf(&code[*offset], ") -> _kong_colors_out {\n");
 				}
 				else {
-					*offset += sprintf(&code[*offset], "@fragment fn %s(", get_name(f->name));
+					*offset += sprintf(&code[*offset], "@fragment fn main(");
 					for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 						if (parameter_index == 0) {
 							*offset += sprintf(&code[*offset], "_%" PRIu64 ": %s", parameter_ids[parameter_index],
@@ -581,10 +581,10 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, func
 				assert(threads != NULL && threads->paramters_count == 3);
 
 				*offset += sprintf(&code[*offset],
-				                   "@compute @workgroup_size(%u, %u, %u) fn %s(@builtin(local_invocation_id) _kong_group_thread_id: vec3<u32>, "
+				                   "@compute @workgroup_size(%u, %u, %u) fn main(@builtin(local_invocation_id) _kong_group_thread_id: vec3<u32>, "
 				                   "@builtin(workgroup_id) _kong_group_id: vec3<u32>, @builtin(global_invocation_id) _kong_dispatch_thread_id: vec3<u32>, "
 				                   "@builtin(num_workgroups) _kong_threads_count: vec3<u32>, @builtin(local_invocation_index) _kong_group_index: u32) {\n",
-				                   (uint32_t)threads->parameters[0], (uint32_t)threads->parameters[1], (uint32_t)threads->parameters[2], get_name(f->name));
+				                   (uint32_t)threads->parameters[0], (uint32_t)threads->parameters[1], (uint32_t)threads->parameters[2]);
 			}
 		}
 		else {
