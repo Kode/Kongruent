@@ -495,6 +495,14 @@ static void find_all_render_pipelines(void) {
 	}
 }
 
+static bool same_shader(function *a, function *b) {
+	if (a == NULL && b == NULL) {
+		return false;
+	}
+
+	return a == b;
+}
+
 static void find_render_pipeline_groups(void) {
 	static_array_init(all_render_pipeline_groups);
 
@@ -522,8 +530,10 @@ static void find_render_pipeline_groups(void) {
 
 			for (size_t index_in_bucket = 0; index_in_bucket < group.size; ++index_in_bucket) {
 				render_pipeline *pipeline_in_group = &all_render_pipelines.values[group.values[index_in_bucket]];
-				if (pipeline->vertex_shader == pipeline_in_group->vertex_shader || pipeline->amplification_shader == pipeline_in_group->amplification_shader ||
-				    pipeline->mesh_shader == pipeline_in_group->mesh_shader || pipeline->fragment_shader == pipeline_in_group->fragment_shader) {
+				if (same_shader(pipeline->vertex_shader, pipeline_in_group->vertex_shader) ||
+				    same_shader(pipeline->amplification_shader, pipeline_in_group->amplification_shader) ||
+				    same_shader(pipeline->mesh_shader, pipeline_in_group->mesh_shader) ||
+				    same_shader(pipeline->fragment_shader, pipeline_in_group->fragment_shader)) {
 					found = true;
 					break;
 				}
