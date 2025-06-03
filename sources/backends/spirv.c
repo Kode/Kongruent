@@ -2012,11 +2012,11 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			}
 			else if (func == add_name("float")) {
 				if (o->op_call.parameters[0].type.type == int_id) {
-					spirv_id id = write_op_convert_s_to_f(instructions, spirv_float_type, convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					spirv_id id = write_op_convert_s_to_f(instructions, spirv_float_type, get_var(instructions, o->op_call.parameters[0]));
 					hmput(index_map, o->op_call.var.index, id);
 				}
 				else if (o->op_call.parameters[0].type.type == uint_id) {
-					spirv_id id = write_op_convert_u_to_f(instructions, spirv_float_type, convert_kong_index_to_spirv_id(o->op_call.parameters[0].index));
+					spirv_id id = write_op_convert_u_to_f(instructions, spirv_float_type, get_var(instructions, o->op_call.parameters[0]));
 					hmput(index_map, o->op_call.var.index, id);
 				}
 				else {
