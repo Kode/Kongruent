@@ -2939,7 +2939,31 @@ static void write_functions(instructions_buffer *instructions, function *main, s
 				parameter_types_size++;
 			}
 
-			function_types[i] = write_type_function(instructions, return_type, parameter_types, parameter_types_size);
+			int function_type_index = -1;
+			for (size_t j = 0; j < i; ++j) {
+				function *f2 = functions[j];
+				if (return_type.id != convert_type_to_spirv_id(f2->return_type.type).id || f->parameters_size != f2->parameters_size) {
+					continue;
+				}
+				bool parameters_match = true;
+				for (uint8_t parameter_index = 0; parameter_index < f2->parameters_size; ++parameter_index) {
+					if (parameter_types[parameter_index].id != convert_type_to_spirv_id(f2->parameter_types[parameter_index].type).id) {
+						parameters_match = false;
+						break;
+					}
+				}
+				if (parameters_match) {
+					function_type_index = j;
+					break;
+				}
+			}
+
+			if (function_type_index == -1) {
+				function_types[i] = write_type_function(instructions, return_type, parameter_types, parameter_types_size);
+			}
+			else {
+				function_types[i] = function_types[function_type_index];
+			}
 		}
 	}
 
