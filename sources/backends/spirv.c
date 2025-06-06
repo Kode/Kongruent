@@ -2552,6 +2552,10 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_RETURN: {
+			if (if_end_id != 0) {
+				if_end_id = 0;
+			}
+
 			if (stage == SHADER_STAGE_VERTEX && main) {
 				type *output_type = get_type(output);
 
@@ -2618,6 +2622,9 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_DISCARD: {
+			if (if_end_id != 0) {
+				if_end_id = 0;
+			}
 			write_op_discard(instructions);
 			break;
 		}
