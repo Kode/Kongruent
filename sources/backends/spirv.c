@@ -343,11 +343,11 @@ typedef enum decoration {
 
 typedef enum builtin {
 	BUILTIN_POSITION             = 0,
-	BUILTIN_VERTEX_ID            = 5,
 	BUILTIN_WORKGROUP_SIZE       = 25,
 	BUILTIN_WORKGROUP_ID         = 26,
 	BUILTIN_LOCAL_INVOCATION_ID  = 27,
 	BUILTIN_GLOBAL_INVOCATION_ID = 28,
+	BUILTIN_VERTEX_INDEX         = 42,
 } builtin;
 
 typedef enum storage_class {
@@ -3326,7 +3326,7 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 	if (main->used_builtins.vertex_id) {
 		write_op_variable_preallocated(global_vars_block, convert_pointer_type_to_spirv_id(uint_id, STORAGE_CLASS_INPUT), vertex_id_variable,
 		                               STORAGE_CLASS_INPUT);
-		write_op_decorate_value(decorations, vertex_id_variable, DECORATION_BUILTIN, BUILTIN_VERTEX_ID);
+		write_op_decorate_value(decorations, vertex_id_variable, DECORATION_BUILTIN, BUILTIN_VERTEX_INDEX);
 	}
 
 	if (stage == SHADER_STAGE_COMPUTE) {
