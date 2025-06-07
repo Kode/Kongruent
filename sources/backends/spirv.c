@@ -3670,8 +3670,10 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 
 	write_fragment_output_decorations(&decorations, output_vars, (uint32_t)output_vars_count);
 
+	type_id output_type = output->array_size > 0 ? output->base : pixel_output;
+
 	for (size_t i = 0; i < output_vars_count; ++i) {
-		write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_OUTPUT), output_vars[i], STORAGE_CLASS_OUTPUT);
+		write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(output_type, STORAGE_CLASS_OUTPUT), output_vars[i], STORAGE_CLASS_OUTPUT);
 	}
 
 	write_functions(&instructions, main, entry_point, SHADER_STAGE_FRAGMENT, NO_TYPE);
