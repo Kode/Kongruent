@@ -1101,6 +1101,10 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "}\n\n");
 		}
 
+		if (api == API_WEBGPU) {
+			fprintf(output, "static uint32_t root_constants_table_index = UINT32_MAX;\n\n");
+		}
+
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
 			if (api == API_METAL) {
@@ -1108,7 +1112,7 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, "static uint32_t %s_fragment_table_index = UINT32_MAX;\n\n", get_name(set->name));
 				fprintf(output, "static uint32_t %s_compute_table_index = UINT32_MAX;\n\n", get_name(set->name));
 			}
-			else if (api == API_VULKAN) {
+			else if (api == API_VULKAN || api == API_WEBGPU) {
 				if (set->name != add_name("root_constants")) {
 					fprintf(output, "static uint32_t %s_table_index = UINT32_MAX;\n\n", get_name(set->name));
 				}
@@ -1443,10 +1447,12 @@ void kore3_export(char *directory, api_kind api) {
 			}
 		}
 
+		if (api == API_WEBGPU) {
+			fprintf(output, "extern WGPUBindGroupLayout root_constants_set_layout;\n\n");
+		}
+
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
-
-			bool root_constants = false;
 
 			if (set->name == add_name("root_constants")) {
 				assert(root_constants_global != NULL);
@@ -1468,18 +1474,14 @@ void kore3_export(char *directory, api_kind api) {
 				}
 				fprintf(output, "}\n\n");
 
-				root_constants = true;
+				continue;
 			}
 
-			if (api == API_VULKAN && !root_constants) {
+			if (api == API_VULKAN) {
 				fprintf(output, "extern VkDescriptorSetLayout %s_set_layout;\n\n", get_name(set->name));
 			}
 			else if (api == API_WEBGPU) {
 				fprintf(output, "extern WGPUBindGroupLayout %s_set_layout;\n\n", get_name(set->name));
-			}
-
-			if (root_constants) {
-				continue;
 			}
 
 			fprintf(output, "void kong_create_%s_set(kore_gpu_device *device, const %s_parameters *parameters, %s_set *set) {\n", get_name(set->name),
@@ -3109,8 +3111,14 @@ void kore3_export(char *directory, api_kind api) {
 
 		fprintf(output, "#include <assert.h>\n\n");
 
+		fprintf(output, "WGPUBindGroupLayout root_constants_set_layout;\n");
+
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
+
+			if (set->name == add_name("root_constants")) {
+				continue;
+			}
 
 			fprintf(output, "WGPUBindGroupLayout %s_set_layout;\n", get_name(set->name));
 		}
@@ -3119,12 +3127,27 @@ void kore3_export(char *directory, api_kind api) {
 
 		fprintf(output, "void create_bind_group_layouts(kore_gpu_device *device) {\n");
 
+		fprintf(output, "\t{\n");
+		fprintf(output, "\t\tWGPUBindGroupLayoutEntry layout_entries[1] = {\n");
+		fprintf(output, "\t\t\t{\n");
+		fprintf(output, "\t\t\t\t.binding    = 0,\n");
+		fprintf(output, "\t\t\t\t.buffer     = {.type = WGPUBufferBindingType_Uniform, .hasDynamicOffset = true},\n");
+		fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+		fprintf(output, "\t\t\t},\n");
+		fprintf(output, "\t\t};\n");
+		fprintf(output, "\n");
+		fprintf(output, "\t\tWGPUBindGroupLayoutDescriptor bind_group_layout_descriptor = {\n");
+		fprintf(output, "\t\t\t.entryCount = 1,\n");
+		fprintf(output, "\t\t\t.entries    = layout_entries,\n");
+		fprintf(output, "\t\t};\n");
+		fprintf(output, "\t\troot_constants_set_layout = wgpuDeviceCreateBindGroupLayout(device->webgpu.device, &bind_group_layout_descriptor);\n");
+		fprintf(output, "\t}\n");
+
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
 
-			bool root_constants = false;
 			if (set->name == add_name("root_constants")) {
-				root_constants = true;
+				continue;
 			}
 
 			fprintf(output, "\t{\n");
@@ -3216,7 +3239,7 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 					if (writable) {
-						if (root_constants || has_attribute(&g->attributes, add_name("indexed"))) {
+						if (has_attribute(&g->attributes, add_name("indexed"))) {
 							fprintf(output, "\t\t\t\t.buffer = {.type = WGPUBufferBindingType_Storage, .hasDynamicOffset = true},\n");
 						}
 						else {
@@ -3224,7 +3247,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 					}
 					else {
-						if (root_constants || has_attribute(&g->attributes, add_name("indexed"))) {
+						if (has_attribute(&g->attributes, add_name("indexed"))) {
 							fprintf(output, "\t\t\t\t.buffer = {.type = WGPUBufferBindingType_Uniform, .hasDynamicOffset = true},\n");
 						}
 						else {
