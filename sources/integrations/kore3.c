@@ -2987,7 +2987,7 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
 						fprintf(output, "\t\t\t},\n");
 					}
-					else if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D) {
+					else if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
 						fprintf(output, "\t\t\t{\n");
 						fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 						if (readable | writable) {
@@ -3001,7 +3001,7 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
 						fprintf(output, "\t\t\t},\n");
 					}
-					else if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D) {
+					else if (get_type(g->type)->tex_kind == TEXTURE_KIND_CUBE) {
 						fprintf(output, "\t\t\t{\n");
 						fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 						if (readable | writable) {
