@@ -1424,6 +1424,8 @@ void kore3_export(char *directory, api_kind api) {
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
 
+			bool root_constants = false;
+
 			if (set->name == add_name("root_constants")) {
 				assert(root_constants_global != NULL);
 
@@ -1444,14 +1446,18 @@ void kore3_export(char *directory, api_kind api) {
 				}
 				fprintf(output, "}\n\n");
 
-				continue;
+				root_constants = true;
 			}
 
-			if (api == API_VULKAN) {
+			if (api == API_VULKAN && !root_constants) {
 				fprintf(output, "extern VkDescriptorSetLayout %s_set_layout;\n\n", get_name(set->name));
 			}
 			else if (api == API_WEBGPU) {
 				fprintf(output, "extern WGPUBindGroupLayout %s_set_layout;\n\n", get_name(set->name));
+			}
+
+			if (root_constants) {
+				continue;
 			}
 
 			fprintf(output, "void kong_create_%s_set(kore_gpu_device *device, const %s_parameters *parameters, %s_set *set) {\n", get_name(set->name),
@@ -3064,6 +3070,11 @@ void kore3_export(char *directory, api_kind api) {
 		for (size_t set_index = 0; set_index < sets_count; ++set_index) {
 			descriptor_set *set = sets[set_index];
 
+			bool root_constants = false;
+			if (set->name == add_name("root_constants")) {
+				root_constants = true;
+			}
+
 			fprintf(output, "\t{\n");
 
 			fprintf(output, "\t\tWGPUBindGroupLayoutEntry layout_entries[%zu] = {\n", set->globals.size);
@@ -3138,7 +3149,7 @@ void kore3_export(char *directory, api_kind api) {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 					if (writable) {
-						if (has_attribute(&g->attributes, add_name("indexed"))) {
+						if (root_constants || has_attribute(&g->attributes, add_name("indexed"))) {
 							fprintf(output, "\t\t\t\t.buffer = {.type = WGPUBufferBindingType_Storage, .hasDynamicOffset = true},\n");
 						}
 						else {
@@ -3146,7 +3157,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 					}
 					else {
-						if (has_attribute(&g->attributes, add_name("indexed"))) {
+						if (root_constants || has_attribute(&g->attributes, add_name("indexed"))) {
 							fprintf(output, "\t\t\t\t.buffer = {.type = WGPUBufferBindingType_Uniform, .hasDynamicOffset = true},\n");
 						}
 						else {
