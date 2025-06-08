@@ -740,6 +740,90 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, func
 				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
+			case OPCODE_MOD: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64 " %% _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
+				break;
+			}
+			case OPCODE_EQUALS: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64 " == _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
+				break;
+			}
+			case OPCODE_NOT_EQUALS: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64 " != _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
+				break;
+			}
+			case OPCODE_GREATER: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64 " > _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
+				break;
+			}
+			case OPCODE_GREATER_EQUAL: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64 " >= _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
+				break;
+			}
+			case OPCODE_LESS: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64 " < _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
+				break;
+			}
+			case OPCODE_LESS_EQUAL: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64 " <= _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
+				break;
+			}
+			case OPCODE_AND: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64 " && _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
+				break;
+			}
+			case OPCODE_OR: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64 " || _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
+				break;
+			}
+			case OPCODE_BITWISE_XOR: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64 " ^ _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
+				break;
+			}
+			case OPCODE_BITWISE_AND: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64 " & _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
+				break;
+			}
+			case OPCODE_BITWISE_OR: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64 " | _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
+				break;
+			}
+			case OPCODE_LEFT_SHIFT: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64 " << _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
+				break;
+			}
+			case OPCODE_RIGHT_SHIFT: {
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = _%" PRIu64 " >> _%" PRIu64 ";\n", o->op_binary.result.index,
+				                   type_string(o->op_binary.result.type.type), o->op_binary.left.index, o->op_binary.right.index);
+				break;
+			}
 			case OPCODE_LOAD_FLOAT_CONSTANT:
 				indent(code, offset, indentation);
 				*offset += sprintf(&code[*offset], "var _%" PRIu64 ": %s = %f;\n", o->op_load_float_constant.to.index,
