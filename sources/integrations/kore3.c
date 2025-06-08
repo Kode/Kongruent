@@ -552,6 +552,20 @@ static void to_upper(char *from, char *to) {
 	to[from_size] = 0;
 }
 
+static void format_to_string_wgsl(texture_format format, char *str) {
+	switch (format) {
+	case TEXTURE_FORMAT_FRAMEBUFFER:
+		strcpy(str, "RGBA8Unorm");
+		break;
+	case TEXTURE_FORMAT_UNDEFINED:
+		strcpy(str, "RGBA8Unorm");
+		break;
+	default:
+		assert(false);
+		break;
+	}
+}
+
 static int global_register_indices[512];
 
 void kore3_export(char *directory, api_kind api) {
@@ -1266,11 +1280,19 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\tusage |= KORE_D3D12_TEXTURE_USAGE_UAV;\n");
 					}
 				}
-				else if (api == API_VULKAN || api == API_WEBGPU || api == API_OPENGL) {
+				else if (api == API_VULKAN || api == API_OPENGL) {
 					if (global_has_usage(i, GLOBAL_USAGE_TEXTURE_SAMPLE)) {
 						fprintf(output, "\tusage |= KORE_%s_TEXTURE_USAGE_SAMPLED;\n", api_caps);
 					}
 					if (global_has_usage(i, GLOBAL_USAGE_TEXTURE_READ) || global_has_usage(i, GLOBAL_USAGE_TEXTURE_WRITE)) {
+						fprintf(output, "\tusage |= KORE_%s_TEXTURE_USAGE_STORAGE;\n", api_caps);
+					}
+				}
+				else if (api == API_WEBGPU) {
+					if (global_has_usage(i, GLOBAL_USAGE_TEXTURE_SAMPLE) || global_has_usage(i, GLOBAL_USAGE_TEXTURE_READ)) {
+						fprintf(output, "\tusage |= KORE_%s_TEXTURE_USAGE_SAMPLED;\n", api_caps);
+					}
+					if (global_has_usage(i, GLOBAL_USAGE_TEXTURE_WRITE)) {
 						fprintf(output, "\tusage |= KORE_%s_TEXTURE_USAGE_STORAGE;\n", api_caps);
 					}
 				}
@@ -3114,12 +3136,17 @@ void kore3_export(char *directory, api_kind api) {
 				bool    writable = set->globals.writable[global_index];
 
 				if (get_type(g->type)->tex_kind != TEXTURE_KIND_NONE) {
+					char format[64];
+					format_to_string_wgsl(get_type(g->type)->tex_format, format);
+
 					if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D) {
 						fprintf(output, "\t\t\t{\n");
 						fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 						if (writable) {
-							fprintf(output, "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2D, .format = WGPUTextureFormat_RGBA32Float, "
-							                ".access = WGPUStorageTextureAccess_WriteOnly},\n");
+							fprintf(output,
+							        "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2D, .format = WGPUTextureFormat_%s, "
+							        ".access = WGPUStorageTextureAccess_WriteOnly},\n",
+							        format);
 						}
 						else {
 							fprintf(output, "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_2D},\n");
@@ -3137,8 +3164,9 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 						if (writable) {
 							fprintf(output,
-							        "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2DArray, .format = WGPUTextureFormat_RGBA32Float, "
-							        ".access = WGPUStorageTextureAccess_WriteOnly},\n");
+							        "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2DArray, .format = WGPUTextureFormat_%s, "
+							        ".access = WGPUStorageTextureAccess_WriteOnly},\n",
+							        format);
 						}
 						else {
 							fprintf(output,
@@ -3157,8 +3185,9 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
 						if (writable) {
 							fprintf(output,
-							        "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_Cube, .format = WGPUTextureFormat_RGBA32Float, "
-							        ".access = WGPUStorageTextureAccess_WriteOnly},\n");
+							        "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_Cube, .format = WGPUTextureFormat_%s, "
+							        ".access = WGPUStorageTextureAccess_WriteOnly},\n",
+							        format);
 						}
 						else {
 							fprintf(output,

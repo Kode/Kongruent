@@ -270,6 +270,17 @@ static void write_types(char *wgsl, size_t *offset, shader_stage stage, type_id 
 	}
 }
 
+static void format_to_string(texture_format format, char *str) {
+	switch (format) {
+	case TEXTURE_FORMAT_FRAMEBUFFER:
+		strcpy(str, "rgba8unorm");
+		break;
+	default:
+		assert(false);
+		break;
+	}
+}
+
 static void write_globals(char *wgsl, size_t *offset, function *main) {
 	global_array referenced_globals = {0};
 
@@ -314,8 +325,11 @@ static void write_globals(char *wgsl, size_t *offset, function *main) {
 							assert(false);
 						}
 						else if (writable) {
-							*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_storage_2d<rgba32float, write>;\n\n",
-							                   set_index, binding, set_index, g->var_index);
+							char format[64];
+							format_to_string(get_type(base_type)->tex_format, format);
+
+							*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_storage_2d<%s, write>;\n\n",
+							                   set_index, binding, set_index, g->var_index, format);
 						}
 						else {
 							*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_2d<f32>;\n\n", set_index, binding,
