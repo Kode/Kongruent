@@ -1214,45 +1214,54 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 	}
 	else if (type_name == tex1d_name || type_name == tex2d_name || type_name == tex3d_name || type_name == texcube_name || type_name == tex1darray_name ||
 	         type_name == tex2darray_name || type_name == texcubearray_name) {
-		type_id t_id = add_type(type_name);
-
-		get_type(t_id)->built_in = true;
+		struct type tex_type;
+		tex_type.name                        = type_name;
+		tex_type.attributes.attributes_count = 0;
+		tex_type.members.size                = 0;
+		tex_type.built_in                    = true;
+		tex_type.array_size                  = 0;
+		tex_type.base                        = NO_TYPE;
 
 		if (type_name == tex1d_name) {
-			d.kind                   = DEFINITION_TEX1D;
-			get_type(t_id)->tex_kind = TEXTURE_KIND_1D;
+			d.kind            = DEFINITION_TEX1D;
+			tex_type.tex_kind = TEXTURE_KIND_1D;
 		}
 		else if (type_name == tex2d_name) {
-			d.kind                   = DEFINITION_TEX2D;
-			get_type(t_id)->tex_kind = TEXTURE_KIND_2D;
+			d.kind            = DEFINITION_TEX2D;
+			tex_type.tex_kind = TEXTURE_KIND_2D;
 		}
 		else if (type_name == tex3d_name) {
-			d.kind                   = DEFINITION_TEX3D;
-			get_type(t_id)->tex_kind = TEXTURE_KIND_3D;
+			d.kind            = DEFINITION_TEX3D;
+			tex_type.tex_kind = TEXTURE_KIND_3D;
 		}
 		else if (type_name == texcube_name) {
-			d.kind                   = DEFINITION_TEXCUBE;
-			get_type(t_id)->tex_kind = TEXTURE_KIND_CUBE;
+			d.kind            = DEFINITION_TEXCUBE;
+			tex_type.tex_kind = TEXTURE_KIND_CUBE;
 		}
 		else if (type_name == tex1darray_name) {
-			d.kind                   = DEFINITION_TEX1DARRAY;
-			get_type(t_id)->tex_kind = TEXTURE_KIND_1D_ARRAY;
+			d.kind            = DEFINITION_TEX1DARRAY;
+			tex_type.tex_kind = TEXTURE_KIND_1D_ARRAY;
 		}
 		else if (type_name == tex2darray_name) {
-			d.kind                   = DEFINITION_TEX2DARRAY;
-			get_type(t_id)->tex_kind = TEXTURE_KIND_2D_ARRAY;
+			d.kind            = DEFINITION_TEX2DARRAY;
+			tex_type.tex_kind = TEXTURE_KIND_2D_ARRAY;
 		}
 		else if (type_name == texcubearray_name) {
-			d.kind                   = DEFINITION_TEXCUBEARRAY;
-			get_type(t_id)->tex_kind = TEXTURE_KIND_CUBE_ARRAY;
+			d.kind            = DEFINITION_TEXCUBEARRAY;
+			tex_type.tex_kind = TEXTURE_KIND_CUBE_ARRAY;
+		}
+		else {
+			assert(false);
 		}
 
-		get_type(t_id)->tex_format = convert_texture_format(format_name);
+		tex_type.tex_format = convert_texture_format(format_name);
+
+		type_id t_id = add_full_type(&tex_type);
 
 		if (array) {
-			type_id array_type_id               = add_type(get_type(t_id)->name);
+			type_id array_type_id               = add_type(type_name);
 			get_type(array_type_id)->base       = t_id;
-			get_type(array_type_id)->built_in   = get_type(t_id)->built_in;
+			get_type(array_type_id)->built_in   = true;
 			get_type(array_type_id)->array_size = array_size;
 			t_id                                = array_type_id;
 		}

@@ -181,6 +181,11 @@ static void grow_if_needed(uint64_t size) {
 	}
 }
 
+static bool types_equal(type *a, type *b) {
+	return a->name == b->name && a->attributes.attributes_count == 0 && b->attributes.attributes_count == 0 && a->members.size == 0 && b->members.size == 0 &&
+	       a->built_in == b->built_in && a->array_size == b->array_size && a->base == b->base && a->tex_kind == b->tex_kind && a->tex_format == b->tex_format;
+}
+
 type_id add_type(name_id name) {
 	grow_if_needed(next_type_index + 1);
 
@@ -195,6 +200,23 @@ type_id add_type(name_id name) {
 	types[s].base                        = NO_TYPE;
 	types[s].tex_kind                    = TEXTURE_KIND_NONE;
 	types[s].tex_format                  = TEXTURE_FORMAT_UNDEFINED;
+
+	return s;
+}
+
+type_id add_full_type(type *t) {
+	for (type_id type_index = 0; type_index < next_type_index; ++type_index) {
+		if (types_equal(&types[type_index], t)) {
+			return type_index;
+		}
+	}
+
+	grow_if_needed(next_type_index + 1);
+
+	type_id s = next_type_index;
+	++next_type_index;
+
+	types[s] = *t;
 
 	return s;
 }

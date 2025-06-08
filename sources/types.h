@@ -130,6 +130,8 @@ void types_init(void);
 
 type_id add_type(name_id name);
 
+type_id add_full_type(type *t);
+
 type_id find_type_by_name(name_id name);
 
 type_id find_type_by_ref(type_ref *t);
