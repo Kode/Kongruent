@@ -1527,61 +1527,68 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 						other_index += 1;
 					}
-					else if (base_type_id == tex2d_type_id) {
-						type *t = get_type(g->type);
-						if (t->array_size == UINT32_MAX) {
-							fprintf(output, "\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) * parameters->textures_count);\n",
-							        get_name(g->name));
-							fprintf(output, "\tassert(set->%s != NULL);\n", get_name(g->name));
-							fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
-							fprintf(output,
-							        "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
-							        "&parameters->%s[index]);\n",
-							        api_short, get_name(g->name));
-							fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(g->name), get_name(g->name));
-							fprintf(output, "\t}\n");
+					else if (get_type(base_type_id)->tex_kind != TEXTURE_KIND_NONE) {
+						if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D) {
+							type *t = get_type(g->type);
+							if (t->array_size == UINT32_MAX) {
+								fprintf(output, "\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) * parameters->textures_count);\n",
+								        get_name(g->name));
+								fprintf(output, "\tassert(set->%s != NULL);\n", get_name(g->name));
+								fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
+								fprintf(
+								    output,
+								    "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
+								    "&parameters->%s[index]);\n",
+								    api_short, get_name(g->name));
+								fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(g->name), get_name(g->name));
+								fprintf(output, "\t}\n");
 
-							fprintf(output, "\tset->%s_count = parameters->%s_count;\n", get_name(g->name), get_name(g->name));
-						}
-						else {
-							if (writable) {
-								fprintf(output, "\tkore_%s_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %zu);\n", api_short,
-								        get_name(g->name), other_index);
+								fprintf(output, "\tset->%s_count = parameters->%s_count;\n", get_name(g->name), get_name(g->name));
 							}
 							else {
-								fprintf(output,
-								        "\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %zu, "
-								        "&parameters->%s);\n",
-								        api_short, other_index, get_name(g->name));
+								if (writable) {
+									fprintf(output, "\tkore_%s_descriptor_set_set_texture_view_uav(device, &set->set, &parameters->%s, %zu);\n", api_short,
+									        get_name(g->name), other_index);
+								}
+								else {
+									fprintf(output,
+									        "\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %zu, "
+									        "&parameters->%s);\n",
+									        api_short, other_index, get_name(g->name));
+								}
+
+								fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+
+								other_index += 1;
+							}
+						}
+						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
+							if (writable) {
+								debug_context context = {0};
+								error(context, "Texture arrays can not be writable");
 							}
 
-							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+							fprintf(output, "\tkore_%s_descriptor_set_set_texture_array_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
+							        get_name(g->name), other_index);
 
+							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 							other_index += 1;
 						}
-					}
-					else if (base_type_id == tex2darray_type_id) {
-						if (writable) {
-							debug_context context = {0};
-							error(context, "Texture arrays can not be writable");
+						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_CUBE) {
+							if (writable) {
+								debug_context context = {0};
+								error(context, "Cube maps can not be writable");
+							}
+							fprintf(output, "\tkore_%s_descriptor_set_set_texture_cube_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
+							        get_name(g->name), other_index);
+
+							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+							other_index += 1;
 						}
-
-						fprintf(output, "\tkore_%s_descriptor_set_set_texture_array_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
-						        get_name(g->name), other_index);
-
-						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
-						other_index += 1;
-					}
-					else if (base_type_id == texcube_type_id) {
-						if (writable) {
-							debug_context context = {0};
-							error(context, "Cube maps can not be writable");
+						else {
+							// TODO
+							assert(false);
 						}
-						fprintf(output, "\tkore_%s_descriptor_set_set_texture_cube_view_srv(device, &set->set, &parameters->%s, %zu);\n", api_short,
-						        get_name(g->name), other_index);
-
-						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
-						other_index += 1;
 					}
 					else if (is_sampler(g->type)) {
 						fprintf(output, "\tkore_%s_descriptor_set_set_sampler(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
@@ -1665,26 +1672,33 @@ void kore3_export(char *directory, api_kind api) {
 					else if (is_texture(g->type)) {
 						fprintf(output, "\t\tid<MTLTexture> texture = (__bridge id<MTLTexture>)parameters->%s.texture->metal.texture;\n", get_name(g->name));
 
-						if (g->type == tex2d_type_id) {
-							fprintf(output,
-							        "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureType2D "
-							        "levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) "
-							        "slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n",
-							        get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
-						}
-						else if (g->type == tex2darray_type_id) {
-							fprintf(output,
-							        "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureType2DArray "
-							        "levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) "
-							        "slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n",
-							        get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
-						}
-						else if (g->type == texcube_type_id) {
-							fprintf(output,
-							        "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureTypeCube "
-							        "levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) "
-							        "slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n",
-							        get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
+						if (get_type(g->type)->tex_kind != TEXTURE_KIND_NONE) {
+							if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D) {
+								fprintf(output,
+								        "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureType2D "
+								        "levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) "
+								        "slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n",
+								        get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
+							}
+							else if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
+								fprintf(
+								    output,
+								    "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureType2DArray "
+								    "levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) "
+								    "slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n",
+								    get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
+							}
+							else if (get_type(g->type)->tex_kind == TEXTURE_KIND_CUBE) {
+								fprintf(output,
+								        "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureTypeCube "
+								        "levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) "
+								        "slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n",
+								        get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
+							}
+							else {
+								// TODO
+								assert(false);
+							}
 						}
 
 						fprintf(output, "\t\t[argument_encoder setTexture: view atIndex: %zu];\n", index);
@@ -1770,59 +1784,62 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 						other_index += 1;
 					}
-					else if (base_type_id == tex2d_type_id) {
-						type *t = get_type(g->type);
-						if (t->array_size == UINT32_MAX) {
-							fprintf(output, "\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) * parameters->textures_count);\n",
-							        get_name(g->name));
-							fprintf(output, "\tassert(set->%s != NULL);\n", get_name(g->name));
-							fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
-							fprintf(output,
-							        "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
-							        "&parameters->%s[index]);\n",
-							        api_short, get_name(g->name));
-							fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(g->name), get_name(g->name));
-							fprintf(output, "\t}\n");
+					else if (get_type(base_type_id)->tex_kind != TEXTURE_KIND_NONE) {
+						if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D) {
+							type *t = get_type(g->type);
+							if (t->array_size == UINT32_MAX) {
+								fprintf(output, "\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) * parameters->textures_count);\n",
+								        get_name(g->name));
+								fprintf(output, "\tassert(set->%s != NULL);\n", get_name(g->name));
+								fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
+								fprintf(
+								    output,
+								    "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
+								    "&parameters->%s[index]);\n",
+								    api_short, get_name(g->name));
+								fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(g->name), get_name(g->name));
+								fprintf(output, "\t}\n");
 
-							fprintf(output, "\tset->%s_count = parameters->%s_count;\n", get_name(g->name), get_name(g->name));
-						}
-						else {
-							if (readable | writable) {
-								fprintf(output, "\tkore_vulkan_descriptor_set_set_storage_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
-								        get_name(g->name), other_index);
+								fprintf(output, "\tset->%s_count = parameters->%s_count;\n", get_name(g->name), get_name(g->name));
 							}
 							else {
-								fprintf(output, "\tkore_vulkan_descriptor_set_set_sampled_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
-								        get_name(g->name), other_index);
+								if (readable | writable) {
+									fprintf(output, "\tkore_vulkan_descriptor_set_set_storage_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
+									        get_name(g->name), other_index);
+								}
+								else {
+									fprintf(output, "\tkore_vulkan_descriptor_set_set_sampled_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
+									        get_name(g->name), other_index);
+								}
+
+								fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+
+								other_index += 1;
+							}
+						}
+						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
+							if (writable) {
+								debug_context context = {0};
+								error(context, "Texture arrays can not be writable");
 							}
 
-							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+							fprintf(output, "\tkore_vulkan_descriptor_set_set_sampled_image_array_descriptor(device, &set->set, &parameters->%s, %zu);\n",
+							        get_name(g->name), other_index);
 
+							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 							other_index += 1;
 						}
-					}
-					else if (base_type_id == tex2darray_type_id) {
-						if (writable) {
-							debug_context context = {0};
-							error(context, "Texture arrays can not be writable");
+						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_CUBE) {
+							if (writable) {
+								debug_context context = {0};
+								error(context, "Cube maps can not be writable");
+							}
+							fprintf(output, "\tkore_vulkan_descriptor_set_set_sampled_cube_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
+							        get_name(g->name), other_index);
+
+							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+							other_index += 1;
 						}
-
-						fprintf(output, "\tkore_vulkan_descriptor_set_set_sampled_image_array_descriptor(device, &set->set, &parameters->%s, %zu);\n",
-						        get_name(g->name), other_index);
-
-						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
-						other_index += 1;
-					}
-					else if (base_type_id == texcube_type_id) {
-						if (writable) {
-							debug_context context = {0};
-							error(context, "Cube maps can not be writable");
-						}
-						fprintf(output, "\tkore_vulkan_descriptor_set_set_sampled_cube_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
-						        get_name(g->name), other_index);
-
-						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
-						other_index += 1;
 					}
 					else if (is_sampler(g->type)) {
 						fprintf(output, "\tkore_%s_descriptor_set_set_sampler(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
@@ -1852,14 +1869,20 @@ void kore3_export(char *directory, api_kind api) {
 						fprintf(output, "\tWGPUTextureViewDescriptor texture_view_descriptor%zu = {\n", global_index);
 						fprintf(output, "\t\t.format = kore_webgpu_convert_texture_format_to_webgpu(parameters->%s.texture->webgpu.format),\n",
 						        get_name(g->name));
-						if (g->type == tex2darray_type_id) {
-							fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2DArray,\n");
-						}
-						else if (g->type == texcube_type_id) {
-							fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_Cube,\n");
-						}
-						else {
-							fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2D,\n");
+						if (get_type(g->type)->tex_kind != TEXTURE_KIND_NONE) {
+							if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D) {
+								fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2DArray,\n");
+							}
+							else if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
+								fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_Cube,\n");
+							}
+							else if (get_type(g->type)->tex_kind == TEXTURE_KIND_CUBE) {
+								fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2D,\n");
+							}
+							else {
+								// TODO
+								assert(false);
+							}
 						}
 						fprintf(output, "\t\t.baseArrayLayer  = parameters->%s.base_array_layer,\n", get_name(g->name));
 						fprintf(output, "\t\t.arrayLayerCount = parameters->%s.array_layer_count,\n", get_name(g->name));
@@ -2949,47 +2972,53 @@ void kore3_export(char *directory, api_kind api) {
 				bool    readable = set->globals.readable[global_index];
 				bool    writable = set->globals.writable[global_index];
 
-				if (g->type == tex2d_type_id) {
-					fprintf(output, "\t\t\t{\n");
-					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
-					if (readable | writable) {
-						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
+				if (get_type(g->type)->tex_kind != TEXTURE_KIND_NONE) {
+					if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D) {
+						fprintf(output, "\t\t\t{\n");
+						fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
+						if (readable | writable) {
+							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
+						}
+						else {
+							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
+						}
+						fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
+						fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
+						fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+						fprintf(output, "\t\t\t},\n");
+					}
+					else if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D) {
+						fprintf(output, "\t\t\t{\n");
+						fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
+						if (readable | writable) {
+							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
+						}
+						else {
+							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
+						}
+						fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
+						fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
+						fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+						fprintf(output, "\t\t\t},\n");
+					}
+					else if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D) {
+						fprintf(output, "\t\t\t{\n");
+						fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
+						if (readable | writable) {
+							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
+						}
+						else {
+							fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
+						}
+						fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
+						fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
+						fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
+						fprintf(output, "\t\t\t},\n");
 					}
 					else {
-						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
+						// TODO
+						assert(false);
 					}
-					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
-					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
-					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
-					fprintf(output, "\t\t\t},\n");
-				}
-				else if (g->type == tex2darray_type_id) {
-					fprintf(output, "\t\t\t{\n");
-					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
-					if (readable | writable) {
-						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
-					}
-					else {
-						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
-					}
-					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
-					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
-					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
-					fprintf(output, "\t\t\t},\n");
-				}
-				else if (g->type == texcube_type_id) {
-					fprintf(output, "\t\t\t{\n");
-					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
-					if (readable | writable) {
-						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,\n");
-					}
-					else {
-						fprintf(output, "\t\t\t\t.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,\n");
-					}
-					fprintf(output, "\t\t\t\t.descriptorCount = 1,\n");
-					fprintf(output, "\t\t\t\t.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT,\n");
-					fprintf(output, "\t\t\t\t.pImmutableSamplers = NULL,\n");
-					fprintf(output, "\t\t\t},\n");
 				}
 				else if (is_sampler(g->type)) {
 					fprintf(output, "\t\t\t{\n");
@@ -3084,60 +3113,68 @@ void kore3_export(char *directory, api_kind api) {
 				global *g        = get_global(set->globals.globals[global_index]);
 				bool    writable = set->globals.writable[global_index];
 
-				if (g->type == tex2d_type_id) {
-					fprintf(output, "\t\t\t{\n");
-					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
-					if (writable) {
-						fprintf(output, "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2D, .format = WGPUTextureFormat_RGBA32Float, "
-						                ".access = WGPUStorageTextureAccess_WriteOnly},\n");
+				if (get_type(g->type)->tex_kind != TEXTURE_KIND_NONE) {
+					if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D) {
+						fprintf(output, "\t\t\t{\n");
+						fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
+						if (writable) {
+							fprintf(output, "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2D, .format = WGPUTextureFormat_RGBA32Float, "
+							                ".access = WGPUStorageTextureAccess_WriteOnly},\n");
+						}
+						else {
+							fprintf(output, "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_2D},\n");
+						}
+						if (writable) {
+							fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+						}
+						else {
+							fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+						}
+						fprintf(output, "\t\t\t},\n");
 					}
-					else {
-						fprintf(output, "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_2D},\n");
+					else if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
+						fprintf(output, "\t\t\t{\n");
+						fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
+						if (writable) {
+							fprintf(output,
+							        "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2DArray, .format = WGPUTextureFormat_RGBA32Float, "
+							        ".access = WGPUStorageTextureAccess_WriteOnly},\n");
+						}
+						else {
+							fprintf(output,
+							        "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_2DArray},\n");
+						}
+						if (writable) {
+							fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+						}
+						else {
+							fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+						}
+						fprintf(output, "\t\t\t},\n");
 					}
-					if (writable) {
-						fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+					else if (get_type(g->type)->tex_kind == TEXTURE_KIND_CUBE) {
+						fprintf(output, "\t\t\t{\n");
+						fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
+						if (writable) {
+							fprintf(output,
+							        "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_Cube, .format = WGPUTextureFormat_RGBA32Float, "
+							        ".access = WGPUStorageTextureAccess_WriteOnly},\n");
+						}
+						else {
+							fprintf(output,
+							        "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_Cube},\n");
+						}
+						if (writable) {
+							fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+						}
+						else {
+							fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+						}
+						fprintf(output, "\t\t\t},\n");
 					}
-					else {
-						fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
+					else { // TODO
+						assert(false);
 					}
-					fprintf(output, "\t\t\t},\n");
-				}
-				else if (g->type == tex2darray_type_id) {
-					fprintf(output, "\t\t\t{\n");
-					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
-					if (writable) {
-						fprintf(output,
-						        "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_2DArray, .format = WGPUTextureFormat_RGBA32Float, "
-						        ".access = WGPUStorageTextureAccess_WriteOnly},\n");
-					}
-					else {
-						fprintf(output, "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_2DArray},\n");
-					}
-					if (writable) {
-						fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
-					}
-					else {
-						fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
-					}
-					fprintf(output, "\t\t\t},\n");
-				}
-				else if (g->type == texcube_type_id) {
-					fprintf(output, "\t\t\t{\n");
-					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
-					if (writable) {
-						fprintf(output, "\t\t\t\t.storageTexture = {.viewDimension = WGPUTextureViewDimension_Cube, .format = WGPUTextureFormat_RGBA32Float, "
-						                ".access = WGPUStorageTextureAccess_WriteOnly},\n");
-					}
-					else {
-						fprintf(output, "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_Cube},\n");
-					}
-					if (writable) {
-						fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
-					}
-					else {
-						fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
-					}
-					fprintf(output, "\t\t\t},\n");
 				}
 				else if (is_sampler(g->type)) {
 					fprintf(output, "\t\t\t{\n");

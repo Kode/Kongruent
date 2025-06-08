@@ -37,9 +37,6 @@ type_id bool2_id;
 type_id bool3_id;
 type_id bool4_id;
 type_id function_type_id;
-type_id tex2d_type_id;
-type_id tex2darray_type_id;
-type_id texcube_type_id;
 type_id sampler_type_id;
 type_id ray_type_id;
 type_id bvh_type_id;
@@ -65,14 +62,8 @@ void types_init(void) {
 	void_id                     = add_type(add_name("void"));
 	get_type(void_id)->built_in = true;
 
-	sampler_type_id                        = add_type(add_name("sampler"));
-	get_type(sampler_type_id)->built_in    = true;
-	tex2d_type_id                          = add_type(add_name("tex2d"));
-	get_type(tex2d_type_id)->built_in      = true;
-	tex2darray_type_id                     = add_type(add_name("tex2darray"));
-	get_type(tex2darray_type_id)->built_in = true;
-	texcube_type_id                        = add_type(add_name("texcube"));
-	get_type(texcube_type_id)->built_in    = true;
+	sampler_type_id                     = add_type(add_name("sampler"));
+	get_type(sampler_type_id)->built_in = true;
 
 	bool_id                      = add_type(add_name("bool"));
 	get_type(bool_id)->built_in  = true;
@@ -202,6 +193,8 @@ type_id add_type(name_id name) {
 	types[s].built_in                    = false;
 	types[s].array_size                  = 0;
 	types[s].base                        = NO_TYPE;
+	types[s].tex_kind                    = TEXTURE_KIND_NONE;
+	types[s].tex_format                  = TEXTURE_FORMAT_UNDEFINED;
 
 	return s;
 }

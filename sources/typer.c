@@ -43,14 +43,21 @@ static void resolve_types_in_element(statement *parent_block, expression *elemen
 
 	assert(of_type != NO_TYPE);
 
-	if (of_type == tex2d_type_id) {
-		element->type.type = float4_id;
-	}
-	else if (of_type == tex2darray_type_id) {
-		element->type.type = tex2d_type_id;
+	type *of = get_type(of_type);
+
+	if (of->tex_kind != TEXTURE_KIND_NONE) {
+		if (of->tex_format == TEXTURE_FORMAT_UNDEFINED) {
+			element->type.type = float4_id;
+		}
+		else if (of->tex_format == TEXTURE_FORMAT_FRAMEBUFFER) {
+			element->type.type = float4_id;
+		}
+		else {
+			// TODO
+			assert(false);
+		}
 	}
 	else {
-		type *of = get_type(of_type);
 		if (of->array_size > 0) {
 			element->type.type = of->base;
 		}

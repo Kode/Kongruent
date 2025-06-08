@@ -203,11 +203,7 @@ static void write_types(char *wgsl, size_t *offset, shader_stage stage, type_id 
 
 		if (g->type == sampler_type_id) {
 		}
-		else if (g->type == tex2d_type_id) {
-		}
-		else if (g->type == tex2darray_type_id) {
-		}
-		else if (g->type == texcube_type_id) {
+		else if (get_type(g->type)->tex_kind != TEXTURE_KIND_NONE) {
 		}
 		else if (g->type == float_id) {
 		}
@@ -311,35 +307,41 @@ static void write_globals(char *wgsl, size_t *offset, function *main) {
 				}
 				binding += 1;
 			}
-			else if (base_type == tex2d_type_id) {
-				if (referenced) {
-					if (t->array_size == UINT32_MAX) {
-						assert(false);
+			else if (get_type(base_type)->tex_kind != TEXTURE_KIND_NONE) {
+				if (get_type(base_type)->tex_kind == TEXTURE_KIND_2D) {
+					if (referenced) {
+						if (t->array_size == UINT32_MAX) {
+							assert(false);
+						}
+						else if (writable) {
+							*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_storage_2d<rgba32float, write>;\n\n",
+							                   set_index, binding, set_index, g->var_index);
+						}
+						else {
+							*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_2d<f32>;\n\n", set_index, binding,
+							                   set_index, g->var_index);
+						}
 					}
-					else if (writable) {
-						*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_storage_2d<rgba32float, write>;\n\n",
-						                   set_index, binding, set_index, g->var_index);
-					}
-					else {
-						*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_2d<f32>;\n\n", set_index, binding,
+					binding += 1;
+				}
+				else if (get_type(base_type)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
+					if (referenced) {
+						*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_2d_array<f32>;\n\n", set_index, binding,
 						                   set_index, g->var_index);
 					}
+					binding += 1;
 				}
-				binding += 1;
-			}
-			else if (g->type == tex2darray_type_id) {
-				if (referenced) {
-					*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_2d_array<f32>;\n\n", set_index, binding,
-					                   set_index, g->var_index);
+				else if (get_type(base_type)->tex_kind == TEXTURE_KIND_CUBE) {
+					if (referenced) {
+						*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_cube<f32>;\n\n", set_index, binding,
+						                   set_index, g->var_index);
+					}
+					binding += 1;
 				}
-				binding += 1;
-			}
-			else if (g->type == texcube_type_id) {
-				if (referenced) {
-					*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_cube<f32>;\n\n", set_index, binding,
-					                   set_index, g->var_index);
+				else {
+					// TODO
+					assert(false);
 				}
-				binding += 1;
 			}
 			else if (base_type == bvh_type_id) {
 				assert(false);
@@ -849,7 +851,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, func
 					variable sampler = o->op_call.parameters[1];
 					variable coord   = o->op_call.parameters[2];
 
-					if (tex.type.type == tex2darray_type_id) {
+					if (get_type(tex.type.type)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
 						*offset += sprintf(&code[*offset], "var %s: %s = textureSample(%s, %s, %s.xy, u32(%s.z));\n", get_var(o->op_call.var, f).str,
 						                   type_string(o->op_call.var.type.type), get_var(tex, f).str, get_var(sampler, f).str, get_var(coord, f).str,
 						                   get_var(coord, f).str);

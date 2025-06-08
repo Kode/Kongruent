@@ -150,14 +150,20 @@ static void write_globals(char *glsl, size_t *offset, function *main) {
 
 		if (g->type == sampler_type_id) {
 		}
-		else if (g->type == tex2d_type_id) {
-			*offset += sprintf(&glsl[*offset], "uniform sampler2D _%" PRIu64 ";\n\n", g->var_index);
-		}
-		else if (g->type == tex2darray_type_id) {
-			*offset += sprintf(&glsl[*offset], "uniform sampler2DArray _%" PRIu64 ";\n\n", g->var_index);
-		}
-		else if (g->type == texcube_type_id) {
-			*offset += sprintf(&glsl[*offset], "uniform samplerCube _%" PRIu64 ";\n\n", g->var_index);
+		else if (get_type(g->type)->tex_kind != TEXTURE_KIND_NONE) {
+			if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D) {
+				*offset += sprintf(&glsl[*offset], "uniform sampler2D _%" PRIu64 ";\n\n", g->var_index);
+			}
+			else if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
+				*offset += sprintf(&glsl[*offset], "uniform sampler2DArray _%" PRIu64 ";\n\n", g->var_index);
+			}
+			else if (get_type(g->type)->tex_kind == TEXTURE_KIND_CUBE) {
+				*offset += sprintf(&glsl[*offset], "uniform samplerCube _%" PRIu64 ";\n\n", g->var_index);
+			}
+			else {
+				// TODO
+				assert(false);
+			}
 		}
 		else if (g->type == float_id) {
 		}
