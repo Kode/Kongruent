@@ -1216,6 +1216,8 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 	         type_name == tex2darray_name || type_name == texcubearray_name) {
 		type_id t_id = add_type(type_name);
 
+		get_type(t_id)->built_in = true;
+
 		if (type_name == tex1d_name) {
 			d.kind                   = DEFINITION_TEX1D;
 			get_type(t_id)->tex_kind = TEXTURE_KIND_1D;
