@@ -1850,7 +1850,8 @@ void kore3_export(char *directory, api_kind api) {
 
 					if (is_texture(g->type)) {
 						fprintf(output, "\tWGPUTextureViewDescriptor texture_view_descriptor%zu = {\n", global_index);
-						fprintf(output, "\t\t.format = kore_webgpu_convert_texture_format(parameters->%s.texture->webgpu.format),\n", get_name(g->name));
+						fprintf(output, "\t\t.format = kore_webgpu_convert_texture_format_to_webgpu(parameters->%s.texture->webgpu.format),\n",
+						        get_name(g->name));
 						if (g->type == tex2darray_type_id) {
 							fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2DArray,\n");
 						}
