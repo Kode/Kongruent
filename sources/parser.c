@@ -1226,23 +1226,23 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 			d.kind                   = DEFINITION_TEX2D;
 			get_type(t_id)->tex_kind = TEXTURE_KIND_2D;
 		}
-		else if (type_name == tex2d_name) {
+		else if (type_name == tex3d_name) {
 			d.kind                   = DEFINITION_TEX3D;
 			get_type(t_id)->tex_kind = TEXTURE_KIND_3D;
 		}
-		else if (type_name == tex2d_name) {
+		else if (type_name == texcube_name) {
 			d.kind                   = DEFINITION_TEXCUBE;
 			get_type(t_id)->tex_kind = TEXTURE_KIND_CUBE;
 		}
-		else if (type_name == tex2d_name) {
+		else if (type_name == tex1darray_name) {
 			d.kind                   = DEFINITION_TEX1DARRAY;
 			get_type(t_id)->tex_kind = TEXTURE_KIND_1D_ARRAY;
 		}
-		else if (type_name == tex2d_name) {
+		else if (type_name == tex2darray_name) {
 			d.kind                   = DEFINITION_TEX2DARRAY;
 			get_type(t_id)->tex_kind = TEXTURE_KIND_2D_ARRAY;
 		}
-		else if (type_name == tex2d_name) {
+		else if (type_name == texcubearray_name) {
 			d.kind                   = DEFINITION_TEXCUBEARRAY;
 			get_type(t_id)->tex_kind = TEXTURE_KIND_CUBE_ARRAY;
 		}
