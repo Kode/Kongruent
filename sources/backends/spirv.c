@@ -1778,9 +1778,9 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		}
 	}
 
-	bool ends_with_return = false;
+	bool     ends_with_return     = false;
 	uint64_t next_block_branch_id = 0;
-	uint64_t next_block_label_id = 0;
+	uint64_t next_block_label_id  = 0;
 
 	index = 0;
 	while (index < size) {
@@ -2614,13 +2614,13 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id return_value = get_var(instructions, o->op_return.var);
 				write_op_return_value(instructions, return_value);
 			}
-			ends_with_return = true;
+			ends_with_return     = true;
 			next_block_branch_id = 0;
 			break;
 		}
 		case OPCODE_DISCARD: {
 			write_op_discard(instructions);
-			ends_with_return = true;
+			ends_with_return     = true;
 			next_block_branch_id = 0;
 			break;
 		}
@@ -2833,7 +2833,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		}
 		case OPCODE_IF: {
 			next_block_branch_id = o->op_if.end_id;
-			next_block_label_id = o->op_if.end_id;
+			next_block_label_id  = o->op_if.end_id;
 			write_op_selection_merge(instructions, convert_kong_index_to_spirv_id(o->op_if.end_id), SELECTION_CONTROL_NONE);
 
 			write_op_branch_conditional(instructions, convert_kong_index_to_spirv_id(o->op_if.condition.index),
@@ -3673,7 +3673,8 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 	type_id output_type = output->array_size > 0 ? output->base : pixel_output;
 
 	for (size_t i = 0; i < output_vars_count; ++i) {
-		write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(output_type, STORAGE_CLASS_OUTPUT), output_vars[i], STORAGE_CLASS_OUTPUT);
+		write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(output_type, STORAGE_CLASS_OUTPUT), output_vars[i],
+		                               STORAGE_CLASS_OUTPUT);
 	}
 
 	write_functions(&instructions, main, entry_point, SHADER_STAGE_FRAGMENT, NO_TYPE);
