@@ -66,6 +66,15 @@ static char *type_string(type_id type) {
 	if (type == bvh_type_id) {
 		return "RaytracingAccelerationStructure";
 	}
+	if (get_type(type)->tex_kind != TEXTURE_KIND_NONE) {
+		if (get_type(type)->tex_kind == TEXTURE_KIND_2D) {
+			return "Texture2D<float4>";
+		}
+		else {
+			// TODO
+			assert(false);
+		}
+	}
 	return get_name(get_type(type)->name);
 }
 
