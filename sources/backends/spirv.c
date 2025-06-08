@@ -2960,7 +2960,7 @@ static void write_functions(instructions_buffer *instructions, function *main, s
 					}
 				}
 				if (parameters_match) {
-					function_type_index = j;
+					function_type_index = (int)j;
 					break;
 				}
 			}
