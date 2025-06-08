@@ -1871,13 +1871,13 @@ void kore3_export(char *directory, api_kind api) {
 						        get_name(g->name));
 						if (get_type(g->type)->tex_kind != TEXTURE_KIND_NONE) {
 							if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D) {
-								fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2DArray,\n");
+								fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2D,\n");
 							}
 							else if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
-								fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_Cube,\n");
+								fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2DArray,\n");
 							}
 							else if (get_type(g->type)->tex_kind == TEXTURE_KIND_CUBE) {
-								fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2D,\n");
+								fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_Cube,\n");
 							}
 							else {
 								// TODO
