@@ -286,27 +286,6 @@ static void write_globals(char *wgsl, size_t *offset, function *main) {
 
 		descriptor_set *set = group->values[set_index];
 
-		if (set->name == add_name("root_constants")) {
-			if (set->globals.size != 1) {
-				debug_context context = {0};
-				error(context, "More than one root constants struct found");
-			}
-
-			global_id g_id = set->globals.globals[0];
-			global   *g    = get_global(g_id);
-
-			if (get_type(g->type)->built_in) {
-				debug_context context = {0};
-				error(context, "Unsupported type for a root constant");
-			}
-
-			assert(false);
-
-			binding += 1;
-
-			continue;
-		}
-
 		for (size_t g_index = 0; g_index < set->globals.size; ++g_index) {
 			global_id global_index = set->globals.globals[g_index];
 			bool      writable     = set->globals.writable[g_index];
@@ -592,16 +571,15 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, func
 				type_id from_type = o->op_load_access_list.from.type.type;
 
 				if (is_texture(from_type)) {
-					assert(o->type == OPCODE_STORE_ACCESS_LIST);
-					assert(o->op_store_access_list.access_list_size == 1);
-					assert(o->op_store_access_list.access_list[0].kind == ACCESS_ELEMENT);
+					assert(o->op_load_access_list.access_list_size == 1);
+					assert(o->op_load_access_list.access_list[0].kind == ACCESS_ELEMENT);
 
 					*offset +=
 					    sprintf(&code[*offset], "var %s: %s = ", get_var(o->op_load_access_list.to, f).str, type_string(o->op_load_access_list.to.type.type));
 
-					*offset += sprintf(&code[*offset], "textureLoad(%s, vec2<u32>(u32(%s.x), u32(%s.y)), 0);\n", get_var(o->op_store_access_list.from, f).str,
-					                   get_var(o->op_store_access_list.access_list[0].access_element.index, f).str,
-					                   get_var(o->op_store_access_list.access_list[0].access_element.index, f).str);
+					*offset += sprintf(&code[*offset], "textureLoad(%s, vec2<u32>(u32(%s.x), u32(%s.y)), 0);\n", get_var(o->op_load_access_list.from, f).str,
+					                   get_var(o->op_load_access_list.access_list[0].access_element.index, f).str,
+					                   get_var(o->op_load_access_list.access_list[0].access_element.index, f).str);
 				}
 				else {
 					*offset += sprintf(&code[*offset], "var %s: %s = %s", get_var(o->op_load_access_list.to, f).str,
