@@ -658,18 +658,28 @@ static void write_functions(char *code, size_t *offset) {
 				if (o->op_call.func == add_name("sample")) {
 					check(o->op_call.parameters_size == 3, context, "sample requires three parameters");
 
+					variable image_var = o->op_call.parameters[0];
+
 					if (get_type(o->op_call.parameters[0].type.type)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
 						*offset +=
 						    sprintf(&code[*offset],
 						            "%s _%" PRIu64 " = argument_buffer0._%" PRIu64 ".sample(argument_buffer0._%" PRIu64 ", _%" PRIu64 ".xy, _%" PRIu64 ".z);\n",
-						            type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index,
+						            type_string(o->op_call.var.type.type), o->op_call.var.index, image_var.index, o->op_call.parameters[1].index,
 						            o->op_call.parameters[2].index, o->op_call.parameters[2].index);
 					}
 					else {
-						*offset +=
-						    sprintf(&code[*offset], "%s _%" PRIu64 " = argument_buffer0._%" PRIu64 ".sample(argument_buffer0._%" PRIu64 ", _%" PRIu64 ");\n",
-						            type_string(o->op_call.var.type.type), o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[1].index,
-						            o->op_call.parameters[2].index);
+						if (is_depth(get_type(image_var.type.type)->tex_format)) {
+							*offset += sprintf(&code[*offset],
+							                   "%s _%" PRIu64 " = argument_buffer0._%" PRIu64 ".sample(argument_buffer0._%" PRIu64 ", _%" PRIu64 ").r;\n",
+							                   type_string(o->op_call.var.type.type), o->op_call.var.index, image_var.index, o->op_call.parameters[1].index,
+							                   o->op_call.parameters[2].index);
+						}
+						else {
+							*offset += sprintf(&code[*offset],
+							                   "%s _%" PRIu64 " = argument_buffer0._%" PRIu64 ".sample(argument_buffer0._%" PRIu64 ", _%" PRIu64 ");\n",
+							                   type_string(o->op_call.var.type.type), o->op_call.var.index, image_var.index, o->op_call.parameters[1].index,
+							                   o->op_call.parameters[2].index);
+						}
 					}
 				}
 				else if (o->op_call.func == add_name("sample_lod")) {
