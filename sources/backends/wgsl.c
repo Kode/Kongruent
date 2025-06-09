@@ -277,11 +277,13 @@ static void write_types(char *wgsl, size_t *offset, shader_stage stage, type_id 
 static void format_to_string(texture_format format, char *str) {
 	switch (format) {
 	case TEXTURE_FORMAT_FRAMEBUFFER:
-		// strcpy(str, "rgba8unorm");
 		strcpy(str, "$                    ");
 		break;
 	case TEXTURE_FORMAT_RGBA32_FLOAT:
 		strcpy(str, "rgba32float");
+		break;
+	case TEXTURE_FORMAT_RGBA8_UNORM:
+		strcpy(str, "rgba8unorm");
 		break;
 	default:
 		assert(false);

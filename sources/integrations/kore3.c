@@ -560,6 +560,7 @@ static void format_to_string_wgsl(texture_format format, char *str) {
 	case TEXTURE_FORMAT_RGBA32_FLOAT:
 		strcpy(str, "RGBA32Float");
 		break;
+	case TEXTURE_FORMAT_RGBA8_UNORM:
 	case TEXTURE_FORMAT_UNDEFINED:
 		strcpy(str, "RGBA8Unorm");
 		break;
