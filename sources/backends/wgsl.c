@@ -95,15 +95,17 @@ static char *type_string(type_id type) {
 //	return get_name(func);
 // }
 
-static void write_code(char *wgsl, char *directory, const char *filename, const char *name) {
+static void write_code(char *wgsl, char *directory, const char *filename, const char *name, bool framebuffer_texture_format) {
 	char full_filename[512];
 
 	{
 		sprintf(full_filename, "%s/%s.h", directory, filename);
 		FILE *file = fopen(full_filename, "wb");
+		fprintf(file, "#include <stdbool.h>\n");
 		fprintf(file, "#include <stddef.h>\n\n");
 		fprintf(file, "extern const char *%s;\n", name);
 		fprintf(file, "extern size_t %s_size;\n", name);
+		fprintf(file, "extern bool %s_uses_framebuffer_texture_format;\n", name);
 		fclose(file);
 	}
 
@@ -138,6 +140,8 @@ static void write_code(char *wgsl, char *directory, const char *filename, const 
 		fprintf(file, "\";\n\n");
 
 		fprintf(file, "size_t %s_size = %zu;\n\n", name, length);
+
+		fprintf(file, "bool %s_uses_framebuffer_texture_format = %s;\n\n", name, framebuffer_texture_format ? "true" : "false");
 
 		fprintf(file, "/*\n%s*/\n", wgsl);
 
@@ -273,7 +277,8 @@ static void write_types(char *wgsl, size_t *offset, shader_stage stage, type_id 
 static void format_to_string(texture_format format, char *str) {
 	switch (format) {
 	case TEXTURE_FORMAT_FRAMEBUFFER:
-		strcpy(str, "rgba8unorm");
+		// strcpy(str, "rgba8unorm");
+		strcpy(str, "$                    ");
 		break;
 	default:
 		assert(false);
@@ -281,7 +286,7 @@ static void format_to_string(texture_format format, char *str) {
 	}
 }
 
-static void write_globals(char *wgsl, size_t *offset, function *main) {
+static void write_globals(char *wgsl, size_t *offset, function *main, bool *framebuffer_format_texture) {
 	global_array referenced_globals = {0};
 
 	find_referenced_globals(main, &referenced_globals);
@@ -325,6 +330,10 @@ static void write_globals(char *wgsl, size_t *offset, function *main) {
 							assert(false);
 						}
 						else if (writable) {
+							if (get_type(base_type)->tex_format == TEXTURE_FORMAT_FRAMEBUFFER) {
+								*framebuffer_format_texture = true;
+							}
+
 							char format[64];
 							format_to_string(get_type(base_type)->tex_format, format);
 
@@ -987,7 +996,8 @@ static void wgsl_export_vertex(char *directory, function *main) {
 
 	write_types(wgsl, &offset, SHADER_STAGE_VERTEX, vertex_inputs, main->parameters_size, vertex_output, main);
 
-	write_globals(wgsl, &offset, main);
+	bool framebuffer_texture_format = false;
+	write_globals(wgsl, &offset, main, &framebuffer_texture_format);
 
 	write_functions(wgsl, &offset, SHADER_STAGE_VERTEX, main);
 
@@ -999,7 +1009,7 @@ static void wgsl_export_vertex(char *directory, function *main) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_code(wgsl, directory, filename, var_name);
+	write_code(wgsl, directory, filename, var_name, framebuffer_texture_format);
 }
 
 static void wgsl_export_fragment(char *directory, function *main) {
@@ -1016,7 +1026,8 @@ static void wgsl_export_fragment(char *directory, function *main) {
 
 	write_types(wgsl, &offset, SHADER_STAGE_FRAGMENT, &pixel_input, 1, NO_TYPE, main);
 
-	write_globals(wgsl, &offset, main);
+	bool framebuffer_texture_format = false;
+	write_globals(wgsl, &offset, main, &framebuffer_texture_format);
 
 	write_functions(wgsl, &offset, SHADER_STAGE_FRAGMENT, main);
 
@@ -1028,7 +1039,7 @@ static void wgsl_export_fragment(char *directory, function *main) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_code(wgsl, directory, filename, var_name);
+	write_code(wgsl, directory, filename, var_name, framebuffer_texture_format);
 }
 
 static void wgsl_export_compute(char *directory, function *main) {
@@ -1040,7 +1051,8 @@ static void wgsl_export_compute(char *directory, function *main) {
 
 	write_types(wgsl, &offset, SHADER_STAGE_COMPUTE, NULL, 0, NO_TYPE, main);
 
-	write_globals(wgsl, &offset, main);
+	bool framebuffer_texture_format = false;
+	write_globals(wgsl, &offset, main, &framebuffer_texture_format);
 
 	write_functions(wgsl, &offset, SHADER_STAGE_COMPUTE, main);
 
@@ -1052,7 +1064,7 @@ static void wgsl_export_compute(char *directory, function *main) {
 	char var_name[256];
 	sprintf(var_name, "%s_code", name);
 
-	write_code(wgsl, directory, filename, var_name);
+	write_code(wgsl, directory, filename, var_name, framebuffer_texture_format);
 }
 
 void wgsl_export(char *directory) {

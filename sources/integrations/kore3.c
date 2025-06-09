@@ -2392,6 +2392,15 @@ void kore3_export(char *directory, api_kind api) {
 							fprintf(output, "\t%s_parameters.vertex.shader.function_name = \"%s\";\n", get_name(t->name),
 							        get_name(t->members.m[j].value.identifier));
 						}
+						else if (api == API_WEBGPU) {
+							fprintf(output,
+							        "\t%s_parameters.vertex.shader.data = kore_webgpu_prepare_shader(device, %s_code, %s_code_size, "
+							        "%s_code_uses_framebuffer_texture_format);\n",
+							        get_name(t->name), get_name(t->members.m[j].value.identifier), get_name(t->members.m[j].value.identifier),
+							        get_name(t->members.m[j].value.identifier));
+							fprintf(output, "\t%s_parameters.vertex.shader.size = %s_code_size;\n\n", get_name(t->name),
+							        get_name(t->members.m[j].value.identifier));
+						}
 						else {
 							fprintf(output, "\t%s_parameters.vertex.shader.data = %s_code;\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
 							fprintf(output, "\t%s_parameters.vertex.shader.size = %s_code_size;\n\n", get_name(t->name),
@@ -2414,6 +2423,15 @@ void kore3_export(char *directory, api_kind api) {
 					else if (t->members.m[j].name == add_name("fragment")) {
 						if (api == API_METAL) {
 							fprintf(output, "\t%s_parameters.fragment.shader.function_name = \"%s\";\n", get_name(t->name),
+							        get_name(t->members.m[j].value.identifier));
+						}
+						else if (api == API_WEBGPU) {
+							fprintf(output,
+							        "\t%s_parameters.fragment.shader.data = kore_webgpu_prepare_shader(device, %s_code, %s_code_size, "
+							        "%s_code_uses_framebuffer_texture_format);\n",
+							        get_name(t->name), get_name(t->members.m[j].value.identifier), get_name(t->members.m[j].value.identifier),
+							        get_name(t->members.m[j].value.identifier));
+							fprintf(output, "\t%s_parameters.fragment.shader.size = %s_code_size;\n\n", get_name(t->name),
 							        get_name(t->members.m[j].value.identifier));
 						}
 						else {
@@ -2812,6 +2830,13 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, "\tkore_%s_compute_pipeline_parameters %s_parameters;\n", api_short, get_name(f->name));
 				if (api == API_METAL) {
 					fprintf(output, "\t%s_parameters.shader.function_name = \"%s\";\n", get_name(f->name), get_name(f->name));
+				}
+				else if (api == API_WEBGPU) {
+					fprintf(output,
+					        "\t%s_parameters.shader.data = kore_webgpu_prepare_shader(device, %s_code, %s_code_size, "
+					        "%s_code_uses_framebuffer_texture_format);\n",
+					        get_name(f->name), get_name(f->name), get_name(f->name), get_name(f->name));
+					fprintf(output, "\t%s_parameters.shader.size = %s_code_size;\n", get_name(f->name), get_name(f->name));
 				}
 				else {
 					fprintf(output, "\t%s_parameters.shader.data = %s_code;\n", get_name(f->name), get_name(f->name));
