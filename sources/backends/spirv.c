@@ -2153,6 +2153,10 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 					spirv_id id = write_op_convert_f_to_u(instructions, spirv_uint_type, get_var(instructions, o->op_call.parameters[0]));
 					hmput(index_map, o->op_call.var.index, id);
 				}
+				else if (o->op_call.parameters[0].type.type == int_id) {
+					spirv_id id = write_op_bitcast(instructions, spirv_uint_type, get_var(instructions, o->op_call.parameters[0]));
+					hmput(index_map, o->op_call.var.index, id);
+				}
 				else {
 					assert(false);
 				}
