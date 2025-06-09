@@ -578,11 +578,15 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 	}
 	case EXPRESSION_CALL: {
 		if (e->call.func_name == add_name("sample") || e->call.func_name == add_name("sample_lod")) {
-			assert(e->call.parameters.e[0]->kind == EXPRESSION_VARIABLE);
-			global *g = find_global(e->call.parameters.e[0]->variable);
-			assert(g != NULL);
-			if (is_depth(get_type(g->type)->tex_format)) {
-				e->type.type = float_id;
+			if (e->call.parameters.e[0]->kind == EXPRESSION_VARIABLE) {
+				global *g = find_global(e->call.parameters.e[0]->variable);
+				assert(g != NULL);
+				if (is_depth(get_type(g->type)->tex_format)) {
+					e->type.type = float_id;
+				}
+				else {
+					e->type.type = float4_id;
+				}
 			}
 			else {
 				e->type.type = float4_id;
