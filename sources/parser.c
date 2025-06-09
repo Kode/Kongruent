@@ -1238,11 +1238,11 @@ static texture_format convert_texture_format(state_t *state, name_id format_name
 	else if (format_name == add_name("TEXTURE_FORMAT_DEPTH16_UNORM")) {
 		return TEXTURE_FORMAT_DEPTH16_UNORM;
 	}
-	else if (format_name == add_name("TEXTURE_FORMAT_DEPTH24PLUS_NOTHING8")) {
-		return TEXTURE_FORMAT_DEPTH24PLUS_NOTHING8;
+	else if (format_name == add_name("TEXTURE_FORMAT_DEPTH24_NOTHING8")) {
+		return TEXTURE_FORMAT_DEPTH24_NOTHING8;
 	}
-	else if (format_name == add_name("TEXTURE_FORMAT_DEPTH24PLUS_STENCIL8")) {
-		return TEXTURE_FORMAT_DEPTH24PLUS_STENCIL8;
+	else if (format_name == add_name("TEXTURE_FORMAT_DEPTH24_STENCIL8")) {
+		return TEXTURE_FORMAT_DEPTH24_STENCIL8;
 	}
 	else if (format_name == add_name("TEXTURE_FORMAT_DEPTH32_FLOAT")) {
 		return TEXTURE_FORMAT_DEPTH32_FLOAT;
