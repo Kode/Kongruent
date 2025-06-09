@@ -816,6 +816,14 @@ static void write_base_types(instructions_buffer *buffer) {
 
 static spirv_id get_int_constant(int value);
 
+typedef struct pointer_relation {
+	spirv_id non_pointer_type_id;
+	spirv_id pointer_type_id;
+} pointer_relation;
+
+static_array(pointer_relation, written_pointers, 256);
+static written_pointers written_pointer_relations;
+
 static void write_types(instructions_buffer *buffer, function *main) {
 	type_id types[256];
 	size_t  types_size = 0;
@@ -845,6 +853,8 @@ static void write_types(instructions_buffer *buffer, function *main) {
 		}
 	}
 
+	static_array_init(written_pointer_relations);
+
 	size_t size = hmlenu(type_map);
 	for (size_t i = 0; i < size; ++i) {
 		complex_type type = type_map[i].key;
@@ -853,7 +863,27 @@ static void write_types(instructions_buffer *buffer, function *main) {
 			non_pointer_type.storage      = STORAGE_CLASS_NONE;
 			spirv_id non_pointer_type_id  = convert_complex_type_to_spirv_id(non_pointer_type);
 
-			write_type_pointer_preallocated(buffer, type.storage, non_pointer_type_id, type_map[i].value);
+			bool found = false;
+
+			for (size_t relation_index = 0; relation_index < written_pointer_relations.size; ++relation_index) {
+				pointer_relation *previous_relation = &written_pointer_relations.values[relation_index];
+
+				if (previous_relation->pointer_type_id.id == type_map[i].value.id) {
+					assert(previous_relation->non_pointer_type_id.id == non_pointer_type_id.id);
+					found = true;
+					break;
+				}
+			}
+
+			if (!found) {
+				pointer_relation relation = {
+				    .non_pointer_type_id = non_pointer_type_id,
+				    .pointer_type_id     = type_map[i].value,
+				};
+				static_array_push(written_pointer_relations, relation);
+
+				write_type_pointer_preallocated(buffer, type.storage, non_pointer_type_id, type_map[i].value);
+			}
 		}
 	}
 }
