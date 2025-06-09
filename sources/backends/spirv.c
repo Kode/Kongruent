@@ -2020,6 +2020,13 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id coordinate    = get_var(instructions, o->op_call.parameters[2]);
 
 				spirv_id id = write_op_image_sample_implicit_lod(instructions, spirv_float4_type, sampled_image, coordinate);
+
+				if (is_depth(get_type(image_var.type.type)->tex_format)) {
+					uint32_t index = 0;
+
+					id = write_op_composite_extract(instructions, spirv_float_type, id, &index, 1);
+				}
+
 				hmput(index_map, o->op_call.var.index, id);
 			}
 			else if (func == add_name("sample_lod")) {
