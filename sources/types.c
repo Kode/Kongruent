@@ -413,3 +413,17 @@ type_id vector_to_size(type_id vector_type, uint32_t size) {
 		return float_id;
 	}
 }
+
+bool is_depth(texture_format format) {
+	switch (format) {
+	case TEXTURE_FORMAT_DEPTH16_UNORM:
+	case TEXTURE_FORMAT_DEPTH24_NOTHING8:
+	case TEXTURE_FORMAT_DEPTH24_STENCIL8:
+	case TEXTURE_FORMAT_DEPTH32_FLOAT:
+	case TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8_NOTHING24:
+	case TEXTURE_FORMAT_DEPTH:
+		return true;
+	default:
+		return false;
+	}
+}

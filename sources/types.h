@@ -112,6 +112,8 @@ typedef enum texture_format {
 	TEXTURE_FORMAT_FRAMEBUFFER,
 } texture_format;
 
+bool is_depth(texture_format format);
+
 typedef struct type {
 	attribute_list attributes;
 	name_id        name;

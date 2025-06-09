@@ -564,6 +564,9 @@ static void format_to_string_wgsl(texture_format format, char *str) {
 	case TEXTURE_FORMAT_UNDEFINED:
 		strcpy(str, "RGBA8Unorm");
 		break;
+	case TEXTURE_FORMAT_DEPTH:
+		strcpy(str, "Depth");
+		break;
 	default:
 		assert(false);
 		break;
@@ -3201,7 +3204,14 @@ void kore3_export(char *directory, api_kind api) {
 							        format);
 						}
 						else {
-							fprintf(output, "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_2D},\n");
+							if (is_depth(get_type(g->type)->tex_format)) {
+								fprintf(output,
+								        "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Depth, .viewDimension = WGPUTextureViewDimension_2D},\n");
+							}
+							else {
+								fprintf(output,
+								        "\t\t\t\t.texture = {.sampleType = WGPUTextureSampleType_Float, .viewDimension = WGPUTextureViewDimension_2D},\n");
+							}
 						}
 						if (writable) {
 							fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
@@ -3260,7 +3270,12 @@ void kore3_export(char *directory, api_kind api) {
 				else if (is_sampler(g->type)) {
 					fprintf(output, "\t\t\t{\n");
 					fprintf(output, "\t\t\t\t.binding = %zu,\n", global_index);
-					fprintf(output, "\t\t\t\t.sampler = {.type = WGPUSamplerBindingType_Filtering},\n");
+					if ((g->usage & GLOBAL_USAGE_SAMPLE_DEPTH) != 0) {
+						fprintf(output, "\t\t\t\t.sampler = {.type = WGPUSamplerBindingType_NonFiltering},\n");
+					}
+					else {
+						fprintf(output, "\t\t\t\t.sampler = {.type = WGPUSamplerBindingType_Filtering},\n");
+					}
 					fprintf(output, "\t\t\t\t.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment | WGPUShaderStage_Compute,\n");
 					fprintf(output, "\t\t\t},\n");
 				}

@@ -346,8 +346,14 @@ static void write_globals(char *wgsl, size_t *offset, function *main, bool *fram
 							                   set_index, binding, set_index, g->var_index, format);
 						}
 						else {
-							*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_2d<f32>;\n\n", set_index, binding,
-							                   set_index, g->var_index);
+							if (is_depth(get_type(base_type)->tex_format)) {
+								*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_depth_2d;\n\n", set_index,
+								                   binding, set_index, g->var_index);
+							}
+							else {
+								*offset += sprintf(&wgsl[*offset], "@group(%zu) @binding(%u) var _set%zu_%" PRIu64 ": texture_2d<f32>;\n\n", set_index, binding,
+								                   set_index, g->var_index);
+							}
 						}
 					}
 					binding += 1;
