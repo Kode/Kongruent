@@ -1114,19 +1114,144 @@ static definition parse_function(state_t *state) {
 	return d;
 }
 
-static texture_format convert_texture_format(name_id format_name) {
+static texture_format convert_texture_format(state_t *state, name_id format_name) {
 	if (format_name == NO_NAME) {
 		return TEXTURE_FORMAT_UNDEFINED;
 	}
 	else if (format_name == add_name("framebuffer_format")) {
 		return TEXTURE_FORMAT_FRAMEBUFFER;
 	}
-	if (format_name == add_name("depth")) {
+	else if (format_name == add_name("TEXTURE_FORMAT_DEPTH")) {
 		return TEXTURE_FORMAT_DEPTH;
 	}
+	else if (format_name == add_name("TEXTURE_FORMAT_R8_UNORM")) {
+		return TEXTURE_FORMAT_R8_UNORM;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_R8_SNORM")) {
+		return TEXTURE_FORMAT_R8_SNORM;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_R8_UINT")) {
+		return TEXTURE_FORMAT_R8_UINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_R8_SINT")) {
+		return TEXTURE_FORMAT_R8_SINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_R16_UINT")) {
+		return TEXTURE_FORMAT_R16_UINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_R16_SINT")) {
+		return TEXTURE_FORMAT_R16_SINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_R16_FLOAT")) {
+		return TEXTURE_FORMAT_R16_FLOAT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RG8_UNORM")) {
+		return TEXTURE_FORMAT_RG8_UNORM;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RG8_SNORM")) {
+		return TEXTURE_FORMAT_RG8_SNORM;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RG8_UINT")) {
+		return TEXTURE_FORMAT_RG8_UINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RG8_SINT")) {
+		return TEXTURE_FORMAT_RG8_SINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_R32_UINT")) {
+		return TEXTURE_FORMAT_R32_UINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_R32_SINT")) {
+		return TEXTURE_FORMAT_R32_SINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_R32_FLOAT")) {
+		return TEXTURE_FORMAT_R32_FLOAT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RG16_UINT")) {
+		return TEXTURE_FORMAT_RG16_UINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RG16_SINT")) {
+		return TEXTURE_FORMAT_RG16_SINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RG16_FLOAT")) {
+		return TEXTURE_FORMAT_RG16_FLOAT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RGBA8_UNORM")) {
+		return TEXTURE_FORMAT_RGBA8_UNORM;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RGBA8_UNORM_SRGB")) {
+		return TEXTURE_FORMAT_RGBA8_UNORM_SRGB;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RGBA8_SNORM")) {
+		return TEXTURE_FORMAT_RGBA8_SNORM;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RGBA8_UINT")) {
+		return TEXTURE_FORMAT_RGBA8_UINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RGBA8_SINT")) {
+		return TEXTURE_FORMAT_RGBA8_SINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_BGRA8_UNORM")) {
+		return TEXTURE_FORMAT_BGRA8_UNORM;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_BGRA8_UNORM_SRGB")) {
+		return TEXTURE_FORMAT_BGRA8_UNORM_SRGB;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RGB9E5U_FLOAT")) {
+		return TEXTURE_FORMAT_RGB9E5U_FLOAT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RGB10A2_UINT")) {
+		return TEXTURE_FORMAT_RGB10A2_UINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RGB10A2_UNORM")) {
+		return TEXTURE_FORMAT_RGB10A2_UNORM;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RG11B10U_FLOAT")) {
+		return TEXTURE_FORMAT_RG11B10U_FLOAT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RG32_UINT")) {
+		return TEXTURE_FORMAT_RG32_UINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RG32_SINT")) {
+		return TEXTURE_FORMAT_RG32_SINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RG32_FLOAT")) {
+		return TEXTURE_FORMAT_RG32_FLOAT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RGBA16_UINT")) {
+		return TEXTURE_FORMAT_RGBA16_UINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RGBA16_SINT")) {
+		return TEXTURE_FORMAT_RGBA16_SINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RGBA16_FLOAT")) {
+		return TEXTURE_FORMAT_RGBA16_FLOAT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RGBA32_UINT")) {
+		return TEXTURE_FORMAT_RGBA32_UINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RGBA32_SINT")) {
+		return TEXTURE_FORMAT_RGBA32_SINT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_RGBA32_FLOAT")) {
+		return TEXTURE_FORMAT_RGBA32_FLOAT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_DEPTH16_UNORM")) {
+		return TEXTURE_FORMAT_DEPTH16_UNORM;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_DEPTH24PLUS_NOTHING8")) {
+		return TEXTURE_FORMAT_DEPTH24PLUS_NOTHING8;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_DEPTH24PLUS_STENCIL8")) {
+		return TEXTURE_FORMAT_DEPTH24PLUS_STENCIL8;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_DEPTH32_FLOAT")) {
+		return TEXTURE_FORMAT_DEPTH32_FLOAT;
+	}
+	else if (format_name == add_name("TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8_NOTHING24")) {
+		return TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8_NOTHING24;
+	}
 	else {
-		// TODO
-		assert(false);
+		error(state->context, "Unknown texture format %s", format_name);
 		return TEXTURE_FORMAT_UNDEFINED;
 	}
 }
@@ -1254,7 +1379,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 			assert(false);
 		}
 
-		tex_type.tex_format = convert_texture_format(format_name);
+		tex_type.tex_format = convert_texture_format(state, format_name);
 
 		type_id t_id = add_full_type(&tex_type);
 

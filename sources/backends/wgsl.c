@@ -280,6 +280,9 @@ static void format_to_string(texture_format format, char *str) {
 		// strcpy(str, "rgba8unorm");
 		strcpy(str, "$                    ");
 		break;
+	case TEXTURE_FORMAT_RGBA32_FLOAT:
+		strcpy(str, "rgba32float");
+		break;
 	default:
 		assert(false);
 		break;

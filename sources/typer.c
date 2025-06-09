@@ -52,6 +52,9 @@ static void resolve_types_in_element(statement *parent_block, expression *elemen
 		else if (of->tex_format == TEXTURE_FORMAT_FRAMEBUFFER) {
 			element->type.type = float4_id;
 		}
+		else if (of->tex_format == TEXTURE_FORMAT_RGBA32_FLOAT) {
+			element->type.type = float4_id;
+		}
 		else {
 			// TODO
 			assert(false);

@@ -260,9 +260,9 @@ static const char *convert_texture_format(int format) {
 	case 39:
 		return "KORE_GPU_TEXTURE_FORMAT_DEPTH24PLUS_STENCIL8";
 	case 40:
-		return "KORE_GPU_TEXTURE_FORMAT_DEPTH32FLOAT";
+		return "KORE_GPU_TEXTURE_FORMAT_DEPTH32_FLOAT";
 	case 41:
-		return "KORE_GPU_TEXTURE_FORMAT_DEPTH32FLOAT_STENCIL8_NOTHING24";
+		return "KORE_GPU_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8_NOTHING24";
 	default: {
 		debug_context context = {0};
 		error(context, "Unknown texture format");
@@ -556,6 +556,9 @@ static void format_to_string_wgsl(texture_format format, char *str) {
 	switch (format) {
 	case TEXTURE_FORMAT_FRAMEBUFFER:
 		strcpy(str, "RGBA8Unorm");
+		break;
+	case TEXTURE_FORMAT_RGBA32_FLOAT:
+		strcpy(str, "RGBA32Float");
 		break;
 	case TEXTURE_FORMAT_UNDEFINED:
 		strcpy(str, "RGBA8Unorm");
