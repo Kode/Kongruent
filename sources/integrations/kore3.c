@@ -2181,7 +2181,10 @@ void kore3_export(char *directory, api_kind api) {
 							}
 						}
 					}
-					else if (!is_sampler(g->type) && g->type != bvh_type_id) {
+					else if (is_sampler(g->type)) {
+						fprintf(output, "\tkore_opengl_command_list_set_sampler(list, set->%s);\n", get_name(g->name));
+					}
+					else if (g->type != bvh_type_id) {
 						if (has_attribute(&g->attributes, add_name("indexed"))) {
 							fprintf(output, "\tkore_vulkan_descriptor_set_prepare_buffer(list, set->%s);\n", get_name(g->name));
 						}
@@ -2269,16 +2272,6 @@ void kore3_export(char *directory, api_kind api) {
 					}
 					else {
 						fprintf(output, ", 0, NULL");
-					}
-					fprintf(output, ");\n");
-				}
-				else if (api == API_OPENGL) {
-					fprintf(output, "\tkore_%s_command_list_set_descriptor_table(list, %s_table_index, &set->set", api_short, get_name(set->name));
-					if (dynamic_count > 0) {
-						fprintf(output, ", dynamic_buffers, dynamic_offsets, dynamic_sizes");
-					}
-					else {
-						fprintf(output, ", NULL, NULL, NULL");
 					}
 					fprintf(output, ");\n");
 				}
