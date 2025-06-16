@@ -445,8 +445,8 @@ static spirv_id allocate_index(void) {
 }
 
 static uint16_t write_string(uint32_t *operands, const char *string) {
-	uint16_t length = (uint16_t)strlen(string);
-	uint16_t word_count = (length + 1) / 4 + 1;
+	uint16_t length          = (uint16_t)strlen(string);
+	uint16_t word_count      = (length + 1) / 4 + 1;
 	operands[word_count - 1] = 0;
 	memcpy(&operands[0], string, length + 1);
 	return word_count;
