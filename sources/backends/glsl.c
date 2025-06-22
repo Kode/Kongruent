@@ -276,9 +276,19 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 				if (o->op_call.func == add_name("sample")) {
 					debug_context context = {0};
 					check(o->op_call.parameters_size == 3, context, "sample requires three parameters");
+
+					variable image_var = o->op_call.parameters[0];
+
 					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = texture(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
-					                   o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[2].index);
+
+					if (is_depth(get_type(image_var.type.type)->tex_format)) {
+						*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = texture(_%" PRIu64 ", _%" PRIu64 ").r;\n", type_string(o->op_call.var.type.type),
+						                   o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[2].index);
+					}
+					else {
+						*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = texture(_%" PRIu64 ", _%" PRIu64 ");\n", type_string(o->op_call.var.type.type),
+						                   o->op_call.var.index, o->op_call.parameters[0].index, o->op_call.parameters[2].index);
+					}
 				}
 				else if (o->op_call.func == add_name("sample_lod")) {
 					debug_context context = {0};
