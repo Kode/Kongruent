@@ -1814,9 +1814,10 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		}
 	}
 
-	bool     ends_with_return     = false;
-	uint64_t next_block_branch_id = 0;
-	uint64_t next_block_label_id  = 0;
+	bool     ends_with_return         = false;
+	uint64_t next_block_branch_id[16] = {0};
+	uint64_t next_block_label_id[16]  = {0};
+	uint8_t  nested_if_count          = 0;
 
 	index = 0;
 	while (index < size) {
@@ -2689,14 +2690,14 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				spirv_id return_value = get_var(instructions, o->op_return.var);
 				write_op_return_value(instructions, return_value);
 			}
-			ends_with_return     = true;
-			next_block_branch_id = 0;
+			ends_with_return                      = true;
+			next_block_branch_id[nested_if_count] = 0;
 			break;
 		}
 		case OPCODE_DISCARD: {
 			write_op_discard(instructions);
-			ends_with_return     = true;
-			next_block_branch_id = 0;
+			ends_with_return                      = true;
+			next_block_branch_id[nested_if_count] = 0;
 			break;
 		}
 		case OPCODE_LESS: {
@@ -2907,8 +2908,9 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_IF: {
-			next_block_branch_id = o->op_if.end_id;
-			next_block_label_id  = o->op_if.end_id;
+			nested_if_count++;
+			next_block_branch_id[nested_if_count] = o->op_if.end_id;
+			next_block_label_id[nested_if_count]  = o->op_if.end_id;
 			write_op_selection_merge(instructions, convert_kong_index_to_spirv_id(o->op_if.end_id), SELECTION_CONTROL_NONE);
 
 			write_op_branch_conditional(instructions, convert_kong_index_to_spirv_id(o->op_if.condition.index),
@@ -2959,11 +2961,12 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_BLOCK_END: {
-			if (o->op_block.id == next_block_branch_id) {
+			if (o->op_block.id == next_block_branch_id[nested_if_count]) {
 				write_op_branch(instructions, convert_kong_index_to_spirv_id(o->op_block.id));
 			}
-			if (o->op_block.id == next_block_label_id) {
+			if (o->op_block.id == next_block_label_id[nested_if_count]) {
 				write_op_label_preallocated(instructions, convert_kong_index_to_spirv_id(o->op_block.id));
+				nested_if_count--;
 			}
 			break;
 		}
