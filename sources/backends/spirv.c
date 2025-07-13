@@ -233,6 +233,11 @@ typedef enum spirv_opcode {
 	SPIRV_OPCODE_F_ORD_GREATER_THAN        = 186,
 	SPIRV_OPCODE_F_ORD_LESS_THAN_EQUAL     = 188,
 	SPIRV_OPCODE_F_ORD_GREATER_THAN_EQUAL  = 190,
+	SPIRV_OPCODE_SHIFT_RIGHT_LOGICAL       = 194,
+	SPIRV_OPCODE_SHIFT_LEFT_LOGICAL        = 196,
+	SPIRV_OPCODE_BITWISE_OR                = 197,
+	SPIRV_OPCODE_BITWISE_XOR               = 198,
+	SPIRV_OPCODE_BITWISE_AND               = 199,
 	SPIRV_OPCODE_DPDX                      = 207,
 	SPIRV_OPCODE_DPDY                      = 208,
 	SPIRV_OPCODE_LOOP_MERGE                = 246,
@@ -1622,6 +1627,46 @@ static spirv_id write_op_logical_or(instructions_buffer *instructions, spirv_id 
 	return result;
 }
 
+static spirv_id write_op_bitwise_xor(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_BITWISE_XOR, operands);
+	return result;
+}
+
+static spirv_id write_op_bitwise_and(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_BITWISE_AND, operands);
+	return result;
+}
+
+static spirv_id write_op_bitwise_or(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_BITWISE_OR, operands);
+	return result;
+}
+
+static spirv_id write_op_left_shift(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_SHIFT_LEFT_LOGICAL, operands);
+	return result;
+}
+
+static spirv_id write_op_right_shift(instructions_buffer *instructions, spirv_id type, spirv_id operand1, spirv_id operand2) {
+	spirv_id result = allocate_index();
+
+	uint32_t operands[] = {type.id, result.id, operand1.id, operand2.id};
+	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_SHIFT_RIGHT_LOGICAL, operands);
+	return result;
+}
+
 static spirv_id write_op_not(instructions_buffer *instructions, spirv_id type, spirv_id operand) {
 	spirv_id result = allocate_index();
 
@@ -2555,6 +2600,41 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 		case OPCODE_OR: {
 			spirv_id result = write_op_logical_or(instructions, spirv_bool_type, convert_kong_index_to_spirv_id(o->op_binary.left.index),
 			                                      convert_kong_index_to_spirv_id(o->op_binary.right.index));
+			hmput(index_map, o->op_binary.result.index, result);
+			break;
+		}
+		case OPCODE_BITWISE_XOR: {
+			spirv_id left  = get_var(instructions, o->op_binary.left);
+			spirv_id right = get_var(instructions, o->op_binary.right);
+			spirv_id result = write_op_bitwise_xor(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
+			hmput(index_map, o->op_binary.result.index, result);
+			break;
+		}
+		case OPCODE_BITWISE_AND: {
+			spirv_id left  = get_var(instructions, o->op_binary.left);
+			spirv_id right = get_var(instructions, o->op_binary.right);
+			spirv_id result = write_op_bitwise_and(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
+			hmput(index_map, o->op_binary.result.index, result);
+			break;
+		}
+		case OPCODE_BITWISE_OR: {
+			spirv_id left  = get_var(instructions, o->op_binary.left);
+			spirv_id right = get_var(instructions, o->op_binary.right);
+			spirv_id result = write_op_bitwise_or(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
+			hmput(index_map, o->op_binary.result.index, result);
+			break;
+		}
+		case OPCODE_LEFT_SHIFT: {
+			spirv_id left  = get_var(instructions, o->op_binary.left);
+			spirv_id right = get_var(instructions, o->op_binary.right);
+			spirv_id result = write_op_left_shift(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
+			hmput(index_map, o->op_binary.result.index, result);
+			break;
+		}
+		case OPCODE_RIGHT_SHIFT: {
+			spirv_id left  = get_var(instructions, o->op_binary.left);
+			spirv_id right = get_var(instructions, o->op_binary.right);
+			spirv_id result = write_op_right_shift(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
