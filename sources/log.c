@@ -4,7 +4,7 @@
 #include <string.h>
 
 #ifdef WIN32
-#include <Windows.h>
+__declspec(dllimport) void __stdcall OutputDebugStringA(const char *lpOutputString);
 #endif
 
 #ifdef __android__

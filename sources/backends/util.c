@@ -75,7 +75,64 @@ uint32_t struct_size(type_id id) {
 }
 
 #ifdef _WIN32
-#include <Windows.h>
+
+typedef struct _SECURITY_ATTRIBUTES {
+	unsigned long nLength;
+	void         *lpSecurityDescriptor;
+	int           bInheritHandle;
+} SECURITY_ATTRIBUTES, *PSECURITY_ATTRIBUTES, *LPSECURITY_ATTRIBUTES;
+
+typedef struct _STARTUPINFOA {
+	unsigned long  cb;
+	char          *lpReserved;
+	char          *lpDesktop;
+	char          *lpTitle;
+	unsigned long  dwX;
+	unsigned long  dwY;
+	unsigned long  dwXSize;
+	unsigned long  dwYSize;
+	unsigned long  dwXCountChars;
+	unsigned long  dwYCountChars;
+	unsigned long  dwFillAttribute;
+	unsigned long  dwFlags;
+	unsigned short wShowWindow;
+	unsigned short cbReserved2;
+	unsigned char *lpReserved2;
+	void          *hStdInput;
+	void          *hStdOutput;
+	void          *hStdError;
+} STARTUPINFOA, *LPSTARTUPINFOA;
+
+typedef struct _PROCESS_INFORMATION {
+	void         *hProcess;
+	void         *hThread;
+	unsigned long dwProcessId;
+	unsigned long dwThreadId;
+} PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
+
+__declspec(dllimport) int __stdcall CreateProcessA(const char *lpApplicationName, char *lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes,
+                                                   LPSECURITY_ATTRIBUTES lpThreadAttributes, int bInheritHandles, unsigned long dwCreationFlags,
+                                                   void *lpEnvironment, const char *lpCurrentDirectory, LPSTARTUPINFOA lpStartupInfo,
+                                                   LPPROCESS_INFORMATION lpProcessInformation);
+
+__declspec(dllimport) unsigned long __stdcall WaitForSingleObject(void *hHandle, unsigned long dwMilliseconds);
+
+__declspec(dllimport) int __stdcall GetExitCodeProcess(void *hProcess, unsigned long *lpExitCode);
+
+__declspec(dllimport) int __stdcall CloseHandle(void *hObject);
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
+#ifndef CREATE_DEFAULT_ERROR_MODE
+#define CREATE_DEFAULT_ERROR_MODE 0x04000000
+#endif
+
+#ifndef INFINITE
+#define INFINITE 0xFFFFFFFF
+#endif
+
 #endif
 
 bool execute_sync(const char *command, uint32_t *exit_code) {
@@ -85,7 +142,7 @@ bool execute_sync(const char *command, uint32_t *exit_code) {
 
 	PROCESS_INFORMATION process_info = {0};
 
-	BOOL success = CreateProcessA(NULL, (char *)command, NULL, NULL, FALSE, CREATE_DEFAULT_ERROR_MODE, NULL, NULL, &startup_info, &process_info);
+	int success = CreateProcessA(NULL, (char *)command, NULL, NULL, FALSE, CREATE_DEFAULT_ERROR_MODE, NULL, NULL, &startup_info, &process_info);
 
 	WaitForSingleObject(process_info.hProcess, INFINITE);
 
