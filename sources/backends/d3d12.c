@@ -6,9 +6,8 @@
 
 #include "../log.h"
 
-// #include <dxcapi.h>
+#include "dxcapi-c.h"
 
-#include <initguid.h>
 #include <stdlib.h>
 
 #endif
@@ -35,134 +34,6 @@ static const wchar_t *shader_string(shader_stage stage) {
 	}
 	}
 }
-static const CLSID CLSID_DxcCompiler = {0x73e22d93, 0xe6ce, 0x47f3, {0xb5, 0xbf, 0xf0, 0x66, 0x4f, 0x39, 0xc1, 0xb0}};
-static const IID   IID_IDxcCompiler3 = {0x228b4687, 0x5a6a, 0x4730, {0x90, 0x0c, 0x97, 0x02, 0xb2, 0x20, 0x3f, 0x54}};
-static const IID   IID_IDxcResult    = {0x58346cda, 0xdde7, 0x4497, {0x94, 0x61, 0x6f, 0x87, 0xaf, 0x5e, 0x06, 0x59}};
-static const IID   IID_IDxcBlobUtf8  = {0x3da636c9, 0xba71, 0x4024, {0xa3, 0x01, 0x30, 0xcb, 0xf1, 0x25, 0x30, 0x5b}};
-static const IID   IID_IDxcBlob      = {0x8ba5fb08, 0x5195, 0x40e2, {0xac, 0x58, 0x0d, 0x98, 0x9c, 0x3a, 0x01, 0x02}};
-
-#ifndef LPCWSTR
-#define LPCWSTR const wchar_t *
-#endif
-
-#ifndef UINT32
-#define UINT32 uint32_t
-#endif
-
-#ifndef HRESULT
-#define HRESULT long
-#endif
-
-typedef unsigned long DWORD;
-
-typedef DWORD ULONG;
-
-typedef int BOOL;
-
-typedef unsigned __int64 ULONG_PTR;
-
-typedef ULONG_PTR SIZE_T;
-
-#define S_OK ((HRESULT)0L)
-
-#ifndef STDMETHODCALLTYPE
-#define STDMETHODCALLTYPE __stdcall
-#endif
-
-typedef struct IDxcCompiler3      IDxcCompiler3;
-typedef struct DxcBuffer          DxcBuffer;
-typedef struct IDxcIncludeHandler IDxcIncludeHandler;
-typedef struct IDxcBlobUtf8       IDxcBlobUtf8;
-typedef struct IDxcBlobWide       IDxcBlobWide;
-
-#define DXC_CP_UTF8 65001
-
-typedef enum DXC_OUT_KIND {
-	DXC_OUT_NONE        = 0,
-	DXC_OUT_OBJECT      = 1,
-	DXC_OUT_ERRORS      = 2,
-	DXC_OUT_PDB         = 3,
-	DXC_OUT_SHADER_HASH = 4,
-} DXC_OUT_KIND;
-
-typedef struct IDxcResult IDxcResult;
-
-typedef struct IDxcResultVtbl {
-	HRESULT(STDMETHODCALLTYPE *QueryInterface)(struct IDxcResult *This, const IID *riid, void **ppvObject);
-	ULONG(STDMETHODCALLTYPE *AddRef)(struct IDxcResult *This);
-	ULONG(STDMETHODCALLTYPE *Release)(struct IDxcResult *This);
-
-	HRESULT(STDMETHODCALLTYPE *GetStatus)(IDxcResult *This, HRESULT *pStatus);
-	HRESULT(STDMETHODCALLTYPE *GetResult)(IDxcResult *This, void **ppResult);
-	HRESULT(STDMETHODCALLTYPE *GetErrorBuffer)(IDxcResult *This, void **ppErrors);
-
-	BOOL(STDMETHODCALLTYPE *HasOutput)(IDxcResult *This, DXC_OUT_KIND dxcOutKind);
-	HRESULT(STDMETHODCALLTYPE *GetOutput)(struct IDxcResult *This, DXC_OUT_KIND dxcOutKind, const IID *iid, void **ppResult, IDxcBlobWide **ppOutputName);
-} IDxcResultVtbl;
-
-struct IDxcResult {
-	const IDxcResultVtbl *lpVtbl;
-};
-
-typedef struct IDxcCompiler3Vtbl {
-	HRESULT(STDMETHODCALLTYPE *QueryInterface)(IDxcCompiler3 *This, const IID *riid, void **ppvObject);
-	ULONG(STDMETHODCALLTYPE *AddRef)(IDxcCompiler3 *This);
-	ULONG(STDMETHODCALLTYPE *Release)(IDxcCompiler3 *This);
-
-	HRESULT(STDMETHODCALLTYPE *Compile)(IDxcCompiler3 *This, const DxcBuffer *pSource, LPCWSTR *pArguments, UINT32 argCount,
-	                                    IDxcIncludeHandler *pIncludeHandler, const IID *iid, IDxcResult **ppResult);
-} IDxcCompiler3Vtbl;
-
-struct IDxcCompiler3 {
-	const IDxcCompiler3Vtbl *lpVtbl;
-};
-
-typedef struct DxcBuffer {
-	const void *Ptr;
-	size_t      Size;
-	uint32_t    Encoding; // 0 = unknown, 1200 = UTF16, 65001 = UTF8
-} DxcBuffer;
-
-typedef struct IDxcBlob IDxcBlob;
-
-typedef struct IDxcBlobVtbl {
-	HRESULT(STDMETHODCALLTYPE *QueryInterface)(IDxcBlob *This, const IID *riid, void **ppvObject);
-	ULONG(STDMETHODCALLTYPE *AddRef)(IDxcBlob *This);
-	ULONG(STDMETHODCALLTYPE *Release)(IDxcBlob *This);
-
-	void *(STDMETHODCALLTYPE *GetBufferPointer)(IDxcBlob *This);
-	SIZE_T(STDMETHODCALLTYPE *GetBufferSize)(IDxcBlob *This);
-} IDxcBlobVtbl;
-
-struct IDxcBlob {
-	const IDxcBlobVtbl *lpVtbl;
-};
-
-typedef struct IDxcBlobUtf8Vtbl {
-	HRESULT(STDMETHODCALLTYPE *QueryInterface)(IDxcBlobUtf8 *This, const IID *riid, void **ppvObject);
-	ULONG(STDMETHODCALLTYPE *AddRef)(IDxcBlobUtf8 *This);
-	ULONG(STDMETHODCALLTYPE *Release)(IDxcBlobUtf8 *This);
-
-	void *(STDMETHODCALLTYPE *GetBufferPointer)(IDxcBlobUtf8 *This);
-	SIZE_T(STDMETHODCALLTYPE *GetBufferSize)(IDxcBlobUtf8 *This);
-
-	HRESULT(STDMETHODCALLTYPE *GetEncoding)(IDxcBlobUtf8 *This, BOOL *pKnown, UINT32 *pCodePage);
-
-	char *(STDMETHODCALLTYPE *GetStringPointer)(IDxcBlobUtf8 *This);
-	SIZE_T(STDMETHODCALLTYPE *GetStringLength)(IDxcBlobUtf8 *This);
-} IDxcBlobUtf8Vtbl;
-
-struct IDxcBlobUtf8 {
-	const IDxcBlobUtf8Vtbl *lpVtbl;
-};
-
-struct IDxcBlobWide {
-	int nothing;
-	// const IDxcBlobWideVtbl *lpVtbl;
-};
-
-HRESULT __stdcall DxcCreateInstance(const CLSID *rclsid, const IID *riid, IDxcCompiler3 **ppv);
-
 #endif
 
 int compile_hlsl_to_d3d12(const char *source, uint8_t **output, size_t *outputlength, shader_stage stage, bool debug) {
@@ -205,8 +76,8 @@ int compile_hlsl_to_d3d12(const char *source, uint8_t **output, size_t *outputle
 	result                    = compiler_result->lpVtbl->GetOutput(compiler_result, DXC_OUT_ERRORS, &IID_IDxcBlobUtf8, (void **)&errors, &output_name);
 	assert(result == S_OK);
 
-	SIZE_T length  = errors->lpVtbl->GetStringLength(errors);
-	char  *pointer = errors->lpVtbl->GetStringPointer(errors);
+	unsigned __int64 length  = errors->lpVtbl->GetStringLength(errors);
+	char            *pointer = errors->lpVtbl->GetStringPointer(errors);
 
 	if (errors != NULL && errors->lpVtbl->GetStringLength(errors) != 0) {
 		kong_log(LOG_LEVEL_INFO, "Warnings and Errors:\n%s", errors->lpVtbl->GetStringPointer(errors));
