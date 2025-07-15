@@ -6,10 +6,6 @@
 
 #include "../log.h"
 
-#define INITGUID
-#include <Windows.h>
-#include <d3d11.h>
-
 #include <D3Dcompiler.h>
 
 #include <assert.h>
