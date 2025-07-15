@@ -2604,36 +2604,36 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_BITWISE_XOR: {
-			spirv_id left  = get_var(instructions, o->op_binary.left);
-			spirv_id right = get_var(instructions, o->op_binary.right);
+			spirv_id left   = get_var(instructions, o->op_binary.left);
+			spirv_id right  = get_var(instructions, o->op_binary.right);
 			spirv_id result = write_op_bitwise_xor(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
 		case OPCODE_BITWISE_AND: {
-			spirv_id left  = get_var(instructions, o->op_binary.left);
-			spirv_id right = get_var(instructions, o->op_binary.right);
+			spirv_id left   = get_var(instructions, o->op_binary.left);
+			spirv_id right  = get_var(instructions, o->op_binary.right);
 			spirv_id result = write_op_bitwise_and(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
 		case OPCODE_BITWISE_OR: {
-			spirv_id left  = get_var(instructions, o->op_binary.left);
-			spirv_id right = get_var(instructions, o->op_binary.right);
+			spirv_id left   = get_var(instructions, o->op_binary.left);
+			spirv_id right  = get_var(instructions, o->op_binary.right);
 			spirv_id result = write_op_bitwise_or(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
 		case OPCODE_LEFT_SHIFT: {
-			spirv_id left  = get_var(instructions, o->op_binary.left);
-			spirv_id right = get_var(instructions, o->op_binary.right);
+			spirv_id left   = get_var(instructions, o->op_binary.left);
+			spirv_id right  = get_var(instructions, o->op_binary.right);
 			spirv_id result = write_op_left_shift(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
 		}
 		case OPCODE_RIGHT_SHIFT: {
-			spirv_id left  = get_var(instructions, o->op_binary.left);
-			spirv_id right = get_var(instructions, o->op_binary.right);
+			spirv_id left   = get_var(instructions, o->op_binary.left);
+			spirv_id right  = get_var(instructions, o->op_binary.right);
 			spirv_id result = write_op_right_shift(instructions, convert_type_to_spirv_id(o->op_binary.result.type.type), left, right);
 			hmput(index_map, o->op_binary.result.index, result);
 			break;
