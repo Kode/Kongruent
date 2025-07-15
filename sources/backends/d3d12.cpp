@@ -39,44 +39,45 @@ static const wchar_t *shader_string(shader_stage stage) {
 }
 #endif
 
+// static const CLSID CLSID_DxcCompiler = {0x73e22d93, 0xe6ce, 0x47f3, {0xb5, 0xb6, 0x9c, 0x64, 0x06, 0x8f, 0x88, 0x14}};
+static const IID IID_IDxcCompiler3 = {0x228b4687, 0x5a6a, 0x4730, {0x90, 0x0c, 0x97, 0x02, 0xb2, 0x20, 0x3f, 0x54}};
+static const IID IID_IDxcResult    = {0x58346cda, 0xdde7, 0x4497, {0x94, 0x61, 0x6f, 0x87, 0xaf, 0x5e, 0x06, 0x59}};
+static const IID IID_IDxcBlobUtf8  = {0x3da636c9, 0xba71, 0x4024, {0xa3, 0x01, 0x30, 0xcb, 0xf1, 0x25, 0x30, 0x5b}};
+static const IID IID_IDxcBlob      = {0x8ba5fb08, 0x5195, 0x40e2, {0xac, 0x58, 0x0d, 0x98, 0x9c, 0x3a, 0x01, 0x02}};
+
 int compile_hlsl_to_d3d12(const char *source, uint8_t **output, size_t *outputlength, shader_stage stage, bool debug) {
 #ifdef _WIN32
-	CComPtr<IDxcCompiler3> compiler;
-	DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&compiler));
+	IDxcCompiler3 *compiler;
+	DxcCreateInstance(CLSID_DxcCompiler, IID_IDxcCompiler3, (void **)&compiler);
 
-	LPCWSTR compiler_args[] = {
-	    L"-E", L"main",              // entry point
-	    L"-T", shader_string(stage), // target
-	    // L"-Qstrip_reflect",          // strip reflection into a seperate blob
+	const wchar_t *compiler_args[] = {
+	    L"-E", L"main", L"-T", shader_string(stage),
+	    // L"-Qstrip_reflect", // strip reflection into a seperate blob
 	};
 
-	LPCWSTR debug_compiler_args[] = {
-	    L"-E",  L"main",              // entry point
-	    L"-T",  shader_string(stage), // target
-	    L"-Zi",                       // enable debug info
+	const wchar_t *debug_compiler_args[] = {
+	    L"-E",  L"main", L"-T", shader_string(stage),
+	    L"-Zi", // enable debug info
 	    // L"-Fd", L"myshader.pdb", // the file name of the pdb.  This must either be supplied or the auto generated file name must be used
 	    // L"myshader.hlsl", // optional shader source file name for error reporting and for PIX shader source view
-	    // L"-Qstrip_reflect",          // strip reflection into a seperate blob
+	    // L"-Qstrip_reflect", // strip reflection into a seperate blob
 	};
 
 	DxcBuffer source_buffer;
 	source_buffer.Ptr      = source;
 	source_buffer.Size     = strlen(source);
-	source_buffer.Encoding = DXC_CP_ACP; // assume BOM says UTF8 or UTF16 or this is ANSI text
+	source_buffer.Encoding = DXC_CP_UTF8;
 
-	CComPtr<IDxcResult> compiler_result;
-	compiler->Compile(&source_buffer,                                                  // source buffer
-	                  debug ? debug_compiler_args : compiler_args,                     // Array of pointers to arguments
-	                  debug ? _countof(debug_compiler_args) : _countof(compiler_args), // Number of arguments
-	                  NULL,                                                            // user-provided interface to handle #include directives (optional)
-	                  IID_PPV_ARGS(&compiler_result)                                   // Compiler output status, buffer, and errors
-	);
+	IDxcResult *compiler_result;
+	compiler->Compile(&source_buffer, debug ? debug_compiler_args : compiler_args,
+	                  debug ? sizeof(debug_compiler_args) / sizeof(wchar_t *) : sizeof(compiler_args) / sizeof(wchar_t *), NULL, IID_IDxcResult,
+	                  (void **)&compiler_result);
 
-	CComPtr<IDxcBlobUtf8> errors = nullptr;
-	compiler_result->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr);
-	// note that d3dcompiler would return null if no errors or warnings are present.
-	// IDxcCompiler3::Compile will always return an error buffer but it's length will be zero if there are no warnings or errors
-	if (errors != nullptr && errors->GetStringLength() != 0) {
+	IDxcBlobUtf8 *errors      = NULL;
+	IDxcBlobWide *output_name = NULL;
+	compiler_result->GetOutput(DXC_OUT_ERRORS, IID_IDxcBlobUtf8, (void **)&errors, &output_name);
+
+	if (errors != NULL && errors->GetStringLength() != 0) {
 		kong_log(LOG_LEVEL_INFO, "Warnings and Errors:\n%s", errors->GetStringPointer());
 	}
 
@@ -84,10 +85,10 @@ int compile_hlsl_to_d3d12(const char *source, uint8_t **output, size_t *outputle
 	compiler_result->GetStatus(&result);
 
 	if (result == S_OK) {
-		CComPtr<IDxcBlob>      shader_buffer = nullptr;
-		CComPtr<IDxcBlobUtf16> shader_name   = nullptr;
-		compiler_result->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shader_buffer), &shader_name);
-		if (shader_buffer == nullptr) {
+		IDxcBlob      *shader_buffer = NULL;
+		IDxcBlobUtf16 *shader_name   = NULL;
+		compiler_result->GetOutput(DXC_OUT_OBJECT, IID_IDxcBlob, (void **)&shader_buffer, &shader_name);
+		if (shader_buffer == NULL) {
 			return 1;
 		}
 		else {
