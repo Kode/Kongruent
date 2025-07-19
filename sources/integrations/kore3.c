@@ -2042,11 +2042,12 @@ void kore3_export(char *directory, api_kind api) {
 					}
 				}
 
-				fprintf(output, "\tfor (uint32_t update_index = 0; update_index < updates_count; ++update_index) {\n");
-				fprintf(output, "\t\tswitch (updates[update_index].kind) {\n");
+				fprintf(output, "\tif (true) {\n");
 
-				size_t other_index   = 0;
-				size_t sampler_index = 0;
+				fprintf(output, "\t\tkore_d3d12_device_create_descriptor_set(set->set.device, %zu, %zu, %zu, %zu, &set->set);\n", other_count, dynamic_count,
+				        bindless_count, sampler_count);
+
+				fprintf(output, "\t\tfor (uint32_t update_index = 0; update_index < updates_count; ++update_index) {\n");
 
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					global *g            = get_global(set->globals.globals[global_index]);
@@ -2059,56 +2060,181 @@ void kore3_export(char *directory, api_kind api) {
 					char g_name[256];
 					up_case(get_name(g->name), g_name);
 
-					fprintf(output, "\t\tcase %s_SET_UPDATE_%s:\n", set_name, g_name);
+					fprintf(output, "\t\t\tswitch (updates[update_index].kind) {\n");
+					fprintf(output, "\t\t\tcase %s_SET_UPDATE_%s:\n", set_name, g_name);
+					fprintf(output, "\t\t\t\tset->%s = updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
+					fprintf(output, "\t\t\t}\n");
+				}
+
+				fprintf(output, "\t\t}\n");
+
+				size_t other_index   = 0;
+				size_t sampler_index = 0;
+
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g            = get_global(set->globals.globals[global_index]);
+					bool    writable     = set->globals.writable[global_index];
+					type_id base_type_id = get_type(g->type)->base != NO_TYPE ? get_type(g->type)->base : g->type;
 
 					if (!get_type(g->type)->built_in) {
 						if (!has_attribute(&g->attributes, add_name("indexed"))) {
-							fprintf(output, "\t\t\tkore_%s_descriptor_set_set_buffer_view_cbv(set->set.device, &set->set, updates[update_index].%s, %zu);\n",
-							        api_short, get_name(g->name), other_index);
+							fprintf(output, "\t\tkore_%s_descriptor_set_set_buffer_view_cbv(set->set.device, &set->set, set->%s, %zu);\n", api_short,
+							        get_name(g->name), other_index);
 							other_index += 1;
 						}
-						fprintf(output, "\t\t\tset->%s = updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
 					}
 					else if (base_type_id == bvh_type_id) {
-						fprintf(output, "\t\t\tkore_%s_descriptor_set_set_bvh_view_srv(set->set.device, &set->set,  updates[update_index].%s, %zu);\n",
-						        api_short, get_name(g->name), other_index);
-						fprintf(output, "\t\t\tset->%s =  updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
+						fprintf(output, "\t\tkore_%s_descriptor_set_set_bvh_view_srv(set->set.device, &set->set,  set->%s, %zu);\n", api_short,
+						        get_name(g->name), other_index);
 						other_index += 1;
 					}
 					else if (get_type(base_type_id)->tex_kind != TEXTURE_KIND_NONE) {
 						if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D) {
 							type *t = get_type(g->type);
 							if (t->array_size == UINT32_MAX) {
-								fprintf(
-								    output,
-								    "\t\t\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) *  updates[update_index].textures_count);\n",
-								    get_name(g->name));
-								fprintf(output, "\t\t\tassert(set->%s != NULL);\n", get_name(g->name));
-								fprintf(output, "\t\t\tfor (size_t index = 0; index <  updates[update_index].textures_count; ++index) {\n");
 								fprintf(output,
-								        "\t\t\t\tkore_%s_descriptor_set_set_texture_view_srv(set->set.device, set->set.bindless_descriptor_allocation.offset + "
+								        "\t\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) *  "
+								        "updates[update_index].textures_count);\n",
+								        get_name(g->name));
+								fprintf(output, "\t\tassert(set->%s != NULL);\n", get_name(g->name));
+								fprintf(output, "\t\tfor (size_t index = 0; index <  updates[update_index].textures_count; ++index) {\n");
+								fprintf(output,
+								        "\t\t\tkore_%s_descriptor_set_set_texture_view_srv(set->set.device, set->set.bindless_descriptor_allocation.offset + "
 								        "(uint32_t)index, "
 								        "& updates[update_index].%s[index]);\n",
 								        api_short, get_name(g->name));
-								fprintf(output, "\t\t\t\tset->%s[index] =  updates[update_index].%s[index];\n", get_name(g->name), get_name(g->name));
-								fprintf(output, "\t\t\t}\n");
+								fprintf(output, "\t\t\tset->%s[index] =  updates[update_index].%s[index];\n", get_name(g->name), get_name(g->name));
+								fprintf(output, "\t\t}\n");
 
-								fprintf(output, "\t\t\tset->%s_count =  updates[update_index].%s_count;\n", get_name(g->name), get_name(g->name));
+								fprintf(output, "\t\tset->%s_count =  updates[update_index].%s_count;\n", get_name(g->name), get_name(g->name));
 							}
 							else {
 								if (writable) {
-									fprintf(output,
-									        "\t\t\tkore_%s_descriptor_set_set_texture_view_uav(set->set.device, &set->set, & updates[update_index].%s, %zu);\n",
-									        api_short, get_name(g->name), other_index);
+									fprintf(output, "\t\tkore_%s_descriptor_set_set_texture_view_uav(set->set.device, &set->set, set->%s, %zu);\n", api_short,
+									        get_name(g->name), other_index);
 								}
 								else {
 									fprintf(output,
-									        "\t\t\tkore_%s_descriptor_set_set_texture_view_srv(set->set.device, set->set.descriptor_allocation.offset + %zu, "
+									        "\t\tkore_%s_descriptor_set_set_texture_view_srv(set->set.device, set->set.descriptor_allocation.offset + %zu, "
+									        "set->%s);\n",
+									        api_short, other_index, get_name(g->name));
+								}
+
+								other_index += 1;
+							}
+						}
+						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
+							if (writable) {
+								debug_context context = {0};
+								error(context, "Texture arrays can not be writable");
+							}
+
+							fprintf(output, "\t\tkore_%s_descriptor_set_set_texture_array_view_srv(set->set.device, &set->set, set->%s, %zu);\n", api_short,
+							        get_name(g->name), other_index);
+
+							other_index += 1;
+						}
+						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_CUBE) {
+							if (writable) {
+								debug_context context = {0};
+								error(context, "Cube maps can not be writable");
+							}
+							fprintf(output, "\t\tkore_%s_descriptor_set_set_texture_cube_view_srv(set->set.device, &set->set, set->%s, %zu);\n", api_short,
+							        get_name(g->name), other_index);
+
+							other_index += 1;
+						}
+						else {
+							// TODO
+							assert(false);
+						}
+					}
+					else if (is_sampler(g->type)) {
+						fprintf(output, "\t\tkore_%s_descriptor_set_set_sampler(set->set.device, &set->set,  set->%s, %zu);\n", api_short, get_name(g->name),
+						        sampler_index);
+						sampler_index += 1;
+					}
+					else {
+						if (!has_attribute(&g->attributes, add_name("indexed"))) {
+							fprintf(output, "\tkore_%s_descriptor_set_set_buffer_view_uav(set->set.device, &set->set, set->%s, %zu);\n", api_short,
+							        get_name(g->name), other_index);
+							other_index += 1;
+						}
+					}
+				}
+
+				fprintf(output, "\t}\n");
+				fprintf(output, "\telse {\n");
+
+				fprintf(output, "\t\tfor (uint32_t update_index = 0; update_index < updates_count; ++update_index) {\n");
+				fprintf(output, "\t\t\tswitch (updates[update_index].kind) {\n");
+
+				other_index   = 0;
+				sampler_index = 0;
+
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g            = get_global(set->globals.globals[global_index]);
+					bool    writable     = set->globals.writable[global_index];
+					type_id base_type_id = get_type(g->type)->base != NO_TYPE ? get_type(g->type)->base : g->type;
+
+					char set_name[256];
+					up_case(get_name(set->name), set_name);
+
+					char g_name[256];
+					up_case(get_name(g->name), g_name);
+
+					fprintf(output, "\t\t\tcase %s_SET_UPDATE_%s:\n", set_name, g_name);
+
+					if (!get_type(g->type)->built_in) {
+						if (!has_attribute(&g->attributes, add_name("indexed"))) {
+							fprintf(output, "\t\t\t\tkore_%s_descriptor_set_set_buffer_view_cbv(set->set.device, &set->set, updates[update_index].%s, %zu);\n",
+							        api_short, get_name(g->name), other_index);
+							other_index += 1;
+						}
+						fprintf(output, "\t\t\t\tset->%s = updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
+					}
+					else if (base_type_id == bvh_type_id) {
+						fprintf(output, "\t\t\t\tkore_%s_descriptor_set_set_bvh_view_srv(set->set.device, &set->set, updates[update_index].%s, %zu);\n",
+						        api_short, get_name(g->name), other_index);
+						fprintf(output, "\t\t\t\tset->%s =  updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
+						other_index += 1;
+					}
+					else if (get_type(base_type_id)->tex_kind != TEXTURE_KIND_NONE) {
+						if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D) {
+							type *t = get_type(g->type);
+							if (t->array_size == UINT32_MAX) {
+								fprintf(output,
+								        "\t\t\t\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) *  "
+								        "updates[update_index].textures_count);\n",
+								        get_name(g->name));
+								fprintf(output, "\t\t\tassert(set->%s != NULL);\n", get_name(g->name));
+								fprintf(output, "\t\t\tfor (size_t index = 0; index <  updates[update_index].textures_count; ++index) {\n");
+								fprintf(
+								    output,
+								    "\t\t\t\t\tkore_%s_descriptor_set_set_texture_view_srv(set->set.device, set->set.bindless_descriptor_allocation.offset + "
+								    "(uint32_t)index, "
+								    "& updates[update_index].%s[index]);\n",
+								    api_short, get_name(g->name));
+								fprintf(output, "\t\t\t\tset->%s[index] =  updates[update_index].%s[index];\n", get_name(g->name), get_name(g->name));
+								fprintf(output, "\t\t\t}\n");
+
+								fprintf(output, "\t\t\t\tset->%s_count =  updates[update_index].%s_count;\n", get_name(g->name), get_name(g->name));
+							}
+							else {
+								if (writable) {
+									fprintf(
+									    output,
+									    "\t\t\t\tkore_%s_descriptor_set_set_texture_view_uav(set->set.device, &set->set, &updates[update_index].%s, %zu);\n",
+									    api_short, get_name(g->name), other_index);
+								}
+								else {
+									fprintf(output,
+									        "\t\t\t\tkore_%s_descriptor_set_set_texture_view_srv(set->set.device, set->set.descriptor_allocation.offset + %zu, "
 									        "& updates[update_index].%s);\n",
 									        api_short, other_index, get_name(g->name));
 								}
 
-								fprintf(output, "\tset->%s =  updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
+								fprintf(output, "\t\t\t\tset->%s =  updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
 
 								other_index += 1;
 							}
@@ -2120,10 +2246,10 @@ void kore3_export(char *directory, api_kind api) {
 							}
 
 							fprintf(output,
-							        "\t\t\tkore_%s_descriptor_set_set_texture_array_view_srv(set->set.device, &set->set, & updates[update_index].%s, %zu);\n",
+							        "\t\t\t\tkore_%s_descriptor_set_set_texture_array_view_srv(set->set.device, &set->set, &updates[update_index].%s, %zu);\n",
 							        api_short, get_name(g->name), other_index);
 
-							fprintf(output, "\tset->%s =  updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
+							fprintf(output, "\t\t\t\tset->%s =  updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
 							other_index += 1;
 						}
 						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_CUBE) {
@@ -2132,10 +2258,10 @@ void kore3_export(char *directory, api_kind api) {
 								error(context, "Cube maps can not be writable");
 							}
 							fprintf(output,
-							        "\t\t\tkore_%s_descriptor_set_set_texture_cube_view_srv(set->set.device, &set->set, & updates[update_index].%s, %zu);\n",
+							        "\t\t\tkore_%s_descriptor_set_set_texture_cube_view_srv(set->set.device, &set->set, &updates[update_index].%s, %zu);\n",
 							        api_short, get_name(g->name), other_index);
 
-							fprintf(output, "\t\t\tset->%s =  updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
+							fprintf(output, "\t\t\t\tset->%s =  updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
 							other_index += 1;
 						}
 						else {
@@ -2144,23 +2270,24 @@ void kore3_export(char *directory, api_kind api) {
 						}
 					}
 					else if (is_sampler(g->type)) {
-						fprintf(output, "\t\t\tkore_%s_descriptor_set_set_sampler(set->set.device, &set->set,  updates[update_index].%s, %zu);\n", api_short,
+						fprintf(output, "\t\t\t\tkore_%s_descriptor_set_set_sampler(set->set.device, &set->set, updates[update_index].%s, %zu);\n", api_short,
 						        get_name(g->name), sampler_index);
 						sampler_index += 1;
 					}
 					else {
 						if (!has_attribute(&g->attributes, add_name("indexed"))) {
-							fprintf(output, "\t\t\tkore_%s_descriptor_set_set_buffer_view_uav(set->set.device, &set->set,  updates[update_index].%s, %zu);\n",
+							fprintf(output, "\t\t\tkore_%s_descriptor_set_set_buffer_view_uav(set->set.device, &set->set, updates[update_index].%s, %zu);\n",
 							        api_short, get_name(g->name), other_index);
 							other_index += 1;
 						}
-						fprintf(output, "\t\t\tset->%s =  updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
+						fprintf(output, "\t\t\t\tset->%s =  updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
 					}
 
-					fprintf(output, "\t\t\tbreak;\n");
-					fprintf(output, "\t\t}\n");
+					fprintf(output, "\t\t\t\tbreak;\n");
+					fprintf(output, "\t\t\t}\n");
 				}
 
+				fprintf(output, "\t\t}\n");
 				fprintf(output, "\t}\n");
 			}
 
