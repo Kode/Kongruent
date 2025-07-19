@@ -61,8 +61,9 @@ typedef struct IDxcCompiler3Vtbl {
 	unsigned long(__stdcall *AddRef)(IDxcCompiler3 *This);
 	unsigned long(__stdcall *Release)(IDxcCompiler3 *This);
 
-	HRESULT(__stdcall *Compile)(IDxcCompiler3 *This, const DxcBuffer *pSource, const wchar_t **pArguments, uint32_t argCount,
-	                            IDxcIncludeHandler *pIncludeHandler, const IID *iid, IDxcResult **ppResult);
+	HRESULT(__stdcall *Compile)
+	(IDxcCompiler3 *This, const DxcBuffer *pSource, const wchar_t **pArguments, uint32_t argCount, IDxcIncludeHandler *pIncludeHandler, const IID *iid,
+	 IDxcResult **ppResult);
 } IDxcCompiler3Vtbl;
 
 struct IDxcCompiler3 {
