@@ -2068,7 +2068,13 @@ void kore3_export(char *directory, api_kind api) {
 					up_case(get_name(g->name), g_name);
 
 					fprintf(output, "\t\t\tcase %s_SET_UPDATE_%s:\n", set_name, g_name);
-					fprintf(output, "\t\t\t\tset->%s = updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
+					if (get_type(base_type_id)->tex_kind != TEXTURE_KIND_NONE && get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D &&
+					    get_type(g->type)->array_size == UINT32_MAX) {
+						fprintf(output, "\t\t\t\tset->%s = updates[update_index].%s.%s;\n", get_name(g->name), get_name(g->name), get_name(g->name));
+					}
+					else {
+						fprintf(output, "\t\t\t\tset->%s = updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
+					}
 					fprintf(output, "\t\t\t\tbreak;\n");
 				}
 				fprintf(output, "\t\t\t}\n");
@@ -2101,19 +2107,22 @@ void kore3_export(char *directory, api_kind api) {
 							if (t->array_size == UINT32_MAX) {
 								fprintf(output,
 								        "\t\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) *  "
-								        "updates[update_index].textures_count);\n",
-								        get_name(g->name));
+								        "updates[%zu].%s.%s_count);\n",
+								        get_name(g->name), other_index, get_name(g->name), get_name(g->name));
 								fprintf(output, "\t\tassert(set->%s != NULL);\n", get_name(g->name));
-								fprintf(output, "\t\tfor (size_t index = 0; index <  updates[update_index].textures_count; ++index) {\n");
+								fprintf(output, "\t\tfor (size_t index = 0; index <  updates[%zu].%s.%s_count; ++index) {\n", other_index, get_name(g->name),
+								        get_name(g->name));
 								fprintf(output,
 								        "\t\t\tkore_%s_descriptor_set_set_texture_view_srv(set->set.device, set->set.bindless_descriptor_allocation.offset + "
 								        "(uint32_t)index, "
-								        "&updates[update_index].%s[index]);\n",
-								        api_short, get_name(g->name));
-								fprintf(output, "\t\t\tset->%s[index] =  updates[update_index].%s[index];\n", get_name(g->name), get_name(g->name));
+								        "&updates[%zu].%s.%s[index]);\n",
+								        api_short, other_index, get_name(g->name), get_name(g->name));
+								fprintf(output, "\t\t\tset->%s[index] =  updates[%zu].%s.%s[index];\n", get_name(g->name), other_index, get_name(g->name),
+								        get_name(g->name));
 								fprintf(output, "\t\t}\n");
 
-								fprintf(output, "\t\tset->%s_count =  updates[update_index].%s_count;\n", get_name(g->name), get_name(g->name));
+								fprintf(output, "\t\tset->%s_count =  updates[%zu].%s.%s_count;\n", get_name(g->name), other_index, get_name(g->name),
+								        get_name(g->name));
 							}
 							else {
 								if (writable) {
@@ -2212,20 +2221,23 @@ void kore3_export(char *directory, api_kind api) {
 							if (t->array_size == UINT32_MAX) {
 								fprintf(output,
 								        "\t\t\t\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) *  "
-								        "updates[update_index].textures_count);\n",
-								        get_name(g->name));
+								        "updates[update_index].%s.%s_count);\n",
+								        get_name(g->name), get_name(g->name), get_name(g->name));
 								fprintf(output, "\t\t\tassert(set->%s != NULL);\n", get_name(g->name));
-								fprintf(output, "\t\t\tfor (size_t index = 0; index <  updates[update_index].textures_count; ++index) {\n");
+								fprintf(output, "\t\t\tfor (size_t index = 0; index <  updates[update_index].%s.%s_count; ++index) {\n", get_name(g->name),
+								        get_name(g->name));
 								fprintf(
 								    output,
 								    "\t\t\t\t\tkore_%s_descriptor_set_set_texture_view_srv(set->set.device, set->set.bindless_descriptor_allocation.offset + "
 								    "(uint32_t)index, "
-								    "& updates[update_index].%s[index]);\n",
-								    api_short, get_name(g->name));
-								fprintf(output, "\t\t\t\tset->%s[index] =  updates[update_index].%s[index];\n", get_name(g->name), get_name(g->name));
+								    "&updates[update_index].%s.%s[index]);\n",
+								    api_short, get_name(g->name), get_name(g->name));
+								fprintf(output, "\t\t\t\tset->%s[index] =  updates[update_index].%s.%s[index];\n", get_name(g->name), get_name(g->name),
+								        get_name(g->name));
 								fprintf(output, "\t\t\t}\n");
 
-								fprintf(output, "\t\t\t\tset->%s_count =  updates[update_index].%s_count;\n", get_name(g->name), get_name(g->name));
+								fprintf(output, "\t\t\t\tset->%s_count =  updates[update_index].%s.%s_count;\n", get_name(g->name), get_name(g->name),
+								        get_name(g->name));
 							}
 							else {
 								if (writable) {
