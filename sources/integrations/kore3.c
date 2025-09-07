@@ -935,6 +935,9 @@ void kore3_export(char *directory, api_kind api) {
 					// type *t = get_type(get_global(d.global)->type);
 					fprintf(output, "\t\t%s_SET_UPDATE_%s,\n", upper_set_name, upper_definition_name);
 				}
+				else if (is_sampler(g->type)) {
+					fprintf(output, "\t\t%s_SET_UPDATE_%s,\n", upper_set_name, upper_definition_name);
+				}
 			}
 			fprintf(output, "\t} kind;\n");
 
@@ -960,6 +963,9 @@ void kore3_export(char *directory, api_kind api) {
 					else {
 						fprintf(output, "\t\tkore_gpu_texture_view %s;\n", get_name(g->name));
 					}
+				}
+				else if (is_sampler(g->type)) {
+					fprintf(output, "\t\tkore_gpu_sampler *%s;\n", get_name(g->name));
 				}
 			}
 			fprintf(output, "\t};\n");
@@ -2048,6 +2054,7 @@ void kore3_export(char *directory, api_kind api) {
 				        bindless_count, sampler_count);
 
 				fprintf(output, "\t\tfor (uint32_t update_index = 0; update_index < updates_count; ++update_index) {\n");
+				fprintf(output, "\t\t\tswitch (updates[update_index].kind) {\n");
 
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					global *g            = get_global(set->globals.globals[global_index]);
@@ -2060,11 +2067,11 @@ void kore3_export(char *directory, api_kind api) {
 					char g_name[256];
 					up_case(get_name(g->name), g_name);
 
-					fprintf(output, "\t\t\tswitch (updates[update_index].kind) {\n");
 					fprintf(output, "\t\t\tcase %s_SET_UPDATE_%s:\n", set_name, g_name);
 					fprintf(output, "\t\t\t\tset->%s = updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
-					fprintf(output, "\t\t\t}\n");
+					fprintf(output, "\t\t\t\tbreak;\n");
 				}
+				fprintf(output, "\t\t\t}\n");
 
 				fprintf(output, "\t\t}\n");
 
@@ -2101,7 +2108,7 @@ void kore3_export(char *directory, api_kind api) {
 								fprintf(output,
 								        "\t\t\tkore_%s_descriptor_set_set_texture_view_srv(set->set.device, set->set.bindless_descriptor_allocation.offset + "
 								        "(uint32_t)index, "
-								        "& updates[update_index].%s[index]);\n",
+								        "&updates[update_index].%s[index]);\n",
 								        api_short, get_name(g->name));
 								fprintf(output, "\t\t\tset->%s[index] =  updates[update_index].%s[index];\n", get_name(g->name), get_name(g->name));
 								fprintf(output, "\t\t}\n");
@@ -2110,13 +2117,13 @@ void kore3_export(char *directory, api_kind api) {
 							}
 							else {
 								if (writable) {
-									fprintf(output, "\t\tkore_%s_descriptor_set_set_texture_view_uav(set->set.device, &set->set, set->%s, %zu);\n", api_short,
+									fprintf(output, "\t\tkore_%s_descriptor_set_set_texture_view_uav(set->set.device, &set->set, &set->%s, %zu);\n", api_short,
 									        get_name(g->name), other_index);
 								}
 								else {
 									fprintf(output,
 									        "\t\tkore_%s_descriptor_set_set_texture_view_srv(set->set.device, set->set.descriptor_allocation.offset + %zu, "
-									        "set->%s);\n",
+									        "&set->%s);\n",
 									        api_short, other_index, get_name(g->name));
 								}
 
@@ -2129,7 +2136,7 @@ void kore3_export(char *directory, api_kind api) {
 								error(context, "Texture arrays can not be writable");
 							}
 
-							fprintf(output, "\t\tkore_%s_descriptor_set_set_texture_array_view_srv(set->set.device, &set->set, set->%s, %zu);\n", api_short,
+							fprintf(output, "\t\tkore_%s_descriptor_set_set_texture_array_view_srv(set->set.device, &set->set, &set->%s, %zu);\n", api_short,
 							        get_name(g->name), other_index);
 
 							other_index += 1;
@@ -2139,7 +2146,7 @@ void kore3_export(char *directory, api_kind api) {
 								debug_context context = {0};
 								error(context, "Cube maps can not be writable");
 							}
-							fprintf(output, "\t\tkore_%s_descriptor_set_set_texture_cube_view_srv(set->set.device, &set->set, set->%s, %zu);\n", api_short,
+							fprintf(output, "\t\tkore_%s_descriptor_set_set_texture_cube_view_srv(set->set.device, &set->set, &set->%s, %zu);\n", api_short,
 							        get_name(g->name), other_index);
 
 							other_index += 1;
@@ -2150,7 +2157,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 					}
 					else if (is_sampler(g->type)) {
-						fprintf(output, "\t\tkore_%s_descriptor_set_set_sampler(set->set.device, &set->set,  set->%s, %zu);\n", api_short, get_name(g->name),
+						fprintf(output, "\t\tkore_%s_descriptor_set_set_sampler(set->set.device, &set->set, set->%s, %zu);\n", api_short, get_name(g->name),
 						        sampler_index);
 						sampler_index += 1;
 					}
@@ -2284,9 +2291,9 @@ void kore3_export(char *directory, api_kind api) {
 					}
 
 					fprintf(output, "\t\t\t\tbreak;\n");
-					fprintf(output, "\t\t\t}\n");
 				}
 
+				fprintf(output, "\t\t\t}\n");
 				fprintf(output, "\t\t}\n");
 				fprintf(output, "\t}\n");
 			}
