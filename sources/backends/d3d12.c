@@ -60,11 +60,6 @@ int compile_hlsl_to_d3d12(const char *source, uint8_t **output, size_t *outputle
 	source_buffer.Size     = strlen(source);
 	source_buffer.Encoding = DXC_CP_UTF8;
 
-	kong_log(LOG_LEVEL_INFO, "IID_IDxcResult: ");
-	for (size_t i = 0; i < sizeof(IID); ++i)
-		kong_log(LOG_LEVEL_INFO, "%02X ", ((unsigned char *)&IID_IDxcResult)[i]);
-	kong_log(LOG_LEVEL_INFO, "");
-
 	IDxcResult *compiler_result = NULL;
 	result                      = compiler->lpVtbl->Compile(compiler, &source_buffer, debug ? debug_compiler_args : compiler_args,
                                        debug ? sizeof(debug_compiler_args) / sizeof(wchar_t *) : sizeof(compiler_args) / sizeof(wchar_t *), NULL,
