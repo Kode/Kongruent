@@ -2057,7 +2057,7 @@ void kore3_export(char *directory, api_kind api) {
 					}
 				}
 
-				fprintf(output, "\tif (true) {\n");
+				fprintf(output, "\tif (kore_d3d312_desciptor_set_is_in_use(&set->set)) {\n");
 
 				fprintf(output, "\t\tkore_d3d12_device_create_descriptor_set(set->set.device, %zu, %zu, %zu, %zu, &set->set);\n", other_count, dynamic_count,
 				        bindless_count, sampler_count);
