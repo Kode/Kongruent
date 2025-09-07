@@ -778,6 +778,15 @@ void kore3_export(char *directory, api_kind api) {
 					if (t->members.m[j].type.type == float3x3_id) {
 						fprintf(output, "\tfloat pad%zu[3];\n", j);
 					}
+					else if (t->members.m[j].type.type == float_id) {
+						fprintf(output, "\tfloat pad%zu[3];\n", j);
+					}
+					else if (t->members.m[j].type.type == float2_id) {
+						fprintf(output, "\tfloat pad%zu[2];\n", j);
+					}
+					else if (t->members.m[j].type.type == float3_id) {
+						fprintf(output, "\tfloat pad%zu[1];\n", j);
+					}
 				}
 				fprintf(output, "} %s;\n\n", name);
 
