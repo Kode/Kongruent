@@ -1594,11 +1594,11 @@ void kore3_export(char *directory, api_kind api) {
 								        get_name(g->name));
 								fprintf(output, "\tassert(set->%s != NULL);\n", get_name(g->name));
 								fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
-								fprintf(
-								    output,
-								    "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
-								    "&parameters->%s[index]);\n",
-								    api_short, get_name(g->name));
+								fprintf(output,
+								        "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, "
+								        "set->set.allocations[set->set.current_allocation_index].bindless_descriptor_allocation.offset + (uint32_t)index, "
+								        "&parameters->%s[index]);\n",
+								        api_short, get_name(g->name));
 								fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(g->name), get_name(g->name));
 								fprintf(output, "\t}\n");
 
@@ -1611,7 +1611,8 @@ void kore3_export(char *directory, api_kind api) {
 								}
 								else {
 									fprintf(output,
-									        "\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.descriptor_allocation.offset + %zu, "
+									        "\tkore_%s_descriptor_set_set_texture_view_srv(device, "
+									        "set->set.allocations[set->set.current_allocation_index].descriptor_allocation.offset + %zu, "
 									        "&parameters->%s);\n",
 									        api_short, other_index, get_name(g->name));
 								}
@@ -2104,7 +2105,8 @@ void kore3_export(char *directory, api_kind api) {
 								fprintf(output, "\t\tfor (size_t index = 0; index <  updates[update_index].%s.%s_count; ++index) {\n", get_name(g->name),
 								        get_name(g->name));
 								fprintf(output,
-								        "\t\t\t\tkore_%s_descriptor_set_set_texture_view_srv(set->set.device, set->set.bindless_descriptor_allocation.offset + "
+								        "\t\t\t\tkore_%s_descriptor_set_set_texture_view_srv(set->set.device, "
+								        "set->set.allocations[set->set.current_allocation_index].bindless_descriptor_allocation.offset + "
 								        "(uint32_t)index, "
 								        "&updates[update_index].%s.%s[index]);\n",
 								        api_short, get_name(g->name), get_name(g->name));
@@ -2123,7 +2125,8 @@ void kore3_export(char *directory, api_kind api) {
 								}
 								else {
 									fprintf(output,
-									        "\t\t\tkore_%s_descriptor_set_set_texture_view_srv(set->set.device, set->set.descriptor_allocation.offset + %zu, "
+									        "\t\t\tkore_%s_descriptor_set_set_texture_view_srv(set->set.device, "
+									        "set->set.allocations[set->set.current_allocation_index].descriptor_allocation.offset + %zu, "
 									        "& updates[update_index].%s);\n",
 									        api_short, other_index, get_name(g->name));
 								}
