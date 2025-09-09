@@ -912,6 +912,8 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "void kong_create_%s_set(kore_gpu_device *device, const %s_parameters *parameters, %s_set *set);\n", get_name(set->name),
 			        get_name(set->name), get_name(set->name));
 
+			fprintf(output, "void kong_destroy_%s_set(%s_set *set);\n", get_name(set->name), get_name(set->name));
+
 			fprintf(output, "void kong_set_descriptor_set_%s(kore_gpu_command_list *list, %s_set *set", get_name(set->name), get_name(set->name));
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 				global *g = get_global(set->globals.globals[global_index]);
@@ -2015,6 +2017,12 @@ void kore3_export(char *directory, api_kind api) {
 
 				fprintf(output, "}\n\n");
 			}
+
+			fprintf(output, "void kong_destroy_%s_set(%s_set *set) {\n", get_name(set->name), get_name(set->name));
+			if (api == API_DIRECT3D12) {
+				fprintf(output, "\tkore_d3d12_descriptor_set_destroy(&set->set);\n");
+			}
+			fprintf(output, "}\n");
 
 			fprintf(output, "void kong_update_%s_set(%s_set *set, %s_set_update *updates, uint32_t updates_count) {\n", get_name(set->name),
 			        get_name(set->name), get_name(set->name));
