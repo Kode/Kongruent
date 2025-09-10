@@ -2252,6 +2252,9 @@ void kore3_export(char *directory, api_kind api) {
 							fprintf(output, "\tkore_%s_descriptor_set_prepare_uav_buffer(list, set->%s, 0, UINT32_MAX);\n", api_short, get_name(g->name));
 						}
 					}
+					else if (g->type == bvh_type_id) {
+						fprintf(output, "\tkore_d3d12_descriptor_set_prepare_raytracing_hierarchy(list, set->%s);\n", get_name(g->name));
+					}
 				}
 			}
 			else if (api == API_METAL) {
