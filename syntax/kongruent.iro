@@ -27,7 +27,7 @@ file_extensions []     = mysample;
 ## Constants
 ################################################################
 
-__MY_CONSTANT \= (\b[a-z][a-z0-9]*)
+__MY_CONSTANT \= (\b[a-z][a-z0-9_]*)
 
 ################################################################
 ## Styles
@@ -115,6 +115,31 @@ main : context {
       styles []       = .punctuation;
    }
    
+   : pattern {
+      regex          \= (:)
+      styles []       = .punctuation;
+   }
+   
+   : pattern {
+      regex          \= (\.)
+      styles []       = .punctuation;
+   }
+   
+   : pattern {
+      regex          \= (=)
+      styles []       = .punctuation;
+   }
+   
+   : inline_push {
+      regex          \= (#\[)
+      styles []       = .punctuation;
+      default_style   = .text
+      : pop {
+         regex       \= (\])
+         styles []    = .punctuation;
+      }
+   }
+
    : inline_push {
       regex          \= (\")
       styles []       = .punctuation;
