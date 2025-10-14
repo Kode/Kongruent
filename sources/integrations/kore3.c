@@ -2257,9 +2257,10 @@ void kore3_export(char *directory, api_kind api) {
 
 					if (!get_type(g->type)->built_in) {
 						if (!has_attribute(&g->attributes, add_name("indexed"))) {
-							fprintf(output,
-							        "\t\t\tkore_vulkan_descriptor_set_set_uniform_buffer_descriptor(set->set.device, &set->set, updates[update_index].%s, %zu);\n",
-							        get_name(g->name), other_index);
+							fprintf(
+							    output,
+							    "\t\t\tkore_vulkan_descriptor_set_set_uniform_buffer_descriptor(set->set.device, &set->set, updates[update_index].%s, %zu);\n",
+							    get_name(g->name), other_index);
 							other_index += 1;
 						}
 						fprintf(output, "\t\t\tset->%s = updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
