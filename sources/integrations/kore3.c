@@ -1521,51 +1521,10 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, "extern WGPUBindGroupLayout %s_set_layout;\n\n", get_name(set->name));
 			}
 
-			fprintf(output, "void kong_create_%s_set(kore_gpu_device *device, const %s_parameters *parameters, %s_set *set) {\n", get_name(set->name),
+			fprintf(output, "void kong_fill_%s_set(kore_gpu_device *device, const %s_parameters *parameters, %s_set *set) {\n", get_name(set->name),
 			        get_name(set->name), get_name(set->name));
 
 			if (api == API_DIRECT3D12) {
-				size_t other_count    = 0;
-				size_t sampler_count  = 0;
-				size_t dynamic_count  = 0;
-				size_t bindless_count = 0;
-
-				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
-					global *g = get_global(set->globals.globals[global_index]);
-
-					if (!get_type(g->type)->built_in) {
-						if (has_attribute(&g->attributes, add_name("indexed"))) {
-							dynamic_count += 1;
-						}
-						else {
-							other_count += 1;
-						}
-					}
-					else if (is_texture(g->type)) {
-						type *t = get_type(g->type);
-						if (t->array_size == UINT32_MAX) {
-							bindless_count += 1;
-						}
-						else {
-							other_count += 1;
-						}
-					}
-					else if (is_sampler(g->type)) {
-						sampler_count += 1;
-					}
-					else {
-						if (has_attribute(&g->attributes, add_name("indexed"))) {
-							dynamic_count += 1;
-						}
-						else {
-							other_count += 1;
-						}
-					}
-				}
-
-				fprintf(output, "\tkore_%s_device_create_descriptor_set(device, %zu, %zu, %zu, %zu, &set->set);\n", api_short, other_count, dynamic_count,
-				        bindless_count, sampler_count);
-
 				size_t other_index   = 0;
 				size_t sampler_index = 0;
 
@@ -2018,13 +1977,7 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, "}\n\n");
 			}
 
-			fprintf(output, "void kong_destroy_%s_set(%s_set *set) {\n", get_name(set->name), get_name(set->name));
-			if (api == API_DIRECT3D12) {
-				fprintf(output, "\tkore_d3d12_descriptor_set_destroy(&set->set);\n");
-			}
-			fprintf(output, "}\n");
-
-			fprintf(output, "void kong_update_%s_set(%s_set *set, %s_set_update *updates, uint32_t updates_count) {\n", get_name(set->name),
+			fprintf(output, "void kong_create_%s_set(kore_gpu_device *device, const %s_parameters *parameters, %s_set *set) {\n", get_name(set->name),
 			        get_name(set->name), get_name(set->name));
 
 			if (api == API_DIRECT3D12) {
@@ -2066,7 +2019,375 @@ void kore3_export(char *directory, api_kind api) {
 					}
 				}
 
+				fprintf(output, "\tkore_d3d12_device_create_descriptor_set(device, %zu, %zu, %zu, %zu, &set->set);\n", other_count, dynamic_count,
+				        bindless_count, sampler_count);
+				fprintf(output, "kong_fill_d3d12_set(device, parameters, set);\n");
+
+				fprintf(output, "}\n\n");
+			}
+			else if (api == API_METAL) {
+				fprintf(output, "\tid<MTLDevice> metal_device = (__bridge id<MTLDevice>)device->metal.device;\n\n");
+
+				size_t index = 0;
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g = get_global(set->globals.globals[global_index]);
+
+					if (!get_type(g->type)->built_in && !has_attribute(&g->attributes, add_name("indexed"))) {
+						fprintf(output, "\tMTLArgumentDescriptor* descriptor%zu = [MTLArgumentDescriptor argumentDescriptor];\n", index);
+						fprintf(output, "\tdescriptor%zu.index = %zu;\n", index, index);
+						fprintf(output, "\tdescriptor%zu.dataType = MTLDataTypePointer;\n\n", index);
+						index += 1;
+					}
+					else if (is_texture(g->type)) {
+						fprintf(output, "\tMTLArgumentDescriptor* descriptor%zu = [MTLArgumentDescriptor argumentDescriptor];\n", index);
+						fprintf(output, "\tdescriptor%zu.index = %zu;\n", index, index);
+						fprintf(output, "\tdescriptor%zu.dataType = MTLDataTypeTexture;\n\n", index);
+						index += 1;
+					}
+					else if (is_sampler(g->type)) {
+						fprintf(output, "\tMTLArgumentDescriptor* descriptor%zu = [MTLArgumentDescriptor argumentDescriptor];\n", index);
+						fprintf(output, "\tdescriptor%zu.index = %zu;\n", index, index);
+						fprintf(output, "\tdescriptor%zu.dataType = MTLDataTypeSampler;\n\n", index);
+						index += 1;
+					}
+				}
+
+				fprintf(output, "\tid<MTLArgumentEncoder> argument_encoder = [metal_device newArgumentEncoderWithArguments: @[");
+
+				bool first = true;
+				index      = 0;
+
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g = get_global(set->globals.globals[global_index]);
+					if (!has_attribute(&g->attributes, add_name("indexed"))) {
+						if (first) {
+							fprintf(output, "descriptor%zu", index);
+							first = false;
+						}
+						else {
+							fprintf(output, ", descriptor%zu", index);
+						}
+						index += 1;
+					}
+				}
+				fprintf(output, "]];\n\n");
+
+				fprintf(output, "\tkore_metal_device_create_descriptor_set_buffer(device, [argument_encoder encodedLength], &set->set.argument_buffer);\n\n");
+
+				fprintf(output, "\tid<MTLBuffer> metal_argument_buffer = (__bridge id<MTLBuffer>)set->set.argument_buffer.metal.buffer;\n\n");
+				fprintf(output, "\t[argument_encoder setArgumentBuffer:metal_argument_buffer offset:0];\n\n");
+
+				index = 0;
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g = get_global(set->globals.globals[global_index]);
+
+					fprintf(output, "\t{\n");
+
+					if (!get_type(g->type)->built_in && !has_attribute(&g->attributes, add_name("indexed"))) {
+						fprintf(output, "\t\tid<MTLBuffer> buffer = (__bridge id<MTLBuffer>)parameters->%s->metal.buffer;\n", get_name(g->name));
+						fprintf(output, "\t\t[argument_encoder setBuffer: buffer offset: 0 atIndex: %zu];\n", index);
+						index += 1;
+					}
+					else if (is_texture(g->type)) {
+						fprintf(output, "\t\tid<MTLTexture> texture = (__bridge id<MTLTexture>)parameters->%s.texture->metal.texture;\n", get_name(g->name));
+
+						if (get_type(g->type)->tex_kind != TEXTURE_KIND_NONE) {
+							if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D) {
+								fprintf(output,
+								        "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureType2D "
+								        "levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) "
+								        "slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n",
+								        get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
+							}
+							else if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
+								fprintf(
+								    output,
+								    "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureType2DArray "
+								    "levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) "
+								    "slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n",
+								    get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
+							}
+							else if (get_type(g->type)->tex_kind == TEXTURE_KIND_CUBE) {
+								fprintf(output,
+								        "\t\tid<MTLTexture> view = [texture newTextureViewWithPixelFormat:texture.pixelFormat textureType:MTLTextureTypeCube "
+								        "levels:NSMakeRange(parameters->%s.base_mip_level, parameters->%s.mip_level_count) "
+								        "slices:NSMakeRange(parameters->%s.base_array_layer, parameters->%s.array_layer_count)];\n",
+								        get_name(g->name), get_name(g->name), get_name(g->name), get_name(g->name));
+							}
+							else {
+								// TODO
+								assert(false);
+							}
+						}
+
+						fprintf(output, "\t\t[argument_encoder setTexture: view atIndex: %zu];\n", index);
+						fprintf(output, "\t\tset->%s_view = (__bridge_retained void*)view;\n", get_name(g->name));
+						index += 1;
+					}
+					else if (is_sampler(g->type)) {
+						fprintf(output, "\t\tid<MTLSamplerState> sampler = (__bridge id<MTLSamplerState>)parameters->%s->metal.sampler;\n", get_name(g->name));
+						fprintf(output, "\t\t[argument_encoder setSamplerState: sampler atIndex: %zu];\n", index);
+						index += 1;
+					}
+
+					fprintf(output, "\t\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+
+					fprintf(output, "\t}\n\n");
+				}
+
+				fprintf(output, "}\n\n");
+			}
+			else if (api == API_VULKAN) {
+				size_t other_count    = 0;
+				size_t dynamic_count  = 0;
+				size_t bindless_count = 0;
+
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g = get_global(set->globals.globals[global_index]);
+
+					if (!get_type(g->type)->built_in) {
+						if (has_attribute(&g->attributes, add_name("indexed"))) {
+							dynamic_count += 1;
+						}
+						else {
+							other_count += 1;
+						}
+					}
+					else if (is_texture(g->type)) {
+						type *t = get_type(g->type);
+						if (t->array_size == UINT32_MAX) {
+							bindless_count += 1;
+						}
+						else {
+							other_count += 1;
+						}
+					}
+					else if (is_sampler(g->type)) {
+						other_count += 1;
+					}
+					else {
+						if (has_attribute(&g->attributes, add_name("indexed"))) {
+							dynamic_count += 1;
+						}
+						else {
+							other_count += 1;
+						}
+					}
+				}
+
+				fprintf(output, "\tkore_vulkan_device_create_descriptor_set(device, &%s_set_layout, &set->set);\n", get_name(set->name));
+
+				size_t other_index = 0;
+
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g            = get_global(set->globals.globals[global_index]);
+					bool    readable     = set->globals.readable[global_index];
+					bool    writable     = set->globals.writable[global_index];
+					type_id base_type_id = get_type(g->type)->base != NO_TYPE ? get_type(g->type)->base : g->type;
+
+					if (!get_type(g->type)->built_in) {
+						if (has_attribute(&g->attributes, add_name("indexed"))) {
+							fprintf(output, "\tkore_%s_descriptor_set_set_dynamic_uniform_buffer_descriptor(device, &set->set, parameters->%s, %u, %zu);\n",
+							        api_short, get_name(g->name), struct_size(g->type), other_index);
+						}
+						else {
+							fprintf(output, "\tkore_%s_descriptor_set_set_uniform_buffer_descriptor(device, &set->set, parameters->%s, %zu);\n", api_short,
+							        get_name(g->name), other_index);
+						}
+						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+						other_index += 1;
+					}
+					else if (base_type_id == bvh_type_id) {
+						fprintf(output, "\tkore_%s_descriptor_set_set_bvh_view_srv(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
+						        other_index);
+						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+						other_index += 1;
+					}
+					else if (get_type(base_type_id)->tex_kind != TEXTURE_KIND_NONE) {
+						if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D) {
+							type *t = get_type(g->type);
+							if (t->array_size == UINT32_MAX) {
+								fprintf(output, "\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) * parameters->textures_count);\n",
+								        get_name(g->name));
+								fprintf(output, "\tassert(set->%s != NULL);\n", get_name(g->name));
+								fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
+								fprintf(
+								    output,
+								    "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
+								    "&parameters->%s[index]);\n",
+								    api_short, get_name(g->name));
+								fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(g->name), get_name(g->name));
+								fprintf(output, "\t}\n");
+
+								fprintf(output, "\tset->%s_count = parameters->%s_count;\n", get_name(g->name), get_name(g->name));
+							}
+							else {
+								if (readable | writable) {
+									fprintf(output, "\tkore_vulkan_descriptor_set_set_storage_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
+									        get_name(g->name), other_index);
+								}
+								else {
+									fprintf(output, "\tkore_vulkan_descriptor_set_set_sampled_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
+									        get_name(g->name), other_index);
+								}
+
+								fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+
+								other_index += 1;
+							}
+						}
+						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
+							if (writable) {
+								debug_context context = {0};
+								error(context, "Texture arrays can not be writable");
+							}
+
+							fprintf(output, "\tkore_vulkan_descriptor_set_set_sampled_image_array_descriptor(device, &set->set, &parameters->%s, %zu);\n",
+							        get_name(g->name), other_index);
+
+							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+							other_index += 1;
+						}
+						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_CUBE) {
+							if (writable) {
+								debug_context context = {0};
+								error(context, "Cube maps can not be writable");
+							}
+							fprintf(output, "\tkore_vulkan_descriptor_set_set_sampled_cube_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
+							        get_name(g->name), other_index);
+
+							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+							other_index += 1;
+						}
+					}
+					else if (is_sampler(g->type)) {
+						fprintf(output, "\tkore_%s_descriptor_set_set_sampler(device, &set->set, parameters->%s, %zu);\n", api_short, get_name(g->name),
+						        other_index);
+						other_index += 1;
+					}
+					else {
+						if (has_attribute(&g->attributes, add_name("indexed"))) {
+							fprintf(output, "\tkore_%s_descriptor_set_set_dynamic_storage_buffer_descriptor(device, &set->set, parameters->%s, %zu);\n",
+							        api_short, get_name(g->name), other_index);
+						}
+						else {
+							fprintf(output, "\tkore_%s_descriptor_set_set_storage_buffer_descriptor(device, &set->set, parameters->%s, %zu);\n", api_short,
+							        get_name(g->name), other_index);
+						}
+						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
+						other_index += 1;
+					}
+				}
+				fprintf(output, "}\n\n");
+			}
+			else if (api == API_WEBGPU) {
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g = get_global(set->globals.globals[global_index]);
+
+					if (is_texture(g->type)) {
+						fprintf(output, "\tWGPUTextureViewDescriptor texture_view_descriptor%zu = {\n", global_index);
+						fprintf(output, "\t\t.format = kore_webgpu_convert_texture_format_to_webgpu(parameters->%s.texture->webgpu.format),\n",
+						        get_name(g->name));
+						if (get_type(g->type)->tex_kind != TEXTURE_KIND_NONE) {
+							if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D) {
+								fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2D,\n");
+							}
+							else if (get_type(g->type)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
+								fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_2DArray,\n");
+							}
+							else if (get_type(g->type)->tex_kind == TEXTURE_KIND_CUBE) {
+								fprintf(output, "\t\t.dimension = WGPUTextureViewDimension_Cube,\n");
+							}
+							else {
+								// TODO
+								assert(false);
+							}
+						}
+						fprintf(output, "\t\t.baseArrayLayer  = parameters->%s.base_array_layer,\n", get_name(g->name));
+						fprintf(output, "\t\t.arrayLayerCount = parameters->%s.array_layer_count,\n", get_name(g->name));
+						fprintf(output, "\t\t.baseMipLevel    = parameters->%s.base_mip_level,\n", get_name(g->name));
+						fprintf(output, "\t\t.mipLevelCount   = parameters->%s.mip_level_count,\n", get_name(g->name));
+						fprintf(output, "\t};\n\n");
+					}
+				}
+
+				size_t index = 0;
+
+				fprintf(output, "\tconst WGPUBindGroupEntry entries[] = {\n");
+
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g = get_global(set->globals.globals[global_index]);
+
+					if (!get_type(g->type)->built_in) {
+						fprintf(output, "\t\t{\n");
+						fprintf(output, "\t\t\t.binding = %zu,\n", index);
+						fprintf(output, "\t\t\t.buffer  = parameters->%s->webgpu.buffer,\n", get_name(g->name));
+						fprintf(output, "\t\t\t.offset  = 0,\n");
+						fprintf(output, "\t\t\t.size    = align_pow2(%u, 256),\n", struct_size(g->type));
+						fprintf(output, "\t\t},\n");
+
+						index += 1;
+					}
+					else if (is_texture(g->type)) {
+						fprintf(output, "\t\t{\n");
+						fprintf(output, "\t\t\t.binding     = %zu,\n", index);
+						fprintf(output, "\t\t\t.textureView = wgpuTextureCreateView(parameters->%s.texture->webgpu.texture, &texture_view_descriptor%zu),\n",
+						        get_name(g->name), global_index);
+						fprintf(output, "\t\t},\n");
+
+						index += 1;
+					}
+					else if (is_sampler(g->type)) {
+						fprintf(output, "\t\t{\n");
+						fprintf(output, "\t\t\t.binding = %zu,\n", index);
+						fprintf(output, "\t\t\t.sampler = parameters->%s->webgpu.sampler,\n", get_name(g->name));
+						fprintf(output, "\t\t},\n");
+
+						index += 1;
+					}
+				}
+
+				fprintf(output, "\t};\n\n");
+
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g = get_global(set->globals.globals[global_index]);
+					fprintf(output, "\tset->%s = parameters->%s;\n\n", get_name(g->name), get_name(g->name));
+				}
+
+				fprintf(output, "\tWGPUBindGroupDescriptor bind_group_descriptor = {\n");
+				fprintf(output, "\t\t.layout     = %s_set_layout,\n", get_name(set->name));
+				fprintf(output, "\t\t.entries    = entries,\n");
+				fprintf(output, "\t\t.entryCount = %zu,\n", set->globals.size);
+				fprintf(output, "\t};\n");
+
+				fprintf(output, "\tWGPUBindGroup group = wgpuDeviceCreateBindGroup(device->webgpu.device, &bind_group_descriptor);\n\n");
+
+				fprintf(output, "\tkore_webgpu_device_create_descriptor_set(device, group, &set->set);\n");
+
+				fprintf(output, "}\n\n");
+			}
+			else if (api == API_OPENGL) {
+				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
+					global *g = get_global(set->globals.globals[global_index]);
+					fprintf(output, "\tset->%s = parameters->%s;\n\n", get_name(g->name), get_name(g->name));
+				}
+
+				fprintf(output, "}\n\n");
+			}
+
+			fprintf(output, "void kong_destroy_%s_set(%s_set *set) {\n", get_name(set->name), get_name(set->name));
+			if (api == API_DIRECT3D12) {
+				fprintf(output, "\tkore_d3d12_descriptor_set_destroy(&set->set);\n");
+			}
+			fprintf(output, "}\n");
+
+			fprintf(output, "void kong_update_%s_set(%s_set *set, %s_set_update *updates, uint32_t updates_count) {\n", get_name(set->name),
+			        get_name(set->name), get_name(set->name));
+
+			if (api == API_DIRECT3D12) {
 				fprintf(output, "\tkore_d3d312_desciptor_set_use_free_allocation(&set->set);\n\n");
+
+				fprintf(output, "kong_fill_d3d12_set(device, parameters, set);\n");
 
 				fprintf(output, "\tfor (uint32_t update_index = 0; update_index < updates_count; ++update_index) {\n");
 				fprintf(output, "\t\tswitch (updates[update_index].kind) {\n");
@@ -2257,9 +2578,10 @@ void kore3_export(char *directory, api_kind api) {
 
 					if (!get_type(g->type)->built_in) {
 						if (!has_attribute(&g->attributes, add_name("indexed"))) {
-							fprintf(output,
-							        "\t\t\tkore_vulkan_descriptor_set_set_uniform_buffer_descriptor(set->set.device, &set->set, updates[update_index].%s, %zu);\n",
-							        get_name(g->name), other_index);
+							fprintf(
+							    output,
+							    "\t\t\tkore_vulkan_descriptor_set_set_uniform_buffer_descriptor(set->set.device, &set->set, updates[update_index].%s, %zu);\n",
+							    get_name(g->name), other_index);
 							other_index += 1;
 						}
 						fprintf(output, "\t\t\tset->%s = updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
