@@ -1824,7 +1824,7 @@ void kore3_export(char *directory, api_kind api) {
 								fprintf(output, "\tset->%s_count = parameters->%s_count;\n", get_name(g->name), get_name(g->name));
 							}
 							else {
-								if (readable | writable) {
+								if (readable || writable) {
 									fprintf(output, "\tkore_vulkan_descriptor_set_set_storage_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
 									        get_name(g->name), other_index);
 								}
@@ -2565,6 +2565,7 @@ void kore3_export(char *directory, api_kind api) {
 
 				for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
 					global *g            = get_global(set->globals.globals[global_index]);
+					bool    readable     = set->globals.readable[global_index];
 					bool    writable     = set->globals.writable[global_index];
 					type_id base_type_id = get_type(g->type)->base != NO_TYPE ? get_type(g->type)->base : g->type;
 
@@ -2617,20 +2618,15 @@ void kore3_export(char *directory, api_kind api) {
 								        get_name(g->name));
 							}
 							else {
-								if (writable) {
-									fprintf(
-									    output,
-									    "\t\t\tkore_vulkan_descriptor_set_set_texture_view_uav(set->set.device, &set->set, &updates[update_index].%s, %zu);\n",
-									    get_name(g->name), other_index);
+								if (readable || writable) {
+									fprintf(output, "\t\t\tkore_vulkan_descriptor_set_set_storage_image_descriptor(set->set.device, &set->set, &updates[update_index].%s, %zu);\n",
+									        get_name(g->name), other_index);
 								}
 								else {
-									fprintf(output,
-									        "\t\t\tkore_vulkan_descriptor_set_set_texture_view_srv(set->set.device, "
-									        "set->set.allocations[set->set.current_allocation_index].descriptor_allocation.offset + %zu, "
-									        "& updates[update_index].%s);\n",
-									        other_index, get_name(g->name));
+									fprintf(output, "\t\t\tkore_vulkan_descriptor_set_set_sampled_image_descriptor(set->set.device, &set->set, &updates[update_index].%s, %zu);\n",
+									        get_name(g->name), other_index);
 								}
-
+								
 								fprintf(output, "\t\t\tset->%s =  updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
 
 								other_index += 1;
