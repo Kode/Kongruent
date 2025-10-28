@@ -2619,14 +2619,18 @@ void kore3_export(char *directory, api_kind api) {
 							}
 							else {
 								if (readable || writable) {
-									fprintf(output, "\t\t\tkore_vulkan_descriptor_set_set_storage_image_descriptor(set->set.device, &set->set, &updates[update_index].%s, %zu);\n",
+									fprintf(output,
+									        "\t\t\tkore_vulkan_descriptor_set_set_storage_image_descriptor(set->set.device, &set->set, "
+									        "&updates[update_index].%s, %zu);\n",
 									        get_name(g->name), other_index);
 								}
 								else {
-									fprintf(output, "\t\t\tkore_vulkan_descriptor_set_set_sampled_image_descriptor(set->set.device, &set->set, &updates[update_index].%s, %zu);\n",
+									fprintf(output,
+									        "\t\t\tkore_vulkan_descriptor_set_set_sampled_image_descriptor(set->set.device, &set->set, "
+									        "&updates[update_index].%s, %zu);\n",
 									        get_name(g->name), other_index);
 								}
-								
+
 								fprintf(output, "\t\t\tset->%s =  updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
 
 								other_index += 1;
@@ -2640,7 +2644,8 @@ void kore3_export(char *directory, api_kind api) {
 
 							fprintf(
 							    output,
-							    "\t\t\tkore_vulkan_descriptor_set_set_texture_array_view_srv(set->set.device, &set->set, &updates[update_index].%s, %zu);\n",
+							    "\t\t\tkore_vulkan_descriptor_set_set_sampled_image_array_descriptor(set->set.device, &set->set, &updates[update_index].%s, "
+							    "%zu);\n",
 							    get_name(g->name), other_index);
 
 							fprintf(output, "\t\t\tset->%s =  updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
@@ -2652,7 +2657,8 @@ void kore3_export(char *directory, api_kind api) {
 								error(context, "Cube maps can not be writable");
 							}
 							fprintf(output,
-							        "\t\tkore_vulkan_descriptor_set_set_texture_cube_view_srv(set->set.device, &set->set, &updates[update_index].%s, %zu);\n",
+							        "\t\t\tkore_vulkan_descriptor_set_set_sampled_cube_image_descriptor(set->set.device, &set->set, &updates[update_index].%s, "
+							        "%zu);\n",
 							        get_name(g->name), other_index);
 
 							fprintf(output, "\t\t\tset->%s =  updates[update_index].%s;\n", get_name(g->name), get_name(g->name));
