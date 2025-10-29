@@ -1553,7 +1553,7 @@ void kore3_export(char *directory, api_kind api) {
 								fprintf(output,
 								        "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, "
 								        "set->set.allocations[set->set.current_allocation_index].bindless_descriptor_allocation.offset + (uint32_t)index, "
-								        "&parameters->%s[index]);\n",
+								        "&set->%s[index]);\n",
 								        api_short, get_name(g->name));
 								fprintf(output, "\t}\n");
 							}
