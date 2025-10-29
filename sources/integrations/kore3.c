@@ -2015,12 +2015,7 @@ void kore3_export(char *directory, api_kind api) {
 					global *g            = get_global(set->globals.globals[global_index]);
 					type_id base_type_id = get_type(g->type)->base != NO_TYPE ? get_type(g->type)->base : g->type;
 
-					if (!get_type(g->type)->built_in) {
-						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
-					}
-					else if (base_type_id == bvh_type_id) {
-					}
-					else if (get_type(base_type_id)->tex_kind != TEXTURE_KIND_NONE) {
+					if (get_type(base_type_id)->tex_kind != TEXTURE_KIND_NONE) {
 						if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D) {
 							type *t = get_type(g->type);
 							if (t->array_size == UINT32_MAX) {
@@ -2037,19 +2032,9 @@ void kore3_export(char *directory, api_kind api) {
 								fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 							}
 						}
-						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
-							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
-						}
-						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_CUBE) {
-							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
-						}
 						else {
-							// TODO
-							assert(false);
+							fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 						}
-					}
-					else if (is_sampler(g->type)) {
-						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 					}
 					else {
 						fprintf(output, "\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
