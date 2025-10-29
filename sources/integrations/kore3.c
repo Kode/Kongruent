@@ -1564,6 +1564,7 @@ void kore3_export(char *directory, api_kind api) {
 					}
 				}
 				else if (is_sampler(g->type)) {
+					fprintf(output, "\t\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
 				}
 				else {
 					fprintf(output, "\t\tset->%s = parameters->%s;\n", get_name(g->name), get_name(g->name));
