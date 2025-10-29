@@ -1521,8 +1521,7 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, "extern WGPUBindGroupLayout %s_set_layout;\n\n", get_name(set->name));
 			}
 
-			fprintf(output, "void kong_fill_%s_set(kore_gpu_device *device, const %s_parameters *parameters, %s_set *set) {\n", get_name(set->name),
-			        get_name(set->name), get_name(set->name));
+			fprintf(output, "void kong_fill_%s_set(kore_gpu_device *device, %s_set *set) {\n", get_name(set->name), get_name(set->name));
 
 			if (api == API_DIRECT3D12) {
 				size_t other_index   = 0;
@@ -2059,7 +2058,7 @@ void kore3_export(char *directory, api_kind api) {
 
 				fprintf(output, "\n");
 
-				fprintf(output, "\tkong_fill_%s_set(device, parameters, set);\n", get_name(set->name));
+				fprintf(output, "\tkong_fill_%s_set(device, set);\n", get_name(set->name));
 
 				fprintf(output, "}\n\n");
 			}
@@ -2496,7 +2495,7 @@ void kore3_export(char *directory, api_kind api) {
 				fprintf(output, "\t\t}\n");
 				fprintf(output, "\t}\n");
 
-				fprintf(output, "\n\tkong_fill_%s_set(set->set.device, NULL, set);\n", get_name(set->name));
+				fprintf(output, "\n\tkong_fill_%s_set(set->set.device, set);\n", get_name(set->name));
 			}
 			else if (api == API_VULKAN) {
 				size_t other_count    = 0;
