@@ -1,4 +1,4 @@
-#include "cpu.h"
+#include "kompjuta.h"
 
 #include "../analyzer.h"
 #include "../compiler.h"
@@ -851,19 +851,4 @@ static void cpu_export_compute(char *directory, function *main) {
 	write_code(code, header_code, directory, filename, func_name);
 }
 
-void cpu_export(char *directory) {
-	function *compute_shaders[256];
-	size_t    compute_shaders_size = 0;
-
-	for (function_id i = 0; get_function(i) != NULL; ++i) {
-		function *f = get_function(i);
-		if (has_attribute(&f->attributes, add_name("compute")) && has_attribute(&f->attributes, add_name("cpu"))) {
-			compute_shaders[compute_shaders_size] = f;
-			compute_shaders_size += 1;
-		}
-	}
-
-	for (size_t i = 0; i < compute_shaders_size; ++i) {
-		cpu_export_compute(directory, compute_shaders[i]);
-	}
-}
+void kompjuta_export(char *directory) {}

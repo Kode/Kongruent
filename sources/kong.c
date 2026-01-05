@@ -15,6 +15,7 @@
 #include "backends/cpu.h"
 #include "backends/glsl.h"
 #include "backends/hlsl.h"
+#include "backends/kompjuta.h"
 #include "backends/metal.h"
 #include "backends/spirv.h"
 #include "backends/wgsl.h"
@@ -236,6 +237,9 @@ int main(int argc, char **argv) {
 		else if (strcmp(platform, "wasm") == 0) {
 			api = API_WEBGPU;
 		}
+		else if (strcmp(platform, "kompjuta") == 0) {
+			api = API_KOMPJUTA;
+		}
 	}
 
 	check(mode == MODE_MODECHECK, context, "Wrong parameter syntax");
@@ -322,10 +326,12 @@ int main(int argc, char **argv) {
 	case API_WEBGPU:
 		wgsl_export(output);
 		break;
-	case API_VULKAN: {
+	case API_VULKAN:
 		spirv_export(output, debug);
 		break;
-	}
+	case API_KOMPJUTA:
+		kompjuta_export(output);
+		break;
 	default: {
 		debug_context context = {0};
 		error(context, "Unknown API");

@@ -630,6 +630,11 @@ void kore3_export(char *directory, api_kind api) {
 		api_long  = "webgpu";
 		api_caps  = "WEBGPU";
 		break;
+	case API_KOMPJUTA:
+		api_short = "kompjuta";
+		api_long  = "kompjuta";
+		api_caps  = "KOMPJUTA";
+		break;
 	default:
 		assert(false);
 		break;
