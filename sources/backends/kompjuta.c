@@ -114,7 +114,8 @@ static char *type_string(type_id type, uint8_t simd_width) {
 	}
 }
 
-static void write_code(char *code, char *header_code, char *directory, const char *filename, const char *name) {
+static void write_code(char *code, char *header_code, char *directory, const char *filename, const char *name, shader_stage stage, function *main,
+                       uint8_t simd_width) {
 	char full_filename[512];
 
 	{
@@ -126,7 +127,34 @@ static void write_code(char *code, char *header_code, char *directory, const cha
 
 		fprintf(file, "%s", header_code);
 
-		fprintf(file, "void %s(uint32_t workgroup_count_x, uint32_t workgroup_count_y, uint32_t workgroup_count_z);\n\n", name);
+		if (stage == SHADER_STAGE_VERTEX) {
+			uint64_t parameter_ids[256] = {0};
+			for (uint8_t parameter_index = 0; parameter_index < main->parameters_size; ++parameter_index) {
+				for (size_t i = 0; i < main->block->block.vars.size; ++i) {
+					if (main->parameter_names[parameter_index] == main->block->block.vars.v[i].name) {
+						parameter_ids[parameter_index] = main->block->block.vars.v[i].variable_id;
+						break;
+					}
+				}
+			}
+
+			fprintf(file, "void vs_%s(void *__output, ", name);
+			for (uint8_t parameter_index = 0; parameter_index < main->parameters_size; ++parameter_index) {
+				if (parameter_index == 0) {
+					fprintf(file, "void *__%" PRIu64, parameter_ids[parameter_index]);
+				}
+				else {
+					fprintf(file, ", %s *_%" PRIu64, type_string(main->parameter_types[parameter_index].type, simd_width), parameter_ids[parameter_index]);
+				}
+			}
+			fprintf(file, ");\n");
+		}
+		else if (stage == SHADER_STAGE_FRAGMENT) {
+			fprintf(file, "void fs_%s();\n\n", name);
+		}
+		else {
+			fprintf(file, "void %s(uint32_t workgroup_count_x, uint32_t workgroup_count_y, uint32_t workgroup_count_z);\n\n", name);
+		}
 
 		fclose(file);
 	}
@@ -137,10 +165,17 @@ static void write_code(char *code, char *header_code, char *directory, const cha
 		FILE *file = fopen(full_filename, "wb");
 		fprintf(file, "#include \"%s.h\"\n\n", filename);
 
-		fprintf(file, "#include <kore3/math/vector.h>\n");
-		fprintf(file, "#include <kore3/util/cpucompute.h>\n\n");
+		fprintf(file, "#include <riscv_vector.h>\n\n");
+
+		if (stage == SHADER_STAGE_FRAGMENT) {
+			fprintf(file, "/*\n");
+		}
 
 		fprintf(file, "%s", code);
+
+		if (stage == SHADER_STAGE_FRAGMENT) {
+			fprintf(file, "*/\n");
+		}
 
 		fclose(file);
 	}
@@ -155,13 +190,13 @@ static void write_types(char *code, size_t *offset, function *main, uint8_t simd
 		type *t = get_type(types[i]);
 
 		if (!t->built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
-			*offset += sprintf(&code[*offset], "struct %s {\n", get_name(t->name));
+			*offset += sprintf(&code[*offset], "typedef struct %s {\n", get_name(t->name));
 
 			for (size_t j = 0; j < t->members.size; ++j) {
 				*offset += sprintf(&code[*offset], "\t%s %s;\n", type_string(t->members.m[j].type.type, simd_width), get_name(t->members.m[j].name));
 			}
 
-			*offset += sprintf(&code[*offset], "};\n\n");
+			*offset += sprintf(&code[*offset], "} %s;\n\n", get_name(t->name));
 		}
 	}
 }
@@ -288,7 +323,7 @@ static const char *type_to_mini(type_ref t) {
 	}
 }
 
-static void write_functions(char *code, const char *name, size_t *offset, function *main, uint8_t simd_width) {
+static void write_functions(char *code, const char *main_name, size_t *offset, shader_stage stage, function *main, uint8_t simd_width) {
 	function *functions[256];
 	size_t    functions_size = 0;
 
@@ -322,14 +357,14 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 
 		int indentation = 1;
 
-		if (f == main) {
+		if (f == main && stage == SHADER_STAGE_COMPUTE) {
 			attribute *threads_attribute = find_attribute(&f->attributes, add_name("threads"));
 			if (threads_attribute == NULL || threads_attribute->paramters_count != 3) {
 				debug_context context = {0};
 				error(context, "Compute function requires a threads attribute with three parameters");
 			}
 
-			*offset += sprintf(&code[*offset], "void %s(uint32_t workgroup_count_x, uint32_t workgroup_count_y, uint32_t workgroup_count_z) {\n", name);
+			*offset += sprintf(&code[*offset], "void %s(uint32_t workgroup_count_x, uint32_t workgroup_count_y, uint32_t workgroup_count_z) {\n", main_name);
 
 			*offset += sprintf(&code[*offset], "\tuint32_t local_size_x = %i;\n\tuint32_t local_size_y = %i;\n\tuint32_t local_size_z = %i;\n",
 			                   (int)threads_attribute->parameters[0], (int)threads_attribute->parameters[1], (int)threads_attribute->parameters[2]);
@@ -461,6 +496,22 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 				*offset += sprintf(&code[*offset], "uint32_t group_index = group_thread_id.z * workgroup_count_x * workgroup_count_y + group_thread_id.y * "
 				                                   "workgroup_count_x + group_thread_id.x;\n\n");
 			}
+		}
+		else if (f == main && stage == SHADER_STAGE_VERTEX) {
+			*offset += sprintf(&code[*offset], "void vs_%s(void *__output, ", get_name(f->name));
+			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
+				if (parameter_index == 0) {
+					*offset += sprintf(&code[*offset], "void *__%" PRIu64, parameter_ids[parameter_index]);
+				}
+				else {
+					*offset += sprintf(&code[*offset], ", %s *_%" PRIu64, type_string(f->parameter_types[parameter_index].type, simd_width),
+					                   parameter_ids[parameter_index]);
+				}
+			}
+			*offset += sprintf(&code[*offset], ") {\n");
+			*offset += sprintf(&code[*offset], "\t%s *_output = __output;\n", type_string(f->return_type.type, simd_width));
+			*offset += sprintf(&code[*offset], "\t%s *_%" PRIu64 " = __%" PRIu64 ";\n", type_string(f->parameter_types[0].type, simd_width), parameter_ids[0],
+			                   parameter_ids[0]);
 		}
 		else {
 			*offset += sprintf(&code[*offset], "%s %s(", type_string(f->return_type.type, simd_width), get_name(f->name));
@@ -802,7 +853,7 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 			index += o->size;
 		}
 
-		if (f == main) {
+		if (f == main && stage == SHADER_STAGE_COMPUTE) {
 			for (int i = 0; i < 6; ++i) {
 				--indentation;
 				indent(code, offset, indentation);
@@ -817,7 +868,65 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 	}
 }
 
-static void cpu_export_compute(char *directory, function *main) {
+static void kompjuta_export_vertex(char *directory, function *main) {
+	uint8_t simd_width = 4;
+
+	debug_context context = {0};
+
+	char *code = (char *)calloc(1024 * 1024, 1);
+	check(code != NULL, context, "Could not allocate code string");
+
+	size_t offset = 0;
+
+	char *header_code = (char *)calloc(1024 * 1024, 1);
+	check(header_code != NULL, context, "Could not allocate code string");
+
+	size_t header_offset = 0;
+
+	write_types(code, &offset, main, simd_width);
+
+	write_globals(code, &offset, header_code, &header_offset, main);
+
+	char *main_name = get_name(main->name);
+
+	write_functions(code, main_name, &offset, SHADER_STAGE_VERTEX, main, simd_width);
+
+	char filename[512];
+	sprintf(filename, "kong_%s", main_name);
+
+	write_code(code, header_code, directory, filename, main_name, SHADER_STAGE_VERTEX, main, simd_width);
+}
+
+static void kompjuta_export_fragment(char *directory, function *main) {
+	uint8_t simd_width = 4;
+
+	debug_context context = {0};
+
+	char *code = (char *)calloc(1024 * 1024, 1);
+	check(code != NULL, context, "Could not allocate code string");
+
+	size_t offset = 0;
+
+	char *header_code = (char *)calloc(1024 * 1024, 1);
+	check(header_code != NULL, context, "Could not allocate code string");
+
+	size_t header_offset = 0;
+
+	write_types(code, &offset, main, simd_width);
+
+	write_globals(code, &offset, header_code, &header_offset, main);
+
+	char *main_name = get_name(main->name);
+
+	write_functions(code, main_name, &offset, SHADER_STAGE_FRAGMENT, main, simd_width);
+
+	char filename[512];
+	sprintf(filename, "kong_%s", main_name);
+
+	write_code(code, header_code, directory, filename, main_name, SHADER_STAGE_FRAGMENT, main, simd_width);
+}
+
+static void kompjuta_export_compute(char *directory, function *main) {
 	uint8_t simd_width = 4;
 
 	debug_context context = {0};
@@ -838,17 +947,76 @@ static void cpu_export_compute(char *directory, function *main) {
 
 	write_globals(code, &offset, header_code, &header_offset, main);
 
-	char *name = get_name(main->name);
+	char *main_name = get_name(main->name);
 
-	char func_name[256];
-	sprintf(func_name, "%s_on_cpu", name);
-
-	write_functions(code, func_name, &offset, main, simd_width);
+	write_functions(code, main_name, &offset, SHADER_STAGE_COMPUTE, main, simd_width);
 
 	char filename[512];
-	sprintf(filename, "kong_cpu_%s", name);
+	sprintf(filename, "kong_%s", main_name);
 
-	write_code(code, header_code, directory, filename, func_name);
+	write_code(code, header_code, directory, filename, main_name, SHADER_STAGE_COMPUTE, main, simd_width);
 }
 
-void kompjuta_export(char *directory) {}
+void kompjuta_export(char *directory) {
+	function *vertex_shaders[256];
+	size_t    vertex_shaders_size = 0;
+
+	function *fragment_shaders[256];
+	size_t    fragment_shaders_size = 0;
+
+	for (type_id i = 0; get_type(i) != NULL; ++i) {
+		type *t = get_type(i);
+		if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
+			name_id vertex_shader_name   = NO_NAME;
+			name_id fragment_shader_name = NO_NAME;
+
+			for (size_t j = 0; j < t->members.size; ++j) {
+				if (t->members.m[j].name == add_name("vertex")) {
+					vertex_shader_name = t->members.m[j].value.identifier;
+				}
+				else if (t->members.m[j].name == add_name("fragment")) {
+					fragment_shader_name = t->members.m[j].value.identifier;
+				}
+			}
+
+			debug_context context = {0};
+			check(vertex_shader_name != NO_NAME, context, "vertex shader missing");
+			check(fragment_shader_name != NO_NAME, context, "fragment shader missing");
+
+			for (function_id i = 0; get_function(i) != NULL; ++i) {
+				function *f = get_function(i);
+				if (f->name == vertex_shader_name) {
+					vertex_shaders[vertex_shaders_size] = f;
+					vertex_shaders_size += 1;
+				}
+				else if (f->name == fragment_shader_name) {
+					fragment_shaders[fragment_shaders_size] = f;
+					fragment_shaders_size += 1;
+				}
+			}
+		}
+	}
+
+	function *compute_shaders[256];
+	size_t    compute_shaders_size = 0;
+
+	for (function_id i = 0; get_function(i) != NULL; ++i) {
+		function *f = get_function(i);
+		if (has_attribute(&f->attributes, add_name("compute"))) {
+			compute_shaders[compute_shaders_size] = f;
+			compute_shaders_size += 1;
+		}
+	}
+
+	for (size_t i = 0; i < vertex_shaders_size; ++i) {
+		kompjuta_export_vertex(directory, vertex_shaders[i]);
+	}
+
+	for (size_t i = 0; i < fragment_shaders_size; ++i) {
+		kompjuta_export_fragment(directory, fragment_shaders[i]);
+	}
+
+	for (size_t i = 0; i < compute_shaders_size; ++i) {
+		kompjuta_export_compute(directory, compute_shaders[i]);
+	}
+}

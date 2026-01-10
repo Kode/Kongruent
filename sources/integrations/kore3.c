@@ -159,6 +159,20 @@ static const char *structure_type(type_id type, api_kind api) {
 			return "KORE_OPENGL_VERTEX_FORMAT_FLOAT32X4";
 		}
 	}
+	else if (api == API_KOMPJUTA) {
+		if (type == float_id) {
+			return "KORE_KOMPJUTA_VERTEX_FORMAT_FLOAT32";
+		}
+		if (type == float2_id) {
+			return "KORE_KOMPJUTA_VERTEX_FORMAT_FLOAT32X2";
+		}
+		if (type == float3_id) {
+			return "KORE_KOMPJUTA_VERTEX_FORMAT_FLOAT32X3";
+		}
+		if (type == float4_id) {
+			return "KORE_KOMPJUTA_VERTEX_FORMAT_FLOAT32X4";
+		}
+	}
 	debug_context context = {0};
 	error(context, "Unknown type for vertex structure");
 	return "UNKNOWN";
@@ -3057,7 +3071,10 @@ void kore3_export(char *directory, api_kind api) {
 
 				for (size_t j = 0; j < t->members.size; ++j) {
 					if (t->members.m[j].name == add_name("vertex")) {
-						if (api == API_METAL) {
+						if (api == API_KOMPJUTA) {
+							fprintf(output, "\t%s_parameters.vertex.shader.function = vs_%s;\n", get_name(t->name), get_name(t->members.m[j].value.identifier));
+						}
+						else if (api == API_METAL) {
 							fprintf(output, "\t%s_parameters.vertex.shader.function_name = \"%s\";\n", get_name(t->name),
 							        get_name(t->members.m[j].value.identifier));
 						}
@@ -3090,7 +3107,11 @@ void kore3_export(char *directory, api_kind api) {
 						mesh_shader_name = t->members.m[j].value.identifier;
 					}
 					else if (t->members.m[j].name == add_name("fragment")) {
-						if (api == API_METAL) {
+						if (api == API_KOMPJUTA) {
+							fprintf(output, "\t%s_parameters.fragment.shader.function = fs_%s;\n", get_name(t->name),
+							        get_name(t->members.m[j].value.identifier));
+						}
+						else if (api == API_METAL) {
 							fprintf(output, "\t%s_parameters.fragment.shader.function_name = \"%s\";\n", get_name(t->name),
 							        get_name(t->members.m[j].value.identifier));
 						}
