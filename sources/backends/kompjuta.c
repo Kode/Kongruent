@@ -17,7 +17,30 @@
 #include <stdlib.h>
 #include <string.h>
 
-static char *type_string_simd1(type_id type) {
+static char *member_string(type *parent_type, name_id member_name) {
+	if (parent_type == get_type(ray_type_id)) {
+		if (member_name == add_name("origin")) {
+			return "Origin";
+		}
+		else if (member_name == add_name("direction")) {
+			return "Direction";
+		}
+		else if (member_name == add_name("min")) {
+			return "TMin";
+		}
+		else if (member_name == add_name("max")) {
+			return "TMax";
+		}
+		else {
+			return get_name(member_name);
+		}
+	}
+	else {
+		return get_name(member_name);
+	}
+}
+
+static char *type_string(type_id type) {
 	if (type == float_id) {
 		return "float";
 	}
@@ -57,21 +80,21 @@ static char *type_string_simd1(type_id type) {
 	return get_name(get_type(type)->name);
 }
 
-static char *type_string_simd4(type_id type) {
+static char *type_string_simd(type_id type) {
 	if (type == float_id) {
-		return "kore_float32x4";
+		return "vfloat32m1_t";
 	}
 	if (type == float2_id) {
-		return "kore_float2x4";
+		return "kore_float2_x32";
 	}
 	if (type == float3_id) {
-		return "kore_float3x4";
+		return "kore_float3_x32";
 	}
 	if (type == float4_id) {
-		return "kore_float4x4";
+		return "kore_float4_x32";
 	}
 	if (type == float4x4_id) {
-		return "kore_matrix4x4";
+		return "kore_matrix4_x32";
 	}
 	if (type == int_id) {
 		return "kore_int32x4";
@@ -100,22 +123,7 @@ static char *type_string_simd4(type_id type) {
 	return get_name(get_type(type)->name);
 }
 
-static char *type_string(type_id type, uint8_t simd_width) {
-	if (simd_width == 4) {
-		return type_string_simd4(type);
-	}
-	else if (simd_width == 1) {
-		return type_string_simd1(type);
-	}
-	else {
-		debug_context context = {0};
-		error(context, "Unsupported simd width %i.", simd_width);
-		return "type string error";
-	}
-}
-
-static void write_code(char *code, char *header_code, char *directory, const char *filename, const char *name, shader_stage stage, function *main,
-                       uint8_t simd_width) {
+static void write_code(char *code, char *header_code, char *directory, const char *filename, const char *name, shader_stage stage, function *main) {
 	char full_filename[512];
 
 	{
@@ -138,13 +146,13 @@ static void write_code(char *code, char *header_code, char *directory, const cha
 				}
 			}
 
-			fprintf(file, "void vs_%s(void *__output, ", name);
+			fprintf(file, "void vs_%s(size_t _lane_count, void *__output, ", name);
 			for (uint8_t parameter_index = 0; parameter_index < main->parameters_size; ++parameter_index) {
 				if (parameter_index == 0) {
 					fprintf(file, "void *__%" PRIu64, parameter_ids[parameter_index]);
 				}
 				else {
-					fprintf(file, ", %s *_%" PRIu64, type_string(main->parameter_types[parameter_index].type, simd_width), parameter_ids[parameter_index]);
+					fprintf(file, ", %s *_%" PRIu64, type_string_simd(main->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 				}
 			}
 			fprintf(file, ");\n");
@@ -165,7 +173,8 @@ static void write_code(char *code, char *header_code, char *directory, const cha
 		FILE *file = fopen(full_filename, "wb");
 		fprintf(file, "#include \"%s.h\"\n\n", filename);
 
-		fprintf(file, "#include <riscv_vector.h>\n\n");
+		fprintf(file, "#include <kore3/kompjuta/riscv_vector_util.h>\n\n");
+		fprintf(file, "#include <string.h>\n\n");
 
 		if (stage == SHADER_STAGE_FRAGMENT) {
 			fprintf(file, "/*\n");
@@ -175,13 +184,14 @@ static void write_code(char *code, char *header_code, char *directory, const cha
 
 		if (stage == SHADER_STAGE_FRAGMENT) {
 			fprintf(file, "*/\n");
+			fprintf(file, "void fs_%s() {}\n", get_name(main->name));
 		}
 
 		fclose(file);
 	}
 }
 
-static void write_types(char *code, size_t *offset, function *main, uint8_t simd_width) {
+static void write_types(char *code, size_t *offset, function *main) {
 	type_id types[256];
 	size_t  types_size = 0;
 	find_referenced_types(main, types, &types_size);
@@ -189,11 +199,15 @@ static void write_types(char *code, size_t *offset, function *main, uint8_t simd
 	for (size_t i = 0; i < types_size; ++i) {
 		type *t = get_type(types[i]);
 
+		if (main->parameters_size > 0 && types[i] == main->parameter_types[0].type) {
+			continue;
+		}
+
 		if (!t->built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
 			*offset += sprintf(&code[*offset], "typedef struct %s {\n", get_name(t->name));
 
 			for (size_t j = 0; j < t->members.size; ++j) {
-				*offset += sprintf(&code[*offset], "\t%s %s;\n", type_string(t->members.m[j].type.type, simd_width), get_name(t->members.m[j].name));
+				*offset += sprintf(&code[*offset], "\t%s %s;\n", type_string_simd(t->members.m[j].type.type), get_name(t->members.m[j].name));
 			}
 
 			*offset += sprintf(&code[*offset], "} %s;\n\n", get_name(t->name));
@@ -323,7 +337,7 @@ static const char *type_to_mini(type_ref t) {
 	}
 }
 
-static void write_functions(char *code, const char *main_name, size_t *offset, shader_stage stage, function *main, uint8_t simd_width) {
+static void write_functions(char *code, const char *main_name, size_t *offset, shader_stage stage, function *main) {
 	function *functions[256];
 	size_t    functions_size = 0;
 
@@ -381,148 +395,93 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 			*offset += sprintf(&code[*offset], "for (uint32_t workgroup_index_x = 0; workgroup_index_x < workgroup_count_x; ++workgroup_index_x) {\n");
 			++indentation;
 
-			if (simd_width == 4) {
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "for (uint32_t local_index_z = 0; local_index_z < local_size_z; ++local_index_z) {\n");
-				++indentation;
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "for (uint32_t local_index_z = 0; local_index_z < local_size_z; ++local_index_z) {\n");
+			++indentation;
 
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "for (uint32_t local_index_y = 0; local_index_y < local_size_y; ++local_index_y) {\n");
-				++indentation;
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "for (uint32_t local_index_y = 0; local_index_y < local_size_y; ++local_index_y) {\n");
+			++indentation;
 
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "for (uint32_t local_index_x = 0; local_index_x < local_size_x; local_index_x += 4) {\n");
-				++indentation;
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "for (uint32_t local_index_x = 0; local_index_x < local_size_x; local_index_x += 4) {\n");
+			++indentation;
 
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "kore_uint3x4 group_id;\n");
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "kore_uint3x4 group_id;\n");
 
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "group_id.x = kore_uint32x4_load_all(workgroup_index_x);\n");
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "group_id.x = kore_uint32x4_load_all(workgroup_index_x);\n");
 
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "group_id.y = kore_uint32x4_load_all(workgroup_index_y);\n");
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "group_id.y = kore_uint32x4_load_all(workgroup_index_y);\n");
 
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "group_id.z = kore_uint32x4_load_all(workgroup_index_z);\n\n");
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "group_id.z = kore_uint32x4_load_all(workgroup_index_z);\n\n");
 
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "kore_uint3x4 group_thread_id;\n");
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "kore_uint3x4 group_thread_id;\n");
 
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset],
-				                   "group_thread_id.x = kore_uint32x4_load(local_index_x, local_index_x + 1, local_index_x + 2, local_index_x + 3);\n");
+			indent(code, offset, indentation);
+			*offset +=
+			    sprintf(&code[*offset], "group_thread_id.x = kore_uint32x4_load(local_index_x, local_index_x + 1, local_index_x + 2, local_index_x + 3);\n");
 
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "group_thread_id.y = kore_uint32x4_load_all(local_index_y);\n");
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "group_thread_id.y = kore_uint32x4_load_all(local_index_y);\n");
 
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "group_thread_id.z = kore_uint32x4_load_all(local_index_z);\n\n");
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "group_thread_id.z = kore_uint32x4_load_all(local_index_z);\n\n");
 
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "kore_uint3x4 dispatch_thread_id;\n");
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "kore_uint3x4 dispatch_thread_id;\n");
 
-				indent(code, offset, indentation);
-				*offset += sprintf(
-				    &code[*offset],
-				    "dispatch_thread_id.x = kore_uint32x4_add(kore_uint32x4_mul(group_id.x, kore_uint32x4_load_all(workgroup_count_x)), group_thread_id.x);\n");
+			indent(code, offset, indentation);
+			*offset += sprintf(
+			    &code[*offset],
+			    "dispatch_thread_id.x = kore_uint32x4_add(kore_uint32x4_mul(group_id.x, kore_uint32x4_load_all(workgroup_count_x)), group_thread_id.x);\n");
 
-				indent(code, offset, indentation);
-				*offset += sprintf(
-				    &code[*offset],
-				    "dispatch_thread_id.y = kore_uint32x4_add(kore_uint32x4_mul(group_id.y, kore_uint32x4_load_all(workgroup_count_y)), group_thread_id.y);\n");
+			indent(code, offset, indentation);
+			*offset += sprintf(
+			    &code[*offset],
+			    "dispatch_thread_id.y = kore_uint32x4_add(kore_uint32x4_mul(group_id.y, kore_uint32x4_load_all(workgroup_count_y)), group_thread_id.y);\n");
 
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "dispatch_thread_id.z = kore_uint32x4_add(kore_uint32x4_mul(group_id.z, "
-				                                   "kore_uint32x4_load_all(workgroup_count_z)), group_thread_id.z);\n\n");
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset], "dispatch_thread_id.z = kore_uint32x4_add(kore_uint32x4_mul(group_id.z, "
+			                                   "kore_uint32x4_load_all(workgroup_count_z)), group_thread_id.z);\n\n");
 
-				indent(code, offset, indentation);
-				*offset +=
-				    sprintf(&code[*offset],
-				            "kore_uint32x4 group_index = kore_uint32x4_add(kore_uint32x4_mul(group_thread_id.z, "
-				            "kore_uint32x4_mul(kore_uint32x4_load_all(workgroup_count_x), kore_uint32x4_load_all(workgroup_count_y))), "
-				            "kore_uint32x4_add(kore_uint32x4_mul(group_thread_id.y, kore_uint32x4_load_all(workgroup_count_x)), group_thread_id.x));\n\n");
-			}
-			else if (simd_width == 1) {
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "for (uint32_t local_index_z = 0; local_index_z < local_size_z; ++local_index_z) {\n");
-				++indentation;
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "for (uint32_t local_index_y = 0; local_index_y < local_size_y; ++local_index_y) {\n");
-				++indentation;
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "for (uint32_t local_index_x = 0; local_index_x < local_size_x; ++local_index_x) {\n");
-				++indentation;
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "kore_uint3 group_id;\n");
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "group_id.x = workgroup_index_x;\n");
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "group_id.y = workgroup_index_y;\n");
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "group_id.z = workgroup_index_z;\n\n");
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "kore_uint3 group_thread_id;\n");
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "group_thread_id.x = local_index_x;\n");
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "group_thread_id.y = local_index_y;\n");
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "group_thread_id.z = local_index_z;\n\n");
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "kore_uint3 dispatch_thread_id;\n");
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "dispatch_thread_id.x = group_id.x * workgroup_count_x + group_thread_id.x;\n");
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "dispatch_thread_id.y = group_id.y * workgroup_count_y + group_thread_id.y;\n");
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "dispatch_thread_id.z = group_id.z * workgroup_count_z + group_thread_id.z;\n\n");
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "uint32_t group_index = group_thread_id.z * workgroup_count_x * workgroup_count_y + group_thread_id.y * "
-				                                   "workgroup_count_x + group_thread_id.x;\n\n");
-			}
+			indent(code, offset, indentation);
+			*offset += sprintf(&code[*offset],
+			                   "kore_uint32x4 group_index = kore_uint32x4_add(kore_uint32x4_mul(group_thread_id.z, "
+			                   "kore_uint32x4_mul(kore_uint32x4_load_all(workgroup_count_x), kore_uint32x4_load_all(workgroup_count_y))), "
+			                   "kore_uint32x4_add(kore_uint32x4_mul(group_thread_id.y, kore_uint32x4_load_all(workgroup_count_x)), group_thread_id.x));\n\n");
 		}
 		else if (f == main && stage == SHADER_STAGE_VERTEX) {
-			*offset += sprintf(&code[*offset], "void vs_%s(void *__output, ", get_name(f->name));
+			*offset += sprintf(&code[*offset], "void vs_%s(size_t _lane_count, void *__output, ", get_name(f->name));
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 				if (parameter_index == 0) {
 					*offset += sprintf(&code[*offset], "void *__%" PRIu64, parameter_ids[parameter_index]);
 				}
 				else {
-					*offset += sprintf(&code[*offset], ", %s *_%" PRIu64, type_string(f->parameter_types[parameter_index].type, simd_width),
-					                   parameter_ids[parameter_index]);
+					*offset +=
+					    sprintf(&code[*offset], ", %s *_%" PRIu64, type_string_simd(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 				}
 			}
 			*offset += sprintf(&code[*offset], ") {\n");
-			*offset += sprintf(&code[*offset], "\t%s *_output = __output;\n", type_string(f->return_type.type, simd_width));
-			*offset += sprintf(&code[*offset], "\t%s *_%" PRIu64 " = __%" PRIu64 ";\n", type_string(f->parameter_types[0].type, simd_width), parameter_ids[0],
+			*offset += sprintf(&code[*offset], "\tsize_t _vector_length = __riscv_vsetvl_e32m1(_lane_count);\n");
+			*offset += sprintf(&code[*offset], "\t%s *_output = __output;\n", type_string_simd(f->return_type.type));
+			*offset += sprintf(&code[*offset], "\t%s *_%" PRIu64 " = __%" PRIu64 ";\n", type_string_simd(f->parameter_types[0].type), parameter_ids[0],
 			                   parameter_ids[0]);
 		}
 		else {
-			*offset += sprintf(&code[*offset], "%s %s(", type_string(f->return_type.type, simd_width), get_name(f->name));
+			*offset += sprintf(&code[*offset], "%s %s(", type_string_simd(f->return_type.type), get_name(f->name));
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 				if (parameter_index == 0) {
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64, type_string(f->parameter_types[parameter_index].type, simd_width),
-					                   parameter_ids[parameter_index]);
+					*offset +=
+					    sprintf(&code[*offset], "%s _%" PRIu64, type_string_simd(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 				}
 				else {
-					*offset += sprintf(&code[*offset], ", %s _%" PRIu64, type_string(f->parameter_types[parameter_index].type, simd_width),
-					                   parameter_ids[parameter_index]);
+					*offset +=
+					    sprintf(&code[*offset], ", %s _%" PRIu64, type_string_simd(f->parameter_types[parameter_index].type), parameter_ids[parameter_index]);
 				}
 			}
 			*offset += sprintf(&code[*offset], ") {\n");
@@ -534,87 +493,73 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 			switch (o->type) {
 			case OPCODE_ADD: {
 				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_add", type_string(o->op_binary.result.type.type, simd_width),
+				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_add", type_string_simd(o->op_binary.result.type.type),
 				                   o->op_binary.result.index);
 				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.left.type));
 				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.right.type));
-				*offset += sprintf(&code[*offset], "_x%i(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
+				*offset += sprintf(&code[*offset], "_x32(_%" PRIu64 ", _%" PRIu64 ");\n", o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_SUB: {
 				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_sub", type_string(o->op_binary.result.type.type, simd_width),
+				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_sub", type_string_simd(o->op_binary.result.type.type),
 				                   o->op_binary.result.index);
 				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.left.type));
 				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.right.type));
-				*offset += sprintf(&code[*offset], "_x%i(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
+				*offset += sprintf(&code[*offset], "_x32(_%" PRIu64 ", _%" PRIu64 ");\n", o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_MULTIPLY: {
 				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_mult", type_string(o->op_binary.result.type.type, simd_width),
+				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_mult", type_string_simd(o->op_binary.result.type.type),
 				                   o->op_binary.result.index);
 				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.left.type));
 				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.right.type));
-				*offset += sprintf(&code[*offset], "_x%i(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
+				*offset += sprintf(&code[*offset], "_x32(_%" PRIu64 ", _%" PRIu64 ");\n", o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_DIVIDE: {
 				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_div", type_string(o->op_binary.result.type.type, simd_width),
+				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_div", type_string_simd(o->op_binary.result.type.type),
 				                   o->op_binary.result.index);
 				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.left.type));
 				*offset += sprintf(&code[*offset], "%s", type_to_mini(o->op_binary.right.type));
-				*offset += sprintf(&code[*offset], "_x%i(_%" PRIu64 ", _%" PRIu64 ");\n", simd_width, o->op_binary.left.index, o->op_binary.right.index);
+				*offset += sprintf(&code[*offset], "_x32(_%" PRIu64 ", _%" PRIu64 ");\n", o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			}
 			case OPCODE_LOAD_FLOAT_CONSTANT:
 				indent(code, offset, indentation);
-				if (simd_width == 1) {
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = %ff;\n", type_string(o->op_load_float_constant.to.type.type, simd_width),
-					                   o->op_load_float_constant.to.index, o->op_load_float_constant.number);
-				}
-				else if (simd_width == 4) {
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_float32x4_load_all(%ff);\n",
-					                   type_string(o->op_load_float_constant.to.type.type, simd_width), o->op_load_float_constant.to.index,
-					                   o->op_load_float_constant.number);
-				}
+				*offset +=
+				    sprintf(&code[*offset], "%s _%" PRIu64 " = __riscv_vfmv_v_f_f32m1(%ff, _vector_length);\n",
+				            type_string_simd(o->op_load_float_constant.to.type.type), o->op_load_float_constant.to.index, o->op_load_float_constant.number);
 				break;
 			case OPCODE_LOAD_INT_CONSTANT:
 				indent(code, offset, indentation);
-				if (simd_width == 1) {
-					cstyle_write_opcode(code, offset, o, type_string_simd1, &indentation);
-				}
-				else if (simd_width == 4) {
-					*offset +=
-					    sprintf(&code[*offset], "%s _%" PRIu64 " = kore_int32x4_load_all(%i);\n", type_string(o->op_load_int_constant.to.type.type, simd_width),
-					            o->op_load_int_constant.to.index, o->op_load_int_constant.number);
-				}
+				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_int32x4_load_all(%i);\n", type_string_simd(o->op_load_int_constant.to.type.type),
+				                   o->op_load_int_constant.to.index, o->op_load_int_constant.number);
 				break;
 			case OPCODE_CALL: {
 				if (o->op_call.func == add_name("group_id")) {
 					check(o->op_call.parameters_size == 0, context, "group_id can not have a parameter");
 					indent(code, offset, indentation);
-					*offset +=
-					    sprintf(&code[*offset], "%s _%" PRIu64 " = group_id;\n", type_string(o->op_call.var.type.type, simd_width), o->op_call.var.index);
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = group_id;\n", type_string_simd(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else if (o->op_call.func == add_name("group_thread_id")) {
 					check(o->op_call.parameters_size == 0, context, "group_thread_id can not have a parameter");
 					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = group_thread_id;\n", type_string(o->op_call.var.type.type, simd_width),
-					                   o->op_call.var.index);
+					*offset +=
+					    sprintf(&code[*offset], "%s _%" PRIu64 " = group_thread_id;\n", type_string_simd(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else if (o->op_call.func == add_name("dispatch_thread_id")) {
 					check(o->op_call.parameters_size == 0, context, "dispatch_thread_id can not have a parameter");
 					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = dispatch_thread_id;\n", type_string(o->op_call.var.type.type, simd_width),
-					                   o->op_call.var.index);
+					*offset +=
+					    sprintf(&code[*offset], "%s _%" PRIu64 " = dispatch_thread_id;\n", type_string_simd(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else if (o->op_call.func == add_name("group_index")) {
 					check(o->op_call.parameters_size == 0, context, "group_index can not have a parameter");
 					indent(code, offset, indentation);
-					*offset +=
-					    sprintf(&code[*offset], "%s _%" PRIu64 " = group_index;\n", type_string(o->op_call.var.type.type, simd_width), o->op_call.var.index);
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = group_index;\n", type_string_simd(o->op_call.var.type.type), o->op_call.var.index);
 				}
 				else {
 					const char *function_name = get_name(o->op_call.func);
@@ -633,15 +578,15 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 
 					indent(code, offset, indentation);
 
-					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_%s", type_string(o->op_call.var.type.type, simd_width),
-					                   o->op_call.var.index, function_name);
+					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_riscv_%s", type_string_simd(o->op_call.var.type.type), o->op_call.var.index,
+					                   function_name);
 
 					for (uint8_t parameter_index = 0; parameter_index < o->op_call.parameters_size; ++parameter_index) {
 						variable v = o->op_call.parameters[parameter_index];
 						*offset += sprintf(&code[*offset], "%s", type_to_mini(v.type));
 					}
 
-					*offset += sprintf(&code[*offset], "_x%i(", simd_width);
+					*offset += sprintf(&code[*offset], "_x32(");
 
 					if (o->op_call.parameters_size > 0) {
 						*offset += sprintf(&code[*offset], "_%" PRIu64, o->op_call.parameters[0].index);
@@ -655,105 +600,77 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 			}
 			case OPCODE_LOAD_ACCESS_LIST: {
 				uint64_t global_var_index = 0;
+				global  *g                = NULL;
 				for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
-					global *g = get_global(j);
+					g = get_global(j);
 					if (o->op_load_access_list.from.index == g->var_index) {
 						global_var_index = g->var_index;
+						if (get_type(g->type)->built_in) {
+							global_var_index = 0;
+						}
 						break;
 					}
 				}
 
 				indent(code, offset, indentation);
+				*offset +=
+				    sprintf(&code[*offset], "%s _temp_%" PRIu64 "[] = {", type_string(o->op_load_access_list.to.type.type), o->op_load_access_list.to.index);
 
-				type *s = get_type(o->op_load_access_list.from.type.type);
+				for (uint32_t simd_index = 0; simd_index < 32u; ++simd_index) {
+					*offset += sprintf(&code[*offset], "_%" PRIu64 "[%i]", o->op_load_access_list.from.index, simd_index);
 
-				for (size_t i = 0; i < o->op_load_access_list.access_list_size; ++i) {
-					switch (o->op_load_access_list.access_list[i].kind) {
-					case ACCESS_ELEMENT:
-						*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_access_list.to.type.type, simd_width),
-						                   o->op_load_access_list.to.index, o->op_load_access_list.from.index);
-						*offset += sprintf(&code[*offset], "[_%" PRIu64 "]", o->op_load_access_list.access_list[i].access_element.index.index);
-						break;
-					case ACCESS_MEMBER:
-						*offset += sprintf(&code[*offset], ".%s", get_name(o->op_load_access_list.access_list[i].access_member.name));
+					type *s = get_type(o->op_load_access_list.from.type.type);
 
-						if (simd_width == 1) {
-							*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_access_list.to.type.type, simd_width),
-							                   o->op_load_access_list.to.index, o->op_load_access_list.from.index);
+					for (size_t i = 0; i < o->op_load_access_list.access_list_size; ++i) {
+						switch (o->op_load_access_list.access_list[i].kind) {
+						case ACCESS_ELEMENT: {
+							type *from_type = get_type(o->op_load_access_list.from.type.type);
 
-							if (global_var_index != 0) {
-								*offset += sprintf(&code[*offset], ".%s", get_name(o->op_load_access_list.access_list[i].access_member.name));
+							if (from_type->array_size == UINT32_MAX && get_type(from_type->base)->tex_kind != TEXTURE_KIND_NONE) {
+								*offset += sprintf(&code[*offset], "[NonUniformResourceIndex(_%" PRIu64 ")]",
+								                   o->op_load_access_list.access_list[i].access_element.index.index);
+							}
+							else if (global_var_index != 0 && i == 0 && get_type(from_type->base)->built_in) {
+								*offset += sprintf(&code[*offset], "[_%" PRIu64 "].data", o->op_load_access_list.access_list[i].access_element.index.index);
 							}
 							else {
-								*offset += sprintf(&code[*offset], ".%s", get_name(o->op_load_access_list.access_list[i].access_member.name));
+								*offset += sprintf(&code[*offset], "[_%" PRIu64 "]", o->op_load_access_list.access_list[i].access_element.index.index);
 							}
+							break;
 						}
-						else if (simd_width == 4) {
-							if (global_var_index != 0) {
-								*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_float32x4_load_all(_%" PRIu64,
-								                   type_string(o->op_load_access_list.to.type.type, simd_width), o->op_load_access_list.to.index,
-								                   o->op_load_access_list.from.index);
-								*offset += sprintf(&code[*offset], "->%s", get_name(o->op_load_access_list.access_list[i].access_member.name));
+						case ACCESS_MEMBER:
+							if (global_var_index != 0 && i == 0) {
+								*offset += sprintf(&code[*offset], "_%s", member_string(s, o->op_load_access_list.access_list[i].access_member.name));
 							}
 							else {
-								*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = _%" PRIu64, type_string(o->op_load_access_list.to.type.type, simd_width),
-								                   o->op_load_access_list.to.index, o->op_load_access_list.from.index);
-								*offset += sprintf(&code[*offset], ".%s", get_name(o->op_load_access_list.access_list[i].access_member.name));
+								*offset += sprintf(&code[*offset], ".%s", member_string(s, o->op_load_access_list.access_list[i].access_member.name));
 							}
+							break;
+						case ACCESS_SWIZZLE: {
+							char swizzle[4];
+
+							for (uint32_t swizzle_index = 0; swizzle_index < o->op_load_access_list.access_list[i].access_swizzle.swizzle.size;
+							     ++swizzle_index) {
+								swizzle[swizzle_index] = "xyzw"[o->op_load_access_list.access_list[i].access_swizzle.swizzle.indices[swizzle_index]];
+							}
+							swizzle[o->op_load_access_list.access_list[i].access_swizzle.swizzle.size] = 0;
+
+							*offset += sprintf(&code[*offset], ".%s", swizzle);
+							break;
+						}
 						}
 
-						break;
-					case ACCESS_SWIZZLE: {
-						swizzle *swizzle = &o->op_load_access_list.access_list[i].access_swizzle.swizzle;
-
-						if (o->op_load_access_list.from.type.type == uint2_id) {
-							assert(swizzle->size == 1); // TODO
-
-							if (swizzle->size == 1 && swizzle->indices[0] == 0) {
-								*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_swizzle_x_u2_x%i(_%" PRIu64 ");\n",
-								                   type_string(o->op_load_access_list.to.type.type, simd_width), o->op_load_access_list.to.index, simd_width,
-								                   o->op_load_access_list.from.index);
-							}
-							else if (swizzle->size == 1 && swizzle->indices[0] == 1) {
-								*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_swizzle_y_u2_x%i(_%" PRIu64 ");\n",
-								                   type_string(o->op_load_access_list.to.type.type, simd_width), o->op_load_access_list.to.index, simd_width,
-								                   o->op_load_access_list.from.index);
-							}
-							else {
-								assert(false); // TODO
-							}
-						}
-						else if (o->op_load_access_list.from.type.type == uint3_id) {
-							assert(swizzle->size == 1); // TODO
-
-							if (swizzle->size == 2 && swizzle->indices[0] == 0 && swizzle->indices[1] == 1) {
-								*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_swizzle_xy_u3_x%i(_%" PRIu64 ");\n",
-								                   type_string(o->op_load_access_list.to.type.type, simd_width), o->op_load_access_list.to.index, simd_width,
-								                   o->op_load_access_list.from.index);
-							}
-							else if (swizzle->size == 1 && swizzle->indices[0] == 0) {
-								*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_swizzle_x_u3_x%i(_%" PRIu64 ");\n",
-								                   type_string(o->op_load_access_list.to.type.type, simd_width), o->op_load_access_list.to.index, simd_width,
-								                   o->op_load_access_list.from.index);
-							}
-							else if (swizzle->size == 1 && swizzle->indices[0] == 1) {
-								*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = kore_cpu_compute_swizzle_y_u3_x%i(_%" PRIu64 ");\n",
-								                   type_string(o->op_load_access_list.to.type.type, simd_width), o->op_load_access_list.to.index, simd_width,
-								                   o->op_load_access_list.from.index);
-							}
-							else {
-								assert(false); // TODO
-							}
-						}
-
-						break;
-					}
+						s = get_type(o->op_load_access_list.access_list[i].type);
 					}
 
-					s = get_type(o->op_load_access_list.access_list[i].type);
+					*offset += sprintf(&code[*offset], ", ");
 				}
 
-				*offset += sprintf(&code[*offset], ";\n");
+				*offset += sprintf(&code[*offset], "};\n");
+
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = __riscv_vle32_v_f32m1(_temp_%" PRIu64 ", _vector_length);\n",
+				                   type_string_simd(o->op_load_access_list.to.type.type), o->op_load_access_list.to.index, o->op_load_access_list.to.index);
 
 				break;
 			}
@@ -762,77 +679,67 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 			case OPCODE_ADD_AND_STORE_ACCESS_LIST:
 			case OPCODE_DIVIDE_AND_STORE_ACCESS_LIST:
 			case OPCODE_MULTIPLY_AND_STORE_ACCESS_LIST: {
-				if (simd_width == 1) {
-					cstyle_write_opcode(code, offset, o, type_string_simd1, &indentation);
-				}
-				else if (simd_width == 4) {
-					for (int simd_index = 0; simd_index < 4; ++simd_index) {
-						indent(code, offset, indentation);
-						*offset += sprintf(&code[*offset], "_%" PRIu64, o->op_store_access_list.to.index);
+				indent(code, offset, indentation);
+				*offset += sprintf(&code[*offset], "_%" PRIu64, o->op_store_access_list.to.index);
 
-						type *s = get_type(o->op_store_access_list.to.type.type);
+				type *s = get_type(o->op_store_access_list.to.type.type);
 
-						for (size_t i = 0; i < o->op_store_access_list.access_list_size; ++i) {
-							switch (o->op_store_access_list.access_list[i].kind) {
-							case ACCESS_ELEMENT:
-								*offset += sprintf(&code[*offset], "[kore_int32x4_get(_%" PRIu64 ", %i)]",
-								                   o->op_store_access_list.access_list[i].access_element.index.index, simd_index);
-								break;
-							case ACCESS_MEMBER:
-								*offset += sprintf(&code[*offset], ".%s", get_name(o->op_store_access_list.access_list[i].access_member.name));
-								break;
-							case ACCESS_SWIZZLE: {
-								char swizzle[4];
+				for (size_t i = 0; i < o->op_store_access_list.access_list_size; ++i) {
+					switch (o->op_store_access_list.access_list[i].kind) {
+					case ACCESS_ELEMENT:
+						*offset += sprintf(&code[*offset], "[kore_int32x4_get(_%" PRIu64 ", %i)]",
+						                   o->op_store_access_list.access_list[i].access_element.index.index, 0);
+						break;
+					case ACCESS_MEMBER:
+						*offset += sprintf(&code[*offset], ".%s", get_name(o->op_store_access_list.access_list[i].access_member.name));
+						break;
+					case ACCESS_SWIZZLE: {
+						char swizzle[4];
 
-								for (uint32_t swizzle_index = 0; swizzle_index < o->op_store_access_list.access_list[i].access_swizzle.swizzle.size;
-								     ++swizzle_index) {
-									swizzle[swizzle_index] = "xyzw"[o->op_store_access_list.access_list[i].access_swizzle.swizzle.indices[swizzle_index]];
-								}
-								swizzle[o->op_store_access_list.access_list[i].access_swizzle.swizzle.size] = 0;
-
-								*offset += sprintf(&code[*offset], ".%s", swizzle);
-
-								break;
-							}
-							}
-
-							s = get_type(o->op_store_access_list.access_list[i].type);
+						for (uint32_t swizzle_index = 0; swizzle_index < o->op_store_access_list.access_list[i].access_swizzle.swizzle.size; ++swizzle_index) {
+							swizzle[swizzle_index] = "xyzw"[o->op_store_access_list.access_list[i].access_swizzle.swizzle.indices[swizzle_index]];
 						}
+						swizzle[o->op_store_access_list.access_list[i].access_swizzle.swizzle.size] = 0;
 
-						switch (o->type) {
-						case OPCODE_STORE_ACCESS_LIST:
-							*offset += sprintf(&code[*offset], " = _%" PRIu64 ";\n", o->op_store_access_list.from.index);
+						*offset += sprintf(&code[*offset], ".%s", swizzle);
 
-							*offset += sprintf(&code[*offset],
-							                   " = kore_cpu_compute_create_float4(kore_float32x4_get(_%" PRIu64 ".x, %i), kore_float32x4_get(_%" PRIu64
-							                   ".y, %i), kore_float32x4_get(_%" PRIu64 ".z, %i), kore_float32x4_get(_%" PRIu64 ".w, %i));\n",
-							                   o->op_store_access_list.from.index, simd_index, o->op_store_access_list.from.index, simd_index,
-							                   o->op_store_access_list.from.index, simd_index, o->op_store_access_list.from.index, simd_index);
-							break;
-						case OPCODE_SUB_AND_STORE_ACCESS_LIST:
-							*offset += sprintf(&code[*offset], " -= _%" PRIu64 ";\n", o->op_store_access_list.from.index);
-							break;
-						case OPCODE_ADD_AND_STORE_ACCESS_LIST:
-							*offset += sprintf(&code[*offset], " += _%" PRIu64 ";\n", o->op_store_access_list.from.index);
-							break;
-						case OPCODE_DIVIDE_AND_STORE_ACCESS_LIST:
-							*offset += sprintf(&code[*offset], " /= _%" PRIu64 ";\n", o->op_store_access_list.from.index);
-							break;
-						case OPCODE_MULTIPLY_AND_STORE_ACCESS_LIST:
-							*offset += sprintf(&code[*offset], " *= _%" PRIu64 ";\n", o->op_store_access_list.from.index);
-							break;
-						default:
-							assert(false);
-							break;
-						}
+						break;
 					}
+					}
+
+					s = get_type(o->op_store_access_list.access_list[i].type);
 				}
+
+				switch (o->type) {
+				case OPCODE_STORE_ACCESS_LIST:
+					*offset += sprintf(&code[*offset], " = _%" PRIu64 ";\n", o->op_store_access_list.from.index);
+					break;
+				case OPCODE_SUB_AND_STORE_ACCESS_LIST:
+					*offset += sprintf(&code[*offset], " -= _%" PRIu64 ";\n", o->op_store_access_list.from.index);
+					break;
+				case OPCODE_ADD_AND_STORE_ACCESS_LIST:
+					*offset += sprintf(&code[*offset], " += _%" PRIu64 ";\n", o->op_store_access_list.from.index);
+					break;
+				case OPCODE_DIVIDE_AND_STORE_ACCESS_LIST:
+					*offset += sprintf(&code[*offset], " /= _%" PRIu64 ";\n", o->op_store_access_list.from.index);
+					break;
+				case OPCODE_MULTIPLY_AND_STORE_ACCESS_LIST:
+					*offset += sprintf(&code[*offset], " *= _%" PRIu64 ";\n", o->op_store_access_list.from.index);
+					break;
+				default:
+					assert(false);
+					break;
+				}
+
 				break;
 			}
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
 					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "return _%" PRIu64 ";\n", o->op_return.var.index);
+					*offset += sprintf(&code[*offset], "memcpy(_output, &_%" PRIu64 ", sizeof(_%" PRIu64 ") / 32 * 32);\n", o->op_return.var.index,
+					                   o->op_return.var.index);
+					indent(code, offset, indentation);
+					*offset += sprintf(&code[*offset], "return;\n");
 				}
 				else {
 					indent(code, offset, indentation);
@@ -841,12 +748,7 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 				break;
 			}
 			default:
-				if (simd_width == 1) {
-					cstyle_write_opcode(code, offset, o, type_string_simd1, &indentation);
-				}
-				else if (simd_width == 4) {
-					cstyle_write_opcode(code, offset, o, type_string_simd4, &indentation);
-				}
+				cstyle_write_opcode(code, offset, o, type_string_simd, &indentation);
 				break;
 			}
 
@@ -869,8 +771,6 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 }
 
 static void kompjuta_export_vertex(char *directory, function *main) {
-	uint8_t simd_width = 4;
-
 	debug_context context = {0};
 
 	char *code = (char *)calloc(1024 * 1024, 1);
@@ -883,23 +783,21 @@ static void kompjuta_export_vertex(char *directory, function *main) {
 
 	size_t header_offset = 0;
 
-	write_types(code, &offset, main, simd_width);
+	write_types(code, &offset, main);
 
 	write_globals(code, &offset, header_code, &header_offset, main);
 
 	char *main_name = get_name(main->name);
 
-	write_functions(code, main_name, &offset, SHADER_STAGE_VERTEX, main, simd_width);
+	write_functions(code, main_name, &offset, SHADER_STAGE_VERTEX, main);
 
 	char filename[512];
 	sprintf(filename, "kong_%s", main_name);
 
-	write_code(code, header_code, directory, filename, main_name, SHADER_STAGE_VERTEX, main, simd_width);
+	write_code(code, header_code, directory, filename, main_name, SHADER_STAGE_VERTEX, main);
 }
 
 static void kompjuta_export_fragment(char *directory, function *main) {
-	uint8_t simd_width = 4;
-
 	debug_context context = {0};
 
 	char *code = (char *)calloc(1024 * 1024, 1);
@@ -912,23 +810,21 @@ static void kompjuta_export_fragment(char *directory, function *main) {
 
 	size_t header_offset = 0;
 
-	write_types(code, &offset, main, simd_width);
+	write_types(code, &offset, main);
 
 	write_globals(code, &offset, header_code, &header_offset, main);
 
 	char *main_name = get_name(main->name);
 
-	write_functions(code, main_name, &offset, SHADER_STAGE_FRAGMENT, main, simd_width);
+	write_functions(code, main_name, &offset, SHADER_STAGE_FRAGMENT, main);
 
 	char filename[512];
 	sprintf(filename, "kong_%s", main_name);
 
-	write_code(code, header_code, directory, filename, main_name, SHADER_STAGE_FRAGMENT, main, simd_width);
+	write_code(code, header_code, directory, filename, main_name, SHADER_STAGE_FRAGMENT, main);
 }
 
 static void kompjuta_export_compute(char *directory, function *main) {
-	uint8_t simd_width = 4;
-
 	debug_context context = {0};
 
 	char *code = (char *)calloc(1024 * 1024, 1);
@@ -943,18 +839,18 @@ static void kompjuta_export_compute(char *directory, function *main) {
 
 	assert(main->parameters_size == 0);
 
-	write_types(code, &offset, main, simd_width);
+	write_types(code, &offset, main);
 
 	write_globals(code, &offset, header_code, &header_offset, main);
 
 	char *main_name = get_name(main->name);
 
-	write_functions(code, main_name, &offset, SHADER_STAGE_COMPUTE, main, simd_width);
+	write_functions(code, main_name, &offset, SHADER_STAGE_COMPUTE, main);
 
 	char filename[512];
 	sprintf(filename, "kong_%s", main_name);
 
-	write_code(code, header_code, directory, filename, main_name, SHADER_STAGE_COMPUTE, main, simd_width);
+	write_code(code, header_code, directory, filename, main_name, SHADER_STAGE_COMPUTE, main);
 }
 
 void kompjuta_export(char *directory) {
