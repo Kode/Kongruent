@@ -736,7 +736,7 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
 					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "memcpy(_output, &_%" PRIu64 ", sizeof(_%" PRIu64 ") / 32 * 32);\n", o->op_return.var.index,
+					*offset += sprintf(&code[*offset], "memcpy(_output, &_%" PRIu64 ", sizeof(_%" PRIu64 ") / 32 * _lane_count);\n", o->op_return.var.index,
 					                   o->op_return.var.index);
 					indent(code, offset, indentation);
 					*offset += sprintf(&code[*offset], "return;\n");
