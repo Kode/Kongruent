@@ -78,6 +78,7 @@ void close_dir(directory *dir) {
 #else
 
 #include <string.h>
+#include <stdlib.h>
 
 #include <dirent.h>
 #include <sys/stat.h>
@@ -86,6 +87,10 @@ void close_dir(directory *dir) {
 directory open_dir(const char *dirname) {
 	directory dir;
 	dir.handle = opendir(dirname);
+	if (dir.handle == NULL) {
+		kong_log(LOG_LEVEL_ERROR, "Failed to open directory: %s", dirname);
+		exit(1);
+	}
 	return dir;
 }
 
