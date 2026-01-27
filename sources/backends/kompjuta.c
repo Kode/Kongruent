@@ -456,7 +456,7 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 			                   "kore_uint32x4_add(kore_uint32x4_mul(group_thread_id.y, kore_uint32x4_load_all(workgroup_count_x)), group_thread_id.x));\n\n");
 		}
 		else if (f == main && stage == SHADER_STAGE_VERTEX) {
-			*offset += sprintf(&code[*offset], "void vs_%s(size_t _lane_count, void *__output, ", get_name(f->name));
+			*offset += sprintf(&code[*offset], "__attribute__((naked)) void vs_%s(size_t _lane_count, void *__output, ", get_name(f->name));
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 				if (parameter_index == 0) {
 					*offset += sprintf(&code[*offset], "void *__%" PRIu64, parameter_ids[parameter_index]);
