@@ -115,6 +115,7 @@ static void write_functions(void) {
 			case OPCODE_VAR:
 				break;
 			case OPCODE_NOT:
+				kong_log(LOG_LEVEL_INFO, "$%zu = NOT $%zu", o->op_negate.to.index, o->op_negate.from.index);
 				break;
 			case OPCODE_STORE_VARIABLE:
 				kong_log(LOG_LEVEL_INFO, "$%zu = STORE_VARIABLE $%zu", o->op_store_var.to.index, o->op_store_var.from.index);
@@ -188,44 +189,64 @@ static void write_functions(void) {
 				kong_log(LOG_LEVEL_INFO, "$%zu = DIVIDE $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_MOD:
+				kong_log(LOG_LEVEL_INFO, "$%zu = MOD $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_EQUALS:
+				kong_log(LOG_LEVEL_INFO, "$%zu = EQUALS $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_NOT_EQUALS:
+				kong_log(LOG_LEVEL_INFO, "$%zu = NOT_EQUALS $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_GREATER:
+				kong_log(LOG_LEVEL_INFO, "$%zu = GREATER $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_GREATER_EQUAL:
+				kong_log(LOG_LEVEL_INFO, "$%zu = GREATER_OR_EQUAL $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_LESS:
+				kong_log(LOG_LEVEL_INFO, "$%zu = LESS $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_LESS_EQUAL:
+				kong_log(LOG_LEVEL_INFO, "$%zu = LESS_OR_EQUAL $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_AND:
+				kong_log(LOG_LEVEL_INFO, "$%zu = AND $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_OR:
+				kong_log(LOG_LEVEL_INFO, "$%zu = OR $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_BITWISE_XOR:
+				kong_log(LOG_LEVEL_INFO, "$%zu = BITWISE_XOR $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_BITWISE_AND:
+				kong_log(LOG_LEVEL_INFO, "$%zu = BITWISE_AND $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_BITWISE_OR:
+				kong_log(LOG_LEVEL_INFO, "$%zu = BITWISE_OR $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_LEFT_SHIFT:
+				kong_log(LOG_LEVEL_INFO, "$%zu = LEFT_SHIFT $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_RIGHT_SHIFT:
+				kong_log(LOG_LEVEL_INFO, "$%zu = RIGHT_SHIFT $%zu, $%zu", o->op_binary.result.index, o->op_binary.left.index, o->op_binary.right.index);
 				break;
 			case OPCODE_IF:
+				kong_log(LOG_LEVEL_INFO, "IF $%zu -> BLOCK [start=$%zu, end=$%zu]", o->op_if.condition.index, o->op_if.start_id, o->op_if.end_id);
 				break;
 			case OPCODE_WHILE_START:
+				kong_log(LOG_LEVEL_INFO, "WHILE_START [ID: $%zu] -> BLOCK [start=$%zu, continue=$%zu, end=$%zu]", o->op_while_start.start_id, o->op_while_start.start_id, o->op_while_start.continue_id, o->op_while_start.end_id);
 				break;
 			case OPCODE_WHILE_CONDITION:
+				kong_log(LOG_LEVEL_INFO, "WHILE_COND $%zu", o->op_while.condition.index, o->op_while.end_id);
 				break;
 			case OPCODE_WHILE_END:
+				kong_log(LOG_LEVEL_INFO, "WHILE_END [ID: $%zu] -> BLOCK [start=$%zu, continue=$%zu, end=$%zu]", o->op_while_end.end_id, o->op_while_end.start_id, o->op_while_end.continue_id, o->op_while_end.end_id);
 				break;
 			case OPCODE_BLOCK_START:
+				kong_log(LOG_LEVEL_INFO, "BLOCK_START [ID: $%zu]", o->op_block.id);
 				break;
 			case OPCODE_BLOCK_END:
+				kong_log(LOG_LEVEL_INFO, "BLOCK_END [ID: $%zu]", o->op_block.id);
 				break;
 			default: {
 				debug_context context = {0};
