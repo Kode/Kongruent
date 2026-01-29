@@ -456,7 +456,7 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 			                   "kore_uint32x4_add(kore_uint32x4_mul(group_thread_id.y, kore_uint32x4_load_all(workgroup_count_x)), group_thread_id.x));\n\n");
 		}
 		else if (f == main && stage == SHADER_STAGE_VERTEX) {
-			*offset += sprintf(&code[*offset], "__attribute__((naked)) void vs_%s(size_t _lane_count, void *__output, ", get_name(f->name));
+			*offset += sprintf(&code[*offset], "void vs_%s(size_t _lane_count, void *__output, ", get_name(f->name));
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 				if (parameter_index == 0) {
 					*offset += sprintf(&code[*offset], "void *__%" PRIu64, parameter_ids[parameter_index]);
@@ -613,64 +613,55 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 				}
 
 				indent(code, offset, indentation);
-				*offset +=
-				    sprintf(&code[*offset], "%s _temp_%" PRIu64 "[] = {", type_string(o->op_load_access_list.to.type.type), o->op_load_access_list.to.index);
+				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = __riscv_vlse32_v_f32m1(", type_string_simd(o->op_load_access_list.to.type.type),
+				                   o->op_load_access_list.to.index);
 
-				for (uint32_t simd_index = 0; simd_index < 32u; ++simd_index) {
-					*offset += sprintf(&code[*offset], "_%" PRIu64 "[%i]", o->op_load_access_list.from.index, simd_index);
+				*offset += sprintf(&code[*offset], "&_%" PRIu64 "[0]", o->op_load_access_list.from.index);
 
-					type *s = get_type(o->op_load_access_list.from.type.type);
+				type *s = get_type(o->op_load_access_list.from.type.type);
 
-					for (size_t i = 0; i < o->op_load_access_list.access_list_size; ++i) {
-						switch (o->op_load_access_list.access_list[i].kind) {
-						case ACCESS_ELEMENT: {
-							type *from_type = get_type(o->op_load_access_list.from.type.type);
+				for (size_t i = 0; i < o->op_load_access_list.access_list_size; ++i) {
+					switch (o->op_load_access_list.access_list[i].kind) {
+					case ACCESS_ELEMENT: {
+						type *from_type = get_type(o->op_load_access_list.from.type.type);
 
-							if (from_type->array_size == UINT32_MAX && get_type(from_type->base)->tex_kind != TEXTURE_KIND_NONE) {
-								*offset += sprintf(&code[*offset], "[NonUniformResourceIndex(_%" PRIu64 ")]",
-								                   o->op_load_access_list.access_list[i].access_element.index.index);
-							}
-							else if (global_var_index != 0 && i == 0 && get_type(from_type->base)->built_in) {
-								*offset += sprintf(&code[*offset], "[_%" PRIu64 "].data", o->op_load_access_list.access_list[i].access_element.index.index);
-							}
-							else {
-								*offset += sprintf(&code[*offset], "[_%" PRIu64 "]", o->op_load_access_list.access_list[i].access_element.index.index);
-							}
-							break;
+						if (from_type->array_size == UINT32_MAX && get_type(from_type->base)->tex_kind != TEXTURE_KIND_NONE) {
+							*offset += sprintf(&code[*offset], "[NonUniformResourceIndex(_%" PRIu64 ")]",
+							                   o->op_load_access_list.access_list[i].access_element.index.index);
 						}
-						case ACCESS_MEMBER:
-							if (global_var_index != 0 && i == 0) {
-								*offset += sprintf(&code[*offset], "_%s", member_string(s, o->op_load_access_list.access_list[i].access_member.name));
-							}
-							else {
-								*offset += sprintf(&code[*offset], ".%s", member_string(s, o->op_load_access_list.access_list[i].access_member.name));
-							}
-							break;
-						case ACCESS_SWIZZLE: {
-							char swizzle[4];
-
-							for (uint32_t swizzle_index = 0; swizzle_index < o->op_load_access_list.access_list[i].access_swizzle.swizzle.size;
-							     ++swizzle_index) {
-								swizzle[swizzle_index] = "xyzw"[o->op_load_access_list.access_list[i].access_swizzle.swizzle.indices[swizzle_index]];
-							}
-							swizzle[o->op_load_access_list.access_list[i].access_swizzle.swizzle.size] = 0;
-
-							*offset += sprintf(&code[*offset], ".%s", swizzle);
-							break;
+						else if (global_var_index != 0 && i == 0 && get_type(from_type->base)->built_in) {
+							*offset += sprintf(&code[*offset], "[_%" PRIu64 "].data", o->op_load_access_list.access_list[i].access_element.index.index);
 						}
+						else {
+							*offset += sprintf(&code[*offset], "[_%" PRIu64 "]", o->op_load_access_list.access_list[i].access_element.index.index);
 						}
+						break;
+					}
+					case ACCESS_MEMBER:
+						if (global_var_index != 0 && i == 0) {
+							*offset += sprintf(&code[*offset], "_%s", member_string(s, o->op_load_access_list.access_list[i].access_member.name));
+						}
+						else {
+							*offset += sprintf(&code[*offset], ".%s", member_string(s, o->op_load_access_list.access_list[i].access_member.name));
+						}
+						break;
+					case ACCESS_SWIZZLE: {
+						char swizzle[4];
 
-						s = get_type(o->op_load_access_list.access_list[i].type);
+						for (uint32_t swizzle_index = 0; swizzle_index < o->op_load_access_list.access_list[i].access_swizzle.swizzle.size; ++swizzle_index) {
+							swizzle[swizzle_index] = "xyzw"[o->op_load_access_list.access_list[i].access_swizzle.swizzle.indices[swizzle_index]];
+						}
+						swizzle[o->op_load_access_list.access_list[i].access_swizzle.swizzle.size] = 0;
+
+						*offset += sprintf(&code[*offset], ".%s", swizzle);
+						break;
+					}
 					}
 
-					*offset += sprintf(&code[*offset], ", ");
+					s = get_type(o->op_load_access_list.access_list[i].type);
 				}
 
-				*offset += sprintf(&code[*offset], "};\n");
-
-				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = __riscv_vle32_v_f32m1(_temp_%" PRIu64 ", _vector_length);\n",
-				                   type_string_simd(o->op_load_access_list.to.type.type), o->op_load_access_list.to.index, o->op_load_access_list.to.index);
+				*offset += sprintf(&code[*offset], ", sizeof(%s), _vector_length);\n", type_string(o->op_load_access_list.from.type.type));
 
 				break;
 			}
@@ -736,8 +727,7 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
 					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "memcpy(_output, &_%" PRIu64 ", sizeof(_%" PRIu64 ") / 32 * _lane_count);\n", o->op_return.var.index,
-					                   o->op_return.var.index);
+					*offset += sprintf(&code[*offset], "*_output = _%" PRIu64 ";\n", o->op_return.var.index);
 					indent(code, offset, indentation);
 					*offset += sprintf(&code[*offset], "return;\n");
 				}
