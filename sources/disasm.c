@@ -234,13 +234,15 @@ static void write_functions(void) {
 				kong_log(LOG_LEVEL_INFO, "IF $%zu -> BLOCK [start=$%zu, end=$%zu]", o->op_if.condition.index, o->op_if.start_id, o->op_if.end_id);
 				break;
 			case OPCODE_WHILE_START:
-				kong_log(LOG_LEVEL_INFO, "WHILE_START [ID: $%zu] -> BLOCK [start=$%zu, continue=$%zu, end=$%zu]", o->op_while_start.start_id, o->op_while_start.start_id, o->op_while_start.continue_id, o->op_while_start.end_id);
+				kong_log(LOG_LEVEL_INFO, "WHILE_START [ID: $%zu] -> BLOCK [start=$%zu, continue=$%zu, end=$%zu]", o->op_while_start.start_id,
+				         o->op_while_start.start_id, o->op_while_start.continue_id, o->op_while_start.end_id);
 				break;
 			case OPCODE_WHILE_CONDITION:
 				kong_log(LOG_LEVEL_INFO, "WHILE_COND $%zu", o->op_while.condition.index, o->op_while.end_id);
 				break;
 			case OPCODE_WHILE_END:
-				kong_log(LOG_LEVEL_INFO, "WHILE_END [ID: $%zu] -> BLOCK [start=$%zu, continue=$%zu, end=$%zu]", o->op_while_end.end_id, o->op_while_end.start_id, o->op_while_end.continue_id, o->op_while_end.end_id);
+				kong_log(LOG_LEVEL_INFO, "WHILE_END [ID: $%zu] -> BLOCK [start=$%zu, continue=$%zu, end=$%zu]", o->op_while_end.end_id,
+				         o->op_while_end.start_id, o->op_while_end.continue_id, o->op_while_end.end_id);
 				break;
 			case OPCODE_BLOCK_START:
 				kong_log(LOG_LEVEL_INFO, "BLOCK_START [ID: $%zu]", o->op_block.id);
