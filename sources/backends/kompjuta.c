@@ -146,7 +146,7 @@ static void write_code(char *code, char *header_code, char *directory, const cha
 				}
 			}
 
-			fprintf(file, "void vs_%s(size_t _lane_count, void *__output, ", name);
+			fprintf(file, "void vs_%s(size_t _lane_count, uint16_t *__indices, void *__output, ", name);
 			for (uint8_t parameter_index = 0; parameter_index < main->parameters_size; ++parameter_index) {
 				if (parameter_index == 0) {
 					fprintf(file, "void *__%" PRIu64, parameter_ids[parameter_index]);
@@ -456,7 +456,7 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 			                   "kore_uint32x4_add(kore_uint32x4_mul(group_thread_id.y, kore_uint32x4_load_all(workgroup_count_x)), group_thread_id.x));\n\n");
 		}
 		else if (f == main && stage == SHADER_STAGE_VERTEX) {
-			*offset += sprintf(&code[*offset], "void vs_%s(size_t _lane_count, void *__output, ", get_name(f->name));
+			*offset += sprintf(&code[*offset], "void vs_%s(size_t _lane_count, uint16_t *__indices, void *__output, ", get_name(f->name));
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 				if (parameter_index == 0) {
 					*offset += sprintf(&code[*offset], "void *__%" PRIu64, parameter_ids[parameter_index]);
@@ -471,6 +471,7 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 			*offset += sprintf(&code[*offset], "\t%s *_output = __output;\n", type_string_simd(f->return_type.type));
 			*offset += sprintf(&code[*offset], "\t%s *_%" PRIu64 " = __%" PRIu64 ";\n", type_string_simd(f->parameter_types[0].type), parameter_ids[0],
 			                   parameter_ids[0]);
+			*offset += sprintf(&code[*offset], "\tvuint16m1_t _indices = __riscv_vle16_v_u16m1(__indices, _vector_length);\n");
 		}
 		else {
 			*offset += sprintf(&code[*offset], "%s %s(", type_string_simd(f->return_type.type), get_name(f->name));
