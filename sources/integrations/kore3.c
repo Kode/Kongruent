@@ -767,6 +767,16 @@ void kore3_export(char *directory, api_kind api) {
 
 		fprintf(output, "#ifdef __cplusplus\n");
 		fprintf(output, "extern \"C\" {\n");
+		fprintf(output, "#endif\n\n");
+
+		fprintf(output, "#ifdef _MSC_VER\n");
+		fprintf(output, "#define KONG_PACK_START __pragma(pack(push, 1))\n");
+		fprintf(output, "#define KONG_PACK_END __pragma(pack(pop))\n");
+		fprintf(output, "#define KONG_PACK\n");
+		fprintf(output, "#else\n");
+		fprintf(output, "#define KONG_PACK_START\n");
+		fprintf(output, "#define KONG_PACK_END\n");
+		fprintf(output, "#define KONG_PACK __attribute__((packed))\n");
 		fprintf(output, "#endif\n");
 
 		fprintf(output, "\nvoid kong_init(kore_gpu_device *device);\n\n");
@@ -1011,11 +1021,11 @@ void kore3_export(char *directory, api_kind api) {
 		for (size_t i = 0; i < vertex_inputs_size; ++i) {
 			type *t = get_type(vertex_inputs[i]);
 
-			fprintf(output, "typedef struct %s {\n", get_name(t->name));
+			fprintf(output, "KONG_PACK_START\ntypedef struct KONG_PACK %s {\n", get_name(t->name));
 			for (size_t j = 0; j < t->members.size; ++j) {
 				fprintf(output, "\t%s %s;\n", type_string(t->members.m[j].type.type), get_name(t->members.m[j].name));
 			}
-			fprintf(output, "} %s;\n\n", get_name(t->name));
+			fprintf(output, "} %s;\nKONG_PACK_END\n\n", get_name(t->name));
 
 			fprintf(output, "typedef struct %s_buffer {\n", get_name(t->name));
 			fprintf(output, "\tkore_gpu_buffer buffer;\n");

@@ -204,13 +204,13 @@ static void write_types(char *code, size_t *offset, function *main) {
 		}
 
 		if (!t->built_in && !has_attribute(&t->attributes, add_name("pipe"))) {
-			*offset += sprintf(&code[*offset], "typedef struct %s {\n", get_name(t->name));
+			*offset += sprintf(&code[*offset], "KONG_PACK_START\ntypedef struct KONG_PACK %s {\n", get_name(t->name));
 
 			for (size_t j = 0; j < t->members.size; ++j) {
 				*offset += sprintf(&code[*offset], "\t%s %s;\n", type_string_simd(t->members.m[j].type.type), get_name(t->members.m[j].name));
 			}
 
-			*offset += sprintf(&code[*offset], "} %s;\n\n", get_name(t->name));
+			*offset += sprintf(&code[*offset], "} %s;\nKONG_PACK_END\n\n", get_name(t->name));
 		}
 	}
 }
