@@ -471,7 +471,9 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 			*offset += sprintf(&code[*offset], "\t%s *_output = __output;\n", type_string_simd(f->return_type.type));
 			*offset += sprintf(&code[*offset], "\t%s *_%" PRIu64 " = __%" PRIu64 ";\n", type_string_simd(f->parameter_types[0].type), parameter_ids[0],
 			                   parameter_ids[0]);
-			*offset += sprintf(&code[*offset], "\tvuint16m1_t _indices = __riscv_vle16_v_u16m1(__indices, _vector_length);\n");
+			*offset += sprintf(&code[*offset], "\tvuint16mf2_t _indices = __riscv_vle16_v_u16mf2(__indices, _vector_length);\n");
+			*offset += sprintf(&code[*offset], "\tuint16_t _stride = sizeof(%s);\n", type_string_simd(f->parameter_types[0].type));
+			*offset += sprintf(&code[*offset], "\tvuint16mf2_t _index_offsets = __riscv_vmul_vx_u16mf2(_indices, _stride, _vector_length);\n");
 		}
 		else {
 			*offset += sprintf(&code[*offset], "%s %s(", type_string_simd(f->return_type.type), get_name(f->name));
@@ -614,7 +616,7 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 				}
 
 				indent(code, offset, indentation);
-				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = __riscv_vlse32_v_f32m1(", type_string_simd(o->op_load_access_list.to.type.type),
+				*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = __riscv_vluxei16_v_f32m1(", type_string_simd(o->op_load_access_list.to.type.type),
 				                   o->op_load_access_list.to.index);
 
 				*offset += sprintf(&code[*offset], "&_%" PRIu64 "[0]", o->op_load_access_list.from.index);
@@ -662,7 +664,7 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 					s = get_type(o->op_load_access_list.access_list[i].type);
 				}
 
-				*offset += sprintf(&code[*offset], ", sizeof(%s), _vector_length);\n", type_string(o->op_load_access_list.from.type.type));
+				*offset += sprintf(&code[*offset], ", _index_offsets, _vector_length);\n");
 
 				break;
 			}
