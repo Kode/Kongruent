@@ -176,16 +176,7 @@ static void write_code(char *code, char *header_code, char *directory, const cha
 		fprintf(file, "#include <kore3/kompjuta/riscv_vector_util.h>\n\n");
 		fprintf(file, "#include <string.h>\n\n");
 
-		if (stage == SHADER_STAGE_FRAGMENT) {
-			fprintf(file, "/*\n");
-		}
-
 		fprintf(file, "%s", code);
-
-		if (stage == SHADER_STAGE_FRAGMENT) {
-			fprintf(file, "*/\n");
-			fprintf(file, "void fs_%s() {}\n", get_name(main->name));
-		}
 
 		fclose(file);
 	}
@@ -476,6 +467,10 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 			*offset += sprintf(&code[*offset], "\tuint16_t _stride = sizeof(%s);\n", type_string_simd(f->parameter_types[0].type));
 			*offset += sprintf(&code[*offset], "\tvuint32m1_t _index_offsets = __riscv_vmul_vx_u32m1(_long_indices, _stride, _vector_length);\n");
 		}
+		else if (f == main && stage == SHADER_STAGE_FRAGMENT) {
+			*offset += sprintf(&code[*offset], "vuint32m1_t fs_%s(size_t _lane_count, void *__input) {\n", get_name(f->name));
+			*offset += sprintf(&code[*offset], "\tsize_t _vector_length = __riscv_vsetvl_e32m1(_lane_count);\n");
+		}
 		else {
 			*offset += sprintf(&code[*offset], "%s %s(", type_string_simd(f->return_type.type), get_name(f->name));
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
@@ -730,10 +725,25 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 			}
 			case OPCODE_RETURN: {
 				if (o->size > offsetof(opcode, op_return)) {
-					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "*_output = _%" PRIu64 ";\n", o->op_return.var.index);
-					indent(code, offset, indentation);
-					*offset += sprintf(&code[*offset], "return;\n");
+					if (f == main) {
+						if (stage == SHADER_STAGE_FRAGMENT) {
+							indent(code, offset, indentation);
+							*offset += sprintf(&code[*offset], "return _%" PRIu64 ";\n", o->op_return.var.index);
+						}
+						else if (stage == SHADER_STAGE_VERTEX) {
+							indent(code, offset, indentation);
+							*offset += sprintf(&code[*offset], "*_output = _%" PRIu64 ";\n", o->op_return.var.index);
+							indent(code, offset, indentation);
+							*offset += sprintf(&code[*offset], "return;\n");
+						}
+						else {
+							assert(false);
+						}
+					}
+					else {
+						indent(code, offset, indentation);
+						*offset += sprintf(&code[*offset], "return _%" PRIu64 ";\n", o->op_return.var.index);
+					}
 				}
 				else {
 					indent(code, offset, indentation);
