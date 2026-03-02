@@ -728,7 +728,10 @@ static void write_functions(char *code, const char *main_name, size_t *offset, s
 					if (f == main) {
 						if (stage == SHADER_STAGE_FRAGMENT) {
 							indent(code, offset, indentation);
-							*offset += sprintf(&code[*offset], "return _%" PRIu64 ";\n", o->op_return.var.index);
+							*offset += sprintf(&code[*offset], "vfloat32m1_t _scaled_color_values = vfmul_vf_f32m1(_%" PRIu64 ", 255.0f, _vector_length);\n",
+							                   o->op_return.var.index);
+							indent(code, offset, indentation);
+							*offset += sprintf(&code[*offset], "return vfcvt_rtz_xu_f_v_u32m1(_scaled_color_values, _vector_length);\n");
 						}
 						else if (stage == SHADER_STAGE_VERTEX) {
 							indent(code, offset, indentation);
