@@ -53,9 +53,9 @@ static inline struct bucket *allocate_bucket(void) {
 
 static inline struct hash_map *hash_map_create(void) {
 #ifdef _WIN32
-	struct hash_map *map = _aligned_malloc(sizeof(struct hash_map), 64);
+	struct hash_map *map = (struct hash_map *)_aligned_malloc(sizeof(struct hash_map), 64);
 #else
-	struct hash_map *map = aligned_alloc(64, sizeof(struct hash_map));
+	struct hash_map *map = (struct hash_map *)aligned_alloc(64, sizeof(struct hash_map));
 #endif
 	assert(map != NULL);
 	memset(map, 0, sizeof(struct hash_map));

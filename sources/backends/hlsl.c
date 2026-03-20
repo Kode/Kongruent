@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static char *member_string(type *parent_type, name_id member_name) {
+static const char *member_string(type *parent_type, name_id member_name) {
 	if (parent_type == get_type(ray_type_id)) {
 		if (member_name == add_name("origin")) {
 			return "Origin";
@@ -44,7 +44,7 @@ static char *member_string(type *parent_type, name_id member_name) {
 	}
 }
 
-static char *type_string(type_id type) {
+static const char *type_string(type_id type) {
 	if (type == float_id) {
 		return "float";
 	}
@@ -809,7 +809,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 
 			*offset += sprintf(&hlsl[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
-				char *payload_prefix = "";
+				const char *payload_prefix = "";
 				if (is_payload_type(f->parameter_types[parameter_index].type)) {
 					payload_prefix = "inout ";
 				}
@@ -1103,7 +1103,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 		else {
 			*offset += sprintf(&hlsl[*offset], "%s %s(", type_string(f->return_type.type), get_name(f->name));
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
-				char *payload_prefix = "";
+				const char *payload_prefix = "";
 				if (is_payload_type(f->parameter_types[parameter_index].type)) {
 					payload_prefix = "inout ";
 				}
@@ -1667,7 +1667,7 @@ static void hlsl_export_all_ray_shaders(char *directory, bool debug) {
 	}
 
 	if (all_rayshaders_size == 0) {
-		char *name = "ray";
+		const char *name = "ray";
 
 		char filename[512];
 		sprintf(filename, "kong_%s", name);
@@ -1700,7 +1700,7 @@ static void hlsl_export_all_ray_shaders(char *directory, bool debug) {
 	int      result      = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_RAY_GENERATION, debug);
 	check(result == 0, context, "HLSL compilation failed");
 
-	char *name = "ray";
+	const char *name = "ray";
 
 	char filename[512];
 	sprintf(filename, "kong_%s", name);

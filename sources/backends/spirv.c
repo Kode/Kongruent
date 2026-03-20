@@ -562,7 +562,7 @@ static spirv_id write_type_matrix(instructions_buffer *instructions, spirv_id co
 static spirv_id write_type_int(instructions_buffer *instructions, uint32_t width, bool signedness) {
 	spirv_id int_type = allocate_index();
 
-	uint32_t operands[] = {int_type.id, width, signedness ? 1 : 0};
+	uint32_t operands[] = {int_type.id, width, signedness ? 1u : 0u};
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_TYPE_INT, operands);
 	return int_type;
 }
@@ -698,7 +698,7 @@ static spirv_id convert_complex_type_to_spirv_id(complex_type ct) {
 	spirv_id spirv_index = hmget(type_map, ct);
 	if (spirv_index.id == 0) {
 		spirv_index = allocate_index();
-		add_to_type_map(ct.type, spirv_index, ct.readwrite, ct.storage);
+		add_to_type_map(ct.type, spirv_index, ct.readwrite, (storage_class)ct.storage);
 	}
 	return spirv_index;
 }
@@ -893,7 +893,7 @@ static void write_types(instructions_buffer *buffer, function *main) {
 				};
 				static_array_push(written_pointer_relations, relation);
 
-				write_type_pointer_preallocated(buffer, type.storage, non_pointer_type_id, type_map[i].value);
+				write_type_pointer_preallocated(buffer, (storage_class)type.storage, non_pointer_type_id, type_map[i].value);
 			}
 		}
 	}
@@ -1474,7 +1474,7 @@ static spirv_id write_op_image_sample_explicit_lod(instructions_buffer *instruct
                                                    spirv_id lod) {
 	spirv_id result = allocate_index();
 
-	int      lod_operands = 0x2;
+	uint32_t lod_operands = 0x2u;
 	uint32_t operands[]   = {result_type.id, result.id, sampled_image.id, coordinate.id, lod_operands, lod.id};
 
 	write_instruction(instructions, WORD_COUNT(operands), SPIRV_OPCODE_IMAGE_SAMPLE_EXPLICIT_LOD, operands);

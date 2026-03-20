@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static char *type_string(type_id type) {
+static const char *type_string(type_id type) {
 	if (type == float_id) {
 		return "f32";
 	}

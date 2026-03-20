@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static char *member_string(type *parent_type, name_id member_name) {
+static const char *member_string(type *parent_type, name_id member_name) {
 	if (parent_type == get_type(ray_type_id)) {
 		if (member_name == add_name("origin")) {
 			return "Origin";
@@ -40,7 +40,7 @@ static char *member_string(type *parent_type, name_id member_name) {
 	}
 }
 
-static char *type_string(type_id type) {
+static const char *type_string(type_id type) {
 	if (type == float_id) {
 		return "float";
 	}
@@ -80,7 +80,7 @@ static char *type_string(type_id type) {
 	return get_name(get_type(type)->name);
 }
 
-static char *type_string_simd(type_id type) {
+static const char *type_string_simd(type_id type) {
 	if (type == float_id) {
 		return "vfloat32m1_t";
 	}

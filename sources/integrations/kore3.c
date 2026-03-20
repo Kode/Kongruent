@@ -28,7 +28,7 @@ static void up_case(char *from, char *to) {
 	to[index] = 0;
 }
 
-static char *type_string(type_id type) {
+static const char *type_string(type_id type) {
 	if (type == float_id) {
 		return "float";
 	}
@@ -376,7 +376,7 @@ static const char *convert_blend_op(int op, const char *api) {
 	}
 }
 
-static member *find_member(type *t, char *name) {
+static member *find_member(type *t, const char *name) {
 	for (size_t j = 0; j < t->members.size; ++j) {
 		if (t->members.m[j].name == add_name(name)) {
 			return &t->members.m[j];
@@ -610,9 +610,9 @@ void kore3_export(char *directory, api_kind api) {
 
 	memset(global_register_indices, 0, sizeof(global_register_indices));
 
-	char *api_short = NULL;
-	char *api_long  = NULL;
-	char *api_caps  = NULL;
+	const char *api_short = NULL;
+	const char *api_long  = NULL;
+	const char *api_caps  = NULL;
 	switch (api) {
 	case API_DIRECT3D11:
 		api_short = "d3d11";

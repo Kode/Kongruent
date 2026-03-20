@@ -146,7 +146,7 @@ bool execute_sync(const char *command, uint32_t *exit_code) {
 
 	WaitForSingleObject(process_info.hProcess, INFINITE);
 
-	GetExitCodeProcess(process_info.hProcess, exit_code);
+	GetExitCodeProcess(process_info.hProcess, (unsigned long *)exit_code);
 
 	CloseHandle(process_info.hProcess);
 	CloseHandle(process_info.hThread);

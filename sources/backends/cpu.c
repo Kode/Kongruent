@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static char *type_string_simd1(type_id type) {
+static const char *type_string_simd1(type_id type) {
 	if (type == float_id) {
 		return "float";
 	}
@@ -57,7 +57,7 @@ static char *type_string_simd1(type_id type) {
 	return get_name(get_type(type)->name);
 }
 
-static char *type_string_simd4(type_id type) {
+static const char *type_string_simd4(type_id type) {
 	if (type == float_id) {
 		return "kore_float32x4";
 	}
@@ -100,7 +100,7 @@ static char *type_string_simd4(type_id type) {
 	return get_name(get_type(type)->name);
 }
 
-static char *type_string(type_id type, uint8_t simd_width) {
+static const char *type_string(type_id type, uint8_t simd_width) {
 	if (simd_width == 4) {
 		return type_string_simd4(type);
 	}
