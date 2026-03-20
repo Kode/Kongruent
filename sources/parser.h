@@ -16,23 +16,24 @@ typedef struct expressions {
 	size_t             size;
 } expressions;
 
-typedef struct expression {
-	enum {
-		EXPRESSION_BINARY,
-		EXPRESSION_UNARY,
-		EXPRESSION_BOOLEAN,
-		EXPRESSION_FLOAT,
-		EXPRESSION_INT,
-		// EXPRESSION_STRING,
-		EXPRESSION_VARIABLE,
-		EXPRESSION_GROUPING,
-		EXPRESSION_CALL,
-		EXPRESSION_MEMBER,
-		EXPRESSION_ELEMENT,
-		EXPRESSION_SWIZZLE
-	} kind;
+typedef enum expression_kind {
+	EXPRESSION_BINARY,
+	EXPRESSION_UNARY,
+	EXPRESSION_BOOLEAN,
+	EXPRESSION_FLOAT,
+	EXPRESSION_INT,
+	// EXPRESSION_STRING,
+	EXPRESSION_VARIABLE,
+	EXPRESSION_GROUPING,
+	EXPRESSION_CALL,
+	EXPRESSION_MEMBER,
+	EXPRESSION_ELEMENT,
+	EXPRESSION_SWIZZLE
+} expression_kind;
 
-	type_ref type;
+typedef struct expression {
+	expression_kind kind;
+	type_ref        type;
 
 	union {
 		struct {
@@ -93,20 +94,22 @@ typedef struct block {
 	statements      statements;
 } block;
 
+typedef enum statement_kind {
+	STATEMENT_EXPRESSION,
+	STATEMENT_RETURN_EXPRESSION,
+	STATEMENT_DISCARD,
+	STATEMENT_IF,
+	STATEMENT_WHILE,
+	STATEMENT_DO_WHILE,
+	STATEMENT_BLOCK,
+	STATEMENT_LOCAL_VARIABLE
+} statement_kind;
+
 typedef struct statement {
-	enum {
-		STATEMENT_EXPRESSION,
-		STATEMENT_RETURN_EXPRESSION,
-		STATEMENT_DISCARD,
-		STATEMENT_IF,
-		STATEMENT_WHILE,
-		STATEMENT_DO_WHILE,
-		STATEMENT_BLOCK,
-		STATEMENT_LOCAL_VARIABLE
-	} kind;
+	statement_kind kind;
 
 	union {
-		expression *expression;
+		expression *expr;
 		struct {
 			expression       *test;
 			struct statement *if_block;
@@ -126,22 +129,24 @@ typedef struct statement {
 	};
 } statement;
 
+typedef enum definition_kind {
+	DEFINITION_FUNCTION,
+	DEFINITION_STRUCT,
+	DEFINITION_TEX1D,
+	DEFINITION_TEX2D,
+	DEFINITION_TEX3D,
+	DEFINITION_TEXCUBE,
+	DEFINITION_TEX1DARRAY,
+	DEFINITION_TEX2DARRAY,
+	DEFINITION_TEXCUBEARRAY,
+	DEFINITION_SAMPLER,
+	DEFINITION_CONST_CUSTOM,
+	DEFINITION_CONST_BASIC,
+	DEFINITION_BVH
+} definition_kind;
+
 typedef struct definition {
-	enum {
-		DEFINITION_FUNCTION,
-		DEFINITION_STRUCT,
-		DEFINITION_TEX1D,
-		DEFINITION_TEX2D,
-		DEFINITION_TEX3D,
-		DEFINITION_TEXCUBE,
-		DEFINITION_TEX1DARRAY,
-		DEFINITION_TEX2DARRAY,
-		DEFINITION_TEXCUBEARRAY,
-		DEFINITION_SAMPLER,
-		DEFINITION_CONST_CUSTOM,
-		DEFINITION_CONST_BASIC,
-		DEFINITION_BVH
-	} kind;
+	definition_kind kind;
 
 	union {
 		function_id function;

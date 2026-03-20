@@ -58,19 +58,19 @@ void transform(uint32_t flags) {
 						        {
 						            .from             = o->op_store_access_list.from,
 						            .to               = from,
-						            .access_list_size = 1,
 						            .access_list      = {{
-						                     .type = from_base_type,
 						                     .kind = ACCESS_SWIZZLE,
+						                     .type = from_base_type,
 						                     .access_swizzle =
                                             {
 						                             .swizzle =
                                                     {
-						                                     .size    = 1,
 						                                     .indices = {swizzle_index},
+						                                     .size    = 1,
                                                     },
                                             },
                                     }},
+						            .access_list_size = 1,
 						        },
 						};
 						from_opcode.size = OP_SIZE(from_opcode, op_load_access_list);
@@ -127,10 +127,10 @@ void transform(uint32_t flags) {
 					    .type = OPCODE_CALL,
 					    .op_call =
 					        {
+					            .var             = o->op_load_access_list.to,
 					            .func            = get_type(o->op_load_access_list.to.type.type)->name,
 					            .parameters      = {to[0], to[1], to[2], to[3]},
-					            .parameters_size = a.access_swizzle.swizzle.size,
-					            .var             = o->op_load_access_list.to,
+					            .parameters_size = (uint8_t)a.access_swizzle.swizzle.size,
 					        },
 					};
 					constructor_call.size = OP_SIZE(constructor_call, op_call);
@@ -211,9 +211,9 @@ void transform(uint32_t flags) {
 							    .type = OPCODE_CALL,
 							    .op_call =
 							        {
-							            .func            = get_type(right_type)->name,
-							            .parameters_size = right_size,
 							            .var             = vec,
+							            .func            = get_type(right_type)->name,
+							            .parameters_size = (uint8_t)right_size,
 							        },
 							};
 							constructor_call.size = OP_SIZE(constructor_call, op_call);
@@ -288,9 +288,9 @@ void transform(uint32_t flags) {
 							    .type = OPCODE_CALL,
 							    .op_call =
 							        {
-							            .func            = get_type(left_type)->name,
-							            .parameters_size = left_size,
 							            .var             = vec,
+							            .func            = get_type(left_type)->name,
+							            .parameters_size = (uint8_t)left_size,
 							        },
 							};
 							constructor_call.size = OP_SIZE(constructor_call, op_call);

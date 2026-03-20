@@ -9,6 +9,6 @@ typedef size_t name_id;
 
 void names_init(void);
 
-name_id add_name(char *name);
+name_id add_name(const char *name);
 
 char *get_name(name_id index);

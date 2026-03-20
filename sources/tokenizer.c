@@ -126,7 +126,7 @@ static double tokenizer_buffer_parse_number(tokenizer_buffer *buffer) {
 	return strtod(buffer->buf, NULL);
 }
 
-token token_create(int kind, tokenizer_state *state) {
+token token_create(token_kind kind, tokenizer_state *state) {
 	token token;
 	token.kind   = kind;
 	token.column = state->column;
@@ -136,7 +136,7 @@ token token_create(int kind, tokenizer_state *state) {
 
 static void tokens_init(tokens *tokens) {
 	tokens->max_size     = 1024 * 1024;
-	tokens->t            = malloc(tokens->max_size * sizeof(token));
+	tokens->t            = (token *)malloc(tokens->max_size * sizeof(token));
 	tokens->current_size = 0;
 }
 

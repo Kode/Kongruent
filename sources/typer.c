@@ -637,11 +637,11 @@ void resolve_types_in_block(statement *parent, statement *block) {
 		case STATEMENT_DISCARD:
 			break;
 		case STATEMENT_EXPRESSION: {
-			resolve_types_in_expression(block, s->expression);
+			resolve_types_in_expression(block, s->expr);
 			break;
 		}
 		case STATEMENT_RETURN_EXPRESSION: {
-			resolve_types_in_expression(block, s->expression);
+			resolve_types_in_expression(block, s->expr);
 			break;
 		}
 		case STATEMENT_IF: {

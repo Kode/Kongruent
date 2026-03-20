@@ -16,7 +16,7 @@ static struct {
 } *hash = NULL;
 
 void names_init(void) {
-	char         *new_names = realloc(names, names_size);
+	char         *new_names = (char *)realloc(names, names_size);
 	debug_context context   = {0};
 	check(new_names != NULL, context, "Could not allocate names");
 	names    = new_names;
@@ -28,14 +28,14 @@ void names_init(void) {
 static void grow_if_needed(size_t size) {
 	while (size >= names_size) {
 		names_size *= 2;
-		char         *new_names = realloc(names, names_size);
+		char         *new_names = (char *)realloc(names, names_size);
 		debug_context context   = {0};
 		check(new_names != NULL, context, "Could not allocate names");
 		names = new_names;
 	}
 }
 
-name_id add_name(char *name) {
+name_id add_name(const char *name) {
 	ptrdiff_t old_id_index = shgeti(hash, name);
 
 	if (old_id_index >= 0) {

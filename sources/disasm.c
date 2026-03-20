@@ -78,7 +78,7 @@ static void write_functions(void) {
 						break;
 					case ACCESS_SWIZZLE: {
 						swizzle swizzle          = o->op_load_access_list.access_list[i].access_swizzle.swizzle;
-						char    swizzle_chars[4] = "xyzw";
+						char    swizzle_chars[5] = "xyzw";
 
 						for (uint32_t swizzle_index = 0; swizzle_index < swizzle.size; ++swizzle_index) {
 							offset += sprintf(&accesses[offset], "%c", swizzle_chars[swizzle.indices[swizzle_index]]);
@@ -142,7 +142,7 @@ static void write_functions(void) {
 						break;
 					case ACCESS_SWIZZLE: {
 						swizzle swizzle          = o->op_store_access_list.access_list[i].access_swizzle.swizzle;
-						char    swizzle_chars[4] = "xyzw";
+						char    swizzle_chars[5] = "xyzw";
 
 						for (uint32_t swizzle_index = 0; swizzle_index < swizzle.size; ++swizzle_index) {
 							offset += sprintf(&accesses[offset], "%c", swizzle_chars[swizzle.indices[swizzle_index]]);

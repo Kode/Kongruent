@@ -10,7 +10,7 @@ static function   *functions           = NULL;
 static function_id functions_size      = 1024;
 static function_id next_function_index = 0;
 
-static void add_func_int(char *name) {
+static void add_func_int(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
 	init_type_ref(&f->return_type, add_name("int"));
@@ -19,7 +19,7 @@ static void add_func_int(char *name) {
 	f->block            = NULL;
 }
 
-static void add_func_float3_float_float_float(char *name) {
+static void add_func_float3_float_float_float(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
 	init_type_ref(&f->return_type, add_name("float3"));
@@ -35,7 +35,7 @@ static void add_func_float3_float_float_float(char *name) {
 	f->block           = NULL;
 }
 
-static void add_func_float(char *name) {
+static void add_func_float(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
 	init_type_ref(&f->return_type, add_name("float"));
@@ -44,7 +44,7 @@ static void add_func_float(char *name) {
 	f->block            = NULL;
 }
 
-static void add_func_float3(char *name) {
+static void add_func_float3(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
 	init_type_ref(&f->return_type, add_name("float3"));
@@ -53,7 +53,7 @@ static void add_func_float3(char *name) {
 	f->block            = NULL;
 }
 
-static void add_func_float3x3(char *name) {
+static void add_func_float3x3(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
 	init_type_ref(&f->return_type, add_name("float3x3"));
@@ -62,7 +62,7 @@ static void add_func_float3x3(char *name) {
 	f->block            = NULL;
 }
 
-static void add_func_uint(char *name) {
+static void add_func_uint(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
 	init_type_ref(&f->return_type, add_name("uint"));
@@ -71,7 +71,7 @@ static void add_func_uint(char *name) {
 	f->block            = NULL;
 }
 
-static void add_func_uint3(char *name) {
+static void add_func_uint3(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
 	init_type_ref(&f->return_type, add_name("uint3"));
@@ -80,7 +80,7 @@ static void add_func_uint3(char *name) {
 	f->block            = NULL;
 }
 
-static void add_func_float_float(char *name) {
+static void add_func_float_float(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
 	init_type_ref(&f->return_type, add_name("float"));
@@ -92,7 +92,7 @@ static void add_func_float_float(char *name) {
 	f->block                   = NULL;
 }
 
-static void add_func_float_float_float(char *name) {
+static void add_func_float_float_float(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
 	init_type_ref(&f->return_type, add_name("float"));
@@ -110,7 +110,7 @@ static void add_func_float_float_float(char *name) {
 	f->block           = NULL;
 }
 
-static void add_func_float_float_float_float(char *name) {
+static void add_func_float_float_float_float(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
 	init_type_ref(&f->return_type, add_name("float"));
@@ -132,7 +132,7 @@ static void add_func_float_float_float_float(char *name) {
 	f->block           = NULL;
 }
 
-static void add_func_float_float2(char *name) {
+static void add_func_float_float2(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
 	init_type_ref(&f->return_type, add_name("float"));
@@ -144,7 +144,7 @@ static void add_func_float_float2(char *name) {
 	f->block                   = NULL;
 }
 
-static void add_func_float_float3_float3(char *name) {
+static void add_func_float_float3_float3(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
 	init_type_ref(&f->return_type, add_name("float"));
@@ -162,7 +162,7 @@ static void add_func_float_float3_float3(char *name) {
 	f->block           = NULL;
 }
 
-static void add_func_float3_float3(char *name) {
+static void add_func_float3_float3(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
 	init_type_ref(&f->return_type, add_name("float3"));
@@ -174,7 +174,7 @@ static void add_func_float3_float3(char *name) {
 	f->block                   = NULL;
 }
 
-static void add_func_float3_float3_float3(char *name) {
+static void add_func_float3_float3_float3(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
 	init_type_ref(&f->return_type, add_name("float3"));
@@ -192,7 +192,7 @@ static void add_func_float3_float3_float3(char *name) {
 	f->block           = NULL;
 }
 
-static void add_func_void_uint_uint(char *name) {
+static void add_func_void_uint_uint(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
 
@@ -211,7 +211,7 @@ static void add_func_void_uint_uint(char *name) {
 }
 
 void functions_init(void) {
-	function     *new_functions = realloc(functions, functions_size * sizeof(function));
+	function     *new_functions = (function *)realloc(functions, functions_size * sizeof(function));
 	debug_context context       = {0};
 	check(new_functions != NULL, context, "Could not allocate functions");
 	functions           = new_functions;
@@ -787,7 +787,7 @@ void functions_init(void) {
 static void grow_if_needed(uint64_t size) {
 	while (size >= functions_size) {
 		functions_size *= 2;
-		function     *new_functions = realloc(functions, functions_size * sizeof(function));
+		function     *new_functions = (function *)realloc(functions, functions_size * sizeof(function));
 		debug_context context       = {0};
 		check(new_functions != NULL, context, "Could not allocate functions");
 		functions = new_functions;
@@ -809,8 +809,8 @@ function_id add_function(name_id name) {
 	memset(functions[f].code.o, 0, sizeof(functions[f].code.o));
 	functions[f].code.size                  = 0;
 	functions[f].descriptor_set_group_index = UINT32_MAX;
-	functions[f].used_builtins              = (builtins){0};
-	functions[f].used_capabilities          = (capabilities){0};
+	memset(&functions[f].used_builtins, 0, sizeof(functions[f].used_builtins));
+	memset(&functions[f].used_capabilities, 0, sizeof(functions[f].used_capabilities));
 
 	return f;
 }

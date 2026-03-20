@@ -77,7 +77,7 @@ variable find_variable(block *parent, name_id name) {
 	}
 }
 
-const char all_names[1024 * 1024];
+const char all_names[1024 * 1024] = {0};
 
 static uint64_t next_variable_id = 1;
 
@@ -578,12 +578,12 @@ typedef struct block_ids {
 static block_ids emit_statement(opcodes *code, block *parent, statement *statement) {
 	switch (statement->kind) {
 	case STATEMENT_EXPRESSION:
-		emit_expression(code, parent, statement->expression);
+		emit_expression(code, parent, statement->expr);
 		break;
 	case STATEMENT_RETURN_EXPRESSION: {
 		opcode o;
 		o.type     = OPCODE_RETURN;
-		variable v = emit_expression(code, parent, statement->expression);
+		variable v = emit_expression(code, parent, statement->expr);
 		if (v.index == 0) {
 			o.size = offsetof(opcode, op_return);
 		}
@@ -607,8 +607,10 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			variable condition;
 			variable summed_condition;
 		};
-		struct previous_condition previous_conditions[64]  = {0};
+		struct previous_condition previous_conditions[64];
 		uint8_t                   previous_conditions_size = 0;
+
+		memset(&previous_conditions[0], 0, sizeof(previous_conditions));
 
 		{
 			opcode o;

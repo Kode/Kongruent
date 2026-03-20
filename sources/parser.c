@@ -428,9 +428,9 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 
 		statement *inner_block = parse_statement(state, &outer_block->block);
 
-		statement *post_statement  = statement_allocate();
-		post_statement->kind       = STATEMENT_EXPRESSION;
-		post_statement->expression = post_expression;
+		statement *post_statement = statement_allocate();
+		post_statement->kind      = STATEMENT_EXPRESSION;
+		post_statement->expr      = post_expression;
 
 		statements_add(&inner_block->block.statements, post_statement);
 
@@ -484,9 +484,9 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
 		advance_state(state);
 
-		statement *statement  = statement_allocate();
-		statement->kind       = STATEMENT_RETURN_EXPRESSION;
-		statement->expression = expr;
+		statement *statement = statement_allocate();
+		statement->kind      = STATEMENT_RETURN_EXPRESSION;
+		statement->expr      = expr;
 		return statement;
 	}
 	case TOKEN_DISCARD: {
@@ -505,9 +505,9 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 		match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
 		advance_state(state);
 
-		statement *statement  = statement_allocate();
-		statement->kind       = STATEMENT_EXPRESSION;
-		statement->expression = expr;
+		statement *statement = statement_allocate();
+		statement->kind      = STATEMENT_EXPRESSION;
+		statement->expr      = expr;
 		return statement;
 	}
 	}

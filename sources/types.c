@@ -53,7 +53,7 @@ void init_type_ref(type_ref *t, name_id name) {
 }
 
 void types_init(void) {
-	type         *new_types = realloc(types, types_size * sizeof(type));
+	type         *new_types = (type *)realloc(types, types_size * sizeof(type));
 	debug_context context   = {0};
 	check(new_types != NULL, context, "Could not allocate types");
 	types           = new_types;
@@ -174,7 +174,7 @@ void types_init(void) {
 static void grow_if_needed(uint64_t size) {
 	while (size >= types_size) {
 		types_size *= 2;
-		type         *new_types = realloc(types, types_size * sizeof(type));
+		type         *new_types = (type *)realloc(types, types_size * sizeof(type));
 		debug_context context   = {0};
 		check(new_types != NULL, context, "Could not allocate types");
 		types = new_types;
