@@ -43,13 +43,17 @@ static expression *expression_allocate(void) {
 //	free(expression);
 // }
 
+#ifdef __cplusplus
 extern "C" {
+#endif
 typedef struct state {
 	tokens       *tokens;
 	size_t        index;
 	debug_context context;
 } state;
+#ifdef __cplusplus
 }
+#endif
 
 static token current(state *state) {
 	token token = tokens_get(state->tokens, state->index);
