@@ -1,8 +1,9 @@
 #include "names.h"
 
-#include "libs/stb_ds.h"
-
+#include "global.h"
 #include "errors.h"
+
+#include "libs/stb_ds.h"
 
 #include <assert.h>
 
@@ -17,7 +18,7 @@ static struct {
 
 void names_init(void) {
 	char         *new_names = (char *)realloc(names, names_size);
-	debug_context context   = {0};
+	debug_context context   = INIT_ZERO;
 	check(new_names != NULL, context, "Could not allocate names");
 	names    = new_names;
 	names[0] = 0; // make NO_NAME a proper string
@@ -29,7 +30,7 @@ static void grow_if_needed(size_t size) {
 	while (size >= names_size) {
 		names_size *= 2;
 		char         *new_names = (char *)realloc(names, names_size);
-		debug_context context   = {0};
+		debug_context context   = INIT_ZERO;
 		check(new_names != NULL, context, "Could not allocate names");
 		names = new_names;
 	}
@@ -59,7 +60,7 @@ name_id add_name(const char *name) {
 }
 
 char *get_name(name_id id) {
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(id < names_index, context, "Encountered a weird name id");
 	return &names[id];
 }

@@ -1,5 +1,6 @@
 #include "globals.h"
 
+#include "global.h"
 #include "errors.h"
 
 #include <assert.h>
@@ -11,7 +12,7 @@ void globals_init(void) {
 	global_value int_value;
 	int_value.kind = GLOBAL_VALUE_INT;
 
-	attribute_list attributes = {0};
+	attribute_list attributes = INIT_ZERO;
 
 	int_value.value.ints[0] = 0;
 	add_global_with_value(float_id, attributes, add_name("COMPARE_ALWAYS"), int_value);
@@ -206,7 +207,7 @@ global *get_global(global_id id) {
 }
 
 void assign_global_var(global_id id, uint64_t var_index) {
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(id < globals_size, context, "Encountered a global with a weird id");
 	globals[id].var_index = var_index;
 }

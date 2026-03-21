@@ -1,4 +1,6 @@
 #include "parser.h"
+
+#include "global.h"
 #include "errors.h"
 #include "functions.h"
 #include "sets.h"
@@ -11,7 +13,7 @@
 
 static statement *statement_allocate(void) {
 	statement    *s       = (statement *)malloc(sizeof(statement));
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(s != NULL, context, "Could not allocate statement");
 	return s;
 }
@@ -31,7 +33,7 @@ static void statements_add(statements *statements, statement *statement) {
 
 static expression *expression_allocate(void) {
 	expression   *e       = (expression *)malloc(sizeof(expression));
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(e != NULL, context, "Could not allocate expression");
 	init_type_ref(&e->type, NO_NAME);
 	return e;
@@ -41,46 +43,48 @@ static expression *expression_allocate(void) {
 //	free(expression);
 // }
 
+extern "C" {
 typedef struct state {
 	tokens       *tokens;
 	size_t        index;
 	debug_context context;
-} state_t;
+} state;
+}
 
-static token current(state_t *state) {
+static token current(state *state) {
 	token token = tokens_get(state->tokens, state->index);
 	return token;
 }
 
-static void update_debug_context(state_t *state) {
+static void update_debug_context(state *state) {
 	state->context.column = current(state).column;
 	state->context.line   = current(state).line;
 }
 
-static void advance_state(state_t *state) {
+static void advance_state(state *state) {
 	state->index += 1;
 	update_debug_context(state);
 }
 
-static void match_token(state_t *state, int token, const char *error_message) {
+static void match_token(state *state, int token, const char *error_message) {
 	int current_token = current(state).kind;
 	if (current_token != token) {
 		error(state->context, error_message);
 	}
 }
 
-static void match_token_identifier(state_t *state) {
+static void match_token_identifier(state *state) {
 	if (current(state).kind != TOKEN_IDENTIFIER) {
 		error(state->context, "Expected an identifier");
 	}
 }
 
-static definition  parse_definition(state_t *state);
-static statement  *parse_statement(state_t *state, block *parent_block);
-static expression *parse_expression(state_t *state);
+static definition  parse_definition(state *state);
+static statement  *parse_statement(state *state, block *parent_block);
+static expression *parse_expression(state *state);
 
 void parse(const char *filename, tokens *tokens) {
-	state_t state          = {0};
+	state state          = INIT_ZERO;
 	state.context.filename = filename;
 	state.tokens           = tokens;
 	state.index            = 0;
@@ -96,7 +100,7 @@ void parse(const char *filename, tokens *tokens) {
 	}
 }
 
-static statement *parse_block(state_t *state, block *parent_block) {
+static statement *parse_block(state *state, block *parent_block) {
 	match_token(state, TOKEN_LEFT_CURLY, "Expected an opening curly bracket");
 	advance_state(state);
 
@@ -146,9 +150,9 @@ typedef struct modifiers {
 //	modifiers->size += 1;
 // }
 
-static definition parse_struct(state_t *state);
-static definition parse_function(state_t *state);
-static definition parse_const(state_t *state, attribute_list attributes);
+static definition parse_struct(state *state);
+static definition parse_function(state *state);
+static definition parse_const(state *state, attribute_list attributes);
 
 static double attribute_parameter_to_number(name_id attribute_name, name_id parameter_name) {
 	if (attribute_name == add_name("topology") && parameter_name == add_name("triangle")) {
@@ -160,13 +164,13 @@ static double attribute_parameter_to_number(name_id attribute_name, name_id para
 		return (double)type;
 	}
 
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	error(context, "Unknown attribute parameter %s", get_name(parameter_name));
 	return 0;
 }
 
-static definition parse_definition(state_t *state) {
-	attribute_list  attributes = {0};
+static definition parse_definition(state *state) {
+	attribute_list  attributes = INIT_ZERO;
 	descriptor_set *current_sets[64];
 	size_t          current_sets_count = 0;
 
@@ -176,7 +180,7 @@ static definition parse_definition(state_t *state) {
 		advance_state(state);
 
 		while (current(state).kind != TOKEN_RIGHT_SQUARE) {
-			attribute current_attribute = {0};
+			attribute current_attribute = INIT_ZERO;
 
 			match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 			current_attribute.name = current(state).identifier;
@@ -196,7 +200,7 @@ static definition parse_definition(state_t *state) {
 					if (current(state).kind == TOKEN_IDENTIFIER) {
 						if (current_attribute.name == add_name("set")) {
 							if (current(state).identifier == add_name("root_constants")) {
-								debug_context context = {0};
+								debug_context context = INIT_ZERO;
 								error(context, "Descriptor set can not be called root_constants");
 							}
 							current_sets[current_sets_count]                                = create_set(current(state).identifier);
@@ -216,7 +220,7 @@ static definition parse_definition(state_t *state) {
 						advance_state(state);
 					}
 					else {
-						debug_context context = {0};
+						debug_context context = INIT_ZERO;
 						error(context, "Expected an identifier or a number");
 					}
 
@@ -242,7 +246,7 @@ static definition parse_definition(state_t *state) {
 	switch (current(state).kind) {
 	case TOKEN_STRUCT: {
 		if (current_sets_count != 0) {
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			error(context, "A struct can not be assigned to a set");
 		}
 
@@ -252,7 +256,7 @@ static definition parse_definition(state_t *state) {
 	}
 	case TOKEN_FUNCTION: {
 		if (current_sets_count != 0) {
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			error(context, "A function can not be assigned to a set");
 		}
 
@@ -274,13 +278,13 @@ static definition parse_definition(state_t *state) {
 		update_debug_context(state);
 		error(state->context, "Expected a struct, a function or a const");
 
-		definition d = {0};
+		definition d = INIT_ZERO;
 		return d;
 	}
 	}
 }
 
-static type_ref parse_type_ref(state_t *state) {
+static type_ref parse_type_ref(state *state) {
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 	token type_name = current(state);
 	advance_state(state);
@@ -308,7 +312,7 @@ static type_ref parse_type_ref(state_t *state) {
 	return t;
 }
 
-static statement *parse_statement(state_t *state, block *parent_block) {
+static statement *parse_statement(state *state, block *parent_block) {
 	switch (current(state).kind) {
 	case TOKEN_IF: {
 		advance_state(state);
@@ -513,15 +517,15 @@ static statement *parse_statement(state_t *state, block *parent_block) {
 	}
 }
 
-static expression *parse_assign(state_t *state);
+static expression *parse_assign(state *state);
 
-static expression *parse_expression(state_t *state) {
+static expression *parse_expression(state *state) {
 	return parse_assign(state);
 }
 
-static expression *parse_logical(state_t *state);
+static expression *parse_logical(state *state);
 
-static expression *parse_assign(state_t *state) {
+static expression *parse_assign(state *state) {
 	expression *expr = parse_logical(state);
 	bool        done = false;
 	while (!done) {
@@ -549,9 +553,9 @@ static expression *parse_assign(state_t *state) {
 	return expr;
 }
 
-static expression *parse_bitwise(state_t *state);
+static expression *parse_bitwise(state *state);
 
-static expression *parse_logical(state_t *state) {
+static expression *parse_logical(state *state) {
 	expression *expr = parse_bitwise(state);
 	bool        done = false;
 	while (!done) {
@@ -578,9 +582,9 @@ static expression *parse_logical(state_t *state) {
 	return expr;
 }
 
-static expression *parse_equality(state_t *state);
+static expression *parse_equality(state *state);
 
-static expression *parse_bitwise(state_t *state) {
+static expression *parse_bitwise(state *state) {
 	expression *expr = parse_equality(state);
 	bool        done = false;
 	while (!done) {
@@ -607,9 +611,9 @@ static expression *parse_bitwise(state_t *state) {
 	return expr;
 }
 
-static expression *parse_comparison(state_t *state);
+static expression *parse_comparison(state *state);
 
-static expression *parse_equality(state_t *state) {
+static expression *parse_equality(state *state) {
 	expression *expr = parse_comparison(state);
 	bool        done = false;
 	while (!done) {
@@ -636,9 +640,9 @@ static expression *parse_equality(state_t *state) {
 	return expr;
 }
 
-static expression *parse_shift(state_t *state);
+static expression *parse_shift(state *state);
 
-static expression *parse_comparison(state_t *state) {
+static expression *parse_comparison(state *state) {
 	expression *expr = parse_shift(state);
 	bool        done = false;
 	while (!done) {
@@ -665,9 +669,9 @@ static expression *parse_comparison(state_t *state) {
 	return expr;
 }
 
-static expression *parse_addition(state_t *state);
+static expression *parse_addition(state *state);
 
-static expression *parse_shift(state_t *state) {
+static expression *parse_shift(state *state) {
 	expression *expr = parse_addition(state);
 	bool        done = false;
 	while (!done) {
@@ -694,9 +698,9 @@ static expression *parse_shift(state_t *state) {
 	return expr;
 }
 
-static expression *parse_multiplication(state_t *state);
+static expression *parse_multiplication(state *state);
 
-static expression *parse_addition(state_t *state) {
+static expression *parse_addition(state *state) {
 	expression *expr = parse_multiplication(state);
 	bool        done = false;
 	while (!done) {
@@ -723,9 +727,9 @@ static expression *parse_addition(state_t *state) {
 	return expr;
 }
 
-static expression *parse_unary(state_t *state);
+static expression *parse_unary(state *state);
 
-static expression *parse_multiplication(state_t *state) {
+static expression *parse_multiplication(state *state) {
 	expression *expr = parse_unary(state);
 	bool        done = false;
 	while (!done) {
@@ -752,9 +756,9 @@ static expression *parse_multiplication(state_t *state) {
 	return expr;
 }
 
-static expression *parse_primary(state_t *state);
+static expression *parse_primary(state *state);
 
-static expression *parse_unary(state_t *state) {
+static expression *parse_unary(state *state) {
 	bool done = false;
 	while (!done) {
 		if (current(state).kind == TOKEN_OPERATOR) {
@@ -779,7 +783,7 @@ static expression *parse_unary(state_t *state) {
 	return parse_primary(state);
 }
 
-static expression *parse_member_or_element_access(state_t *state, expression *of) {
+static expression *parse_member_or_element_access(state *state, expression *of) {
 	if (current(state).kind == TOKEN_DOT) {
 		advance_state(state);
 
@@ -824,9 +828,9 @@ static expression *parse_member_or_element_access(state_t *state, expression *of
 	return of;
 }
 
-static expression *parse_call(state_t *state, name_id func_name);
+static expression *parse_call(state *state, name_id func_name);
 
-static expression *parse_primary(state_t *state) {
+static expression *parse_primary(state *state) {
 	expression *left = NULL;
 
 	switch (current(state).kind) {
@@ -894,7 +898,7 @@ static expression *parse_primary(state_t *state) {
 	return parse_member_or_element_access(state, left);
 }
 
-static expressions parse_parameters(state_t *state) {
+static expressions parse_parameters(state *state) {
 	expressions e;
 	e.size = 0;
 
@@ -918,7 +922,7 @@ static expressions parse_parameters(state_t *state) {
 	}
 }
 
-static expression *parse_call(state_t *state, name_id func_name) {
+static expression *parse_call(state *state, name_id func_name) {
 	match_token(state, TOKEN_LEFT_PAREN, "Expected an opening bracket");
 	advance_state(state);
 
@@ -932,7 +936,7 @@ static expression *parse_call(state_t *state, name_id func_name) {
 	return parse_member_or_element_access(state, call);
 }
 
-static definition parse_struct_inner(state_t *state, name_id name) {
+static definition parse_struct_inner(state *state, name_id name) {
 	match_token(state, TOKEN_LEFT_CURLY, "Expected an opening curly bracket");
 	advance_state(state);
 
@@ -942,7 +946,7 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 	size_t   count = 0;
 
 	while (current(state).kind != TOKEN_RIGHT_CURLY) {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		check(count < MAX_MEMBERS, context, "Out of members");
 
 		match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
@@ -976,7 +980,7 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 				}
 			}
 			else {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Unsupported assign in struct");
 			}
 		}
@@ -1025,7 +1029,7 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 				}
 			}
 			else {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Unsupported value in struct");
 			}
 		}
@@ -1040,7 +1044,7 @@ static definition parse_struct_inner(state_t *state, name_id name) {
 	return definition;
 }
 
-static definition parse_struct(state_t *state) {
+static definition parse_struct(state *state) {
 	advance_state(state);
 
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
@@ -1050,7 +1054,7 @@ static definition parse_struct(state_t *state) {
 	return parse_struct_inner(state, name.identifier);
 }
 
-static definition parse_function(state_t *state) {
+static definition parse_function(state *state) {
 	advance_state(state);
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 
@@ -1060,9 +1064,9 @@ static definition parse_function(state_t *state) {
 	advance_state(state);
 
 	uint8_t  parameters_size       = 0;
-	name_id  param_names[256]      = {0};
-	type_ref param_types[256]      = {0};
-	name_id  param_attributes[256] = {0};
+	name_id  param_names[256]      = INIT_ZERO;
+	type_ref param_types[256]      = INIT_ZERO;
+	name_id  param_attributes[256] = INIT_ZERO;
 
 	while (current(state).kind != TOKEN_RIGHT_PAREN) {
 		if (current(state).kind == TOKEN_HASH) {
@@ -1114,7 +1118,7 @@ static definition parse_function(state_t *state) {
 	return d;
 }
 
-static texture_format convert_texture_format(state_t *state, name_id format_name) {
+static texture_format convert_texture_format(state *state, name_id format_name) {
 	if (format_name == NO_NAME) {
 		return TEXTURE_FORMAT_UNDEFINED;
 	}
@@ -1256,7 +1260,7 @@ static texture_format convert_texture_format(state_t *state, name_id format_name
 	}
 }
 
-static definition parse_const(state_t *state, attribute_list attributes) {
+static definition parse_const(state *state, attribute_list attributes) {
 	advance_state(state);
 	match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 
@@ -1321,7 +1325,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 	match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
 	advance_state(state);
 
-	definition d = {0};
+	definition d = INIT_ZERO;
 
 	name_id tex1d_name        = add_name("tex1d");
 	name_id tex2d_name        = add_name("tex2d");
@@ -1332,7 +1336,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 	name_id texcubearray_name = add_name("texcubearray");
 
 	if (type_name == NO_NAME) {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		check(type != NO_TYPE, context, "Const has no type");
 		d.kind   = DEFINITION_CONST_CUSTOM;
 		d.global = add_global(type, attributes, name.identifier);
@@ -1402,7 +1406,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 		d.global = add_global(bvh_type_id, attributes, name.identifier);
 	}
 	else if (type_name == add_name("float")) {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		check(value != NULL, context, "const float requires an initialization value");
 		check(value->kind == EXPRESSION_FLOAT || value->kind == EXPRESSION_INT, context, "const float requires a number");
 
@@ -1415,7 +1419,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 		d.global = add_global_with_value(float_id, attributes, name.identifier, float_value);
 	}
 	else if (type_name == add_name("float2")) {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		check(value != NULL, context, "const float2 requires an initialization value");
 		check(value->kind == EXPRESSION_CALL, context, "const float2 requires a constructor call");
 		check(value->call.func_name == add_name("float2"), context, "const float2 requires a float2 call");
@@ -1434,7 +1438,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 		d.global = add_global_with_value(float2_id, attributes, name.identifier, float2_value);
 	}
 	else if (type_name == add_name("float3")) {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		check(value != NULL, context, "const float3 requires an initialization value");
 		check(value->kind == EXPRESSION_CALL, context, "const float3 requires a constructor call");
 		check(value->call.func_name == add_name("float3"), context, "const float3 requires a float3 call");
@@ -1453,7 +1457,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 		d.global = add_global_with_value(float3_id, attributes, name.identifier, float3_value);
 	}
 	else if (type_name == add_name("float4")) {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		if (!array) {
 			check(value != NULL, context, "const float4 requires an initialization value");
 			check(value->kind == EXPRESSION_CALL, context, "const float4 requires a constructor call");
@@ -1489,7 +1493,7 @@ static definition parse_const(state_t *state, attribute_list attributes) {
 		}
 	}
 	else {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "Unsupported global");
 	}
 

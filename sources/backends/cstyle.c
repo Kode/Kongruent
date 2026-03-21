@@ -1,5 +1,6 @@
 #include "cstyle.h"
 
+#include "../global.h"
 #include "../errors.h"
 #include "util.h"
 
@@ -302,7 +303,7 @@ void cstyle_write_opcode(char *code, size_t *offset, opcode *o, type_string_func
 		break;
 	}
 	default: {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "Unknown opcode");
 		break;
 	}

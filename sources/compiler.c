@@ -1,5 +1,6 @@
 #include "compiler.h"
 
+#include "global.h"
 #include "errors.h"
 #include "parser.h"
 
@@ -38,7 +39,7 @@ variable find_local_var(block *b, name_id name) {
 
 	for (size_t i = 0; i < b->vars.size; ++i) {
 		if (b->vars.v[i].name == name) {
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			check(b->vars.v[i].type.type != NO_TYPE, context, "Local variable does not have a type");
 			variable var;
 			var.index = b->vars.v[i].variable_id;
@@ -64,7 +65,7 @@ variable find_variable(block *parent, name_id name) {
 			return v;
 		}
 		else {
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			error(context, "Variable %s not found", get_name(name));
 
 			variable v;
@@ -77,7 +78,7 @@ variable find_variable(block *parent, name_id name) {
 	}
 }
 
-const char all_names[1024 * 1024] = {0};
+const char all_names[1024 * 1024] = INIT_ZERO;
 
 static uint64_t next_variable_id = 1;
 
@@ -111,7 +112,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		expression *left  = e->binary.left;
 		expression *right = e->binary.right;
 
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 
 		switch (e->binary.op) {
 		case OPERATOR_EQUALS:
@@ -342,7 +343,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 				break;
 			}
 			default: {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Expected a variable or an access");
 			}
 			}
@@ -353,7 +354,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		break;
 	}
 	case EXPRESSION_UNARY: {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		switch (e->unary.op) {
 		case OPERATOR_EQUALS:
 			error(context, "not implemented");
@@ -483,7 +484,7 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		o.op_call.func = e->call.func_name;
 		o.op_call.var  = v;
 
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		check(e->call.parameters.size <= sizeof(o.op_call.parameters) / sizeof(variable), context, "Call parameters missized");
 		for (size_t i = 0; i < e->call.parameters.size; ++i) {
 			o.op_call.parameters[i] = emit_expression(code, parent, e->call.parameters.e[i]);
@@ -556,13 +557,13 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 		return v;
 	}
 	default: {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "not implemented");
 	}
 	}
 
 	{
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "Supposedly unreachable code reached");
 		variable v;
 		v.index = 0;
@@ -607,10 +608,8 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			variable condition;
 			variable summed_condition;
 		};
-		struct previous_condition previous_conditions[64];
+		struct previous_condition previous_conditions[64] = INIT_ZERO;
 		uint8_t                   previous_conditions_size = 0;
-
-		memset(&previous_conditions[0], 0, sizeof(previous_conditions));
 
 		{
 			opcode o;
@@ -840,7 +839,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 		o.type = OPCODE_VAR;
 		o.size = OP_SIZE(o, op_var);
 
-		variable init_var = {0};
+		variable init_var = INIT_ZERO;
 		if (statement->local_variable.init != NULL) {
 			init_var = emit_expression(code, parent, statement->local_variable.init);
 		}
@@ -848,7 +847,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 		variable local_var                        = find_local_var(parent, statement->local_variable.var.name);
 		statement->local_variable.var.variable_id = local_var.index;
 		o.op_var.var.index                        = statement->local_variable.var.variable_id;
-		debug_context context                     = {0};
+		debug_context context                     = INIT_ZERO;
 		check(statement->local_variable.var.type.type != NO_TYPE, context, "Local var has no type");
 		o.op_var.var.type = statement->local_variable.var.type;
 		emit_op(code, &o);
@@ -897,7 +896,7 @@ void compile_function_block(opcodes *code, struct statement *block) {
 	}
 
 	if (block->kind != STATEMENT_BLOCK) {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "Expected a block");
 	}
 	for (size_t i = 0; i < block->block.vars.size; ++i) {

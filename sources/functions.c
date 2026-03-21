@@ -1,5 +1,6 @@
 #include "functions.h"
 
+#include "global.h"
 #include "errors.h"
 
 #include <assert.h>
@@ -212,7 +213,7 @@ static void add_func_void_uint_uint(const char *name) {
 
 void functions_init(void) {
 	function     *new_functions = (function *)realloc(functions, functions_size * sizeof(function));
-	debug_context context       = {0};
+	debug_context context       = INIT_ZERO;
 	check(new_functions != NULL, context, "Could not allocate functions");
 	functions           = new_functions;
 	next_function_index = 0;
@@ -788,7 +789,7 @@ static void grow_if_needed(uint64_t size) {
 	while (size >= functions_size) {
 		functions_size *= 2;
 		function     *new_functions = (function *)realloc(functions, functions_size * sizeof(function));
-		debug_context context       = {0};
+		debug_context context       = INIT_ZERO;
 		check(new_functions != NULL, context, "Could not allocate functions");
 		functions = new_functions;
 	}

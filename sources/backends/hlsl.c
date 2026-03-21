@@ -1,5 +1,6 @@
 #include "hlsl.h"
 
+#include "../global.h"
 #include "../analyzer.h"
 #include "../array.h"
 #include "../compiler.h"
@@ -103,7 +104,7 @@ static void write_bytecode(char *hlsl, char *directory, const char *filename, co
 		FILE *file = fopen(full_filename, "wb");
 
 		if (file == NULL) {
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			error(context, "Could not open file %s.", full_filename);
 		}
 
@@ -135,7 +136,7 @@ static void write_bytecode(char *hlsl, char *directory, const char *filename, co
 		FILE *file = fopen(full_filename, "wb");
 
 		if (file == NULL) {
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			error(context, "Could not open file %s.", full_filename);
 		}
 
@@ -294,7 +295,7 @@ static void assign_register_indices(uint32_t *register_indices, function *shader
 
 		if (set->name == add_name("root_constants")) {
 			if (set->globals.size != 1) {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "More than one root constants struct found");
 			}
 
@@ -302,7 +303,7 @@ static void assign_register_indices(uint32_t *register_indices, function *shader
 			global   *g    = get_global(g_id);
 
 			if (get_type(g->type)->built_in) {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Unsupported type for a root constant");
 			}
 
@@ -367,10 +368,10 @@ static void write_globals(char *hlsl, size_t *offset, function *main, function *
 		main = rayshaders[0]; // TODO: Consider all raytracing pipelines
 	}
 
-	uint32_t register_indices[512] = {0};
+	uint32_t register_indices[512] = INIT_ZERO;
 	assign_register_indices(register_indices, main);
 
-	global_array globals = {0};
+	global_array globals = INIT_ZERO;
 
 	if (main != NULL) {
 		find_referenced_globals(main, &globals);
@@ -535,7 +536,7 @@ static descriptor_set *all_descriptor_sets[256];
 static size_t          all_descriptor_sets_count = 0;
 
 static void write_root_signature(function *main, char *hlsl, size_t *offset) {
-	uint32_t register_indices[512] = {0};
+	uint32_t register_indices[512] = INIT_ZERO;
 	assign_register_indices(register_indices, main);
 
 	*offset += sprintf(&hlsl[*offset], "[RootSignature(\"RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)");
@@ -547,7 +548,7 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 
 		if (set->name == add_name("root_constants")) {
 			if (set->globals.size != 1) {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "More than one root constants struct found");
 			}
 
@@ -555,7 +556,7 @@ static void write_root_signature(function *main, char *hlsl, size_t *offset) {
 			global_id g    = set->globals.globals[0];
 
 			if (get_type(get_global(g)->type)->built_in) {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Unsupported type for a root constant");
 			}
 
@@ -764,7 +765,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			switch (o->type) {
 			case OPCODE_CALL: {
 				if (o->op_call.func == add_name("trace_ray")) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					check(o->op_call.parameters_size == 3, context, "trace_ray requires three parameters");
 
 					type_id payload_type = o->op_call.parameters[2].type.type;
@@ -797,7 +798,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 		if (f != main && !is_raygen_shader(f) && !is_raymiss_shader(f) && !is_rayclosesthit_shader(f) && !is_rayintersection_shader(f) &&
 		    !is_rayanyhit_shader(f)) {
 
-			uint64_t parameter_ids[256] = {0};
+			uint64_t parameter_ids[256] = INIT_ZERO;
 			for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 				for (size_t i = 0; i < f->block->block.vars.size; ++i) {
 					if (f->parameter_names[parameter_index] == f->block->block.vars.v[i].name) {
@@ -834,13 +835,13 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 		function *f = functions[i];
 		assert(f != NULL);
 
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		check(f->block != NULL, context, "Function block missing");
 
 		uint8_t *data = f->code.o;
 		size_t   size = f->code.size;
 
-		uint64_t parameter_ids[256] = {0};
+		uint64_t parameter_ids[256] = INIT_ZERO;
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 			for (size_t i = 0; i < f->block->block.vars.size; ++i) {
 				if (f->parameter_names[parameter_index] == f->block->block.vars.v[i].name) {
@@ -912,7 +913,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			else if (stage == SHADER_STAGE_COMPUTE) {
 				attribute *threads_attribute = find_attribute(&f->attributes, add_name("threads"));
 				if (threads_attribute == NULL || threads_attribute->paramters_count != 3) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					error(context, "Compute function requires a threads attribute with three parameters");
 				}
 
@@ -938,7 +939,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			else if (stage == SHADER_STAGE_AMPLIFICATION) {
 				attribute *threads_attribute = find_attribute(&f->attributes, add_name("threads"));
 				if (threads_attribute == NULL || threads_attribute->paramters_count != 3) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					error(context, "Compute function requires a threads attribute with three parameters");
 				}
 
@@ -963,25 +964,25 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			else if (stage == SHADER_STAGE_MESH) {
 				attribute *topology_attribute = find_attribute(&f->attributes, add_name("topology"));
 				if (topology_attribute == NULL || topology_attribute->paramters_count != 1 || topology_attribute->parameters[0] != 0) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					error(context, "Mesh function requires a threads attribute with one parameter which has to be \"triangle\"");
 				}
 
 				attribute *threads_attribute = find_attribute(&f->attributes, add_name("threads"));
 				if (threads_attribute == NULL || threads_attribute->paramters_count != 3) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					error(context, "Mesh function requires a threads attribute with three parameters");
 				}
 
 				attribute *tris_attribute = find_attribute(&f->attributes, add_name("tris"));
 				if (tris_attribute == NULL || tris_attribute->paramters_count != 1) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					error(context, "Mesh function requires a tris attribute with one parameter");
 				}
 
 				attribute *vertices_attribute = find_attribute(&f->attributes, add_name("vertices"));
 				if (vertices_attribute == NULL || vertices_attribute->paramters_count != 2) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					error(context, "Mesh function requires a vertices attribute with two parameters");
 				}
 
@@ -1011,7 +1012,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 				            (int)tris_attribute->parameters[0], vertex_name, (int)vertices_attribute->parameters[0]);
 			}
 			else {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Unsupported shader stage");
 			}
 		}
@@ -1045,7 +1046,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			*offset += sprintf(&hlsl[*offset], ") {\n");
 		}
 		else if (is_rayclosesthit_shader(f)) {
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			check(f->parameters_size == 2, context, "rayclosesthit shader requires two arguments");
 			check(f->parameter_types[1].type == float2_id, context, "Second parameter of a rayclosesthit shader needs to be a float2");
 
@@ -1069,7 +1070,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			                   type_string(f->parameter_types[1].type), parameter_ids[1]);
 		}
 		else if (is_rayintersection_shader(f)) {
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			check(f->parameters_size == 0, context, "intersection shader can not have any parameters");
 
 			*offset += sprintf(&hlsl[*offset], "[shader(\"intersection\")]\n");
@@ -1077,7 +1078,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			*offset += sprintf(&hlsl[*offset], "%s %s() {\n", type_string(f->return_type.type), get_name(f->name));
 		}
 		else if (is_rayanyhit_shader(f)) {
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			check(f->parameters_size == 2, context, "anyhit shader requires two arguments");
 			check(f->parameter_types[1].type == float2_id, context, "Second parameter of a rayanyhit shader needs to be a float2");
 
@@ -1315,7 +1316,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			}
 			case OPCODE_CALL: {
 				indent(hlsl, offset, indentation);
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				if (o->op_call.func == add_name("sample")) {
 					check(o->op_call.parameters_size == 3, context, "sample requires three parameters");
 					*offset +=
@@ -1456,7 +1457,7 @@ static void hlsl_export_vertex(char *directory, api_kind d3d, function *main, bo
 	}
 	type_id vertex_output = main->return_type.type;
 
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(main->parameters_size > 0, context, "vertex input missing");
 	check(vertex_output != NO_TYPE, context, "vertex output missing");
 
@@ -1506,7 +1507,7 @@ static void hlsl_export_amplification(char *directory, function *main, bool debu
 	size_t   output_size = 0;
 	int      result      = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_AMPLIFICATION, debug);
 
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(result == 0, context, "HLSL compilation failed");
 
 	char *name = get_name(main->name);
@@ -1526,7 +1527,7 @@ static void hlsl_export_mesh(char *directory, function *main, bool debug) {
 
 	attribute *vertices_attribute = find_attribute(&main->attributes, add_name("vertices"));
 	if (vertices_attribute == NULL || vertices_attribute->paramters_count != 2) {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "Mesh function requires a vertices attribute with two parameters");
 	}
 	assert(vertices_attribute != NULL);
@@ -1542,7 +1543,7 @@ static void hlsl_export_mesh(char *directory, function *main, bool debug) {
 	size_t   output_size = 0;
 	int      result      = compile_hlsl_to_d3d12(hlsl, &output, &output_size, SHADER_STAGE_MESH, debug);
 
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(result == 0, context, "HLSL compilation failed");
 
 	char *name = get_name(main->name);
@@ -1563,7 +1564,7 @@ static void hlsl_export_fragment(char *directory, api_kind d3d, function *main, 
 	assert(main->parameters_size > 0);
 	type_id pixel_input = main->parameter_types[0].type;
 
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(pixel_input != NO_TYPE, context, "fragment input missing");
 
 	write_types(hlsl, &offset, SHADER_STAGE_FRAGMENT, &pixel_input, 1, NO_TYPE, main, NULL, 0);
@@ -1608,7 +1609,7 @@ static void hlsl_export_compute(char *directory, api_kind d3d, function *main, b
 
 	write_functions(hlsl, &offset, SHADER_STAGE_COMPUTE, main, NULL, 0);
 
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 
 	uint8_t *output      = NULL;
 	size_t   output_size = 0;
@@ -1638,7 +1639,7 @@ static void hlsl_export_compute(char *directory, api_kind d3d, function *main, b
 
 static void hlsl_export_all_ray_shaders(char *directory, bool debug) {
 	char         *hlsl    = (char *)calloc(1024 * 1024, 1);
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(hlsl != NULL, context, "Could not allocate the hlsl string");
 	size_t offset = 0;
 
@@ -1747,7 +1748,7 @@ void hlsl_export(char *directory, api_kind d3d, bool debug) {
 				}
 			}
 
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "vertex or mesh shader missing");
 			check(fragment_shader_name != NO_NAME, context, "fragment shader missing");
 
@@ -1776,7 +1777,7 @@ void hlsl_export(char *directory, api_kind d3d, bool debug) {
 				}
 			}
 
-			global_array all_globals = {0};
+			global_array all_globals = INIT_ZERO;
 
 			if (vertex_shader != NULL) {
 				find_referenced_globals(vertex_shader, &all_globals);
@@ -1818,7 +1819,7 @@ void hlsl_export(char *directory, api_kind d3d, bool debug) {
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
 		if (has_attribute(&f->attributes, add_name("compute"))) {
-			global_array all_globals = {0};
+			global_array all_globals = INIT_ZERO;
 
 			find_referenced_globals(f, &all_globals);
 
@@ -1873,7 +1874,7 @@ void hlsl_export(char *directory, api_kind d3d, bool debug) {
 				}
 			}
 
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			check(raygen_shader_name != NO_NAME, context, "Ray generation shader missing");
 			check(raymiss_shader_name != NO_NAME, context, "Miss shader missing");
 			check(rayclosesthit_shader_name != NO_NAME, context, "Closest hit shader missing");

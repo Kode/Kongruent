@@ -1,9 +1,9 @@
 #include "d3d11.h"
 
-#include "../errors.h"
-
 #ifdef _WIN32
 
+#include "../global.h"
+#include "../errors.h"
 #include "../log.h"
 
 #include <D3Dcompiler.h>
@@ -42,7 +42,7 @@ static const char *shaderString(shader_stage stage, int version) {
 		}
 	}
 
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	error(context, "Unsupported shader stage/version combination");
 	return "unsupported";
 }
@@ -160,7 +160,7 @@ int compile_hlsl_to_d3d11(const char *source, uint8_t **output, size_t *outputle
 		return 0;
 	}
 	else {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		check(errorMessage != NULL, context, "Error message missing");
 		SIZE_T size  = errorMessage->lpVtbl->GetBufferSize(errorMessage);
 		char  *error = malloc(size + 1);

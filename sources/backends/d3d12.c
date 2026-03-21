@@ -1,9 +1,9 @@
 #include "d3d12.h"
 
-#include "../errors.h"
-
 #ifdef _WIN32
 
+#include "../global.h"
+#include "../errors.h"
 #include "../log.h"
 
 #include "dxcapi-c.h"
@@ -28,7 +28,7 @@ static const wchar_t *shader_string(shader_stage stage) {
 	case SHADER_STAGE_MESH:
 		return L"ms_6_5";
 	default: {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "Unsupported shader stage/version combination");
 		return L"unsupported";
 	}

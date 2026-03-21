@@ -1,3 +1,6 @@
+#include "typer.h"
+
+#include "global.h"
 #include "compiler.h"
 #include "disasm.h"
 #include "errors.h"
@@ -24,7 +27,7 @@ type_ref find_local_var_type(block *b, name_id name) {
 
 	for (size_t i = 0; i < b->vars.size; ++i) {
 		if (b->vars.v[i].name == name) {
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			check(b->vars.v[i].type.type != NO_TYPE, context, "Local var has no type");
 			return b->vars.v[i].type;
 		}
@@ -71,7 +74,7 @@ static void resolve_types_in_element(statement *parent_block, expression *elemen
 			element->type.type = of->base;
 		}
 		else {
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			error(context, "Indexed non-array %s", get_name(of->name));
 		}
 	}
@@ -95,7 +98,7 @@ static void resolve_types_in_member(statement *parent_block, expression *member)
 		uint32_t swizzle_size = (uint32_t)strlen(name);
 
 		if (swizzle_size > 4) {
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			error(context, "Swizzle size can not be more than four", get_name(member_name));
 		}
 
@@ -110,7 +113,7 @@ static void resolve_types_in_member(statement *parent_block, expression *member)
 			case 'g':
 			case 'y':
 				if (1 >= vector_size(of_type)) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					error(context, "Swizzle out of bounds", get_name(member_name));
 				}
 				member->swizzle.swizz.indices[swizzle_index] = 1;
@@ -118,7 +121,7 @@ static void resolve_types_in_member(statement *parent_block, expression *member)
 			case 'b':
 			case 'z':
 				if (2 >= vector_size(of_type)) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					error(context, "Swizzle out of bounds", get_name(member_name));
 				}
 				member->swizzle.swizz.indices[swizzle_index] = 2;
@@ -126,7 +129,7 @@ static void resolve_types_in_member(statement *parent_block, expression *member)
 			case 'a':
 			case 'w':
 				if (3 >= vector_size(of_type)) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					error(context, "Swizzle out of bounds", get_name(member_name));
 				}
 				member->swizzle.swizz.indices[swizzle_index] = 3;
@@ -224,7 +227,7 @@ static void resolve_types_in_member(statement *parent_block, expression *member)
 			}
 		}
 
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "Member %s not found", get_name(member_name));
 	}
 }
@@ -467,7 +470,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 				e->type = upgrade_type(e->binary.left->type, e->binary.right->type);
 			}
 			else {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Type mismatch %s vs %s", get_name(get_type(left_type)->name), get_name(get_type(right_type)->name));
 			}
 			break;
@@ -479,7 +482,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 			type_id left_type  = e->binary.left->type.type;
 			type_id right_type = e->binary.right->type.type;
 			if (!types_compatible(left_type, right_type)) {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Type mismatch %s vs %s", get_name(get_type(left_type)->name), get_name(get_type(right_type)->name));
 			}
 			e->type = upgrade_type(e->binary.left->type, e->binary.right->type);
@@ -492,14 +495,14 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 			type_id left_type  = e->binary.left->type.type;
 			type_id right_type = e->binary.right->type.type;
 			if (!types_compatible(left_type, right_type)) {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Type mismatch %s vs %s", get_name(get_type(left_type)->name), get_name(get_type(right_type)->name));
 			}
 			e->type = e->binary.left->type;
 			break;
 		}
 		case OPERATOR_NOT: {
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			error(context, "Weird binary operator");
 			break;
 		}
@@ -536,7 +539,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 		case OPERATOR_MOD:
 		case OPERATOR_ASSIGN:
 		default: {
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			error(context, "Weird unary operator");
 			break;
 		}
@@ -564,7 +567,7 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 			type_ref type = find_local_var_type(&parent->block, e->variable);
 			if (type.type == NO_TYPE) {
 				type                  = find_local_var_type(&parent->block, e->variable);
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Variable %s not found", get_name(e->variable));
 			}
 			e->type = type;
@@ -621,14 +624,14 @@ void resolve_types_in_expression(statement *parent, expression *e) {
 	}
 
 	if (e->type.type == NO_TYPE) {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		// const char *n = get_name(e->call.func_name);
 		error(context, "Could not resolve type");
 	}
 }
 
 void resolve_types_in_block(statement *parent, statement *block) {
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(block->kind == STATEMENT_BLOCK, context, "Malformed block");
 
 	for (size_t i = 0; i < block->block.statements.size; ++i) {
@@ -674,7 +677,7 @@ void resolve_types_in_block(statement *parent, statement *block) {
 			}
 
 			if (s->local_variable.var.type.type == NO_TYPE) {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Could not find type %s for %s", get_name(var_type_name), get_name(var_name));
 			}
 
@@ -699,7 +702,7 @@ void resolve_types(void) {
 				name_id name              = s->members.m[j].type.unresolved.name;
 				s->members.m[j].type.type = find_type_by_name(name);
 				if (s->members.m[j].type.type == NO_TYPE) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					error(context, "Could not find type %s in %s", get_name(name), get_name(s->name));
 				}
 			}
@@ -714,7 +717,7 @@ void resolve_types(void) {
 				name_id parameter_type_name              = f->parameter_types[parameter_index].unresolved.name;
 				f->parameter_types[parameter_index].type = find_type_by_name(parameter_type_name);
 				if (f->parameter_types[parameter_index].type == NO_TYPE) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					error(context, "Could not find type %s for %s", get_name(parameter_type_name), get_name(f->name));
 				}
 			}

@@ -1,5 +1,6 @@
 #include "disasm.h"
 
+#include "global.h"
 #include "compiler.h"
 #include "errors.h"
 #include "functions.h"
@@ -251,7 +252,7 @@ static void write_functions(void) {
 				kong_log(LOG_LEVEL_INFO, "BLOCK_END [ID: $%zu]", o->op_block.id);
 				break;
 			default: {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Unknown opcode");
 				break;
 			}

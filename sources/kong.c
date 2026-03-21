@@ -1,3 +1,4 @@
+#include "global.h"
 #include "analyzer.h"
 #include "compiler.h"
 #include "disasm.h"
@@ -50,7 +51,7 @@ static void read_file(char *filename) {
 
 	char *data = (char *)malloc(size + 1);
 
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	context.filename      = filename;
 	check(data != NULL, context, "Could not allocate memory to read file %s", filename);
 
@@ -71,7 +72,7 @@ typedef enum integration_kind { INTEGRATION_KORE3 } integration_kind;
 int main(int argc, char **argv) {
 	arg_mode mode = MODE_MODECHECK;
 
-	char            *inputs[256] = {0};
+	char            *inputs[256] = INIT_ZERO;
 	size_t           inputs_size = 0;
 	char            *platform    = NULL;
 	api_kind         api         = API_DEFAULT;
@@ -195,7 +196,7 @@ int main(int argc, char **argv) {
 				api = API_DEFAULT;
 			}
 			else {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Unknown API %s", arg);
 			}
 			mode = MODE_MODECHECK;
@@ -206,7 +207,7 @@ int main(int argc, char **argv) {
 				integration = INTEGRATION_KORE3;
 			}
 			else {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Unknown integration %s", arg);
 			}
 			mode = MODE_MODECHECK;
@@ -215,7 +216,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(platform != NULL, context, "platform parameter not found");
 
 	if (api == API_DEFAULT) {
@@ -333,7 +334,7 @@ int main(int argc, char **argv) {
 		kompjuta_export(output);
 		break;
 	default: {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "Unknown API");
 	}
 	}

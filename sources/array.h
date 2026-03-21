@@ -1,6 +1,8 @@
 #ifndef KONG_ARRAY_HEADER
 #define KONG_ARRAY_HEADER
 
+#include "global.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -27,14 +29,14 @@ extern "C" {
 
 #define static_array_push(array, value)   \
 	if (array.size >= array.max) {        \
-		debug_context context = {0};      \
+		debug_context context = INIT_ZERO;      \
 		error(context, "Array overflow"); \
 	}                                     \
 	array.values[array.size++] = value;
 
 #define static_array_push_p(array, value) \
 	if (array->size >= array->max) {      \
-		debug_context context = {0};      \
+		debug_context context = INIT_ZERO;      \
 		error(context, "Array overflow"); \
 	}                                     \
 	array->values[array->size++] = value;

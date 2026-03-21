@@ -1,5 +1,6 @@
 #include "wgsl.h"
 
+#include "../global.h"
 #include "../analyzer.h"
 #include "../compiler.h"
 #include "../errors.h"
@@ -198,7 +199,7 @@ static void write_types(char *wgsl, size_t *offset, shader_stage stage, type_id 
 	size_t  types_size = 0;
 	find_referenced_types(main, types, &types_size);
 
-	global_array globals = {0};
+	global_array globals = INIT_ZERO;
 
 	find_referenced_globals(main, &globals);
 
@@ -292,7 +293,7 @@ static void format_to_string(texture_format format, char *str) {
 }
 
 static void write_globals(char *wgsl, size_t *offset, function *main, bool *framebuffer_format_texture) {
-	global_array referenced_globals = {0};
+	global_array referenced_globals = INIT_ZERO;
 
 	find_referenced_globals(main, &referenced_globals);
 
@@ -505,13 +506,13 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, func
 		function *f = functions[i];
 		assert(f != NULL);
 
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		check(f->block != NULL, context, "Function block missing");
 
 		uint8_t *data = f->code.o;
 		size_t   size = f->code.size;
 
-		uint64_t parameter_ids[256] = {0};
+		uint64_t parameter_ids[256] = INIT_ZERO;
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 			for (size_t i = 0; i < f->block->block.vars.size; ++i) {
 				if (f->parameter_names[parameter_index] == f->block->block.vars.v[i].name) {
@@ -906,7 +907,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, func
 				                   type_string(o->op_load_bool_constant.to.type.type), o->op_load_bool_constant.boolean ? "true" : "false");
 				break;
 			case OPCODE_CALL: {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				if (o->op_call.func == add_name("sample")) {
 					check(o->op_call.parameters_size == 3, context, "sample requires three arguments");
 					indent(code, offset, indentation);
@@ -1062,7 +1063,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, func
 
 static void wgsl_export_vertex(char *directory, function *main) {
 	char         *wgsl    = (char *)calloc(1024 * 1024, 1);
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(wgsl != NULL, context, "Could not allocate the wgsl string");
 
 	size_t offset = 0;
@@ -1095,7 +1096,7 @@ static void wgsl_export_vertex(char *directory, function *main) {
 
 static void wgsl_export_fragment(char *directory, function *main) {
 	char         *wgsl    = (char *)calloc(1024 * 1024, 1);
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(wgsl != NULL, context, "Could not allocate the wgsl string");
 
 	size_t offset = 0;
@@ -1125,7 +1126,7 @@ static void wgsl_export_fragment(char *directory, function *main) {
 
 static void wgsl_export_compute(char *directory, function *main) {
 	char         *wgsl    = (char *)calloc(1024 * 1024, 1);
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(wgsl != NULL, context, "Could not allocate the wgsl string");
 
 	size_t offset = 0;
@@ -1164,7 +1165,7 @@ void wgsl_export(char *directory) {
 				}
 			}
 
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			check(vertex_shader_name != NO_NAME, context, "vertex shader not found");
 			check(fragment_shader_name != NO_NAME, context, "fragment shader not found");
 

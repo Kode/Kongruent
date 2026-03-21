@@ -1,4 +1,6 @@
 #include "tokenizer.h"
+
+#include "global.h"
 #include "errors.h"
 
 #include <assert.h>
@@ -7,7 +9,7 @@
 #include <string.h>
 
 token tokens_get(tokens *tokens, size_t index) {
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(tokens->current_size > index, context, "Token index out of bounds");
 	return tokens->t[index];
 }
@@ -102,7 +104,7 @@ static void tokenizer_buffer_reset(tokenizer_buffer *buffer, tokenizer_state *st
 }
 
 static void tokenizer_buffer_add(tokenizer_buffer *buffer, char ch) {
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(buffer->current_size < buffer->max_size, context, "Token buffer is too small");
 	buffer->buf[buffer->current_size] = ch;
 	buffer->current_size += 1;
@@ -114,7 +116,7 @@ static bool tokenizer_buffer_equals(tokenizer_buffer *buffer, const char *str) {
 }
 
 static name_id tokenizer_buffer_to_name(tokenizer_buffer *buffer) {
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(buffer->current_size < buffer->max_size, context, "Token buffer is too small");
 	buffer->buf[buffer->current_size] = 0;
 	buffer->current_size += 1;
@@ -143,7 +145,7 @@ static void tokens_init(tokens *tokens) {
 static void tokens_add(tokens *tokens, token token) {
 	tokens->t[tokens->current_size] = token;
 	tokens->current_size += 1;
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(tokens->current_size <= tokens->max_size, context, "Out of tokens");
 }
 
@@ -211,7 +213,7 @@ tokens tokenize(const char *filename, const char *source) {
 	tokens tokens;
 	tokens_init(&tokens);
 
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	context.filename      = filename;
 
 	tokenizer_state state;

@@ -1,5 +1,6 @@
 #include "kore3.h"
 
+#include "../global.h"
 #include "../analyzer.h"
 #include "../backends/util.h"
 #include "../compiler.h"
@@ -173,7 +174,7 @@ static const char *structure_type(type_id type, api_kind api) {
 			return "KORE_KOMPJUTA_VERTEX_FORMAT_FLOAT32X4";
 		}
 	}
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	error(context, "Unknown type for vertex structure");
 	return "UNKNOWN";
 }
@@ -197,7 +198,7 @@ static const char *convert_compare_mode(int mode) {
 	case 7:
 		return "KORE_GPU_COMPARE_FUNCTION_GREATER_EQUAL";
 	default: {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "Unknown compare mode");
 		return "UNKNOWN";
 	}
@@ -291,7 +292,7 @@ static const char *convert_texture_format(int format) {
 	case 41:
 		return "KORE_GPU_TEXTURE_FORMAT_DEPTH32_FLOAT_STENCIL8_NOTHING24";
 	default: {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "Unknown texture format");
 		return "UNKNOWN";
 	}
@@ -342,7 +343,7 @@ static const char *convert_blend_mode(int mode, const char *api) {
 		sprintf(blend_mode, "KORE_%s_BLEND_FACTOR_ONE_MINUS_CONSTANT", api);
 		return blend_mode;
 	default: {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "Unknown blend mode");
 		return "UNKNOWN";
 	}
@@ -369,7 +370,7 @@ static const char *convert_blend_op(int op, const char *api) {
 		sprintf(blend_op, "KORE_%s_BLEND_OPERATION_MAX", api);
 		return blend_op;
 	default: {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "Unknown blend op");
 		return "UNKNOWN";
 	}
@@ -423,7 +424,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 		}
 	}
 
-	fprintf(output, "\tD3D12_ROOT_PARAMETER params[%i] = {0};\n", table_count);
+	fprintf(output, "\tD3D12_ROOT_PARAMETER params[%i] = INIT_ZERO;\n", table_count);
 
 	uint32_t table_index = 0;
 
@@ -459,7 +460,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 				}
 			}
 
-			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%zu] = {0};\n", table_index, count);
+			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%zu] = INIT_ZERO;\n", table_index, count);
 
 			size_t range_index = 0;
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
@@ -527,7 +528,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 				}
 			}
 
-			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%zu] = {0};\n", table_index, count);
+			fprintf(output, "\n\tD3D12_DESCRIPTOR_RANGE ranges%i[%zu] = INIT_ZERO;\n", table_index, count);
 
 			size_t range_index = 0;
 			for (size_t global_index = 0; global_index < set->globals.size; ++global_index) {
@@ -550,7 +551,7 @@ static void write_root_signature(FILE *output, descriptor_set *all_descriptor_se
 		}
 	}
 
-	fprintf(output, "\n\tD3D12_ROOT_SIGNATURE_DESC desc = {0};\n");
+	fprintf(output, "\n\tD3D12_ROOT_SIGNATURE_DESC desc = INIT_ZERO;\n");
 	fprintf(output, "\tdesc.NumParameters = %i;\n", table_count);
 	fprintf(output, "\tdesc.pParameters = params;\n");
 
@@ -699,9 +700,9 @@ void kore3_export(char *directory, api_kind api) {
 		}
 	}
 
-	type_id vertex_inputs[256]              = {0};
-	size_t  vertex_input_slots[256]         = {0};
-	bool    vertex_inputs_per_instance[256] = {0};
+	type_id vertex_inputs[256]              = INIT_ZERO;
+	size_t  vertex_input_slots[256]         = INIT_ZERO;
+	bool    vertex_inputs_per_instance[256] = INIT_ZERO;
 	size_t  vertex_inputs_size              = 0;
 
 	for (type_id i = 0; get_type(i) != NULL; ++i) {
@@ -712,18 +713,18 @@ void kore3_export(char *directory, api_kind api) {
 
 			for (size_t j = 0; j < t->members.size; ++j) {
 				if (t->members.m[j].name == add_name("vertex")) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "vertex expects an identifier");
 					vertex_shader_name = t->members.m[j].value.identifier;
 				}
 				if (t->members.m[j].name == add_name("mesh")) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "mesh expects an identifier");
 					mesh_shader_name = t->members.m[j].value.identifier;
 				}
 			}
 
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "No vertex or mesh shader name found");
 
 			if (vertex_shader_name != NO_NAME) {
@@ -1092,7 +1093,7 @@ void kore3_export(char *directory, api_kind api) {
 				type *t = get_type(i);
 				if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 					for (size_t j = 0; j < t->members.size; ++j) {
-						debug_context context = {0};
+						debug_context context = INIT_ZERO;
 						if (t->members.m[j].name == add_name("vertex")) {
 							check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "vertex expects an identifier");
 							fprintf(output, "#include \"kong_%s.h\"\n", get_name(t->members.m[j].value.identifier));
@@ -1199,7 +1200,7 @@ void kore3_export(char *directory, api_kind api) {
 				function *vertex_function   = NULL;
 				function *fragment_function = NULL;
 
-				global_array globals = {0};
+				global_array globals = INIT_ZERO;
 
 				for (global_id i = 0; get_global(i) != NULL; ++i) {
 					global *g = get_global(i);
@@ -1332,7 +1333,7 @@ void kore3_export(char *directory, api_kind api) {
 		}
 
 		global *root_constants_global         = NULL;
-		char    root_constants_type_name[256] = {0};
+		char    root_constants_type_name[256] = INIT_ZERO;
 
 		for (global_id i = 0; get_global(i) != NULL && get_global(i)->type != NO_TYPE; ++i) {
 			global *g = get_global(i);
@@ -1604,7 +1605,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
 							if (writable) {
-								debug_context context = {0};
+								debug_context context = INIT_ZERO;
 								error(context, "Texture arrays can not be writable");
 							}
 
@@ -1615,7 +1616,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_CUBE) {
 							if (writable) {
-								debug_context context = {0};
+								debug_context context = INIT_ZERO;
 								error(context, "Cube maps can not be writable");
 							}
 							fprintf(output, "\tkore_%s_descriptor_set_set_texture_cube_view_srv(device, &set->set, &set->%s, %zu);\n", api_short,
@@ -1853,7 +1854,7 @@ void kore3_export(char *directory, api_kind api) {
 			            }
 			            else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
 			                if (writable) {
-			                    debug_context context = {0};
+			                    debug_context context = INIT_ZERO;
 			                    error(context, "Texture arrays can not be writable");
 			                }
 
@@ -1865,7 +1866,7 @@ void kore3_export(char *directory, api_kind api) {
 			            }
 			            else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_CUBE) {
 			                if (writable) {
-			                    debug_context context = {0};
+			                    debug_context context = INIT_ZERO;
 			                    error(context, "Cube maps can not be writable");
 			                }
 			                fprintf(output, "\tkore_vulkan_descriptor_set_set_sampled_cube_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
@@ -2283,7 +2284,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
 							if (writable) {
-								debug_context context = {0};
+								debug_context context = INIT_ZERO;
 								error(context, "Texture arrays can not be writable");
 							}
 
@@ -2295,7 +2296,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_CUBE) {
 							if (writable) {
-								debug_context context = {0};
+								debug_context context = INIT_ZERO;
 								error(context, "Cube maps can not be writable");
 							}
 							fprintf(output, "\tkore_vulkan_descriptor_set_set_sampled_cube_image_descriptor(device, &set->set, &parameters->%s, %zu);\n",
@@ -2627,7 +2628,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D_ARRAY) {
 							if (writable) {
-								debug_context context = {0};
+								debug_context context = INIT_ZERO;
 								error(context, "Texture arrays can not be writable");
 							}
 
@@ -2642,7 +2643,7 @@ void kore3_export(char *directory, api_kind api) {
 						}
 						else if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_CUBE) {
 							if (writable) {
-								debug_context context = {0};
+								debug_context context = INIT_ZERO;
 								error(context, "Cube maps can not be writable");
 							}
 							fprintf(output,
@@ -2978,7 +2979,7 @@ void kore3_export(char *directory, api_kind api) {
 				if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
 					for (size_t j = 0; j < t->members.size; ++j) {
 						if (t->members.m[j].name == add_name("vertex") || t->members.m[j].name == add_name("fragment")) {
-							debug_context context = {0};
+							debug_context context = INIT_ZERO;
 							check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "vertex or fragment expects an identifier");
 							fprintf(output, "static kore_%s_shader %s;\n", api_short, get_name(t->members.m[j].value.identifier));
 						}
@@ -2995,7 +2996,7 @@ void kore3_export(char *directory, api_kind api) {
 				if (api == API_METAL) {
 					attribute *threads_attribute = find_attribute(&f->attributes, add_name("threads"));
 					if (threads_attribute == NULL || threads_attribute->paramters_count != 3) {
-						debug_context context = {0};
+						debug_context context = INIT_ZERO;
 						error(context, "Compute function requires a threads attribute with three parameters");
 					}
 
@@ -3065,7 +3066,7 @@ void kore3_export(char *directory, api_kind api) {
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("pipe"))) {
-				fprintf(output, "\tkore_%s_render_pipeline_parameters %s_parameters = {0};\n\n", api_short, get_name(t->name));
+				fprintf(output, "\tkore_%s_render_pipeline_parameters %s_parameters = INIT_ZERO;\n\n", api_short, get_name(t->name));
 
 				name_id vertex_shader_name        = NO_NAME;
 				name_id amplification_shader_name = NO_NAME;
@@ -3146,60 +3147,60 @@ void kore3_export(char *directory, api_kind api) {
 						fragment_shader_name = t->members.m[j].value.identifier;
 					}
 					// else if (t->members.m[j].name == add_name("depth_write")) {
-					//	debug_context context = {0};
+					//	debug_context context = INIT_ZERO;
 					//	check(t->members.m[j].value.kind == TOKEN_BOOLEAN, context, "depth_write expects a bool");
 					//	fprintf(output, "\t%s.depth_write = %s;\n\n", get_name(t->name), t->members.m[j].value.boolean ? "true" : "false");
 					// }
 					// else if (t->members.m[j].name == add_name("depth_mode")) {
-					//	debug_context context = {0};
+					//	debug_context context = INIT_ZERO;
 					//	check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "depth_mode expects an identifier");
 					//	global *g = find_global(t->members.m[j].value.identifier);
 					//	fprintf(output, "\t%s.depth_mode = %s;\n\n", get_name(t->name), convert_compare_mode(g->value.value.ints[0]));
 					//}
 					else if (t->members.m[j].name == add_name("blend_source")) {
-						debug_context context = {0};
+						debug_context context = INIT_ZERO;
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_source expects an identifier");
 						global *g    = find_global(t->members.m[j].value.identifier);
 						blend_source = g->value.value.ints[0];
 					}
 					else if (t->members.m[j].name == add_name("blend_destination")) {
-						debug_context context = {0};
+						debug_context context = INIT_ZERO;
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_destination expects an identifier");
 						global *g         = find_global(t->members.m[j].value.identifier);
 						blend_destination = g->value.value.ints[0];
 					}
 					else if (t->members.m[j].name == add_name("blend_operation")) {
-						debug_context context = {0};
+						debug_context context = INIT_ZERO;
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "blend_operation expects an identifier");
 						global *g       = find_global(t->members.m[j].value.identifier);
 						blend_operation = g->value.value.ints[0];
 					}
 					else if (t->members.m[j].name == add_name("alpha_blend_source")) {
-						debug_context context = {0};
+						debug_context context = INIT_ZERO;
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "alpha_blend_source expects an identifier");
 						global *g          = find_global(t->members.m[j].value.identifier);
 						alpha_blend_source = g->value.value.ints[0];
 					}
 					else if (t->members.m[j].name == add_name("alpha_blend_destination")) {
-						debug_context context = {0};
+						debug_context context = INIT_ZERO;
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "alpha_blend_destination expects an identifier");
 						global *g               = find_global(t->members.m[j].value.identifier);
 						alpha_blend_destination = g->value.value.ints[0];
 					}
 					else if (t->members.m[j].name == add_name("alpha_blend_operation")) {
-						debug_context context = {0};
+						debug_context context = INIT_ZERO;
 						check(t->members.m[j].value.kind == TOKEN_IDENTIFIER, context, "alpha_blend_operation expects an identifier");
 						global *g             = find_global(t->members.m[j].value.identifier);
 						alpha_blend_operation = g->value.value.ints[0];
 					}
 					// else {
-					//	debug_context context = {0};
+					//	debug_context context = INIT_ZERO;
 					//	error(context, "Unsupported pipe member %s", get_name(t->members.m[j].name));
 					// }
 				}
 
 				{
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "No vertex or mesh shader name found");
 					check(fragment_shader_name != NO_NAME, context, "No fragment shader name found");
 				}
@@ -3207,8 +3208,8 @@ void kore3_export(char *directory, api_kind api) {
 				function *vertex_function   = NULL;
 				function *fragment_function = NULL;
 
-				type_id vertex_inputs[64]   = {0};
-				bool    instanced[64]       = {0};
+				type_id vertex_inputs[64]   = INIT_ZERO;
+				bool    instanced[64]       = INIT_ZERO;
 				size_t  vertex_inputs_count = 0;
 
 				if (vertex_shader_name != NO_NAME) {
@@ -3216,7 +3217,7 @@ void kore3_export(char *directory, api_kind api) {
 						function *f = get_function(i);
 						if (f->name == vertex_shader_name) {
 							vertex_function       = f;
-							debug_context context = {0};
+							debug_context context = INIT_ZERO;
 							check(f->parameters_size > 0, context, "Vertex function requires at least one parameter");
 							for (size_t input_index = 0; input_index < f->parameters_size; ++input_index) {
 								vertex_inputs[input_index] = f->parameter_types[input_index].type;
@@ -3239,7 +3240,7 @@ void kore3_export(char *directory, api_kind api) {
 				}
 
 				{
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					check(vertex_shader_name == NO_NAME || vertex_function != NULL, context, "Vertex function not found");
 					check(fragment_function != NULL, context, "Fragment function not found");
 					check(vertex_function == NULL || (vertex_inputs_count > 0 && vertex_inputs[0] != NO_TYPE), context, "No vertex input found");
@@ -3292,7 +3293,7 @@ void kore3_export(char *directory, api_kind api) {
 
 				member *depth_stencil_format = find_member(t, "depth_stencil_format");
 				if (depth_stencil_format != NULL) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					check(depth_stencil_format->value.kind == TOKEN_IDENTIFIER, context, "depth_stencil_format expects an identifier");
 					global *g = find_global(depth_stencil_format->value.identifier);
 					fprintf(output, "\t%s_parameters.depth_stencil.format = %s;\n", get_name(t->name), convert_texture_format(g->value.value.ints[0]));
@@ -3303,7 +3304,7 @@ void kore3_export(char *directory, api_kind api) {
 
 				member *depth_write = find_member(t, "depth_write");
 				if (depth_write != NULL) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					check(depth_write->value.kind == TOKEN_BOOLEAN, context, "depth_write expects a bool");
 					fprintf(output, "\t%s_parameters.depth_stencil.depth_write_enabled = %s;\n", get_name(t->name),
 					        depth_write->value.boolean ? "true" : "false");
@@ -3314,7 +3315,7 @@ void kore3_export(char *directory, api_kind api) {
 
 				member *depth_compare = find_member(t, "depth_compare");
 				if (depth_compare != NULL) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					check(depth_compare->value.kind == TOKEN_IDENTIFIER, context, "depth_compare expects an identifier");
 					global *g = find_global(depth_compare->value.identifier);
 					fprintf(output, "\t%s_parameters.depth_stencil.depth_compare = %s;\n", get_name(t->name), convert_compare_mode(g->value.value.ints[0]));
@@ -3354,7 +3355,7 @@ void kore3_export(char *directory, api_kind api) {
 							format = find_member(t, "format");
 						}
 						if (format != NULL) {
-							debug_context context = {0};
+							debug_context context = INIT_ZERO;
 							check(format->value.kind == TOKEN_IDENTIFIER, context, "format expects an identifier");
 
 							if (strcmp(get_name(format->value.identifier), "framebuffer_format") == 0) {
@@ -3387,7 +3388,7 @@ void kore3_export(char *directory, api_kind api) {
 					else {
 						fprintf(output, "\t%s_parameters.fragment.targets_count = 1;\n", get_name(t->name));
 
-						debug_context context = {0};
+						debug_context context = INIT_ZERO;
 						check(format->value.kind == TOKEN_IDENTIFIER, context, "format expects an identifier");
 
 						if (strcmp(get_name(format->value.identifier), "framebuffer_format") == 0) {
@@ -3502,7 +3503,7 @@ void kore3_export(char *directory, api_kind api) {
 				}
 
 				if (api == API_OPENGL) {
-					global_array globals = {0};
+					global_array globals = INIT_ZERO;
 
 					find_referenced_globals(vertex_function, &globals);
 					find_referenced_globals(fragment_function, &globals);
@@ -3616,7 +3617,7 @@ void kore3_export(char *directory, api_kind api) {
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
-				fprintf(output, "\tkore_%s_ray_pipeline_parameters %s_parameters = {0};\n\n", api_short, get_name(t->name));
+				fprintf(output, "\tkore_%s_ray_pipeline_parameters %s_parameters = INIT_ZERO;\n\n", api_short, get_name(t->name));
 
 				name_id gen_shader_name          = NO_NAME;
 				name_id miss_shader_name         = NO_NAME;
@@ -3643,7 +3644,7 @@ void kore3_export(char *directory, api_kind api) {
 				}
 
 				{
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					check(gen_shader_name != NO_NAME, context, "No ray gen shader name found");
 					check(miss_shader_name != NO_NAME, context, "No miss shader name found");
 					check(closest_shader_name != NO_NAME, context, "No closest hit shader name found");

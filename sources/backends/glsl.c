@@ -1,5 +1,6 @@
 #include "glsl.h"
 
+#include "../global.h"
 #include "../analyzer.h"
 #include "../compiler.h"
 #include "../errors.h"
@@ -152,7 +153,7 @@ static void write_types(char *glsl, size_t *offset, shader_stage stage, type_id 
 }
 
 static void write_globals(char *glsl, size_t *offset, function *main) {
-	global_array globals = {0};
+	global_array globals = INIT_ZERO;
 
 	find_referenced_globals(main, &globals);
 
@@ -203,13 +204,13 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 	for (size_t i = 0; i < functions_size; ++i) {
 		function *f = functions[i];
 
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		check(f->block != NULL, context, "Function has no block");
 
 		uint8_t *data = f->code.o;
 		size_t   size = f->code.size;
 
-		uint64_t parameter_ids[256] = {0};
+		uint64_t parameter_ids[256] = INIT_ZERO;
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 			for (size_t i = 0; i < f->block->block.vars.size; ++i) {
 				if (f->parameter_names[parameter_index] == f->block->block.vars.v[i].name) {
@@ -240,7 +241,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 			else if (stage == SHADER_STAGE_COMPUTE) {
 				attribute *threads_attribute = find_attribute(&f->attributes, add_name("threads"));
 				if (threads_attribute == NULL || threads_attribute->paramters_count != 3) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					error(context, "Compute function requires a threads attribute with three parameters");
 				}
 
@@ -249,7 +250,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 				*offset += sprintf(&code[*offset], "void main() {\n");
 			}
 			else {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Unsupported shader stage");
 			}
 		}
@@ -274,7 +275,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 			switch (o->type) {
 			case OPCODE_CALL: {
 				if (o->op_call.func == add_name("sample")) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					check(o->op_call.parameters_size == 3, context, "sample requires three parameters");
 
 					variable image_var = o->op_call.parameters[0];
@@ -291,7 +292,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 					}
 				}
 				else if (o->op_call.func == add_name("sample_lod")) {
-					debug_context context = {0};
+					debug_context context = INIT_ZERO;
 					check(o->op_call.parameters_size == 4, context, "sample_lod requires four parameters");
 					indent(code, offset, indentation);
 					*offset += sprintf(&code[*offset], "%s _%" PRIu64 " = textureLod(_%" PRIu64 ", _%" PRIu64 ", _%" PRIu64 ");\n",
@@ -490,7 +491,7 @@ static void write_functions(char *code, size_t *offset, shader_stage stage, type
 
 static void glsl_export_vertex(char *directory, function *main, bool flip) {
 	char         *glsl    = (char *)calloc(1024 * 1024, 1);
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(glsl != NULL, context, "Could not allocate glsl string");
 
 	size_t offset = 0;
@@ -534,7 +535,7 @@ static void glsl_export_vertex(char *directory, function *main, bool flip) {
 
 static void glsl_export_fragment(char *directory, function *main) {
 	char         *glsl    = (char *)calloc(1024 * 1024, 1);
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(glsl != NULL, context, "Could not allocate glsl string");
 
 	size_t offset = 0;
@@ -565,7 +566,7 @@ static void glsl_export_fragment(char *directory, function *main) {
 
 static void glsl_export_compute(char *directory, function *main) {
 	char         *glsl    = (char *)calloc(1024 * 1024, 1);
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 	check(glsl != NULL, context, "Could not allocate glsl string");
 
 	size_t offset = 0;
@@ -617,7 +618,7 @@ void glsl_export(char *directory) {
 				}
 			}
 
-			debug_context context = {0};
+			debug_context context = INIT_ZERO;
 			check(vertex_shader_name != NO_NAME, context, "vertex shader missing");
 			check(fragment_shader_name != NO_NAME, context, "fragment shader missing");
 

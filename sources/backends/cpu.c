@@ -1,5 +1,6 @@
 #include "cpu.h"
 
+#include "../global.h"
 #include "../analyzer.h"
 #include "../compiler.h"
 #include "../errors.h"
@@ -108,7 +109,7 @@ static const char *type_string(type_id type, uint8_t simd_width) {
 		return type_string_simd1(type);
 	}
 	else {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "Unsupported simd width %i.", simd_width);
 		return "type string error";
 	}
@@ -167,7 +168,7 @@ static void write_types(char *code, size_t *offset, function *main, uint8_t simd
 }
 
 static void write_globals(char *code, size_t *offset, char *header_code, size_t *header_offset, function *main) {
-	global_array globals = {0};
+	global_array globals = INIT_ZERO;
 
 	find_referenced_globals(main, &globals);
 
@@ -282,7 +283,7 @@ static const char *type_to_mini(type_ref t) {
 		return "_f4";
 	}
 	else {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "Unknown parameter type");
 		return "error";
 	}
@@ -300,13 +301,13 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 	for (size_t i = 0; i < functions_size; ++i) {
 		function *f = functions[i];
 
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		check(f->block != NULL, context, "Function has no block");
 
 		uint8_t *data = f->code.o;
 		size_t   size = f->code.size;
 
-		uint64_t parameter_ids[256] = {0};
+		uint64_t parameter_ids[256] = INIT_ZERO;
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 			for (size_t i = 0; i < f->block->block.vars.size; ++i) {
 				if (f->parameter_names[parameter_index] == f->block->block.vars.v[i].name) {
@@ -325,7 +326,7 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 		if (f == main) {
 			attribute *threads_attribute = find_attribute(&f->attributes, add_name("threads"));
 			if (threads_attribute == NULL || threads_attribute->paramters_count != 3) {
-				debug_context context = {0};
+				debug_context context = INIT_ZERO;
 				error(context, "Compute function requires a threads attribute with three parameters");
 			}
 
@@ -820,7 +821,7 @@ static void write_functions(char *code, const char *name, size_t *offset, functi
 static void cpu_export_compute(char *directory, function *main) {
 	uint8_t simd_width = 4;
 
-	debug_context context = {0};
+	debug_context context = INIT_ZERO;
 
 	char *code = (char *)calloc(1024 * 1024, 1);
 	check(code != NULL, context, "Could not allocate code string");

@@ -1,5 +1,6 @@
 #include "sets.h"
 
+#include "global.h"
 #include "errors.h"
 
 static descriptor_set sets[MAX_SETS];
@@ -13,7 +14,7 @@ descriptor_set *create_set(name_id name) {
 	}
 
 	if (sets_count >= MAX_SETS) {
-		debug_context context = {0};
+		debug_context context = INIT_ZERO;
 		error(context, "Max set count of %i reached", MAX_SETS);
 		return NULL;
 	}
