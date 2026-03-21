@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KONG_PARSER_HEADER
+#define KONG_PARSER_HEADER
 
 #include "functions.h"
 #include "globals.h"
@@ -8,6 +9,10 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct expression;
 
@@ -156,3 +161,9 @@ typedef struct definition {
 } definition;
 
 void parse(const char *filename, tokens *tokens);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

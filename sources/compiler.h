@@ -1,10 +1,15 @@
-#pragma once
+#ifndef KONG_COMPILER_HEADER
+#define KONG_COMPILER_HEADER
 
 #include "names.h"
 #include "types.h"
 
 #include <stddef.h>
 #include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum variable_kind { VARIABLE_GLOBAL, VARIABLE_LOCAL, VARIABLE_INTERNAL } variable_kind;
 
@@ -187,3 +192,9 @@ void compile_function_block(opcodes *code, struct statement *block);
 variable allocate_variable(type_ref type, variable_kind kind);
 
 #define OP_SIZE(op, opmember) offsetof(opcode, opmember) + sizeof(op.opmember)
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

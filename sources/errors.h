@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KONG_ERRORS_HEADER
+#define KONG_ERRORS_HEADER
 
 #include <assert.h>
 #include <stdbool.h>
@@ -31,8 +32,8 @@ void          check_function(bool test, debug_context context, const char *messa
 	check_function(test, context, message, ##__VA_ARGS__)
 void check_args(bool test, debug_context context, const char *message, va_list args);
 
-// V_ASSERT_CONTRACT, assertMacro:check
-
 #ifdef __cplusplus
 }
+#endif
+
 #endif

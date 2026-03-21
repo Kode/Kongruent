@@ -1,6 +1,10 @@
 #ifndef KONG_ARRAY_HEADER
 #define KONG_ARRAY_HEADER
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define static_array(type, name, max_size) \
 	typedef struct name {                  \
 		type   values[max_size];           \
@@ -34,5 +38,9 @@
 		error(context, "Array overflow"); \
 	}                                     \
 	array->values[array->size++] = value;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,3 +1,14 @@
-#pragma once
+#ifndef KONG_API_HEADER
+#define KONG_API_HEADER
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum api_kind { API_DEFAULT, API_DIRECT3D11, API_DIRECT3D12, API_OPENGL, API_METAL, API_WEBGPU, API_VULKAN, API_KOMPJUTA } api_kind;
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

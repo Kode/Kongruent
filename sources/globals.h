@@ -1,7 +1,13 @@
-#pragma once
+#ifndef KONG_GLOBALS_HEADER
+#define KONG_GLOBALS_HEADER
 
 #include "names.h"
 #include "types.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef uint32_t global_id;
 
@@ -71,3 +77,9 @@ global *find_global(name_id name);
 global *get_global(global_id id);
 
 void assign_global_var(global_id id, uint64_t var_index);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

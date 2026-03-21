@@ -1,4 +1,9 @@
-#pragma once
+#ifndef KONG_SHADER_STAGE_HEADER
+#define KONG_SHADER_STAGE_HEADER
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum shader_stage {
 	SHADER_STAGE_VERTEX,
@@ -12,3 +17,9 @@ typedef enum shader_stage {
 	SHADER_STAGE_RAY_INTERSECTION,
 	SHADER_STAGE_RAY_ANY_HIT
 } shader_stage;
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

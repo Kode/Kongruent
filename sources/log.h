@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KONG_LOG_HEADER
+#define KONG_LOG_HEADER
 
 #include <stdarg.h>
 
@@ -14,4 +15,6 @@ void kong_log_args(log_level_t log_level, const char *format, va_list args);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

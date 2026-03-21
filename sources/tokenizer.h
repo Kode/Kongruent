@@ -1,9 +1,14 @@
-#pragma once
+#ifndef KONG_TOKENIZER_HEADER
+#define KONG_TOKENIZER_HEADER
 
 #include "names.h"
 
 #include <stdbool.h>
 #include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum operatorr {
 	OPERATOR_EQUALS,
@@ -87,3 +92,9 @@ typedef struct tokens {
 token tokens_get(tokens *arr, size_t index);
 
 tokens tokenize(const char *filename, const char *source);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

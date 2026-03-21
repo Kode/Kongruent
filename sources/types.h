@@ -7,6 +7,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define NO_TYPE 0xFFFFFFFF
 
 typedef uint32_t type_id;
@@ -208,5 +212,9 @@ uint32_t vector_size(type_id t);
 type_id vector_base_type(type_id vector_type);
 
 type_id vector_to_size(type_id vector_type, uint32_t size);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

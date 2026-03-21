@@ -6,6 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // based on https://valkey.io/blog/new-hash-table/
 
 struct meta {
@@ -170,5 +174,9 @@ static inline void hash_map_iterate(struct hash_map *map, void (*callback)(struc
 		hash_map_iterate_in_bucket(bucket, callback, data);
 	}
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

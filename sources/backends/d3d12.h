@@ -1,4 +1,5 @@
-#pragma once
+#ifndef KONG_D3D12_HEADER
+#define KONG_D3D12_HEADER
 
 #include "../shader_stage.h"
 
@@ -14,4 +15,6 @@ int compile_hlsl_to_d3d12(const char *source, uint8_t **output, size_t *outputle
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

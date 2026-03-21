@@ -8,6 +8,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct render_pipeline {
 	function *vertex_shader;
 	function *amplification_shader;
@@ -61,5 +65,9 @@ descriptor_set_group *find_descriptor_set_group_for_pipe_type(type *t);
 descriptor_set_group *find_descriptor_set_group_for_function(function *f);
 
 void analyze(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

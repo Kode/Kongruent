@@ -1,8 +1,13 @@
-#pragma once
+#ifndef KONG_FUNCTIONS_HEADER
+#define KONG_FUNCTIONS_HEADER
 
 #include "compiler.h"
 #include "names.h"
 #include "types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define NO_FUNCTION 0xFFFFFFFF
 
@@ -49,3 +54,9 @@ function_id add_function(name_id name);
 function_id find_function(name_id name);
 
 function *get_function(function_id function);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
