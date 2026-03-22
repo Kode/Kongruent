@@ -1,4 +1,6 @@
 /build
+/.idea/
+/.vscode/
 /tests/out
 .DS_Store
 
