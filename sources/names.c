@@ -1,7 +1,7 @@
 #include "names.h"
 
-#include "global.h"
 #include "errors.h"
+#include "global.h"
 
 #include "libs/stb_ds.h"
 

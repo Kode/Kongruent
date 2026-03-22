@@ -1,10 +1,10 @@
 #include "typer.h"
 
-#include "global.h"
 #include "compiler.h"
 #include "disasm.h"
 #include "errors.h"
 #include "functions.h"
+#include "global.h"
 #include "globals.h"
 #include "log.h"
 #include "names.h"

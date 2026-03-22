@@ -1,10 +1,10 @@
 #include "glsl.h"
 
-#include "../global.h"
 #include "../analyzer.h"
 #include "../compiler.h"
 #include "../errors.h"
 #include "../functions.h"
+#include "../global.h"
 #include "../parser.h"
 #include "../shader_stage.h"
 #include "../types.h"

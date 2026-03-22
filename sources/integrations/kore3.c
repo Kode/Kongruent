@@ -1,11 +1,11 @@
 #include "kore3.h"
 
-#include "../global.h"
 #include "../analyzer.h"
 #include "../backends/util.h"
 #include "../compiler.h"
 #include "../errors.h"
 #include "../functions.h"
+#include "../global.h"
 #include "../parser.h"
 #include "../sets.h"
 #include "../types.h"

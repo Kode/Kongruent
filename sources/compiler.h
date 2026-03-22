@@ -112,8 +112,8 @@ typedef struct opcode {
 			variable from;
 			variable to;
 
-			kong_access  access_list[64];
-			uint8_t access_list_size;
+			kong_access access_list[64];
+			uint8_t     access_list_size;
 		} op_store_access_list;
 		struct {
 			float    number;
@@ -131,8 +131,8 @@ typedef struct opcode {
 			variable from;
 			variable to;
 
-			kong_access  access_list[64];
-			uint8_t access_list_size;
+			kong_access access_list[64];
+			uint8_t     access_list_size;
 		} op_load_access_list;
 		struct {
 			variable var;

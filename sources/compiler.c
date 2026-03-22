@@ -1,7 +1,7 @@
 #include "compiler.h"
 
-#include "global.h"
 #include "errors.h"
+#include "global.h"
 #include "parser.h"
 
 #include <assert.h>
@@ -294,12 +294,12 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 				expression *of = left;
 
-				kong_access   access_list[64];
-				uint32_t access_list_size = 0;
+				kong_access access_list[64];
+				uint32_t    access_list_size = 0;
 
 				while (of->kind == EXPRESSION_ELEMENT || of->kind == EXPRESSION_MEMBER || of->kind == EXPRESSION_SWIZZLE) {
 					kong_access *a = &access_list[access_list_size];
-					a->type   = of->type.type;
+					a->type        = of->type.type;
 
 					switch (of->kind) {
 					case EXPRESSION_ELEMENT:
@@ -507,12 +507,12 @@ variable emit_expression(opcodes *code, block *parent, expression *e) {
 
 		expression *of = e;
 
-		kong_access   access_list[64];
-		uint32_t access_list_size = 0;
+		kong_access access_list[64];
+		uint32_t    access_list_size = 0;
 
 		while (of->kind == EXPRESSION_ELEMENT || of->kind == EXPRESSION_MEMBER || of->kind == EXPRESSION_SWIZZLE) {
 			kong_access *a = &access_list[access_list_size];
-			a->type   = of->type.type;
+			a->type        = of->type.type;
 
 			switch (of->kind) {
 			case EXPRESSION_ELEMENT:
@@ -608,7 +608,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			variable condition;
 			variable summed_condition;
 		};
-		struct previous_condition previous_conditions[64] = INIT_ZERO;
+		struct previous_condition previous_conditions[64]  = INIT_ZERO;
 		uint8_t                   previous_conditions_size = 0;
 
 		{

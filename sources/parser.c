@@ -1,8 +1,8 @@
 #include "parser.h"
 
-#include "global.h"
 #include "errors.h"
 #include "functions.h"
+#include "global.h"
 #include "sets.h"
 #include "tokenizer.h"
 #include "types.h"
@@ -88,7 +88,7 @@ static statement  *parse_statement(state *state, block *parent_block);
 static expression *parse_expression(state *state);
 
 void parse(const char *filename, tokens *tokens) {
-	state state          = INIT_ZERO;
+	state state            = INIT_ZERO;
 	state.context.filename = filename;
 	state.tokens           = tokens;
 	state.index            = 0;

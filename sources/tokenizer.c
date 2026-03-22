@@ -1,7 +1,7 @@
 #include "tokenizer.h"
 
-#include "global.h"
 #include "errors.h"
+#include "global.h"
 
 #include <assert.h>
 #include <stdbool.h>

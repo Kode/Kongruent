@@ -2,8 +2,8 @@
 
 #ifdef _WIN32
 
-#include "../global.h"
 #include "../errors.h"
+#include "../global.h"
 #include "../log.h"
 
 #include <D3Dcompiler.h>

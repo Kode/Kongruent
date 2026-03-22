@@ -27,18 +27,18 @@ extern "C" {
 	array.size = 0;              \
 	array.max  = sizeof(array.values) / sizeof(array.values[0])
 
-#define static_array_push(array, value)   \
-	if (array.size >= array.max) {        \
-		debug_context context = INIT_ZERO;      \
-		error(context, "Array overflow"); \
-	}                                     \
+#define static_array_push(array, value)    \
+	if (array.size >= array.max) {         \
+		debug_context context = INIT_ZERO; \
+		error(context, "Array overflow");  \
+	}                                      \
 	array.values[array.size++] = value;
 
-#define static_array_push_p(array, value) \
-	if (array->size >= array->max) {      \
-		debug_context context = INIT_ZERO;      \
-		error(context, "Array overflow"); \
-	}                                     \
+#define static_array_push_p(array, value)  \
+	if (array->size >= array->max) {       \
+		debug_context context = INIT_ZERO; \
+		error(context, "Array overflow");  \
+	}                                      \
 	array->values[array->size++] = value;
 
 #ifdef __cplusplus

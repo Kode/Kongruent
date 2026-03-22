@@ -6,9 +6,11 @@ extern "C" {
 #endif
 
 #ifdef __cplusplus
-#define INIT_ZERO {}
+#define INIT_ZERO \
+	{}
 #else
-#define INIT_ZERO {0}
+#define INIT_ZERO \
+	{ 0 }
 #endif
 
 #ifdef __cplusplus
