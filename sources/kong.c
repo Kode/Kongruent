@@ -33,8 +33,29 @@
 
 typedef enum arg_mode { MODE_MODECHECK, MODE_INPUT, MODE_OUTPUT, MODE_PLATFORM, MODE_API, MODE_INTEGRATION } arg_mode;
 
-static void help(void) {
-	printf("No help is coming.");
+static void help(const char* basename) {
+	printf("\n");
+	printf("Usage: %s -i|--in <dir> -o|--out <dir> -p|--platform <platform> [options]\n", basename);
+
+	printf("\nRequired options:\n");
+	printf("  -i, --in <directory>        Shader input directory (contains *.kong files)\n");
+	printf("  -o, --out <directory>       Output directory\n");
+	printf("  -p, --platform <platform>   Target platform\n");
+
+	printf("\nOptional options:\n");
+	printf("  -h, --help                  Display this help message\n");
+	printf("      --debug                 Enable debug mode\n");
+	printf("  -a, --api <api>             Shader API (auto-detected if omitted)\n");
+	printf("  -n, --integration <name>    Enable Kore3 integration\n");
+
+	printf("\nInformation:\n");
+	printf("  <platform>		Automatic API resolution only applies if <platform> is one of:\n");
+	printf("    			    windows, macos, linux, ios, android, wasm, kompjuta\n");
+	printf("  <api>			Supported:\n");
+	printf("    			    direct3d11, direct3d12, opengl, metal, webgpu, vulkan\n");
+	printf("  <integration>		Supported:\n");
+	printf("    			    kore3\n");
+	printf("\n");
 }
 
 static void read_file(char *filename) {
@@ -105,7 +126,7 @@ int main(int argc, char **argv) {
 						debug = true;
 					}
 					else if (strcmp(&arg[2], "help") == 0) {
-						help();
+						help(argv[0]);
 						return 0;
 					}
 					else {
@@ -143,7 +164,7 @@ int main(int argc, char **argv) {
 							mode = MODE_INTEGRATION;
 							break;
 						case 'h':
-							help();
+							help(argv[0]);
 							return 0;
 						default: {
 							kong_log(LOG_LEVEL_WARNING, "Ignoring unknown parameter %s.", arg);
