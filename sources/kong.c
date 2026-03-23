@@ -33,7 +33,7 @@
 
 typedef enum arg_mode { MODE_MODECHECK, MODE_INPUT, MODE_OUTPUT, MODE_PLATFORM, MODE_API, MODE_INTEGRATION } arg_mode;
 
-static void help(const char* basename) {
+static void help(const char *basename) {
 	printf("\n");
 	printf("Usage: %s -i|--in <dir> -o|--out <dir> -p|--platform <platform> [options]\n", basename);
 
