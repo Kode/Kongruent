@@ -1127,6 +1127,12 @@ void kore3_export(char *directory, api_kind api) {
 		fprintf(output, "#include <assert.h>\n");
 		fprintf(output, "#include <stdlib.h>\n\n");
 
+		fprintf(output, "#ifdef __cplusplus\n");
+		fprintf(output, "#define KONG_INIT_ZERO {}\n");
+		fprintf(output, "#else\n");
+		fprintf(output, "#define KONG_INIT_ZERO {0}\n");
+		fprintf(output, "#endif\n\n")
+
 		if (api == API_METAL) {
 			fprintf(output, "#import <MetalKit/MTKView.h>\n\n");
 		}
