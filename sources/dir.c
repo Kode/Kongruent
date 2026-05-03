@@ -95,10 +95,10 @@ directory open_dir(const char *dirname) {
 }
 
 file read_next_file(directory *dir) {
-	struct dirent *entry = readdir((DIR*)dir->handle);
+	struct dirent *entry = readdir((DIR *)dir->handle);
 
 	while (entry != NULL && (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)) {
-		entry = readdir((DIR*)dir->handle);
+		entry = readdir((DIR *)dir->handle);
 	}
 
 	file f;

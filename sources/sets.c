@@ -1,7 +1,7 @@
 #include "sets.h"
 
-#include "global.h"
 #include "errors.h"
+#include "global.h"
 
 static descriptor_set sets[MAX_SETS];
 static size_t         sets_count = 0;

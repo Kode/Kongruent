@@ -1,8 +1,8 @@
 #include "analyzer.h"
 
-#include "global.h"
 #include "array.h"
 #include "errors.h"
+#include "global.h"
 
 #include <string.h>
 

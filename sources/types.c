@@ -1,7 +1,7 @@
 #include "types.h"
 
-#include "global.h"
 #include "errors.h"
+#include "global.h"
 
 #include <assert.h>
 #include <stdlib.h>

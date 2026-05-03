@@ -1,7 +1,7 @@
 #include "globals.h"
 
-#include "global.h"
 #include "errors.h"
+#include "global.h"
 
 #include <assert.h>
 

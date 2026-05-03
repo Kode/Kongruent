@@ -1,7 +1,7 @@
 #include "cstyle.h"
 
-#include "../global.h"
 #include "../errors.h"
+#include "../global.h"
 #include "util.h"
 
 #include <assert.h>

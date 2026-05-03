@@ -1,9 +1,9 @@
 #include "disasm.h"
 
-#include "global.h"
 #include "compiler.h"
 #include "errors.h"
 #include "functions.h"
+#include "global.h"
 #include "log.h"
 #include "parser.h"
 #include "sets.h"

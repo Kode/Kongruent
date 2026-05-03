@@ -1,8 +1,8 @@
 #include "parser.h"
 
-#include "global.h"
 #include "errors.h"
 #include "functions.h"
+#include "global.h"
 #include "sets.h"
 #include "tokenizer.h"
 #include "types.h"
