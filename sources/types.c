@@ -55,7 +55,7 @@ void init_type_ref(type_ref *t, name_id name) {
 
 void types_init(void) {
 	type         *new_types = (type *)realloc(types, types_size * sizeof(type));
-	debug_context context   = INIT_ZERO;
+	debug_context context   = KONG_INIT_ZERO;
 	check(new_types != NULL, context, "Could not allocate types");
 	types           = new_types;
 	next_type_index = 0;
@@ -176,7 +176,7 @@ static void grow_if_needed(uint64_t size) {
 	while (size >= types_size) {
 		types_size *= 2;
 		type         *new_types = (type *)realloc(types, types_size * sizeof(type));
-		debug_context context   = INIT_ZERO;
+		debug_context context   = KONG_INIT_ZERO;
 		check(new_types != NULL, context, "Could not allocate types");
 		types = new_types;
 	}
@@ -223,7 +223,7 @@ type_id add_full_type(type *t) {
 }
 
 type_id find_type_by_name(name_id name) {
-	debug_context context = INIT_ZERO;
+	debug_context context = KONG_INIT_ZERO;
 	check(name != NO_NAME, context, "Attempted to find a no-name");
 	for (type_id i = 0; i < next_type_index; ++i) {
 		if (types[i].name == name) {
@@ -239,7 +239,7 @@ type_id find_type_by_ref(type_ref *t) {
 		return t->type;
 	}
 
-	debug_context context = INIT_ZERO;
+	debug_context context = KONG_INIT_ZERO;
 	check(t->unresolved.name != NO_NAME, context, "Attempted to find a no-name");
 
 	type_id base_type_id = NO_TYPE;

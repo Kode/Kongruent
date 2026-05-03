@@ -13,7 +13,7 @@
 
 static statement *statement_allocate(void) {
 	statement    *s       = (statement *)malloc(sizeof(statement));
-	debug_context context = INIT_ZERO;
+	debug_context context = KONG_INIT_ZERO;
 	check(s != NULL, context, "Could not allocate statement");
 	return s;
 }
@@ -33,7 +33,7 @@ static void statements_add(statements *statements, statement *statement) {
 
 static expression *expression_allocate(void) {
 	expression   *e       = (expression *)malloc(sizeof(expression));
-	debug_context context = INIT_ZERO;
+	debug_context context = KONG_INIT_ZERO;
 	check(e != NULL, context, "Could not allocate expression");
 	init_type_ref(&e->type, NO_NAME);
 	return e;
@@ -88,7 +88,7 @@ static statement  *parse_statement(state *state, block *parent_block);
 static expression *parse_expression(state *state);
 
 void parse(const char *filename, tokens *tokens) {
-	state state          = INIT_ZERO;
+	state state          = KONG_INIT_ZERO;
 	state.context.filename = filename;
 	state.tokens           = tokens;
 	state.index            = 0;
@@ -168,13 +168,13 @@ static double attribute_parameter_to_number(name_id attribute_name, name_id para
 		return (double)type;
 	}
 
-	debug_context context = INIT_ZERO;
+	debug_context context = KONG_INIT_ZERO;
 	error(context, "Unknown attribute parameter %s", get_name(parameter_name));
 	return 0;
 }
 
 static definition parse_definition(state *state) {
-	attribute_list  attributes = INIT_ZERO;
+	attribute_list  attributes = KONG_INIT_ZERO;
 	descriptor_set *current_sets[64];
 	size_t          current_sets_count = 0;
 
@@ -184,7 +184,7 @@ static definition parse_definition(state *state) {
 		advance_state(state);
 
 		while (current(state).kind != TOKEN_RIGHT_SQUARE) {
-			attribute current_attribute = INIT_ZERO;
+			attribute current_attribute = KONG_INIT_ZERO;
 
 			match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
 			current_attribute.name = current(state).identifier;
@@ -204,7 +204,7 @@ static definition parse_definition(state *state) {
 					if (current(state).kind == TOKEN_IDENTIFIER) {
 						if (current_attribute.name == add_name("set")) {
 							if (current(state).identifier == add_name("root_constants")) {
-								debug_context context = INIT_ZERO;
+								debug_context context = KONG_INIT_ZERO;
 								error(context, "Descriptor set can not be called root_constants");
 							}
 							current_sets[current_sets_count]                                = create_set(current(state).identifier);
@@ -224,7 +224,7 @@ static definition parse_definition(state *state) {
 						advance_state(state);
 					}
 					else {
-						debug_context context = INIT_ZERO;
+						debug_context context = KONG_INIT_ZERO;
 						error(context, "Expected an identifier or a number");
 					}
 
@@ -250,7 +250,7 @@ static definition parse_definition(state *state) {
 	switch (current(state).kind) {
 	case TOKEN_STRUCT: {
 		if (current_sets_count != 0) {
-			debug_context context = INIT_ZERO;
+			debug_context context = KONG_INIT_ZERO;
 			error(context, "A struct can not be assigned to a set");
 		}
 
@@ -260,7 +260,7 @@ static definition parse_definition(state *state) {
 	}
 	case TOKEN_FUNCTION: {
 		if (current_sets_count != 0) {
-			debug_context context = INIT_ZERO;
+			debug_context context = KONG_INIT_ZERO;
 			error(context, "A function can not be assigned to a set");
 		}
 
@@ -282,7 +282,7 @@ static definition parse_definition(state *state) {
 		update_debug_context(state);
 		error(state->context, "Expected a struct, a function or a const");
 
-		definition d = INIT_ZERO;
+		definition d = KONG_INIT_ZERO;
 		return d;
 	}
 	}
@@ -950,7 +950,7 @@ static definition parse_struct_inner(state *state, name_id name) {
 	size_t   count = 0;
 
 	while (current(state).kind != TOKEN_RIGHT_CURLY) {
-		debug_context context = INIT_ZERO;
+		debug_context context = KONG_INIT_ZERO;
 		check(count < MAX_MEMBERS, context, "Out of members");
 
 		match_token(state, TOKEN_IDENTIFIER, "Expected an identifier");
@@ -984,7 +984,7 @@ static definition parse_struct_inner(state *state, name_id name) {
 				}
 			}
 			else {
-				debug_context context = INIT_ZERO;
+				debug_context context = KONG_INIT_ZERO;
 				error(context, "Unsupported assign in struct");
 			}
 		}
@@ -1033,7 +1033,7 @@ static definition parse_struct_inner(state *state, name_id name) {
 				}
 			}
 			else {
-				debug_context context = INIT_ZERO;
+				debug_context context = KONG_INIT_ZERO;
 				error(context, "Unsupported value in struct");
 			}
 		}
@@ -1068,9 +1068,9 @@ static definition parse_function(state *state) {
 	advance_state(state);
 
 	uint8_t  parameters_size       = 0;
-	name_id  param_names[256]      = INIT_ZERO;
-	type_ref param_types[256]      = INIT_ZERO;
-	name_id  param_attributes[256] = INIT_ZERO;
+	name_id  param_names[256]      = KONG_INIT_ZERO;
+	type_ref param_types[256]      = KONG_INIT_ZERO;
+	name_id  param_attributes[256] = KONG_INIT_ZERO;
 
 	while (current(state).kind != TOKEN_RIGHT_PAREN) {
 		if (current(state).kind == TOKEN_HASH) {
@@ -1329,7 +1329,7 @@ static definition parse_const(state *state, attribute_list attributes) {
 	match_token(state, TOKEN_SEMICOLON, "Expected a semicolon");
 	advance_state(state);
 
-	definition d = INIT_ZERO;
+	definition d = KONG_INIT_ZERO;
 
 	name_id tex1d_name        = add_name("tex1d");
 	name_id tex2d_name        = add_name("tex2d");
@@ -1340,7 +1340,7 @@ static definition parse_const(state *state, attribute_list attributes) {
 	name_id texcubearray_name = add_name("texcubearray");
 
 	if (type_name == NO_NAME) {
-		debug_context context = INIT_ZERO;
+		debug_context context = KONG_INIT_ZERO;
 		check(type != NO_TYPE, context, "Const has no type");
 		d.kind   = DEFINITION_CONST_CUSTOM;
 		d.global = add_global(type, attributes, name.identifier);
@@ -1410,7 +1410,7 @@ static definition parse_const(state *state, attribute_list attributes) {
 		d.global = add_global(bvh_type_id, attributes, name.identifier);
 	}
 	else if (type_name == add_name("float")) {
-		debug_context context = INIT_ZERO;
+		debug_context context = KONG_INIT_ZERO;
 		check(value != NULL, context, "const float requires an initialization value");
 		check(value->kind == EXPRESSION_FLOAT || value->kind == EXPRESSION_INT, context, "const float requires a number");
 
@@ -1423,7 +1423,7 @@ static definition parse_const(state *state, attribute_list attributes) {
 		d.global = add_global_with_value(float_id, attributes, name.identifier, float_value);
 	}
 	else if (type_name == add_name("float2")) {
-		debug_context context = INIT_ZERO;
+		debug_context context = KONG_INIT_ZERO;
 		check(value != NULL, context, "const float2 requires an initialization value");
 		check(value->kind == EXPRESSION_CALL, context, "const float2 requires a constructor call");
 		check(value->call.func_name == add_name("float2"), context, "const float2 requires a float2 call");
@@ -1442,7 +1442,7 @@ static definition parse_const(state *state, attribute_list attributes) {
 		d.global = add_global_with_value(float2_id, attributes, name.identifier, float2_value);
 	}
 	else if (type_name == add_name("float3")) {
-		debug_context context = INIT_ZERO;
+		debug_context context = KONG_INIT_ZERO;
 		check(value != NULL, context, "const float3 requires an initialization value");
 		check(value->kind == EXPRESSION_CALL, context, "const float3 requires a constructor call");
 		check(value->call.func_name == add_name("float3"), context, "const float3 requires a float3 call");
@@ -1461,7 +1461,7 @@ static definition parse_const(state *state, attribute_list attributes) {
 		d.global = add_global_with_value(float3_id, attributes, name.identifier, float3_value);
 	}
 	else if (type_name == add_name("float4")) {
-		debug_context context = INIT_ZERO;
+		debug_context context = KONG_INIT_ZERO;
 		if (!array) {
 			check(value != NULL, context, "const float4 requires an initialization value");
 			check(value->kind == EXPRESSION_CALL, context, "const float4 requires a constructor call");
@@ -1497,7 +1497,7 @@ static definition parse_const(state *state, attribute_list attributes) {
 		}
 	}
 	else {
-		debug_context context = INIT_ZERO;
+		debug_context context = KONG_INIT_ZERO;
 		error(context, "Unsupported global");
 	}
 

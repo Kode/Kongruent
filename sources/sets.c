@@ -14,7 +14,7 @@ descriptor_set *create_set(name_id name) {
 	}
 
 	if (sets_count >= MAX_SETS) {
-		debug_context context = INIT_ZERO;
+		debug_context context = KONG_INIT_ZERO;
 		error(context, "Max set count of %i reached", MAX_SETS);
 		return NULL;
 	}

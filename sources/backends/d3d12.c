@@ -28,7 +28,7 @@ static const wchar_t *shader_string(shader_stage stage) {
 	case SHADER_STAGE_MESH:
 		return L"ms_6_5";
 	default: {
-		debug_context context = INIT_ZERO;
+		debug_context context = KONG_INIT_ZERO;
 		error(context, "Unsupported shader stage/version combination");
 		return L"unsupported";
 	}

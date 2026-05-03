@@ -61,7 +61,7 @@ uint32_t base_type_size(type_id type) {
 		return 4 * 4;
 	}
 
-	debug_context context = INIT_ZERO;
+	debug_context context = KONG_INIT_ZERO;
 	error(context, "Unknown type %s for structure", get_name(get_type(type)->name));
 	return 1;
 }
@@ -138,10 +138,10 @@ __declspec(dllimport) int __stdcall CloseHandle(void *hObject);
 
 bool execute_sync(const char *command, uint32_t *exit_code) {
 #if defined(_WIN32)
-	STARTUPINFOA startup_info = INIT_ZERO;
+	STARTUPINFOA startup_info = KONG_INIT_ZERO;
 	startup_info.cb           = sizeof(startup_info);
 
-	PROCESS_INFORMATION process_info = INIT_ZERO;
+	PROCESS_INFORMATION process_info = KONG_INIT_ZERO;
 
 	int success = CreateProcessA(NULL, (char *)command, NULL, NULL, FALSE, CREATE_DEFAULT_ERROR_MODE, NULL, NULL, &startup_info, &process_info);
 

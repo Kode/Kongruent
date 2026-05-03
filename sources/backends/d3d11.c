@@ -42,7 +42,7 @@ static const char *shaderString(shader_stage stage, int version) {
 		}
 	}
 
-	debug_context context = INIT_ZERO;
+	debug_context context = KONG_INIT_ZERO;
 	error(context, "Unsupported shader stage/version combination");
 	return "unsupported";
 }
@@ -160,7 +160,7 @@ int compile_hlsl_to_d3d11(const char *source, uint8_t **output, size_t *outputle
 		return 0;
 	}
 	else {
-		debug_context context = INIT_ZERO;
+		debug_context context = KONG_INIT_ZERO;
 		check(errorMessage != NULL, context, "Error message missing");
 		SIZE_T size  = errorMessage->lpVtbl->GetBufferSize(errorMessage);
 		char  *error = malloc(size + 1);

@@ -111,7 +111,7 @@ static void write_types(char *metal, size_t *offset) {
 			for (function_id i = 0; get_function(i) != NULL; ++i) {
 				function *f = get_function(i);
 				if (f->name == vertex_shader_name) {
-					uint64_t parameter_ids[256] = INIT_ZERO;
+					uint64_t parameter_ids[256] = KONG_INIT_ZERO;
 					for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 						for (size_t i = 0; i < f->block->block.vars.size; ++i) {
 							if (f->parameter_names[parameter_index] == f->block->block.vars.v[i].name) {
@@ -217,7 +217,7 @@ static void write_argument_buffers(char *code, size_t *offset) {
 
 		if (set->name == add_name("root_constants")) {
 			if (set->globals.size != 1) {
-				debug_context context = INIT_ZERO;
+				debug_context context = KONG_INIT_ZERO;
 				error(context, "More than one root constants struct found");
 			}
 
@@ -276,7 +276,7 @@ static void write_argument_buffers(char *code, size_t *offset) {
 }
 
 static void write_globals(char *code, size_t *offset) {
-	global_array globals = INIT_ZERO;
+	global_array globals = KONG_INIT_ZERO;
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
 		find_referenced_globals(f, &globals);
@@ -340,7 +340,7 @@ static void write_functions(char *code, size_t *offset) {
 		uint8_t *data = f->code.o;
 		size_t   size = f->code.size;
 
-		uint64_t parameter_ids[256] = INIT_ZERO;
+		uint64_t parameter_ids[256] = KONG_INIT_ZERO;
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 			for (size_t i = 0; i < f->block->block.vars.size; ++i) {
 				if (f->parameter_names[parameter_index] == f->block->block.vars.v[i].name) {
@@ -350,12 +350,12 @@ static void write_functions(char *code, size_t *offset) {
 			}
 		}
 
-		debug_context context = INIT_ZERO;
+		debug_context context = KONG_INIT_ZERO;
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 			check(parameter_ids[parameter_index] != 0, context, "Parameter not found");
 		}
 
-		char buffers[1024] = INIT_ZERO;
+		char buffers[1024] = KONG_INIT_ZERO;
 
 		size_t buffer_index = f->parameters_size;
 
@@ -651,7 +651,7 @@ static void write_functions(char *code, size_t *offset) {
 				break;
 			}
 			case OPCODE_CALL: {
-				debug_context context = INIT_ZERO;
+				debug_context context = KONG_INIT_ZERO;
 
 				indent(code, offset, indentation);
 
@@ -780,7 +780,7 @@ static void write_functions(char *code, size_t *offset) {
 
 static void metal_export_everything(char *directory) {
 	char         *metal   = (char *)calloc(1024 * 1024, 1);
-	debug_context context = INIT_ZERO;
+	debug_context context = KONG_INIT_ZERO;
 	check(metal != NULL, context, "Could not allocate Metal string");
 	size_t offset = 0;
 
@@ -843,7 +843,7 @@ void metal_export(char *directory) {
 				}
 			}
 
-			debug_context context = INIT_ZERO;
+			debug_context context = KONG_INIT_ZERO;
 			check(vertex_shader_name != NO_NAME, context, "vertex shader missing");
 			check(fragment_shader_name != NO_NAME, context, "fragment shader missing");
 

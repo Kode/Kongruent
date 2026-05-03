@@ -152,7 +152,7 @@ static void write_bytecode(char *directory, const char *filename, const char *na
 			kong_log(LOG_LEVEL_WARNING, "Could not run spirv_val.");
 		}
 		else if (exit_code != 0) {
-			debug_context context = INIT_ZERO;
+			debug_context context = KONG_INIT_ZERO;
 			error(context, "spirv_val check of %s failed with exit code %u.", filename, exit_code);
 		}
 	}
@@ -732,7 +732,7 @@ static spirv_id convert_pointer_type_to_spirv_id(type_id type, storage_class sto
 	return spirv_index;
 }
 
-static spirv_id output_struct_pointer_type = INIT_ZERO;
+static spirv_id output_struct_pointer_type = KONG_INIT_ZERO;
 
 static void write_base_types(instructions_buffer *buffer) {
 	void_type = write_type_void(buffer);
@@ -1737,13 +1737,13 @@ static struct {
 	spirv_id value;
 } *function_map = NULL;
 
-static spirv_id per_vertex_var    = INIT_ZERO;
-static spirv_id output_vars[256]  = INIT_ZERO;
-static type_id  output_types[256] = INIT_ZERO;
+static spirv_id per_vertex_var    = KONG_INIT_ZERO;
+static spirv_id output_vars[256]  = KONG_INIT_ZERO;
+static type_id  output_types[256] = KONG_INIT_ZERO;
 static size_t   output_vars_count = 0;
 
-static spirv_id input_vars[256]  = INIT_ZERO;
-static type_id  input_types[256] = INIT_ZERO;
+static spirv_id input_vars[256]  = KONG_INIT_ZERO;
+static type_id  input_types[256] = KONG_INIT_ZERO;
 static size_t   input_vars_count = 0;
 
 static uint32_t vertex_parameter_indices[256];
@@ -1753,7 +1753,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
                            bool main, type_id output) {
 	write_op_function_preallocated(instructions, result_type, FUNCTION_CONTROL_NONE, fun_type, fun_id);
 
-	spirv_id parameter_value_ids[256] = INIT_ZERO;
+	spirv_id parameter_value_ids[256] = KONG_INIT_ZERO;
 	if (!main) {
 		for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 			spirv_id param_type                  = convert_type_to_spirv_id(f->parameter_types[parameter_index].type);
@@ -1765,14 +1765,14 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 
 	write_op_label(instructions);
 
-	debug_context context = INIT_ZERO;
+	debug_context context = KONG_INIT_ZERO;
 	check(f->block != NULL, context, "Function block missing");
 
 	uint8_t *data = f->code.o;
 	size_t   size = f->code.size;
 
-	uint64_t parameter_ids[256]   = INIT_ZERO;
-	type_id  parameter_types[256] = INIT_ZERO;
+	uint64_t parameter_ids[256]   = KONG_INIT_ZERO;
+	type_id  parameter_types[256] = KONG_INIT_ZERO;
 	for (uint8_t parameter_index = 0; parameter_index < f->parameters_size; ++parameter_index) {
 		for (size_t i = 0; i < f->block->block.vars.size; ++i) {
 			if (f->parameter_names[parameter_index] == f->block->block.vars.v[i].name) {
@@ -1788,7 +1788,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 	}
 
 	// create variable for the input parameter
-	spirv_id spirv_parameter_ids[256] = INIT_ZERO;
+	spirv_id spirv_parameter_ids[256] = KONG_INIT_ZERO;
 	uint32_t spirv_parameter_ids_size = 0;
 	if (main) {
 		if (stage == SHADER_STAGE_FRAGMENT) {
@@ -1861,8 +1861,8 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 	}
 
 	bool     ends_with_return         = false;
-	uint64_t next_block_branch_id[16] = INIT_ZERO;
-	uint64_t next_block_label_id[16]  = INIT_ZERO;
+	uint64_t next_block_branch_id[16] = KONG_INIT_ZERO;
+	uint64_t next_block_label_id[16]  = KONG_INIT_ZERO;
 	uint8_t  nested_if_count          = 0;
 
 	index = 0;
@@ -1983,7 +1983,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				type_id access_kong_type = find_access_type(plain_indices, access_kinds, indices_size, o->op_load_access_list.from.type.type);
 				assert(access_kong_type != NO_TYPE);
 
-				spirv_id access_type = INIT_ZERO;
+				spirv_id access_type = KONG_INIT_ZERO;
 
 				switch (o->op_load_access_list.from.kind) {
 				case VARIABLE_LOCAL:
@@ -2538,7 +2538,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 				type_id access_kong_type = find_access_type(plain_indices, access_kinds, indices_size, o->op_store_access_list.to.type.type);
 				assert(access_kong_type != NO_TYPE);
 
-				spirv_id access_type = INIT_ZERO;
+				spirv_id access_type = KONG_INIT_ZERO;
 
 				switch (o->op_store_access_list.to.kind) {
 				case VARIABLE_LOCAL:
@@ -2727,7 +2727,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 						spirv_type = spirv_float4_type;
 					}
 					else {
-						debug_context context = INIT_ZERO;
+						debug_context context = KONG_INIT_ZERO;
 						error(context, "Type unsupported for input in SPIR-V");
 					}
 
@@ -3052,7 +3052,7 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		default: {
-			debug_context context = INIT_ZERO;
+			debug_context context = KONG_INIT_ZERO;
 			error(context, "Opcode %d not implemented for SPIR-V", o->type);
 			break;
 		}
@@ -3179,7 +3179,7 @@ static void assign_bindings(uint32_t *bindings, function *shader) {
 
 		if (set->name == add_name("root_constants")) {
 			if (set->globals.size != 1) {
-				debug_context context = INIT_ZERO;
+				debug_context context = KONG_INIT_ZERO;
 				error(context, "More than one root constants struct found");
 			}
 
@@ -3187,7 +3187,7 @@ static void assign_bindings(uint32_t *bindings, function *shader) {
 			global   *g    = get_global(g_id);
 
 			if (get_type(g->type)->built_in) {
-				debug_context context = INIT_ZERO;
+				debug_context context = KONG_INIT_ZERO;
 				error(context, "Unsupported type for a root constant");
 			}
 
@@ -3272,10 +3272,10 @@ static uint32_t member_padding(uint32_t offset, uint32_t size) {
 
 static void write_globals(instructions_buffer *decorations, instructions_buffer *aggregate_types_block, instructions_buffer *global_vars_block, function *main,
                           shader_stage stage) {
-	uint32_t bindings[512] = INIT_ZERO;
+	uint32_t bindings[512] = KONG_INIT_ZERO;
 	assign_bindings(bindings, main);
 
-	global_array globals = INIT_ZERO;
+	global_array globals = KONG_INIT_ZERO;
 
 	find_referenced_globals(main, &globals);
 
@@ -3500,7 +3500,7 @@ static void write_globals(instructions_buffer *decorations, instructions_buffer 
 }
 
 static void init_index_map(void) {
-	spirv_id default_id = INIT_ZERO;
+	spirv_id default_id = KONG_INIT_ZERO;
 	hmdefault(index_map, default_id);
 	size_t size = hmlenu(index_map);
 	for (size_t i = 0; i < size; ++i) {
@@ -3509,7 +3509,7 @@ static void init_index_map(void) {
 }
 
 static void init_type_map(void) {
-	spirv_id default_id = INIT_ZERO;
+	spirv_id default_id = KONG_INIT_ZERO;
 	hmdefault(type_map, default_id);
 	size_t size = hmlenu(type_map);
 	for (size_t i = 0; i < size; ++i) {
@@ -3518,7 +3518,7 @@ static void init_type_map(void) {
 }
 
 static void init_function_map(void) {
-	spirv_id default_id = INIT_ZERO;
+	spirv_id default_id = KONG_INIT_ZERO;
 	hmdefault(function_map, default_id);
 	size_t size = hmlenu(function_map);
 	for (size_t i = 0; i < size; ++i) {
@@ -3532,7 +3532,7 @@ static void init_int_constants(void) {
 }
 
 static void init_float_constants(void) {
-	spirv_id default_id = INIT_ZERO;
+	spirv_id default_id = KONG_INIT_ZERO;
 	hmdefault(float_constants, default_id);
 	size_t size = hmlenu(float_constants);
 	for (size_t i = 0; i < size; ++i) {
@@ -3586,7 +3586,7 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 	assert(main->parameters_size > 0);
 	type_id vertex_output = main->return_type.type;
 
-	debug_context context = INIT_ZERO;
+	debug_context context = KONG_INIT_ZERO;
 	check(vertex_output != NO_TYPE, context, "vertex output missing");
 
 	write_capabilities(&decorations, &main->used_capabilities);
@@ -3662,7 +3662,7 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 			write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_INPUT), input_vars[i], STORAGE_CLASS_INPUT);
 		}
 		else {
-			debug_context context = INIT_ZERO;
+			debug_context context = KONG_INIT_ZERO;
 			error(context, "Type unsupported for input in SPIR-V");
 		}
 	}
@@ -3692,7 +3692,7 @@ static void spirv_export_vertex(char *directory, function *main, bool debug) {
 			                               STORAGE_CLASS_OUTPUT);
 		}
 		else {
-			debug_context context = INIT_ZERO;
+			debug_context context = KONG_INIT_ZERO;
 			error(context, "Type unsupported for input in SPIR-V");
 		}
 	}
@@ -3760,7 +3760,7 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 	type_id pixel_input  = main->parameter_types[0].type;
 	type_id pixel_output = main->return_type.type;
 
-	debug_context context = INIT_ZERO;
+	debug_context context = KONG_INIT_ZERO;
 	check(pixel_input != NO_TYPE, context, "fragment input missing");
 	check(pixel_output != NO_TYPE, context, "fragment output missing");
 
@@ -3828,7 +3828,7 @@ static void spirv_export_fragment(char *directory, function *main, bool debug) {
 			write_op_variable_preallocated(&instructions, convert_pointer_type_to_spirv_id(float4_id, STORAGE_CLASS_INPUT), input_vars[i], STORAGE_CLASS_INPUT);
 		}
 		else {
-			debug_context context = INIT_ZERO;
+			debug_context context = KONG_INIT_ZERO;
 			error(context, "Type unsupported for input in SPIR-V");
 		}
 	}
@@ -3942,7 +3942,7 @@ static void spirv_export_compute(char *directory, function *main, bool debug) {
 
 	attribute *threads_attribute = find_attribute(&main->attributes, add_name("threads"));
 	if (threads_attribute == NULL || threads_attribute->paramters_count != 3) {
-		debug_context context = INIT_ZERO;
+		debug_context context = KONG_INIT_ZERO;
 		error(context, "Compute function requires a threads attribute with three parameters");
 	}
 
@@ -4009,7 +4009,7 @@ void spirv_export(char *directory, bool debug) {
 				}
 			}
 
-			debug_context context = INIT_ZERO;
+			debug_context context = KONG_INIT_ZERO;
 			check(vertex_shader_name != NO_NAME, context, "vertex shader missing");
 			check(fragment_shader_name != NO_NAME, context, "fragment shader missing");
 

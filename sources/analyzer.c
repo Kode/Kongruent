@@ -245,8 +245,8 @@ void find_used_capabilities(function *f) {
 	size_t   size = f->code.size;
 
 	size_t   index                  = 0;
-	variable last_base_texture_from = INIT_ZERO;
-	variable last_base_texture_to   = INIT_ZERO;
+	variable last_base_texture_from = KONG_INIT_ZERO;
+	variable last_base_texture_to   = KONG_INIT_ZERO;
 
 	while (index < size) {
 		opcode *o = (opcode *)&data[index];
@@ -355,7 +355,7 @@ void find_referenced_types(function *f, type_id *types, size_t *types_size) {
 
 	for (size_t function_index = 0; function_index < functions_size; ++function_index) {
 		function     *func    = functions[function_index];
-		debug_context context = INIT_ZERO;
+		debug_context context = KONG_INIT_ZERO;
 		for (uint8_t parameter_index = 0; parameter_index < func->parameters_size; ++parameter_index) {
 			check(func->parameter_types[parameter_index].type != NO_TYPE, context, "Function parameter type not found");
 			add_found_type(func->parameter_types[parameter_index].type, types, types_size);
@@ -433,7 +433,7 @@ static void find_referenced_sets(global_array *globals, descriptor_sets *sets) {
 		}
 
 		if (!found) {
-			debug_context context = INIT_ZERO;
+			debug_context context = KONG_INIT_ZERO;
 			error(context, "Global %s could be used from multiple descriptor sets.", get_name(g->name));
 		}
 	}
@@ -460,11 +460,11 @@ static render_pipeline extract_render_pipeline_from_type(type *t) {
 		}
 	}
 
-	debug_context context = INIT_ZERO;
+	debug_context context = KONG_INIT_ZERO;
 	check(vertex_shader_name != NO_NAME || mesh_shader_name != NO_NAME, context, "vertex or mesh shader missing");
 	check(fragment_shader_name != NO_NAME, context, "fragment shader missing");
 
-	render_pipeline pipeline = INIT_ZERO;
+	render_pipeline pipeline = KONG_INIT_ZERO;
 
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
@@ -589,7 +589,7 @@ static raytracing_pipeline extract_raytracing_pipeline_from_type(type *t) {
 		}
 	}
 
-	raytracing_pipeline pipeline = INIT_ZERO;
+	raytracing_pipeline pipeline = KONG_INIT_ZERO;
 
 	for (function_id i = 0; get_function(i) != NULL; ++i) {
 		function *f = get_function(i);
@@ -686,7 +686,7 @@ static void check_globals_in_descriptor_set_group(descriptor_set_group *group) {
 
 			for (size_t global_index2 = 0; global_index2 < set_globals.size; ++global_index2) {
 				if (set_globals.values[global_index2] == g) {
-					debug_context context = INIT_ZERO;
+					debug_context context = KONG_INIT_ZERO;
 					error(context, "Global used from more than one descriptor set in one descriptor set group");
 				}
 			}
@@ -736,7 +736,7 @@ static void find_descriptor_set_groups(void) {
 		descriptor_set_group group;
 		static_array_init(group);
 
-		global_array function_globals = INIT_ZERO;
+		global_array function_globals = KONG_INIT_ZERO;
 
 		render_pipeline_group *pipeline_group = &all_render_pipeline_groups.values[pipeline_group_index];
 		for (size_t pipeline_index = 0; pipeline_index < pipeline_group->size; ++pipeline_index) {
@@ -787,7 +787,7 @@ static void find_descriptor_set_groups(void) {
 		descriptor_set_group group;
 		static_array_init(group);
 
-		global_array function_globals = INIT_ZERO;
+		global_array function_globals = KONG_INIT_ZERO;
 
 		find_referenced_globals(all_compute_shaders.values[compute_shader_index], &function_globals);
 
@@ -809,7 +809,7 @@ static void find_descriptor_set_groups(void) {
 		descriptor_set_group group;
 		static_array_init(group);
 
-		global_array function_globals = INIT_ZERO;
+		global_array function_globals = KONG_INIT_ZERO;
 
 		raytracing_pipeline_group *pipeline_group = &all_raytracing_pipeline_groups.values[pipeline_group_index];
 		for (size_t pipeline_index = 0; pipeline_index < pipeline_group->size; ++pipeline_index) {

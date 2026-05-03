@@ -252,7 +252,7 @@ static void write_functions(void) {
 				kong_log(LOG_LEVEL_INFO, "BLOCK_END [ID: $%zu]", o->op_block.id);
 				break;
 			default: {
-				debug_context context = INIT_ZERO;
+				debug_context context = KONG_INIT_ZERO;
 				error(context, "Unknown opcode");
 				break;
 			}
