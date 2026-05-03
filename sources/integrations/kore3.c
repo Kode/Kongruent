@@ -3685,6 +3685,12 @@ void kore3_export(char *directory, api_kind api) {
 		fprintf(output, "#include <kore3/gpu/device.h>\n\n");
 		fprintf(output, "#include <d3d12.h>\n\n");
 
+		fprintf(output, "#ifdef __cplusplus\n");
+		fprintf(output, "#define KONG_INIT_ZERO {}\n");
+		fprintf(output, "#else\n");
+		fprintf(output, "#define KONG_INIT_ZERO {0}\n");
+		fprintf(output, "#endif\n\n");
+
 		for (type_id i = 0; get_type(i) != NULL; ++i) {
 			type *t = get_type(i);
 			if (!t->built_in && has_attribute(&t->attributes, add_name("raypipe"))) {
