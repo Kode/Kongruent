@@ -9,6 +9,7 @@ extern "C" {
 
 #define TRANSFORM_FLAG_ONE_COMPONENT_SWIZZLE (1 << 0)
 #define TRANSFORM_FLAG_BINARY_UNIFY_LENGTH   (1 << 1)
+#define TRANSFORM_FLAG_REDUCE_BLOCKS         (1 << 2)
 
 void transform(uint32_t flags);
 

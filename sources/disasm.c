@@ -246,10 +246,10 @@ static void write_functions(void) {
 				         o->op_while_end.start_id, o->op_while_end.continue_id, o->op_while_end.end_id);
 				break;
 			case OPCODE_BLOCK_START:
-				kong_log(LOG_LEVEL_INFO, "BLOCK_START [ID: $%zu]", o->op_block.id);
+				kong_log(LOG_LEVEL_INFO, "BLOCK_START [start_id: $%zu, end_id: $%zu]", o->op_block.start_id, o->op_block.end_id);
 				break;
 			case OPCODE_BLOCK_END:
-				kong_log(LOG_LEVEL_INFO, "BLOCK_END [ID: $%zu]", o->op_block.id);
+				kong_log(LOG_LEVEL_INFO, "BLOCK_END [start_id: $%zu, end_id: $%zu]", o->op_block.start_id, o->op_block.end_id);
 				break;
 			default: {
 				debug_context context = KONG_INIT_ZERO;

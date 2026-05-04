@@ -319,6 +319,10 @@ int main(int argc, char **argv) {
 
 	analyze();
 
+	transform(TRANSFORM_FLAG_REDUCE_BLOCKS);
+
+	//
+
 	switch (api) {
 	case API_VULKAN:
 		transform(TRANSFORM_FLAG_ONE_COMPONENT_SWIZZLE | TRANSFORM_FLAG_BINARY_UNIFY_LENGTH);

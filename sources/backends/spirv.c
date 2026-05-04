@@ -3042,11 +3042,11 @@ static void write_function(instructions_buffer *instructions, function *f, spirv
 			break;
 		}
 		case OPCODE_BLOCK_END: {
-			if (o->op_block.id == next_block_branch_id[nested_if_count]) {
-				write_op_branch(instructions, convert_kong_index_to_spirv_id(o->op_block.id));
+			if (o->op_block.end_id == next_block_branch_id[nested_if_count]) {
+				write_op_branch(instructions, convert_kong_index_to_spirv_id(o->op_block.end_id));
 			}
-			if (o->op_block.id == next_block_label_id[nested_if_count]) {
-				write_op_label_preallocated(instructions, convert_kong_index_to_spirv_id(o->op_block.id));
+			if (o->op_block.end_id == next_block_label_id[nested_if_count]) {
+				write_op_label_preallocated(instructions, convert_kong_index_to_spirv_id(o->op_block.end_id));
 				nested_if_count--;
 			}
 			break;

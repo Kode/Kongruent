@@ -576,7 +576,7 @@ typedef struct block_ids {
 	uint64_t end;
 } block_ids;
 
-static block_ids emit_statement(opcodes *code, block *parent, statement *statement) {
+static block_ids emit_statement(opcodes *code, block *parent, statement *statement, uint64_t block_start_id) {
 	switch (statement->kind) {
 	case STATEMENT_EXPRESSION:
 		emit_expression(code, parent, statement->expr);
@@ -625,7 +625,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			previous_conditions[previous_conditions_size].condition = initial_condition;
 			previous_conditions_size += 1;
 
-			block_ids ids = emit_statement(code, parent, statement->iffy.if_block);
+			block_ids ids = emit_statement(code, parent, statement->iffy.if_block, 0);
 
 			written_opcode->op_if.start_id = ids.start;
 			written_opcode->op_if.end_id   = ids.end;
@@ -698,7 +698,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			{
 				opcode *written_opcode = emit_op(code, &o);
 
-				block_ids ids = emit_statement(code, parent, statement->iffy.else_blocks[i]);
+				block_ids ids = emit_statement(code, parent, statement->iffy.else_blocks[i], 0);
 
 				written_opcode->op_if.start_id = ids.start;
 				written_opcode->op_if.end_id   = ids.end;
@@ -738,7 +738,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			emit_op(code, &o);
 		}
 
-		emit_statement(code, parent, statement->whiley.while_block);
+		emit_statement(code, parent, statement->whiley.while_block, continue_id);
 
 		{
 			opcode o;
@@ -770,7 +770,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			emit_op(code, &o);
 		}
 
-		emit_statement(code, parent, statement->whiley.while_block);
+		emit_statement(code, parent, statement->whiley.while_block, continue_id);
 
 		{
 			opcode o;
@@ -803,29 +803,37 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			statement->block.vars.v[i].variable_id = var.index;
 		}
 
-		uint64_t start_block_id = next_variable_id;
-		++next_variable_id;
+		uint64_t start_block_id;
+		if (block_start_id != 0) {
+			start_block_id = block_start_id;
+		}
+		else {
+			start_block_id = next_variable_id;
+			++next_variable_id;
+		}
 
 		uint64_t end_block_id = next_variable_id;
 		++next_variable_id;
 
 		{
 			opcode o;
-			o.type        = OPCODE_BLOCK_START;
-			o.op_block.id = start_block_id;
-			o.size        = OP_SIZE(o, op_block);
+			o.type              = OPCODE_BLOCK_START;
+			o.op_block.start_id = start_block_id;
+			o.op_block.end_id   = end_block_id;
+			o.size              = OP_SIZE(o, op_block);
 			emit_op(code, &o);
 		}
 
 		for (size_t i = 0; i < statement->block.statements.size; ++i) {
-			emit_statement(code, &statement->block, statement->block.statements.s[i]);
+			emit_statement(code, &statement->block, statement->block.statements.s[i], 0);
 		}
 
 		{
 			opcode o;
-			o.type        = OPCODE_BLOCK_END;
-			o.op_block.id = end_block_id;
-			o.size        = OP_SIZE(o, op_block);
+			o.type              = OPCODE_BLOCK_END;
+			o.op_block.start_id = start_block_id;
+			o.op_block.end_id   = end_block_id;
+			o.size              = OP_SIZE(o, op_block);
 			emit_op(code, &o);
 		}
 
@@ -904,6 +912,6 @@ void compile_function_block(opcodes *code, struct statement *block) {
 		block->block.vars.v[i].variable_id = var.index;
 	}
 	for (size_t i = 0; i < block->block.statements.size; ++i) {
-		emit_statement(code, &block->block, block->block.statements.s[i]);
+		emit_statement(code, &block->block, block->block.statements.s[i], 0);
 	}
 }
