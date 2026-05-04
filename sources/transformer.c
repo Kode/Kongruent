@@ -37,6 +37,17 @@ void transform(uint32_t flags) {
 			opcode *o = (opcode *)&data[index];
 
 			switch (o->type) {
+			case OPCODE_BLOCK_START:
+			case OPCODE_BLOCK_END:
+				if ((flags & TRANSFORM_FLAG_REDUCE_BLOCKS) != 0) {
+					if (o->op_block.loop_block) {
+						copy_opcode(o);
+					}
+				}
+				else {
+					copy_opcode(o);
+				}
+				break;
 			case OPCODE_STORE_ACCESS_LIST: {
 				kong_access a = o->op_store_access_list.access_list[o->op_store_access_list.access_list_size - 1];
 

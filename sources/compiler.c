@@ -803,13 +803,16 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			statement->block.vars.v[i].variable_id = var.index;
 		}
 
+		bool     loop_block;
 		uint64_t start_block_id;
 		if (block_start_id != 0) {
 			start_block_id = block_start_id;
+			loop_block     = true;
 		}
 		else {
 			start_block_id = next_variable_id;
 			++next_variable_id;
+			loop_block = false;
 		}
 
 		uint64_t end_block_id = next_variable_id;
@@ -817,10 +820,11 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 
 		{
 			opcode o;
-			o.type              = OPCODE_BLOCK_START;
-			o.op_block.start_id = start_block_id;
-			o.op_block.end_id   = end_block_id;
-			o.size              = OP_SIZE(o, op_block);
+			o.type                = OPCODE_BLOCK_START;
+			o.op_block.start_id   = start_block_id;
+			o.op_block.end_id     = end_block_id;
+			o.op_block.loop_block = loop_block;
+			o.size                = OP_SIZE(o, op_block);
 			emit_op(code, &o);
 		}
 
@@ -830,10 +834,11 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 
 		{
 			opcode o;
-			o.type              = OPCODE_BLOCK_END;
-			o.op_block.start_id = start_block_id;
-			o.op_block.end_id   = end_block_id;
-			o.size              = OP_SIZE(o, op_block);
+			o.type                = OPCODE_BLOCK_END;
+			o.op_block.start_id   = start_block_id;
+			o.op_block.end_id     = end_block_id;
+			o.op_block.loop_block = loop_block;
+			o.size                = OP_SIZE(o, op_block);
 			emit_op(code, &o);
 		}
 
