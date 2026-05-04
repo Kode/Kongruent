@@ -608,7 +608,7 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			variable condition;
 			variable summed_condition;
 		};
-		struct previous_condition previous_conditions[64] = KONG_INIT_ZERO;
+		struct previous_condition previous_conditions[64]  = KONG_INIT_ZERO;
 		uint8_t                   previous_conditions_size = 0;
 
 		{

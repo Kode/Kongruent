@@ -88,7 +88,7 @@ static statement  *parse_statement(state *state, block *parent_block);
 static expression *parse_expression(state *state);
 
 void parse(const char *filename, tokens *tokens) {
-	state state          = KONG_INIT_ZERO;
+	state state            = KONG_INIT_ZERO;
 	state.context.filename = filename;
 	state.tokens           = tokens;
 	state.index            = 0;
