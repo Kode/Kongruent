@@ -625,7 +625,9 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			previous_conditions[previous_conditions_size].condition = initial_condition;
 			previous_conditions_size += 1;
 
-			block_ids ids = emit_statement(code, parent, statement->iffy.if_block, 0);
+			uint64_t block_id = next_variable_id;
+			++next_variable_id;
+			block_ids ids = emit_statement(code, parent, statement->iffy.if_block, block_id);
 
 			written_opcode->op_if.start_id = ids.start;
 			written_opcode->op_if.end_id   = ids.end;
@@ -698,7 +700,9 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 			{
 				opcode *written_opcode = emit_op(code, &o);
 
-				block_ids ids = emit_statement(code, parent, statement->iffy.else_blocks[i], 0);
+				uint64_t block_id = next_variable_id;
+				++next_variable_id;
+				block_ids ids = emit_statement(code, parent, statement->iffy.else_blocks[i], block_id);
 
 				written_opcode->op_if.start_id = ids.start;
 				written_opcode->op_if.end_id   = ids.end;
@@ -820,11 +824,11 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 
 		{
 			opcode o;
-			o.type                = OPCODE_BLOCK_START;
-			o.op_block.start_id   = start_block_id;
-			o.op_block.end_id     = end_block_id;
-			o.op_block.loop_block = loop_block;
-			o.size                = OP_SIZE(o, op_block);
+			o.type                     = OPCODE_BLOCK_START;
+			o.op_block.start_id        = start_block_id;
+			o.op_block.end_id          = end_block_id;
+			o.op_block.condition_block = loop_block;
+			o.size                     = OP_SIZE(o, op_block);
 			emit_op(code, &o);
 		}
 
@@ -834,11 +838,11 @@ static block_ids emit_statement(opcodes *code, block *parent, statement *stateme
 
 		{
 			opcode o;
-			o.type                = OPCODE_BLOCK_END;
-			o.op_block.start_id   = start_block_id;
-			o.op_block.end_id     = end_block_id;
-			o.op_block.loop_block = loop_block;
-			o.size                = OP_SIZE(o, op_block);
+			o.type                     = OPCODE_BLOCK_END;
+			o.op_block.start_id        = start_block_id;
+			o.op_block.end_id          = end_block_id;
+			o.op_block.condition_block = loop_block;
+			o.size                     = OP_SIZE(o, op_block);
 			emit_op(code, &o);
 		}
 

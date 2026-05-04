@@ -40,7 +40,7 @@ void transform(uint32_t flags) {
 			case OPCODE_BLOCK_START:
 			case OPCODE_BLOCK_END:
 				if ((flags & TRANSFORM_FLAG_REDUCE_BLOCKS) != 0) {
-					if (o->op_block.loop_block) {
+					if (o->op_block.condition_block) {
 						copy_opcode(o);
 					}
 				}

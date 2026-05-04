@@ -170,7 +170,7 @@ typedef struct opcode {
 		struct {
 			uint64_t start_id;
 			uint64_t end_id;
-			bool     loop_block;
+			bool     condition_block;
 		} op_block;
 		struct {
 			uint8_t nothing;
