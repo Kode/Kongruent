@@ -84,6 +84,16 @@ void close_dir(directory *dir) {
 #include <sys/stat.h>
 #include <sys/types.h>
 
+int dir_exists(const char *dirname) {
+    struct stat dir_info;
+
+    if (stat(dirname, &dir_info) != 0){
+        return 0;
+	}
+
+    return S_ISDIR(dir_info.st_mode);
+}
+
 directory open_dir(const char *dirname) {
 	directory dir;
 	dir.handle = opendir(dirname);
