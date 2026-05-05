@@ -42,6 +42,11 @@ __declspec(dllimport) unsigned long __stdcall GetLastError(void);
 
 #define INVALID_HANDLE_VALUE ((void *)(__int64)-1)
 
+int dir_exists(const char *dirname) {
+	// Windows-specific placeholder
+	return -1;
+}
+
 directory open_dir(const char *dirname) {
 	char pattern[1024];
 	strcpy(pattern, dirname);
