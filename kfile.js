@@ -22,6 +22,8 @@ if (platform === Platform.Windows) {
 
 	project.addIncludeDir('sources/libs/dxc/inc');
 	project.addLib('sources/libs/dxc/lib/x64/dxcompiler');
+
+	project.addLib('Shlwapi'); // for PathFileExistsA
 }
 
 resolve(project);
