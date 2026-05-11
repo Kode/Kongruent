@@ -19,6 +19,7 @@ typedef struct file {
 directory open_dir(const char *dirname);
 file      read_next_file(directory *dir);
 void      close_dir(directory *dir);
+int 	  dir_exists(const char* dirname);
 
 #ifdef __cplusplus
 }

@@ -42,6 +42,11 @@ __declspec(dllimport) unsigned long __stdcall GetLastError(void);
 
 #define INVALID_HANDLE_VALUE ((void *)(__int64)-1)
 
+int dir_exists(const char *dirname) {
+	// Windows-specific placeholder
+	return -1;
+}
+
 directory open_dir(const char *dirname) {
 	char pattern[1024];
 	strcpy(pattern, dirname);
@@ -83,6 +88,16 @@ void close_dir(directory *dir) {
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+int dir_exists(const char *dirname) {
+    struct stat dir_info;
+
+    if (stat(dirname, &dir_info) != 0){
+        return 0;
+	}
+
+    return S_ISDIR(dir_info.st_mode);
+}
 
 directory open_dir(const char *dirname) {
 	directory dir;

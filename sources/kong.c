@@ -267,6 +267,7 @@ int main(int argc, char **argv) {
 	check(mode == MODE_MODECHECK, context, "Wrong parameter syntax");
 	check(inputs_size > 0, context, "no input parameters found");
 	check(output != NULL, context, "output parameter not found");
+	check(dir_exists(output) == 1, context, "output directory doesn't exist or isn't a directory");
 	check(api != API_DEFAULT, context, "api parameter not found");
 
 	names_init();
