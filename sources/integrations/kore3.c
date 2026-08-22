@@ -1586,11 +1586,8 @@ void kore3_export(char *directory, api_kind api) {
 							if (t->array_size == UINT32_MAX) {
 								fprintf(output, "\tassert(set->%s != NULL);\n", get_name(g->name));
 								fprintf(output, "\tfor (size_t index = 0; index < set->%s_count; ++index) {\n", get_name(g->name));
-								fprintf(output,
-								        "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, "
-								        "set->set.allocations[set->set.current_allocation_index].bindless_descriptor_allocation.offset + (uint32_t)index, "
-								        "&set->%s[index]);\n",
-								        api_short, get_name(g->name));
+								fprintf(output, "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, &set->set, &set->%s, index + %zu);\n", api_short,
+								        get_name(g->name), other_index);
 								fprintf(output, "\t}\n");
 							}
 							else {
@@ -1599,11 +1596,8 @@ void kore3_export(char *directory, api_kind api) {
 									        get_name(g->name), other_index);
 								}
 								else {
-									fprintf(output,
-									        "\tkore_%s_descriptor_set_set_texture_view_srv(device, "
-									        "set->set.allocations[set->set.current_allocation_index].descriptor_allocation.offset + %zu, "
-									        "&set->%s);\n",
-									        api_short, other_index, get_name(g->name));
+									fprintf(output, "\tkore_%s_descriptor_set_set_texture_view_srv(device, &set->set, &set->%s, %zu);\n", api_short,
+									        get_name(g->name), other_index);
 								}
 
 								other_index += 1;
