@@ -1585,10 +1585,8 @@ void kore3_export(char *directory, api_kind api) {
 							type *t = get_type(g->type);
 							if (t->array_size == UINT32_MAX) {
 								fprintf(output, "\tassert(set->%s != NULL);\n", get_name(g->name));
-								fprintf(output, "\tfor (size_t index = 0; index < set->%s_count; ++index) {\n", get_name(g->name));
-								fprintf(output, "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, &set->set, &set->%s, index + %zu);\n", api_short,
-								        get_name(g->name), other_index);
-								fprintf(output, "\t}\n");
+								fprintf(output, "\tkore_d3d12_descriptor_set_set_bindless_texture_views_srv(device, &set->set, set->%s, %zu, set->%s_count);",
+								        get_name(g->name), other_index, get_name(g->name));
 							}
 							else {
 								if (writable) {
