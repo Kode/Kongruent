@@ -1019,8 +1019,26 @@ void kore3_export(char *directory, api_kind api) {
 
 		fprintf(output, "\n");
 
+		name_id  printed_vertex_inputs[256];
+		uint32_t printed_vertex_inputs_size = 0;
+
 		for (size_t i = 0; i < vertex_inputs_size; ++i) {
 			type *t = get_type(vertex_inputs[i]);
+
+			bool found = false;
+			for (uint32_t printed_index = 0; printed_index < printed_vertex_inputs_size; ++printed_index) {
+				if (printed_vertex_inputs[printed_index] == t->name) {
+					found = true;
+					break;
+				}
+			}
+
+			if (found) {
+				continue;
+			}
+
+			printed_vertex_inputs[printed_vertex_inputs_size] = t->name;
+			++printed_vertex_inputs_size;
 
 			fprintf(output, "KONG_PACK_START\ntypedef struct KONG_PACK %s {\n", get_name(t->name));
 			for (size_t j = 0; j < t->members.size; ++j) {
@@ -1137,8 +1155,26 @@ void kore3_export(char *directory, api_kind api) {
 			fprintf(output, "#import <MetalKit/MTKView.h>\n\n");
 		}
 
+		name_id  printed_vertex_inputs[256];
+		uint32_t printed_vertex_inputs_size = 0;
+
 		for (size_t i = 0; i < vertex_inputs_size; ++i) {
 			type *t = get_type(vertex_inputs[i]);
+
+			bool found = false;
+			for (uint32_t printed_index = 0; printed_index < printed_vertex_inputs_size; ++printed_index) {
+				if (printed_vertex_inputs[printed_index] == t->name) {
+					found = true;
+					break;
+				}
+			}
+
+			if (found) {
+				continue;
+			}
+
+			printed_vertex_inputs[printed_vertex_inputs_size] = t->name;
+			++printed_vertex_inputs_size;
 
 			fprintf(output, "uint32_t kong_%s_buffer_usage_flags(void) {\n", get_name(t->name));
 			fprintf(output, "\treturn KORE_%s_BUFFER_USAGE_VERTEX;\n", api_caps);
