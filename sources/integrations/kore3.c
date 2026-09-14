@@ -979,6 +979,12 @@ void kore3_export(char *directory, api_kind api) {
 				else if (is_sampler(g->type)) {
 					fprintf(output, "\t\t%s_SET_UPDATE_%s,\n", upper_set_name, upper_definition_name);
 				}
+				else {
+					type *t = get_type(g->type);
+					if (t->array_size != 0) {
+						fprintf(output, "\t\t%s_SET_UPDATE_%s,\n", upper_set_name, upper_definition_name);
+					}
+				}
 			}
 			fprintf(output, "\t} kind;\n");
 
@@ -1007,6 +1013,12 @@ void kore3_export(char *directory, api_kind api) {
 				}
 				else if (is_sampler(g->type)) {
 					fprintf(output, "\t\tkore_gpu_sampler *%s;\n", get_name(g->name));
+				}
+				else {
+					type *t = get_type(g->type);
+					if (t->array_size != 0) {
+						fprintf(output, "\t\tkore_gpu_buffer *%s;\n", get_name(g->name));
+					}
 				}
 			}
 			fprintf(output, "\t};\n");
