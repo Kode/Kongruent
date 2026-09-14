@@ -145,6 +145,18 @@ static void add_func_float_float2(const char *name) {
 	f->block                   = NULL;
 }
 
+static void add_func_float2_float2(const char *name) {
+	function_id func = add_function(add_name(name));
+	function   *f    = get_function(func);
+	init_type_ref(&f->return_type, add_name("float2"));
+	f->return_type.type   = find_type_by_ref(&f->return_type);
+	f->parameter_names[0] = add_name("a");
+	init_type_ref(&f->parameter_types[0], add_name("float2"));
+	f->parameter_types[0].type = find_type_by_ref(&f->parameter_types[0]);
+	f->parameters_size         = 1;
+	f->block                   = NULL;
+}
+
 static void add_func_float_float3_float3(const char *name) {
 	function_id func = add_function(add_name(name));
 	function   *f    = get_function(func);
@@ -725,7 +737,9 @@ void functions_init(void) {
 	add_func_float3x3("object_to_world3x3");
 	add_func_float3_float3_float3("reflect");
 	add_func_uint("primitive_index");
-	add_func_float3_float3("abs");
+	add_func_float_float("abs");
+	add_func_float2_float2("abs2");
+	add_func_float3_float3("abs3");
 	add_func_float_float_float("floor");
 	add_func_float_float_float("ceil");
 	add_func_float_float_float("round");
