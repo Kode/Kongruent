@@ -1129,13 +1129,14 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 			switch (o->type) {
 			case OPCODE_LOAD_ACCESS_LIST: {
 				uint64_t global_var_index = 0;
+				bool     global_member    = false;
 				global  *g                = NULL;
 				for (global_id j = 0; get_global(j) != NULL && get_global(j)->type != NO_TYPE; ++j) {
 					g = get_global(j);
 					if (o->op_load_access_list.from.index == g->var_index) {
 						global_var_index = g->var_index;
-						if (get_type(g->type)->built_in) {
-							global_var_index = 0;
+						if (!get_type(g->type)->built_in) {
+							global_member = true;
 						}
 						break;
 					}
@@ -1165,7 +1166,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 						break;
 					}
 					case ACCESS_MEMBER:
-						if (global_var_index != 0 && i == 0) {
+						if (global_member && i == 0) {
 							*offset += sprintf(&hlsl[*offset], "_%s", member_string(s, o->op_load_access_list.access_list[i].access_member.name));
 						}
 						else {
