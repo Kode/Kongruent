@@ -1157,7 +1157,7 @@ static void write_functions(char *hlsl, size_t *offset, shader_stage stage, func
 							*offset += sprintf(&hlsl[*offset], "[NonUniformResourceIndex(_%" PRIu64 ")]",
 							                   o->op_load_access_list.access_list[i].access_element.index.index);
 						}
-						else if (global_var_index != 0 && i == 0 && get_type(from_type->base)->built_in) {
+						else if (global_var_index != 0 && i == 0 && from_type->base != NO_TYPE && get_type(from_type->base)->built_in) {
 							*offset += sprintf(&hlsl[*offset], "[_%" PRIu64 "].data", o->op_load_access_list.access_list[i].access_element.index.index);
 						}
 						else {
