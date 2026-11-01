@@ -2089,10 +2089,10 @@ void kore3_export(char *directory, api_kind api) {
 						if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D) {
 							type *t = get_type(g->type);
 							if (t->array_size == UINT32_MAX) {
-								fprintf(output, "\t\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) * parameters->textures_count);\n",
-								        get_name(g->name));
+								fprintf(output, "\t\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) * parameters->%s_count);\n",
+								        get_name(g->name), get_name(g->name));
 								fprintf(output, "\tassert(set->%s != NULL);\n", get_name(g->name));
-								fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
+								fprintf(output, "\tfor (size_t index = 0; index < parameters->%s_count; ++index) {\n", get_name(g->name));
 								fprintf(output, "\t\tset->%s[index] = parameters->%s[index];\n", get_name(g->name), get_name(g->name));
 								fprintf(output, "\t}\n");
 
@@ -2299,10 +2299,10 @@ void kore3_export(char *directory, api_kind api) {
 						if (get_type(base_type_id)->tex_kind == TEXTURE_KIND_2D) {
 							type *t = get_type(g->type);
 							if (t->array_size == UINT32_MAX) {
-								fprintf(output, "\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) * parameters->textures_count);\n",
-								        get_name(g->name));
+								fprintf(output, "\tset->%s = (kore_gpu_texture_view *)malloc(sizeof(kore_gpu_texture_view) * parameters->%s_count);\n",
+								        get_name(g->name), get_name(g->name));
 								fprintf(output, "\tassert(set->%s != NULL);\n", get_name(g->name));
-								fprintf(output, "\tfor (size_t index = 0; index < parameters->textures_count; ++index) {\n");
+								fprintf(output, "\tfor (size_t index = 0; index < parameters->%s_count; ++index) {\n", get_name(g->name));
 								fprintf(
 								    output,
 								    "\t\tkore_%s_descriptor_set_set_texture_view_srv(device, set->set.bindless_descriptor_allocation.offset + (uint32_t)index, "
