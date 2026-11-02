@@ -43,7 +43,10 @@ int compile_hlsl_to_d3d12(const char *source, uint8_t **output, size_t *outputle
 	assert(result == S_OK);
 
 	const wchar_t *compiler_args[] = {
-	    L"-E", L"main", L"-T", shader_string(stage),
+	    L"-E",
+	    L"main",
+	    L"-T",
+	    shader_string(stage),
 	    // L"-Qstrip_reflect", // strip reflection into a seperate blob
 	};
 
